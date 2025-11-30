@@ -49,6 +49,15 @@ These are proven principles with high confidence. They are ALWAYS loaded into co
 
 ---
 
+## 6. Record Learnings Before Ending Session
+> Before closing any significant work session, review and record what was learned.
+
+**Why:** The system only works if you use it. We built an entire learning framework and almost forgot to record the bugs we found while building it. Ironic and instructive.
+**Promoted:** 2024-11-30 (first real failure)
+**Validations:** 1 (the meta-failure itself)
+
+---
+
 # How Rules Become Golden
 
 1. Start as heuristic with confidence 0.5
