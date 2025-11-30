@@ -14,3 +14,13 @@ When removing color-keyed backgrounds (green screen), simply setting alpha based
 
 ---
 
+## H-0: Lip sync blending region must start below nose, not overlapping it
+
+**Confidence**: 0.80
+**Source**: success
+**Created**: 2025-11-30
+
+When blending mouth frames for lip-sync, starting the blend region too high (y_start = h * 0.62) causes nose artifacts because the nose moves slightly with mouth-opening expressions in source videos. Moving y_start to h * 0.70 ensures only lips and jaw are affected. This is especially critical with frame blending since subtle differences between positions get magnified at blend boundaries.
+
+---
+
