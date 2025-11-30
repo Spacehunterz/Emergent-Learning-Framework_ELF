@@ -60,8 +60,9 @@ class QuerySystem:
                 summary TEXT,
                 tags TEXT,
                 domain TEXT,
-                severity TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                severity INTEGER DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
 
@@ -73,10 +74,13 @@ class QuerySystem:
                 rule TEXT NOT NULL,
                 explanation TEXT,
                 source_type TEXT,
-                confidence REAL DEFAULT 0.0,
+                source_id INTEGER,
+                confidence REAL DEFAULT 0.5,
                 times_validated INTEGER DEFAULT 0,
-                is_golden INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                times_violated INTEGER DEFAULT 0,
+                is_golden BOOLEAN DEFAULT FALSE,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
 

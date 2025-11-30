@@ -69,7 +69,7 @@ else
 fi
 
 # Create initial golden rules
-GOLDEN_RULES_PATH="$BASE_DIR/memory/heuristics/GOLDEN_RULES.md"
+GOLDEN_RULES_PATH="$BASE_DIR/memory/golden-rules.md"
 if [ ! -f "$GOLDEN_RULES_PATH" ]; then
     echo ""
     echo "Creating golden rules..."
@@ -234,7 +234,7 @@ echo "✓ Framework initialized successfully!"
 echo "========================================="
 echo ""
 echo "Next steps:"
-echo "  1. Review golden rules: memory/heuristics/GOLDEN_RULES.md"
+echo "  1. Review golden rules: memory/golden-rules.md"
 echo "  2. Record your first failure: ./scripts/record-failure.sh"
 echo "  3. Start an experiment: ./scripts/start-experiment.sh"
 echo ""

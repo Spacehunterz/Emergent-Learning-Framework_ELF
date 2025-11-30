@@ -80,7 +80,7 @@ if (Test-Path $SchemaPath) {
 }
 
 # Create initial golden rules
-$GoldenRulesPath = Join-Path $BaseDir "memory\heuristics\GOLDEN_RULES.md"
+$GoldenRulesPath = Join-Path $BaseDir "memory\golden-rules.md"
 if (-not (Test-Path $GoldenRulesPath)) {
     Write-Host ""
     Write-Host "Creating golden rules..."
@@ -254,7 +254,7 @@ Write-Host "✓ Framework initialized successfully!" -ForegroundColor Green
 Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Next steps:"
-Write-Host "  1. Review golden rules: memory\heuristics\GOLDEN_RULES.md"
+Write-Host "  1. Review golden rules: memory\golden-rules.md"
 Write-Host "  2. Record your first failure: .\scripts\record-failure.ps1"
 Write-Host "  3. Start an experiment: .\scripts\start-experiment.ps1"
 Write-Host ""

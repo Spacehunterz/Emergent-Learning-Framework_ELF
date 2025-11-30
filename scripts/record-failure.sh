@@ -87,16 +87,26 @@ EOF
 
 echo "Created: $filepath"
 
+# Escape single quotes for SQL injection protection
+escape_sql() {
+    echo "${1//\'/\'\'}"
+}
+
+title_escaped=$(escape_sql "$title")
+summary_escaped=$(escape_sql "$(echo -e "$summary" | head -n 1)")
+tags_escaped=$(escape_sql "$tags")
+domain_escaped=$(escape_sql "$domain")
+
 # Insert into database
 sqlite3 "$DB_PATH" <<SQL
 INSERT INTO learnings (type, filepath, title, summary, tags, domain, severity)
 VALUES (
     'failure',
     '$relative_path',
-    '$title',
-    '$(echo -e "$summary" | head -n 1)',
-    '$tags',
-    '$domain',
+    '$title_escaped',
+    '$summary_escaped',
+    '$tags_escaped',
+    '$domain_escaped',
     $severity
 );
 SQL

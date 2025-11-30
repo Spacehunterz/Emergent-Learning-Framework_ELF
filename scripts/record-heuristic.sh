@@ -40,14 +40,24 @@ if [ -z "$confidence" ]; then
     confidence="0.5"
 fi
 
+# Escape single quotes for SQL injection protection
+escape_sql() {
+    echo "${1//\'/\'\'}"
+}
+
+domain_escaped=$(escape_sql "$domain")
+rule_escaped=$(escape_sql "$rule")
+explanation_escaped=$(escape_sql "$explanation")
+source_type_escaped=$(escape_sql "$source_type")
+
 # Insert into database
 sqlite3 "$DB_PATH" <<SQL
 INSERT INTO heuristics (domain, rule, explanation, source_type, confidence)
 VALUES (
-    '$domain',
-    '$rule',
-    '$explanation',
-    '$source_type',
+    '$domain_escaped',
+    '$rule_escaped',
+    '$explanation_escaped',
+    '$source_type_escaped',
     $confidence
 );
 SQL
