@@ -138,8 +138,8 @@ summary_escaped=$(escape_sql "$(echo -e "$summary" | head -n 1)")
 tags_escaped=$(escape_sql "$tags")
 domain_escaped=$(escape_sql "$domain")
 
-# Insert into database
-sqlite3 "$DB_PATH" <<SQL
+# Insert into database and get ID in same connection
+LAST_ID=$(sqlite3 "$DB_PATH" <<SQL
 INSERT INTO learnings (type, filepath, title, summary, tags, domain, severity)
 VALUES (
     'failure',
@@ -150,9 +150,11 @@ VALUES (
     '$domain_escaped',
     $severity
 );
+SELECT last_insert_rowid();
 SQL
+)
 
-echo "Database record created (ID: $(sqlite3 "$DB_PATH" "SELECT last_insert_rowid();"))"
+echo "Database record created (ID: $LAST_ID)"
 
 # Git commit
 cd "$BASE_DIR"
