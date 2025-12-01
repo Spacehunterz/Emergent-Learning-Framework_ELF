@@ -1,0 +1,522 @@
+[2025-12-01 17:13:32] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:40] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:41] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_1 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_2 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_4 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_3 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_5 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_7 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_6 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_8 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_9 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_11 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_14 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_10 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_12 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_13 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_15 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:43] [INFO] [record-failure] Recording failure: Concurrent_30_16 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:43] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:43] [INFO] [record-failure] Script started
+[2025-12-01 17:13:44] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:44] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:44] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:44] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:44] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_17 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Script started
+[2025-12-01 17:13:44] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_20 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent301.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_18 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Script started
+[2025-12-01 17:13:44] [INFO] [record-failure] Script started
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_19 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_21 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent302.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:44] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent304.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Script started
+[2025-12-01 17:13:44] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:44] [INFO] [record-failure] Script started
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_23 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_25 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:13:44] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_22 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_27 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_24 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:13:44] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent305.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent303.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent307.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_26 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent309.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Script started
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_29 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent306.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3012.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent308.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3013.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_28 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3014.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Script started
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3011.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3010.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3016.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3015.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3017.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Recording failure: Concurrent_30_30 (domain: stress-final, severity: 2)
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3018.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 78)
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3019.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3020.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3025.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 79)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 80)
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3023.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3021.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3022.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3024.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 81)
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3026.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 82)
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3027.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 83)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 85)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 84)
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3029.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3028.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 87)
+[2025-12-01 17:13:44] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 86)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 88)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 89)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 90)
+[2025-12-01 17:13:44] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrent3030.md
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 91)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 92)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 93)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 94)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 96)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 97)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 95)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 99)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 98)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 100)
+[2025-12-01 17:13:44] [INFO] [record-failure] Database record created (ID: 101)
+[2025-12-01 17:13:45] [INFO] [record-failure] Database record created (ID: 102)
+[2025-12-01 17:13:45] [INFO] [record-failure] Database record created (ID: 103)
+[2025-12-01 17:13:45] [INFO] [record-failure] Database record created (ID: 104)
+[2025-12-01 17:13:45] [INFO] [record-failure] Database record created (ID: 105)
+[2025-12-01 17:13:45] [INFO] [record-failure] Database record created (ID: 106)
+[2025-12-01 17:13:45] [INFO] [record-failure] Database record created (ID: 0)
+[2025-12-01 17:14:15] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:15] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:15] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:15] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:15] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:16] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_2 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_4 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_1 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_3 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_5 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_9 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_6 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_7 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_8 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_10 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_11 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_14 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_13 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_16 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_12 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_17 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_15 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode2.md
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_19 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode4.md
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Script started
+[2025-12-01 17:14:19] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:19] [INFO] [record-failure] Recording failure: Failure_Mode_18 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:19] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode5.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode1.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode3.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Recording failure: Failure_Mode_20 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode6.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode8.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode9.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode7.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode10.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode11.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode13.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode14.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode16.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode17.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode15.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode12.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode19.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 107)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 108)
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode18.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 110)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 109)
+[2025-12-01 17:14:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_failuremode20.md
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 111)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 112)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 113)
+[2025-12-01 17:14:20] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 114)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 115)
+[2025-12-01 17:14:20] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 116)
+[2025-12-01 17:14:20] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 17:14:20] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 117)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 118)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 119)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 120)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 121)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 122)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 0)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 0)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 0)
+[2025-12-01 17:14:20] [INFO] [record-failure] Database record created (ID: 0)
+[2025-12-01 17:14:38] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:38] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:38] [INFO] [record-failure] Script started
+[2025-12-01 17:14:38] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:38] [INFO] [record-failure] Recording failure: Test\x00null byte (domain: edge-case, severity: 3)
+[2025-12-01 17:14:39] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_testx00null-byte.md
+[2025-12-01 17:14:39] [INFO] [record-failure] Database record created (ID: 123)
+[2025-12-01 17:14:51] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:51] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:51] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:51] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:51] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:51] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:51] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:51] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:51] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:51] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:51] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:51] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:52] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:52] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:52] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:52] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:52] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:52] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:52] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:52] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:14:55] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:14:55] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:14:55] [INFO] [record-failure] Script started
+[2025-12-01 17:14:55] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:14:55] [INFO] [record-failure] Recording failure: Perf_Sequential_1 (domain: stress-final, severity: 2)
+[2025-12-01 17:14:55] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_perfsequential1.md
+[2025-12-01 17:14:56] [INFO] [record-failure] Database record created (ID: 124)
+[2025-12-01 17:15:11] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:15:27] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:15:28] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:15:28] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:15:28] [INFO] [record-failure] Script started
+[2025-12-01 17:15:28] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:15:28] [INFO] [record-failure] Recording failure: Perf_Sequential_2 (domain: stress-final, severity: 2)
+[2025-12-01 17:15:28] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_perfsequential2.md
+[2025-12-01 17:15:28] [INFO] [record-failure] Database record created (ID: 125)
+[2025-12-01 17:15:59] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:15:59] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:15:59] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:15:59] [INFO] [record-failure] Script started
+[2025-12-01 17:15:59] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:15:59] [INFO] [record-failure] Recording failure: Perf_Sequential_3 (domain: stress-final, severity: 2)
+[2025-12-01 17:15:59] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_perfsequential3.md
+[2025-12-01 17:15:59] [INFO] [record-failure] Database record created (ID: 126)
+[2025-12-01 17:16:30] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:16:30] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:16:30] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:16:30] [INFO] [record-failure] Script started
+[2025-12-01 17:16:30] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:16:30] [INFO] [record-failure] Recording failure: Perf_Sequential_4 (domain: stress-final, severity: 2)
+[2025-12-01 17:16:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_perfsequential4.md
+[2025-12-01 17:16:31] [INFO] [record-failure] Database record created (ID: 127)
+[2025-12-01 17:16:31] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:16:31] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:16:31] [INFO] [record-failure] Script started
+[2025-12-01 17:16:31] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:16:31] [INFO] [record-failure] Recording failure: ../../etc/passwd test (domain: security-test, severity: 3)
+[2025-12-01 17:16:31] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_etcpasswd-test.md
+[2025-12-01 17:16:31] [INFO] [record-failure] Database record created (ID: 128)
+[2025-12-01 17:17:02] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:17:02] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:17:02] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:17:02] [INFO] [record-failure] Script started
+[2025-12-01 17:17:02] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:17:02] [INFO] [record-failure] Recording failure: Perf_Sequential_5 (domain: stress-final, severity: 2)
+[2025-12-01 17:17:02] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_perfsequential5.md
+[2025-12-01 17:17:02] [INFO] [record-failure] Database record created (ID: 129)
+[2025-12-01 17:17:02] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:17:33] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:17:33] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:17:33] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:17:33] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:17:33] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:17:33] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:17:33] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:17:33] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:17:33] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:17:33] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:17:33] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:17:33] [INFO] [record-failure] Script started
+[2025-12-01 17:17:33] [INFO] [record-failure] Script started
+[2025-12-01 17:17:33] [INFO] [record-failure] Script started
+[2025-12-01 17:17:33] [INFO] [record-failure] Script started
+[2025-12-01 17:17:33] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:17:33] [INFO] [record-failure] Script started
+[2025-12-01 17:17:33] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:17:33] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:17:33] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:17:33] [INFO] [record-failure] Recording failure: Perf_Concurrent_1 (domain: stress-final, severity: 2)
+[2025-12-01 17:17:33] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:17:33] [INFO] [record-failure] Recording failure: Perf_Concurrent_2 (domain: stress-final, severity: 2)
+[2025-12-01 17:17:33] [INFO] [record-failure] Recording failure: Perf_Concurrent_4 (domain: stress-final, severity: 2)
+[2025-12-01 17:17:33] [INFO] [record-failure] Recording failure: Perf_Concurrent_3 (domain: stress-final, severity: 2)
+[2025-12-01 17:17:33] [INFO] [record-failure] Recording failure: Perf_Concurrent_5 (domain: stress-final, severity: 2)
+[2025-12-01 17:17:34] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_perfconcurrent1.md
+[2025-12-01 17:17:34] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_perfconcurrent2.md
+[2025-12-01 17:17:34] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_perfconcurrent4.md
+[2025-12-01 17:17:34] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_perfconcurrent3.md
+[2025-12-01 17:17:34] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_perfconcurrent5.md
+[2025-12-01 17:17:34] [INFO] [record-failure] Database record created (ID: 130)
+[2025-12-01 17:17:34] [INFO] [record-failure] Database record created (ID: 131)
+[2025-12-01 17:17:34] [INFO] [record-failure] Database record created (ID: 132)
+[2025-12-01 17:17:34] [INFO] [record-failure] Database record created (ID: 133)
+[2025-12-01 17:17:34] [INFO] [record-failure] Database record created (ID: 134)
+[2025-12-01 17:18:05] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:18:05] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:18:05] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:18:05] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:18:05] [ERROR] [record-failure] Could not acquire git lock
