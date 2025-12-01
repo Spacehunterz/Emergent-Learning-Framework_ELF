@@ -54,3 +54,13 @@ Testing minimum confidence
 
 ---
 
+## H-0: STRESS Test 8: Confidence 1.0 maximum
+
+**Confidence**: 1.0
+**Source**: success
+**Created**: 2025-12-01
+
+Testing maximum confidence
+
+---
+
