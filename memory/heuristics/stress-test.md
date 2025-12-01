@@ -124,3 +124,13 @@ Testing confidence above max
 
 ---
 
+## H-0: STRESS Test 17: Dollar signs $PATH and $(whoami)
+
+**Confidence**: 0.5
+**Source**: observation
+**Created**: 2025-12-01
+
+Testing shell variable expansion
+
+---
+
