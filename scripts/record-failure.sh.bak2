@@ -86,22 +86,8 @@ release_git_lock() {
     fi
 }
 
-# Rollback function for atomicity
-cleanup_on_failure() {
-    local file_to_remove="$1"
-    local db_id_to_remove="$2"
-    if [ -n "$file_to_remove" ] && [ -f "$file_to_remove" ]; then
-        log "WARN" "Rolling back: removing file $file_to_remove"
-        rm -f "$file_to_remove"
-    fi
-    if [ -n "$db_id_to_remove" ] && [ "$db_id_to_remove" != "0" ] && [ "$db_id_to_remove" != "" ]; then
-        log "WARN" "Rolling back: removing DB record $db_id_to_remove"
-        sqlite3 "$DB_PATH" "DELETE FROM learnings WHERE id=$db_id_to_remove" 2>/dev/null || true
-    fi
-}
-
-# Error trap with cleanup
-trap 'log "ERROR" "Script failed at line $LINENO"; cleanup_on_failure "$filepath" "$LAST_ID"; exit 1' ERR
+# Error trap
+trap 'log "ERROR" "Script failed at line $LINENO"; exit 1' ERR
 
 # Pre-flight validation
 preflight_check() {
@@ -119,22 +105,6 @@ preflight_check() {
 
     if [ ! -d "$BASE_DIR/.git" ]; then
         log "WARN" "Not a git repository: $BASE_DIR"
-    fi
-
-    # Security: Symlink attack prevention
-    if [ -L "$FAILURES_DIR" ]; then
-        log "ERROR" "SECURITY: failures directory is a symlink"
-        exit 1
-    fi
-    if [ -L "$MEMORY_DIR" ]; then
-        log "ERROR" "SECURITY: memory directory is a symlink"
-        exit 1
-    fi
-
-    # Database integrity check
-    if ! sqlite3 "$DB_PATH" "PRAGMA integrity_check" 2>/dev/null | grep -q "ok"; then
-        log "ERROR" "Database integrity check failed"
-        exit 1
     fi
 
     log "INFO" "Pre-flight checks passed"
@@ -296,13 +266,6 @@ SQL
     exit 1
 fi
 
-# Validate the ID - must be positive integer (fixes ID=0 bug)
-if [ -z "$LAST_ID" ] || [ "$LAST_ID" = "0" ] || ! [[ "$LAST_ID" =~ ^[0-9]+$ ]]; then
-    log "ERROR" "Database insert failed - invalid ID: '$LAST_ID'"
-    cleanup_on_failure "$filepath" ""
-    exit 1
-fi
-
 echo "Database record created (ID: $LAST_ID)"
 log "INFO" "Database record created (ID: $LAST_ID)"
 
@@ -312,8 +275,7 @@ if [ -d ".git" ]; then
     LOCK_FILE="$BASE_DIR/.git/claude-lock"
     
     if ! acquire_git_lock "$LOCK_FILE" 30; then
-        log "ERROR" "Could not acquire git lock - rolling back"
-        cleanup_on_failure "$filepath" "$LAST_ID"
+        log "ERROR" "Could not acquire git lock"
         echo "Error: Could not acquire git lock"
         exit 1
     fi

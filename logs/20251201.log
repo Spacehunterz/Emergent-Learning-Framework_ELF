@@ -520,3 +520,551 @@
 [2025-12-01 17:18:05] [ERROR] [record-failure] Could not acquire git lock
 [2025-12-01 17:18:05] [ERROR] [record-failure] Could not acquire git lock
 [2025-12-01 17:18:05] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:19:10] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 17:19:10] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 17:19:10] [INFO] [record-heuristic] Script started
+[2025-12-01 17:19:10] [INFO] [record-heuristic] Running in interactive mode
+[2025-12-01 17:19:10] [ERROR] [record-heuristic] Script failed at line 172
+[2025-12-01 17:19:23] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 17:19:23] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 17:19:23] [INFO] [record-heuristic] Script started
+[2025-12-01 17:19:23] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 17:19:23] [INFO] [record-heuristic] Recording heuristic: Always use UTF-8 encoding (domain: unicode-test, confidence: 0.85)
+[2025-12-01 17:19:23] [INFO] [record-heuristic] Database record created (ID: 72)
+[2025-12-01 17:19:23] [INFO] [record-heuristic] Created new domain file: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/unicode-test.md
+[2025-12-01 17:19:23] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/unicode-test.md
+[2025-12-01 17:19:54] [ERROR] [record-heuristic] Could not acquire git lock
+[2025-12-01 17:20:04] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:04] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:04] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:04] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:04] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:04] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:04] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:04] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:04] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:04] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:04] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:04] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:04] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:04] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:04] [INFO] [record-failure] Script started
+[2025-12-01 17:20:04] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_1 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_2 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_3 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_4 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_7 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_5 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_8 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_6 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_10 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_9 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_11 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_13 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_15 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_12 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_16 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_14 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_18 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_17 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles1.md
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_21 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_20 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_22 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_19 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles2.md
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles8.md
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_25 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles3.md
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles5.md
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_24 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_23 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles7.md
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_27 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles4.md
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles10.md
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles6.md
+[2025-12-01 17:20:05] [INFO] [record-failure] Script started
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_26 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Recording failure: Handles_31 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_28 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles9.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_30 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:06] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles13.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_29 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_32 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles16.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_33 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles15.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles12.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles14.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles11.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_36 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles18.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:06] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:06] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_34 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_35 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles20.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:06] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:06] [INFO] [record-failure] Database record created (ID: 79)
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_37 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Database record created (ID: 78)
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_40 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles19.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_38 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Database record created (ID: 80)
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles21.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles22.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles17.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles23.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:06] [INFO] [record-failure] Database record created (ID: 81)
+[2025-12-01 17:20:06] [INFO] [record-failure] Database record created (ID: 82)
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles25.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Database record created (ID: 83)
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_39 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles27.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_41 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Database record created (ID: 86)
+[2025-12-01 17:20:06] [INFO] [record-failure] Database record created (ID: 84)
+[2025-12-01 17:20:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles26.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Database record created (ID: 85)
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles24.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_42 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_46 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:06] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles28.md
+[2025-12-01 17:20:06] [INFO] [record-failure] Database record created (ID: 87)
+[2025-12-01 17:20:06] [INFO] [record-failure] Recording failure: Handles_44 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:06] [INFO] [record-failure] Script started
+[2025-12-01 17:20:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:07] [INFO] [record-failure] Script started
+[2025-12-01 17:20:07] [INFO] [record-failure] Script started
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 89)
+[2025-12-01 17:20:07] [INFO] [record-failure] Recording failure: Handles_48 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles30.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 88)
+[2025-12-01 17:20:07] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles31.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 90)
+[2025-12-01 17:20:07] [INFO] [record-failure] Script started
+[2025-12-01 17:20:07] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 91)
+[2025-12-01 17:20:07] [INFO] [record-failure] Recording failure: Handles_43 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:07] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles32.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Recording failure: Handles_45 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles29.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles33.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:07] [INFO] [record-failure] Recording failure: Handles_49 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 92)
+[2025-12-01 17:20:07] [INFO] [record-failure] Recording failure: Handles_47 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 93)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles36.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Recording failure: Handles_50 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 95)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 94)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles34.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 96)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles37.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 97)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles38.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles40.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 99)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 100)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 98)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles41.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles35.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 101)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles39.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 102)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles42.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles46.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 105)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 104)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles44.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 103)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles43.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 107)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 106)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 108)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 109)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles48.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles45.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 110)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles49.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles47.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 111)
+[2025-12-01 17:20:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_handles50.md
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 112)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 113)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 114)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 115)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 116)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 117)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 118)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 120)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 119)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 121)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 122)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 123)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 124)
+[2025-12-01 17:20:07] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 125)
+[2025-12-01 17:20:07] [INFO] [record-failure] Database record created (ID: 126)
+[2025-12-01 17:20:08] [INFO] [record-failure] Database record created (ID: 0)
+[2025-12-01 17:20:30] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 17:20:30] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 17:20:30] [INFO] [record-heuristic] Script started
+[2025-12-01 17:20:30] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 17:20:30] [INFO] [record-heuristic] Recording heuristic: 测试规则 🔥 with emoji (domain: unicode-test, confidence: 0.9)
+[2025-12-01 17:20:30] [INFO] [record-heuristic] Database record created (ID: 73)
+[2025-12-01 17:20:30] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/unicode-test.md
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:38] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:39] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:20:42] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:20:42] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:20:42] [INFO] [record-failure] Script started
+[2025-12-01 17:20:42] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:20:42] [INFO] [record-failure] Recording failure: Timing_1 (domain: resource-test, severity: 2)
+[2025-12-01 17:20:42] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_timing1.md
+[2025-12-01 17:20:42] [INFO] [record-failure] Database record created (ID: 127)
+[2025-12-01 17:21:01] [ERROR] [record-heuristic] Could not acquire git lock
+[2025-12-01 17:21:13] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:21:13] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:21:13] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:21:13] [INFO] [record-failure] Script started
+[2025-12-01 17:21:13] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:21:13] [INFO] [record-failure] Recording failure: Timing_2 (domain: resource-test, severity: 2)
+[2025-12-01 17:21:13] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_timing2.md
+[2025-12-01 17:21:13] [INFO] [record-failure] Database record created (ID: 128)
+[2025-12-01 17:21:45] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:21:45] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:21:45] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:21:45] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:21:45] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:21:45] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:21:45] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:21:45] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:21:45] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:21:45] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:21:45] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:21:45] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:21:45] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:21:45] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:21:45] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:21:45] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:21:45] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:21:45] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:21:45] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:21:45] [INFO] [record-failure] Script started
+[2025-12-01 17:21:45] [INFO] [record-failure] Script started
+[2025-12-01 17:21:45] [INFO] [record-failure] Script started
+[2025-12-01 17:21:45] [INFO] [record-failure] Script started
+[2025-12-01 17:21:45] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:21:45] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:21:45] [INFO] [record-failure] Script started
+[2025-12-01 17:21:45] [INFO] [record-failure] Script started
+[2025-12-01 17:21:45] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:21:45] [INFO] [record-failure] Script started
+[2025-12-01 17:21:45] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:21:45] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:21:45] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:21:45] [INFO] [record-failure] Script started
+[2025-12-01 17:21:45] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:21:45] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:21:45] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:21:45] [INFO] [record-failure] Recording failure: RW_Concurrent_1 (domain: resource-test, severity: 2)
+[2025-12-01 17:21:45] [INFO] [record-failure] Recording failure: RW_Concurrent_4 (domain: resource-test, severity: 2)
+[2025-12-01 17:21:45] [INFO] [record-failure] Script started
+[2025-12-01 17:21:45] [INFO] [record-failure] Script started
+[2025-12-01 17:21:45] [INFO] [record-failure] Recording failure: RW_Concurrent_2 (domain: resource-test, severity: 2)
+[2025-12-01 17:21:45] [INFO] [record-failure] Recording failure: RW_Concurrent_3 (domain: resource-test, severity: 2)
+[2025-12-01 17:21:45] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:21:45] [INFO] [record-failure] Recording failure: RW_Concurrent_7 (domain: resource-test, severity: 2)
+[2025-12-01 17:21:45] [INFO] [record-failure] Recording failure: RW_Concurrent_6 (domain: resource-test, severity: 2)
+[2025-12-01 17:21:45] [INFO] [record-failure] Recording failure: RW_Concurrent_5 (domain: resource-test, severity: 2)
+[2025-12-01 17:21:45] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:21:45] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:21:45] [INFO] [record-failure] Recording failure: RW_Concurrent_8 (domain: resource-test, severity: 2)
+[2025-12-01 17:21:45] [INFO] [record-failure] Recording failure: RW_Concurrent_10 (domain: resource-test, severity: 2)
+[2025-12-01 17:21:45] [INFO] [record-failure] Recording failure: RW_Concurrent_9 (domain: resource-test, severity: 2)
+[2025-12-01 17:21:45] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rwconcurrent2.md
+[2025-12-01 17:21:45] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rwconcurrent4.md
+[2025-12-01 17:21:45] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rwconcurrent1.md
+[2025-12-01 17:21:45] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rwconcurrent3.md
+[2025-12-01 17:21:45] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rwconcurrent5.md
+[2025-12-01 17:21:45] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rwconcurrent7.md
+[2025-12-01 17:21:45] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rwconcurrent8.md
+[2025-12-01 17:21:45] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rwconcurrent10.md
+[2025-12-01 17:21:45] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rwconcurrent6.md
+[2025-12-01 17:21:45] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rwconcurrent9.md
+[2025-12-01 17:21:46] [INFO] [record-failure] Database record created (ID: 129)
+[2025-12-01 17:21:46] [INFO] [record-failure] Database record created (ID: 130)
+[2025-12-01 17:21:46] [INFO] [record-failure] Database record created (ID: 131)
+[2025-12-01 17:21:46] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 17:21:46] [INFO] [record-failure] Database record created (ID: 132)
+[2025-12-01 17:21:46] [INFO] [record-failure] Database record created (ID: 133)
+[2025-12-01 17:21:46] [INFO] [record-failure] Database record created (ID: 134)
+[2025-12-01 17:21:46] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 17:21:46] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 17:21:46] [INFO] [record-failure] Database record created (ID: 135)
+[2025-12-01 17:21:46] [INFO] [record-failure] Database record created (ID: 0)
+[2025-12-01 17:21:46] [INFO] [record-failure] Database record created (ID: 0)
+[2025-12-01 17:21:46] [INFO] [record-failure] Database record created (ID: 132)
+[2025-12-01 17:22:17] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:22:17] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:22:17] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:22:17] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:22:17] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:22:17] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:22:17] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:22:17] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:22:17] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:22:17] [ERROR] [record-failure] Could not acquire git lock
+[2025-12-01 17:34:42] [INFO] [record-failure] [cid=Thorsun-60891-1764632082] Pre-flight checks
+[2025-12-01 17:34:52] [INFO] [record-failure] [cid=Thorsun-60932-1764632092] Pre-flight checks
+[2025-12-01 17:35:02] [INFO] [record-failure] [cid=Thorsun-60977-1764632102] Pre-flight checks
+[2025-12-01 17:35:14] [INFO] [record-failure] [cid=Thorsun-61023-1764632114] Pre-flight checks
+[2025-12-01 17:35:37] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:35:37] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:35:37] [INFO] [record-failure] Script started
+[2025-12-01 17:35:37] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:35:37] [INFO] [record-failure] Recording failure: Test Original (domain: testing, severity: 3)
+[2025-12-01 17:35:37] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test-original.md
+[2025-12-01 17:35:37] [INFO] [record-failure] Database record created (ID: 136)
+[2025-12-01 17:35:38] [INFO] [record-failure] Git commit created
+[2025-12-01 17:35:38] [INFO] [record-failure] Failure recorded successfully: Test Original
+[2025-12-01 17:37:37] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:37:37] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:37:37] [INFO] [record-failure] Script started
+[2025-12-01 17:37:37] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:37:37] [INFO] [record-failure] Recording failure: Test Fixed Script (domain: framework, severity: 2)
+[2025-12-01 17:37:37] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test-fixed-script.md
+[2025-12-01 17:37:37] [INFO] [record-failure] Database record created (ID: 137)
+[2025-12-01 17:37:38] [INFO] [record-failure] Git commit created
+[2025-12-01 17:37:38] [INFO] [record-failure] Failure recorded successfully: Test Fixed Script
+[2025-12-01 17:38:08] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 17:38:08] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 17:38:08] [INFO] [record-heuristic] Script started
+[2025-12-01 17:38:08] [INFO] [record-heuristic] Running in interactive mode
