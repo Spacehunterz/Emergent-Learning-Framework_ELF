@@ -104,3 +104,13 @@ Testing unknown source type
 
 ---
 
+## H-0: STRESS Test 15: Negative confidence
+
+**Confidence**: -0.5
+**Source**: observation
+**Created**: 2025-12-01
+
+Testing negative confidence
+
+---
+
