@@ -14,3 +14,13 @@ Thorough testing catches edge cases
 
 ---
 
+## H-0: Test heuristic rule
+
+**Confidence**: 0.75
+**Source**: observation
+**Created**: 2025-12-01
+
+Testing that heuristics work
+
+---
+
