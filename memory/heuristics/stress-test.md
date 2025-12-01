@@ -44,3 +44,13 @@ Testing unicode characters
 
 ---
 
+## H-0: STRESS Test 7: Confidence 0.0 minimum
+
+**Confidence**: 0.0
+**Source**: observation
+**Created**: 2025-12-01
+
+Testing minimum confidence
+
+---
+
