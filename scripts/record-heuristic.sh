@@ -97,8 +97,8 @@ rule_escaped=$(escape_sql "$rule")
 explanation_escaped=$(escape_sql "$explanation")
 source_type_escaped=$(escape_sql "$source_type")
 
-# Insert into database
-sqlite3 "$DB_PATH" <<SQL
+# Insert into database and get ID in same connection
+heuristic_id=$(sqlite3 "$DB_PATH" <<SQL
 INSERT INTO heuristics (domain, rule, explanation, source_type, confidence)
 VALUES (
     '$domain_escaped',
@@ -107,11 +107,10 @@ VALUES (
     '$source_type_escaped',
     $confidence
 );
+SELECT last_insert_rowid();
 SQL
-
-heuristic_id=$(sqlite3 "$DB_PATH" "SELECT last_insert_rowid();")
+)
 echo "Database record created (ID: $heuristic_id)"
-
 # Append to domain markdown file
 domain_file="$HEURISTICS_DIR/${domain}.md"
 
