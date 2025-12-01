@@ -1,5 +1,11 @@
 #!/bin/bash
 # Record a heuristic in the Emergent Learning Framework
+#
+# Usage (interactive): ./record-heuristic.sh
+# Usage (non-interactive):
+#   HEURISTIC_DOMAIN="domain" HEURISTIC_RULE="rule" ./record-heuristic.sh
+#   Or: ./record-heuristic.sh --domain "domain" --rule "rule" --explanation "why"
+#   Optional: --source failure|success|observation --confidence 0.8
 
 set -e
 
@@ -12,35 +18,62 @@ HEURISTICS_DIR="$MEMORY_DIR/heuristics"
 # Ensure heuristics directory exists
 mkdir -p "$HEURISTICS_DIR"
 
-# Prompt for inputs
-echo "=== Record Heuristic ==="
-echo ""
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --domain) domain="$2"; shift 2 ;;
+        --rule) rule="$2"; shift 2 ;;
+        --explanation) explanation="$2"; shift 2 ;;
+        --source) source_type="$2"; shift 2 ;;
+        --confidence) confidence="$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
 
-read -p "Domain: " domain
-if [ -z "$domain" ]; then
-    echo "Error: Domain cannot be empty"
-    exit 1
+# Check for environment variables
+domain="${domain:-$HEURISTIC_DOMAIN}"
+rule="${rule:-$HEURISTIC_RULE}"
+explanation="${explanation:-$HEURISTIC_EXPLANATION}"
+source_type="${source_type:-$HEURISTIC_SOURCE}"
+confidence="${confidence:-$HEURISTIC_CONFIDENCE}"
+
+# Non-interactive mode: if we have domain and rule, skip prompts
+if [ -n "$domain" ] && [ -n "$rule" ]; then
+    source_type="${source_type:-observation}"
+    confidence="${confidence:-0.7}"
+    explanation="${explanation:-}"
+    echo "=== Record Heuristic (non-interactive) ==="
+else
+    # Interactive mode
+    echo "=== Record Heuristic ==="
+    echo ""
+
+    read -p "Domain: " domain
+    if [ -z "$domain" ]; then
+        echo "Error: Domain cannot be empty"
+        exit 1
+    fi
+
+    read -p "Rule (the heuristic): " rule
+    if [ -z "$rule" ]; then
+        echo "Error: Rule cannot be empty"
+        exit 1
+    fi
+
+    read -p "Explanation: " explanation
+
+    read -p "Source type (failure/success/observation): " source_type
+    if [ -z "$source_type" ]; then
+        source_type="observation"
+    fi
+
+    read -p "Confidence (0.0-1.0): " confidence
+    if [ -z "$confidence" ]; then
+        confidence="0.5"
+    fi
 fi
 
-read -p "Rule (the heuristic): " rule
-if [ -z "$rule" ]; then
-    echo "Error: Rule cannot be empty"
-    exit 1
-fi
-
-read -p "Explanation: " explanation
-
-read -p "Source type (failure/success/observation): " source_type
-if [ -z "$source_type" ]; then
-    source_type="observation"
-fi
-
-read -p "Confidence (0.0-1.0): " confidence
-if [ -z "$confidence" ]; then
-    confidence="0.5"
-fi
-
-# Escape single quotes for SQL injection protection
+# Escape single quotes for SQL
 escape_sql() {
     echo "${1//\'/\'\'}"
 }

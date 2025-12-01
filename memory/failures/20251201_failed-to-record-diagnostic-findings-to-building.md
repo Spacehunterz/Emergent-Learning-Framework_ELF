@@ -1,13 +1,13 @@
-# Test default severity
+# Failed to record diagnostic findings to building
 
-**Domain**: testing
-**Severity**: 3
-**Tags**: 
+**Domain**: agent-behavior
+**Severity**: medium
+**Tags**: documentation,proactivity,learning
 **Date**: 2025-12-01
 
 ## Summary
 
-Testing default
+Diagnosed file tracking issue but did not record it - user had to remind me
 
 ## What Happened
 
