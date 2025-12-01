@@ -114,3 +114,13 @@ Testing negative confidence
 
 ---
 
+## H-0: STRESS Test 16: Confidence > 1.0
+
+**Confidence**: 2.5
+**Source**: observation
+**Created**: 2025-12-01
+
+Testing confidence above max
+
+---
+
