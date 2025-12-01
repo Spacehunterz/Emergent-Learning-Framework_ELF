@@ -74,3 +74,13 @@ Testing SQL injection
 
 ---
 
+## H-0: STRESS Test 11: Source type failure
+
+**Confidence**: 0.9
+**Source**: failure
+**Created**: 2025-12-01
+
+Testing failure source type
+
+---
+
