@@ -44,3 +44,13 @@ Generated from failures, successes, and observations in the **validation-test** 
 
 ---
 
+## H-0: Test6 → arrows ✓ work
+
+**Confidence**: 0.8
+**Source**: observation
+**Created**: 2025-12-01
+
+
+
+---
+
