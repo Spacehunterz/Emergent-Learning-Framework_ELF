@@ -94,3 +94,13 @@ Testing success source type
 
 ---
 
+## H-0: STRESS Test 13: Invalid source type
+
+**Confidence**: 0.5
+**Source**: unknown_type
+**Created**: 2025-12-01
+
+Testing unknown source type
+
+---
+
