@@ -14,3 +14,13 @@ Logging helps debug issues in production
 
 ---
 
+## H-49: Always run verification tests after making changes
+
+**Confidence**: 0.9
+**Source**: observation
+**Created**: 2025-12-01
+
+
+
+---
+
