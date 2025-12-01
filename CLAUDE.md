@@ -189,7 +189,7 @@ Implement the pattern with size limits (Skeptic's concern) and optional timing d
 
 ## Golden Rules: The Sacred Text
 
-The file `golden-rules/RULES.md` contains hard-won lessons from previous iterations. These rules are **distilled wisdom** from actual failures and successes.
+The file `memory/golden-rules.md` contains hard-won lessons from previous iterations. These rules are **distilled wisdom** from actual failures and successes.
 
 ### Treating Golden Rules
 
