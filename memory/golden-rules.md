@@ -66,3 +66,12 @@ These are proven principles with high confidence. They are ALWAYS loaded into co
 4. When confidence > 0.9 AND validations > 10, eligible for promotion
 5. CEO reviews and promotes to golden
 6. Golden rules are loaded in EVERY agent context
+
+---
+
+## 7. Obey Direct Commands Immediately
+> When user gives a direct action command (close, stop, kill, quit), execute it FIRST before anything else.
+
+**Why:** User trust depends on responsiveness. Ignoring direct commands causes frustration and breaks trust.
+**Promoted:** 2025-12-01 (from failure: ignored user command to close overlay)
+**Validations:** 1
