@@ -116,6 +116,9 @@ class QuerySystem:
             )
         """)
 
+        # Enable foreign keys
+        cursor.execute("PRAGMA foreign_keys = ON")
+
         # Create indexes for efficient querying
         cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_learnings_domain
@@ -125,6 +128,16 @@ class QuerySystem:
         cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_learnings_type
             ON learnings(type)
+        """)
+
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_learnings_created_at
+            ON learnings(created_at DESC)
+        """)
+
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_learnings_domain_created
+            ON learnings(domain, created_at DESC)
         """)
 
         cursor.execute("""
@@ -138,6 +151,16 @@ class QuerySystem:
         """)
 
         cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_heuristics_created_at
+            ON heuristics(created_at DESC)
+        """)
+
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_heuristics_domain_confidence
+            ON heuristics(domain, confidence DESC)
+        """)
+
+        cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_experiments_status
             ON experiments(status)
         """)
@@ -146,6 +169,9 @@ class QuerySystem:
             CREATE INDEX IF NOT EXISTS idx_ceo_reviews_status
             ON ceo_reviews(status)
         """)
+
+        # Update query planner statistics
+        cursor.execute("ANALYZE")
 
         conn.commit()
         conn.close()
