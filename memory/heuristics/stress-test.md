@@ -134,3 +134,13 @@ Testing shell variable expansion
 
 ---
 
+## H-0: STRESS Test 18: Backticks `command`
+
+**Confidence**: 0.5
+**Source**: observation
+**Created**: 2025-12-01
+
+Testing backticks command substitution
+
+---
+
