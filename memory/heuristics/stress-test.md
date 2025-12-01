@@ -64,3 +64,13 @@ Testing maximum confidence
 
 ---
 
+## H-0: STRESS Test 10: SQL injection'); DROP TABLE heuristics; --
+
+**Confidence**: 0.5
+**Source**: observation
+**Created**: 2025-12-01
+
+Testing SQL injection
+
+---
+
