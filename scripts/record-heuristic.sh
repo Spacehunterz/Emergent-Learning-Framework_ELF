@@ -40,7 +40,21 @@ confidence="${confidence:-$HEURISTIC_CONFIDENCE}"
 # Non-interactive mode: if we have domain and rule, skip prompts
 if [ -n "$domain" ] && [ -n "$rule" ]; then
     source_type="${source_type:-observation}"
-    confidence="${confidence:-0.7}"
+    # Validate confidence is a number, convert words to numbers
+    if [ -z "$confidence" ]; then
+        confidence="0.7"
+    elif [[ "$confidence" =~ ^[0-9]*\.?[0-9]+$ ]]; then
+        # Valid number - keep as-is
+        :
+    else
+        # Invalid (word like "high") - convert or default
+        case "$confidence" in
+            low) confidence="0.3" ;;
+            medium) confidence="0.6" ;;
+            high) confidence="0.85" ;;
+            *) confidence="0.7" ;; # default for invalid
+        esac
+    fi
     explanation="${explanation:-}"
     echo "=== Record Heuristic (non-interactive) ==="
 else
