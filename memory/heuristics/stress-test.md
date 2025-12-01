@@ -24,3 +24,13 @@ Testing very long rule text to verify handling
 
 ---
 
+## H-0: STRESS Test 5: Special chars - quotes 'single' and "double" with backslash \ and newline
+
+**Confidence**: 0.6
+**Source**: observation
+**Created**: 2025-12-01
+
+Testing special characters
+
+---
+
