@@ -29,6 +29,63 @@ log() {
     fi
 }
 
+# SQLite retry function for handling concurrent access
+sqlite_with_retry() {
+    local max_attempts=5
+    local attempt=1
+    while [ $attempt -le $max_attempts ]; do
+        if sqlite3 "$@" 2>/dev/null; then
+            return 0
+        fi
+        log "WARN" "SQLite busy, retry $attempt/$max_attempts..."
+        echo "SQLite busy, retry $attempt/$max_attempts..." >&2
+        sleep 0.$((RANDOM % 5 + 1))
+        ((attempt++))
+    done
+    log "ERROR" "SQLite failed after $max_attempts attempts"
+    echo "SQLite failed after $max_attempts attempts" >&2
+    return 1
+}
+
+# Git lock functions for concurrent access (cross-platform)
+acquire_git_lock() {
+    local lock_file="$1"
+    local timeout="${2:-30}"
+    local wait_time=0
+    
+    # Check if flock is available (Linux/macOS with coreutils)
+    if command -v flock &> /dev/null; then
+        exec 200>"$lock_file"
+        if flock -w "$timeout" 200; then
+            return 0
+        else
+            return 1
+        fi
+    else
+        # Fallback for Windows/MSYS: simple mkdir-based locking
+        local lock_dir="${lock_file}.dir"
+        while [ $wait_time -lt $timeout ]; do
+            if mkdir "$lock_dir" 2>/dev/null; then
+                return 0
+            fi
+            sleep 1
+            ((wait_time++))
+        done
+        return 1
+    fi
+}
+
+release_git_lock() {
+    local lock_file="$1"
+    
+    if command -v flock &> /dev/null; then
+        flock -u 200 2>/dev/null || true
+    else
+        local lock_dir="${lock_file}.dir"
+        rmdir "$lock_dir" 2>/dev/null || true
+    fi
+}
+
 # Error trap
 trap 'log "ERROR" "Script failed at line $LINENO"; exit 1' ERR
 
@@ -190,8 +247,8 @@ summary_escaped=$(escape_sql "$(echo -e "$summary" | head -n 1)")
 tags_escaped=$(escape_sql "$tags")
 domain_escaped=$(escape_sql "$domain")
 
-# Insert into database and get ID in same connection
-if ! LAST_ID=$(sqlite3 "$DB_PATH" <<SQL
+# Insert into database with retry logic for concurrent access
+if ! LAST_ID=$(sqlite_with_retry "$DB_PATH" <<SQL
 INSERT INTO learnings (type, filepath, title, summary, tags, domain, severity)
 VALUES (
     'failure',
@@ -212,9 +269,17 @@ fi
 echo "Database record created (ID: $LAST_ID)"
 log "INFO" "Database record created (ID: $LAST_ID)"
 
-# Git commit
+# Git commit with locking for concurrent access
 cd "$BASE_DIR"
 if [ -d ".git" ]; then
+    LOCK_FILE="$BASE_DIR/.git/claude-lock"
+    
+    if ! acquire_git_lock "$LOCK_FILE" 30; then
+        log "ERROR" "Could not acquire git lock"
+        echo "Error: Could not acquire git lock"
+        exit 1
+    fi
+
     git add "$filepath"
     git add "$DB_PATH"
     if ! git commit -m "failure: $title" -m "Domain: $domain | Severity: $severity"; then
@@ -224,6 +289,8 @@ if [ -d ".git" ]; then
         log "INFO" "Git commit created"
         echo "Git commit created"
     fi
+
+    release_git_lock "$LOCK_FILE"
 else
     log "WARN" "Not a git repository. Skipping commit."
     echo "Warning: Not a git repository. Skipping commit."

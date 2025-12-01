@@ -14,9 +14,108 @@ BASE_DIR="$(dirname "$SCRIPT_DIR")"
 MEMORY_DIR="$BASE_DIR/memory"
 DB_PATH="$MEMORY_DIR/index.db"
 HEURISTICS_DIR="$MEMORY_DIR/heuristics"
+LOGS_DIR="$BASE_DIR/logs"
+
+# Setup logging
+LOG_FILE="$LOGS_DIR/$(date +%Y%m%d).log"
+mkdir -p "$LOGS_DIR"
+
+log() {
+    local level="$1"
+    shift
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$level] [record-heuristic] $*" >> "$LOG_FILE"
+    if [ "$level" = "ERROR" ]; then
+        echo "ERROR: $*" >&2
+    fi
+}
+
+# SQLite retry function for handling concurrent access
+sqlite_with_retry() {
+    local max_attempts=5
+    local attempt=1
+    while [ $attempt -le $max_attempts ]; do
+        if sqlite3 "$@" 2>/dev/null; then
+            return 0
+        fi
+        log "WARN" "SQLite busy, retry $attempt/$max_attempts..."
+        echo "SQLite busy, retry $attempt/$max_attempts..." >&2
+        sleep 0.$((RANDOM % 5 + 1))
+        ((attempt++))
+    done
+    log "ERROR" "SQLite failed after $max_attempts attempts"
+    echo "SQLite failed after $max_attempts attempts" >&2
+    return 1
+}
+
+# Git lock functions for concurrent access (cross-platform)
+acquire_git_lock() {
+    local lock_file="$1"
+    local timeout="${2:-30}"
+    local wait_time=0
+    
+    # Check if flock is available (Linux/macOS with coreutils)
+    if command -v flock &> /dev/null; then
+        exec 200>"$lock_file"
+        if flock -w "$timeout" 200; then
+            return 0
+        else
+            return 1
+        fi
+    else
+        # Fallback for Windows/MSYS: simple mkdir-based locking
+        local lock_dir="${lock_file}.dir"
+        while [ $wait_time -lt $timeout ]; do
+            if mkdir "$lock_dir" 2>/dev/null; then
+                return 0
+            fi
+            sleep 1
+            ((wait_time++))
+        done
+        return 1
+    fi
+}
+
+release_git_lock() {
+    local lock_file="$1"
+    
+    if command -v flock &> /dev/null; then
+        flock -u 200 2>/dev/null || true
+    else
+        local lock_dir="${lock_file}.dir"
+        rmdir "$lock_dir" 2>/dev/null || true
+    fi
+}
+
+# Error trap
+trap 'log "ERROR" "Script failed at line $LINENO"; exit 1' ERR
+
+# Pre-flight validation
+preflight_check() {
+    log "INFO" "Starting pre-flight checks"
+
+    if [ ! -f "$DB_PATH" ]; then
+        log "ERROR" "Database not found: $DB_PATH"
+        exit 1
+    fi
+
+    if ! command -v sqlite3 &> /dev/null; then
+        log "ERROR" "sqlite3 command not found"
+        exit 1
+    fi
+
+    if [ ! -d "$BASE_DIR/.git" ]; then
+        log "WARN" "Not a git repository: $BASE_DIR"
+    fi
+
+    log "INFO" "Pre-flight checks passed"
+}
+
+preflight_check
 
 # Ensure heuristics directory exists
 mkdir -p "$HEURISTICS_DIR"
+
+log "INFO" "Script started"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -39,6 +138,7 @@ confidence="${confidence:-$HEURISTIC_CONFIDENCE}"
 
 # Non-interactive mode: if we have domain and rule, skip prompts
 if [ -n "$domain" ] && [ -n "$rule" ]; then
+    log "INFO" "Running in non-interactive mode"
     source_type="${source_type:-observation}"
     # Validate confidence is a number, convert words to numbers
     if [ -z "$confidence" ]; then
@@ -58,25 +158,26 @@ if [ -n "$domain" ] && [ -n "$rule" ]; then
     # Strict validation: confidence must be decimal 0.0-1.0 ONLY (SQL injection protection)
     # Pattern: 0, 1, 0.X, or 1.0 (but not 1.X where X>0)
     if ! [[ "$confidence" =~ ^(0(\.[0-9]+)?|1(\.0+)?)$ ]]; then
-        echo "Warning: Invalid confidence, using 0.7" >&2
+        log "WARN" "Invalid confidence provided, defaulting to 0.7"
         confidence="0.7"
     fi
     explanation="${explanation:-}"
     echo "=== Record Heuristic (non-interactive) ==="
 else
     # Interactive mode
+    log "INFO" "Running in interactive mode"
     echo "=== Record Heuristic ==="
     echo ""
 
     read -p "Domain: " domain
     if [ -z "$domain" ]; then
-        echo "Error: Domain cannot be empty"
+        log "ERROR" "Domain cannot be empty"
         exit 1
     fi
 
     read -p "Rule (the heuristic): " rule
     if [ -z "$rule" ]; then
-        echo "Error: Rule cannot be empty"
+        log "ERROR" "Rule cannot be empty"
         exit 1
     fi
 
@@ -93,6 +194,8 @@ else
     fi
 fi
 
+log "INFO" "Recording heuristic: $rule (domain: $domain, confidence: $confidence)"
+
 # Escape single quotes for SQL
 escape_sql() {
     echo "${1//\'/\'\'}"
@@ -103,8 +206,8 @@ rule_escaped=$(escape_sql "$rule")
 explanation_escaped=$(escape_sql "$explanation")
 source_type_escaped=$(escape_sql "$source_type")
 
-# Insert into database and get ID in same connection
-heuristic_id=$(sqlite3 "$DB_PATH" <<SQL
+# Insert into database with retry logic for concurrent access
+if ! heuristic_id=$(sqlite_with_retry "$DB_PATH" <<SQL
 INSERT INTO heuristics (domain, rule, explanation, source_type, confidence)
 VALUES (
     '$domain_escaped',
@@ -115,8 +218,14 @@ VALUES (
 );
 SELECT last_insert_rowid();
 SQL
-)
+); then
+    log "ERROR" "Failed to insert into database"
+    exit 1
+fi
+
 echo "Database record created (ID: $heuristic_id)"
+log "INFO" "Database record created (ID: $heuristic_id)"
+
 # Append to domain markdown file
 domain_file="$HEURISTICS_DIR/${domain}.md"
 
@@ -129,6 +238,7 @@ Generated from failures, successes, and observations in the **$domain** domain.
 ---
 
 EOF
+    log "INFO" "Created new domain file: $domain_file"
 fi
 
 cat >> "$domain_file" <<EOF
@@ -145,17 +255,35 @@ $explanation
 EOF
 
 echo "Appended to: $domain_file"
+log "INFO" "Appended heuristic to: $domain_file"
 
-# Git commit
+# Git commit with locking for concurrent access
 cd "$BASE_DIR"
 if [ -d ".git" ]; then
+    LOCK_FILE="$BASE_DIR/.git/claude-lock"
+    
+    if ! acquire_git_lock "$LOCK_FILE" 30; then
+        log "ERROR" "Could not acquire git lock"
+        echo "Error: Could not acquire git lock"
+        exit 1
+    fi
+
     git add "$domain_file"
     git add "$DB_PATH"
-    git commit -m "heuristic: $rule" -m "Domain: $domain | Confidence: $confidence" || echo "No changes to commit"
-    echo "Git commit created"
+    if ! git commit -m "heuristic: $rule" -m "Domain: $domain | Confidence: $confidence"; then
+        log "WARN" "Git commit failed or no changes to commit"
+        echo "Note: Git commit skipped (no changes or already committed)"
+    else
+        log "INFO" "Git commit created"
+        echo "Git commit created"
+    fi
+
+    release_git_lock "$LOCK_FILE"
 else
+    log "WARN" "Not a git repository. Skipping commit."
     echo "Warning: Not a git repository. Skipping commit."
 fi
 
+log "INFO" "Heuristic recorded successfully: $rule"
 echo ""
 echo "Heuristic recorded successfully!"
