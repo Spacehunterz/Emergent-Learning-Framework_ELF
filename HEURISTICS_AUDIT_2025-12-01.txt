@@ -1,0 +1,232 @@
+================================================================================
+HEURISTICS CONSISTENCY AUDIT REPORT
+================================================================================
+
+Report Date: 2025-12-01
+Location: ~/.claude/emergent-learning/memory/heuristics/
+
+================================================================================
+1. CONFIDENCE VALUE VALIDATION
+================================================================================
+
+STATUS: PASS
+
+All confidence values in the heuristics database are within valid range (0.0-1.0).
+- Total heuristics checked: 18
+- Invalid confidence values: 0
+- Null confidence values: 0
+
+Note: Historical test records with invalid values (e.g., confidence 2.50) have
+been cleaned up as of commit 5757534.
+
+================================================================================
+2. DOMAIN NAMING CONSISTENCY
+================================================================================
+
+STATUS: PASS
+
+All domain names follow the naming convention (lowercase, alphanumeric, hyphens).
+
+Examples of valid domains:
+  - agent-behavior
+  - claude-code-tools
+  - computer-vision
+  - service-auto-launch
+  - test-edge-cases
+
+WARNING: One domain contains spaces: "my domain with spaces"
+  This technically works but violates the naming convention.
+  Recommendation: Rename to "my-domain-with-spaces" for consistency.
+
+================================================================================
+3. ORPHANED MARKDOWN FILES (no DB records)
+================================================================================
+
+STATUS: CRITICAL MISMATCH - 7 ORPHANED FILES
+
+These markdown files have substantial content but NO corresponding database
+records. These represent institutional knowledge that has not been registered
+in the emergent learning framework:
+
+  1. file-write-safety.md (2737 bytes)
+     Domain: "file-write-safety"
+     Heuristics: H-10, H-11, H-12
+     Content: File write safety, platform-specific locking, batch execution
+
+  2. gpu-resource-patterns.md (1316 bytes)
+     Domain: "gpu-resource-patterns"
+     Heuristics: H-15
+     Content: Priority-based GPU resource preemption for competing workloads
+
+  3. service-auto-launch.md (505 bytes)
+     Domain: "service-auto-launch"
+     Content: Minimal content
+
+  4. service-coordination.md (2155 bytes)
+     Domain: "service-coordination"
+     Heuristics: H-13, H-14
+     Content: Service health checks, file-based IPC for cross-process coordination
+
+  5. ui-interaction.md (674 bytes)
+     Domain: "ui-interaction"
+     Content: Minimal content
+
+  6. voice-audio.md (4655 bytes) [LARGEST FILE]
+     Domain: "voice-audio"
+     Heuristics: 8 detailed heuristics about voice/audio systems
+       - UDP fire-and-forget
+       - Magic bytes validation
+       - Generator patterns
+       - PortAudio sample format compatibility
+
+  7. vram-session-heuristics.md (1959 bytes)
+     Domain: "vram-session-heuristics"
+     Heuristics: Multiple patterns about VRAM management
+     Content: 32 lines of detailed GPU/VRAM learning
+
+IMPACT: These files represent significant institutional knowledge that:
+  - Won't be found by query.py --domain searches
+  - Won't show up in heuristics reports
+  - Won't contribute to agent decision-making
+  - May be duplicated when DB heuristics are discovered
+
+RECOMMENDATION: Either:
+  A) Add DB records for these 7 domains/heuristics
+  B) Delete the files if they're stale/obsolete
+  C) Move them to a separate "archived" directory
+
+================================================================================
+4. ORPHANED DB DOMAINS (no markdown file)
+================================================================================
+
+STATUS: CRITICAL MISMATCH - 3 MISSING FILES
+
+These domains have heuristics in the database but NO corresponding markdown
+file. This means the institutional knowledge exists but is not documented:
+
+  1. architecture.md - MISSING
+     DB Records: 2 heuristics
+     Database content:
+       - "Always escape user input before SQL interpolation" (confidence: 0.90)
+       - "Keep schema definitions in one authoritative source..." (confidence: 0.80)
+
+  2. coordination.md - MISSING
+     DB Records: 4 heuristics
+     Database content includes rules about:
+       - Recording learnings before ending session (confidence: 0.95)
+       - Multi-perspective coordination (confidence: 0.85)
+       - Cheap fast models for parallel audit (confidence: 0.85)
+       - Path consistency verification (confidence: 0.80)
+
+  3. game-development.md - MISSING
+     DB Records: 3 heuristics
+     Database content:
+       - "Add visual feedback for all player actions" (confidence: 0.85)
+       - "Fix build blockers before adding features" (confidence: 0.80)
+       - "Refactor God Objects before scaling" (confidence: 0.85)
+
+IMPACT: Database heuristics that lack markdown documentation:
+  - Are harder to understand/validate
+  - Have no detailed explanation or context
+  - Cannot be easily reviewed or edited
+  - Don't integrate with the knowledge archive
+
+RECOMMENDATION: Create markdown files for these 3 domains using the existing
+DB records as source material.
+
+================================================================================
+5. SPECIAL CASES & EDGE CASES
+================================================================================
+
+final.md
+  Status: Minimal content (202 bytes)
+  DB Record: Yes - ID 42, "FinalTest2" (confidence: 0.85)
+  Issue: Very minimal file, contains only 1 heuristic stub
+  Recommendation: Either expand with more context, or remove if it's test data
+
+my-domain-with-spaces.md
+  Status: File exists (unusual naming)
+  DB Record: Yes - domain "my domain with spaces" (confidence: 0.90)
+  Rule: "Rule in domain with spaces"
+  Issue: Domain name contains spaces, violates convention
+  Recommendation: Rename to "my-domain-with-spaces.md" and update DB domain
+
+================================================================================
+6. STATISTICS
+================================================================================
+
+Database Records:
+  - Total heuristics: 18 (post-cleanup)
+  - Unique domains: 9
+  - Domains with markdown: 6
+  - Domains missing markdown: 3
+
+Markdown Files:
+  - Total .md files: 15 (including TEMPLATE)
+  - Content files: 14 (excluding TEMPLATE)
+  - With DB records: 7
+  - Without DB records: 7 (orphaned)
+
+Alignment:
+  - Perfect match domains: 6
+  - Missing markdown: 3 domains (9 heuristics)
+  - Orphaned markdown: 7 files (unknown # of heuristics)
+  - Total inconsistencies: 10 domains/files
+
+================================================================================
+7. ACTION ITEMS
+================================================================================
+
+PRIORITY 1 - CRITICAL (Breaks query.py functionality):
+  [ ] Create markdown files for orphaned DB domains:
+      - architecture.md
+      - coordination.md
+      - game-development.md
+
+  [ ] Add DB records for orphaned markdown domains:
+      - file-write-safety.md
+      - gpu-resource-patterns.md
+      - service-auto-launch.md (if not stale)
+      - service-coordination.md
+      - ui-interaction.md (if not stale)
+      - voice-audio.md
+      - vram-session-heuristics.md
+
+PRIORITY 2 - CLEANUP:
+  [ ] Rename domain "my domain with spaces" to "my-domain-with-spaces"
+
+  [ ] Review final.md - expand or delete if test data
+
+  [ ] Review service-auto-launch.md and ui-interaction.md - are these stale?
+
+PRIORITY 3 - VALIDATION:
+  [ ] Verify that all 7 orphaned markdown files represent valid heuristics
+      (not duplicates or stale learning)
+
+  [ ] Cross-reference voice-audio.md and vram-session-heuristics.md for
+      duplicate patterns
+
+================================================================================
+CONCLUSION
+================================================================================
+
+The emergent learning framework has significant inconsistencies between the
+database and markdown documentation. This creates a bifurcated knowledge base:
+
+  - 7 orphaned markdown files are invisible to query.py
+  - 3 database domains lack documentation
+  - 10 domains/files are out of sync
+
+The most impactful files that are missing from DB are:
+  1. voice-audio.md (4655 bytes - LARGEST)
+  2. file-write-safety.md (2737 bytes)
+  3. vram-session-heuristics.md (1959 bytes)
+
+These represent significant institutional knowledge about:
+  - Voice/audio system patterns
+  - File safety and locking
+  - VRAM and GPU resource management
+
+Until these are synchronized, the building's knowledge graph is incomplete.
+
+================================================================================
