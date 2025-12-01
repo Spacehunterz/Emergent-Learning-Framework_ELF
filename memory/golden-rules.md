@@ -75,3 +75,12 @@ These are proven principles with high confidence. They are ALWAYS loaded into co
 **Why:** User trust depends on responsiveness. Ignoring direct commands causes frustration and breaks trust.
 **Promoted:** 2025-12-01 (from failure: ignored user command to close overlay)
 **Validations:** 1
+
+---
+
+## 8. Log Before Summary
+> Complete all logging to the building BEFORE giving the user a summary. The summary is the final step, not the trigger to log.
+
+**Why:** Summaries signal "I'm done" to the user. If logging happens after, it requires user to remind you. Logging is part of completing the work, not a separate afterthought.
+**Promoted:** 2025-12-01 (from repeated user feedback about wrong order)
+**Validations:** 1
