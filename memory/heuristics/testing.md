@@ -24,3 +24,13 @@ Testing that heuristics work
 
 ---
 
+## H-0: Minimal heuristic test
+
+**Confidence**: 0.7
+**Source**: observation
+**Created**: 2025-12-01
+
+
+
+---
+
