@@ -55,6 +55,12 @@ if [ -n "$domain" ] && [ -n "$rule" ]; then
             *) confidence="0.7" ;; # default for invalid
         esac
     fi
+    # Strict validation: confidence must be decimal 0.0-1.0 ONLY (SQL injection protection)
+    # Pattern: 0, 1, 0.X, or 1.0 (but not 1.X where X>0)
+    if ! [[ "$confidence" =~ ^(0(\.[0-9]+)?|1(\.0+)?)$ ]]; then
+        echo "Warning: Invalid confidence, using 0.7" >&2
+        confidence="0.7"
+    fi
     explanation="${explanation:-}"
     echo "=== Record Heuristic (non-interactive) ==="
 else
@@ -105,7 +111,7 @@ VALUES (
     '$rule_escaped',
     '$explanation_escaped',
     '$source_type_escaped',
-    $confidence
+    CAST($confidence AS REAL)
 );
 SELECT last_insert_rowid();
 SQL
