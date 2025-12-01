@@ -24,3 +24,13 @@ When you diagnose an issue, find a root cause, or learn something new about tool
 
 ---
 
+## H-0: Log to building BEFORE giving summary, not after
+
+**Confidence**: 0.95
+**Source**: user-feedback
+**Created**: 2025-12-01
+
+The correct flow is: complete work → log all learnings to building → THEN summarize for user. Do not give summary first and wait for user to remind you to log. Logging is part of completing the task, not a separate step.
+
+---
+
