@@ -1068,3 +1068,812 @@
 [2025-12-01 17:38:08] [INFO] [record-heuristic] Pre-flight checks passed
 [2025-12-01 17:38:08] [INFO] [record-heuristic] Script started
 [2025-12-01 17:38:08] [INFO] [record-heuristic] Running in interactive mode
+[2025-12-01 17:49:40] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 17:49:40] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 17:49:40] [INFO] [record-heuristic] Script started
+[2025-12-01 17:49:40] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 17:49:40] [INFO] [record-heuristic] Recording heuristic: test rule (domain: ../../../sensitive/secret, confidence: 0.7)
+[2025-12-01 17:49:40] [INFO] [record-heuristic] Database record created (ID: 74)
+[2025-12-01 17:49:40] [ERROR] [record-heuristic] Script failed at line 233
+[2025-12-01 17:49:40] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:49:40] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:49:40] [INFO] [record-failure] Script started
+[2025-12-01 17:49:40] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:49:40] [INFO] [record-failure] Recording failure: ../../../sensitive/injected (domain: test, severity: 3)
+[2025-12-01 17:49:40] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_sensitiveinjected.md
+[2025-12-01 17:49:40] [INFO] [record-failure] Database record created (ID: 138)
+[2025-12-01 17:49:41] [INFO] [record-failure] Git commit created
+[2025-12-01 17:49:41] [INFO] [record-failure] Failure recorded successfully: ../../../sensitive/injected
+[2025-12-01 17:49:41] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:49:41] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:49:41] [INFO] [record-failure] Script started
+[2025-12-01 17:49:41] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:49:41] [INFO] [record-failure] Recording failure: test (domain: test, severity: 3)
+[2025-12-01 17:49:41] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test.md
+[2025-12-01 17:49:41] [INFO] [record-failure] Database record created (ID: 139)
+[2025-12-01 17:49:41] [INFO] [record-failure] Git commit created
+[2025-12-01 17:49:41] [INFO] [record-failure] Failure recorded successfully: test
+[2025-12-01 17:52:41] [INFO] [record-failure] Error handling library loaded (version 1.0.0)
+[2025-12-01 17:52:41] [INFO] [record-failure] Script started
+[2025-12-01 17:52:41] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:52:41] [INFO] [record-failure] Dependency check passed: sqlite3
+[2025-12-01 17:52:41] [INFO] [record-failure] Dependency check passed: git
+[2025-12-01 17:52:41] [INFO] [record-failure] File exists: /c/Users/Evede/.claude/emergent-learning/memory/index.db
+[2025-12-01 17:52:41] [INFO] [record-failure] Directory exists: /c/Users/Evede/.claude/emergent-learning/memory
+[2025-12-01 17:52:41] [INFO] [record-failure] Security check passed (not a symlink): /c/Users/Evede/.claude/emergent-learning/memory/failures
+[2025-12-01 17:52:41] [INFO] [record-failure] Security check passed (not a symlink): /c/Users/Evede/.claude/emergent-learning/memory
+[2025-12-01 17:52:41] [INFO] [record-failure] File exists: /c/Users/Evede/.claude/emergent-learning/memory/index.db
+[2025-12-01 17:52:41] [INFO] [record-failure] Database integrity check passed: /c/Users/Evede/.claude/emergent-learning/memory/index.db
+[2025-12-01 17:52:41] [SUCCESS] [record-failure] Pre-flight checks passed
+[2025-12-01 17:52:41] [INFO] [record-failure] Created directory: /c/Users/Evede/.claude/emergent-learning/memory/failures
+[2025-12-01 17:52:41] [INFO] [record-failure] Running in interactive mode
+[2025-12-01 17:52:41] [FATAL] [record-failure] Script failed at line 159 (exit code: 1)
+[2025-12-01 17:52:41] [INFO] [record-failure] Running cleanup functions (1 registered)
+[2025-12-01 17:52:41] [INFO] [record-failure] Running cleanup: cleanup_on_failure
+[2025-12-01 17:52:41] [INFO] [record-failure] Running cleanup functions (1 registered)
+[2025-12-01 17:52:41] [INFO] [record-failure] Running cleanup: cleanup_on_failure
+[2025-12-01 17:53:03] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:53:03] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:53:03] [INFO] [record-failure] Script started
+[2025-12-01 17:53:03] [INFO] [record-failure] Running in interactive mode
+[2025-12-01 17:53:03] [ERROR] [record-failure] Script failed at line 199
+[2025-12-01 17:55:40] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:55:40] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:55:40] [INFO] [record-failure] Script started
+[2025-12-01 17:55:40] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:55:40] [INFO] [record-failure] Recording failure: test%00../../sensitive/secrets (domain: test, severity: 3)
+[2025-12-01 17:55:40] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test00sensitivesecrets.md
+[2025-12-01 17:55:40] [INFO] [record-failure] Database record created (ID: 140)
+[2025-12-01 17:55:41] [INFO] [record-failure] Git commit created
+[2025-12-01 17:55:41] [INFO] [record-failure] Failure recorded successfully: test%00../../sensitive/secrets
+[2025-12-01 17:55:41] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 17:55:41] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 17:55:41] [INFO] [record-heuristic] Script started
+[2025-12-01 17:55:41] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 17:55:41] [INFO] [record-heuristic] Recording heuristic: attack (domain: ../../..//c/Users/Evede/.claude/emergent-learning/tests/attack-sandbox/sensitive/injected, confidence: 0.7)
+[2025-12-01 17:55:41] [INFO] [record-heuristic] Database record created (ID: 75)
+[2025-12-01 17:55:41] [ERROR] [record-heuristic] Script failed at line 236
+[2025-12-01 17:55:41] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:55:41] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:55:41] [INFO] [record-failure] Script started
+[2025-12-01 17:55:41] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:55:41] [INFO] [record-failure] Recording failure: racetest (domain: test, severity: 3)
+[2025-12-01 17:55:41] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_racetest.md
+[2025-12-01 17:55:41] [INFO] [record-failure] Database record created (ID: 141)
+[2025-12-01 17:55:42] [INFO] [record-failure] Git commit created
+[2025-12-01 17:55:42] [INFO] [record-failure] Failure recorded successfully: racetest
+[2025-12-01 17:56:54] [INFO] [health-check] [corr:00011902-0d56] Starting health check
+[2025-12-01 17:56:54] [WARN] [health-check] [corr:00011902-0d56] Uncommitted changes detected
+[2025-12-01 17:56:55] [ERROR] [health-check] [corr:00011902-0d56] count=152 High error rate detected
+[2025-12-01 17:57:02] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:57:02] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:57:02] [INFO] [record-failure] Script started
+[2025-12-01 17:57:02] [INFO] [record-failure] Running in interactive mode
+[2025-12-01 17:57:02] [ERROR] [record-failure] Title cannot be empty
+[2025-12-01 17:57:03] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:57:03] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:57:03] [INFO] [record-failure] Script started
+[2025-12-01 17:57:03] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:57:03] [INFO] [record-failure] Recording failure: test (domain:    , severity: 3)
+[2025-12-01 17:57:03] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test.md
+[2025-12-01 17:57:03] [INFO] [record-failure] Database record created (ID: 142)
+[2025-12-01 17:57:03] [INFO] [record-failure] Git commit created
+[2025-12-01 17:57:03] [INFO] [record-failure] Failure recorded successfully: test
+[2025-12-01 17:57:03] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:57:03] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:57:03] [INFO] [record-failure] Script started
+[2025-12-01 17:57:03] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:57:03] [INFO] [record-failure] Recording failure: test'; DROP TABLE learnings; -- (domain: test, severity: 3)
+[2025-12-01 17:57:03] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test-drop-table-learnings---.md
+[2025-12-01 17:57:04] [INFO] [record-failure] Database record created (ID: 143)
+[2025-12-01 17:57:04] [INFO] [record-failure] Git commit created
+[2025-12-01 17:57:04] [INFO] [record-failure] Failure recorded successfully: test'; DROP TABLE learnings; --
+[2025-12-01 17:57:04] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:57:04] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:57:04] [INFO] [record-failure] Script started
+[2025-12-01 17:57:04] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:57:04] [INFO] [record-failure] Recording failure: test' UNION SELECT * FROM heuristics WHERE '1'='1 (domain: test, severity: 3)
+[2025-12-01 17:57:04] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test-union-select--from-heuristics-where-11.md
+[2025-12-01 17:57:04] [INFO] [record-failure] Database record created (ID: 144)
+[2025-12-01 17:57:04] [INFO] [record-failure] Git commit created
+[2025-12-01 17:57:04] [INFO] [record-failure] Failure recorded successfully: test' UNION SELECT * FROM heuristics WHERE '1'='1
+[2025-12-01 17:57:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:57:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:57:05] [INFO] [record-failure] Script started
+[2025-12-01 17:57:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:57:05] [INFO] [record-failure] Recording failure: test (domain: test, severity: 3)
+[2025-12-01 17:57:05] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test.md
+[2025-12-01 17:57:05] [INFO] [record-failure] Database record created (ID: 145)
+[2025-12-01 17:57:05] [INFO] [record-failure] Git commit created
+[2025-12-01 17:57:05] [INFO] [record-failure] Failure recorded successfully: test
+[2025-12-01 17:57:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:57:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:57:05] [INFO] [record-failure] Script started
+[2025-12-01 17:57:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:57:05] [INFO] [record-failure] Recording failure: test (domain: test, severity: 3)
+[2025-12-01 17:57:05] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test.md
+[2025-12-01 17:57:06] [INFO] [record-failure] Database record created (ID: 146)
+[2025-12-01 17:57:06] [INFO] [record-failure] Git commit created
+[2025-12-01 17:57:06] [INFO] [record-failure] Failure recorded successfully: test
+[2025-12-01 17:57:06] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 17:57:06] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 17:57:06] [INFO] [record-heuristic] Script started
+[2025-12-01 17:57:06] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 17:57:06] [WARN] [record-heuristic] Invalid confidence provided, defaulting to 0.7
+[2025-12-01 17:57:06] [INFO] [record-heuristic] Recording heuristic: test (domain: test, confidence: 0.7)
+[2025-12-01 17:57:06] [INFO] [record-heuristic] Database record created (ID: 76)
+[2025-12-01 17:57:06] [INFO] [record-heuristic] Created new domain file: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/test.md
+[2025-12-01 17:57:06] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/test.md
+[2025-12-01 17:57:06] [INFO] [record-heuristic] Git commit created
+[2025-12-01 17:57:06] [INFO] [record-heuristic] Heuristic recorded successfully: test
+[2025-12-01 17:57:06] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 17:57:06] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 17:57:07] [INFO] [record-heuristic] Script started
+[2025-12-01 17:57:07] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 17:57:07] [INFO] [record-heuristic] Recording heuristic: test (domain: test, confidence: 0.7)
+[2025-12-01 17:57:07] [INFO] [record-heuristic] Database record created (ID: 77)
+[2025-12-01 17:57:07] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/test.md
+[2025-12-01 17:57:07] [INFO] [record-heuristic] Git commit created
+[2025-12-01 17:57:07] [INFO] [record-heuristic] Heuristic recorded successfully: test
+[2025-12-01 17:57:07] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:57:07] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:57:07] [INFO] [record-failure] Script started
+[2025-12-01 17:57:07] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:57:07] [INFO] [record-failure] Recording failure: test$(whoami)data (domain: test, severity: 3)
+[2025-12-01 17:57:07] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_testwhoamidata.md
+[2025-12-01 17:57:07] [INFO] [record-failure] Database record created (ID: 147)
+[2025-12-01 17:57:07] [INFO] [record-failure] Git commit created
+[2025-12-01 17:57:07] [INFO] [record-failure] Failure recorded successfully: test$(whoami)data
+[2025-12-01 17:57:08] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:57:08] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:57:08] [INFO] [record-failure] Script started
+[2025-12-01 17:57:08] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:57:08] [INFO] [record-failure] Recording failure: test`date`data (domain: test, severity: 3)
+[2025-12-01 17:57:08] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_testdatedata.md
+[2025-12-01 17:57:08] [INFO] [record-failure] Database record created (ID: 148)
+[2025-12-01 17:57:08] [INFO] [record-failure] Git commit created
+[2025-12-01 17:57:08] [INFO] [record-failure] Failure recorded successfully: test`date`data
+[2025-12-01 17:57:08] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:57:08] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:57:08] [INFO] [record-failure] Script started
+[2025-12-01 17:57:08] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:57:08] [INFO] [record-failure] Recording failure: test | cat > /tmp/fuzz_test_pwned (domain: test, severity: 3)
+[2025-12-01 17:57:09] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test--cat--tmpfuzztestpwned.md
+[2025-12-01 17:57:09] [INFO] [record-failure] Database record created (ID: 149)
+[2025-12-01 17:57:09] [INFO] [record-failure] Git commit created
+[2025-12-01 17:57:09] [INFO] [record-failure] Failure recorded successfully: test | cat > /tmp/fuzz_test_pwned
+[2025-12-01 17:57:09] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:57:09] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:57:09] [INFO] [record-failure] Script started
+[2025-12-01 17:57:09] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:57:09] [INFO] [record-failure] Recording failure: test; touch /tmp/fuzz_test_hacked; echo done (domain: test, severity: 3)
+[2025-12-01 17:57:09] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test-touch-tmpfuzztesthacked-echo-done.md
+[2025-12-01 17:57:09] [INFO] [record-failure] Database record created (ID: 150)
+[2025-12-01 17:57:10] [INFO] [record-failure] Git commit created
+[2025-12-01 17:57:10] [INFO] [record-failure] Failure recorded successfully: test; touch /tmp/fuzz_test_hacked; echo done
+[2025-12-01 17:57:10] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:57:10] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:57:10] [INFO] [record-failure] Script started
+[2025-12-01 17:57:10] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:57:10] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:57:10] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:57:10] [INFO] [record-failure] Script started
+[2025-12-01 17:57:10] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:57:11] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:57:11] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:57:11] [INFO] [record-failure] Script started
+[2025-12-01 17:57:11] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:57:22] [INFO] [example-script] [corr:00011c22-0d72] user=Evede Script started
+[2025-12-01 17:57:23] [INFO] [example-script] [corr:00011c22-0d72] table=learnings Database query successful
+[2025-12-01 17:57:23] [INFO] [example-script] [corr:00011c22-0d72] timer=main_operation duration_ms=1125 duration_s=1125 status=success Timer completed
+[2025-12-01 17:57:23] [INFO] [example-script] [corr:00011c22-0d72] Script completed successfully
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 1 (domain: testing, severity: 3)
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Starting pre-flight checks
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 8 (domain: testing, severity: 3)
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 5 (domain: testing, severity: 3)
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 2 (domain: testing, severity: 3)
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 3 (domain: testing, severity: 3)
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 4 (domain: testing, severity: 3)
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 9 (domain: testing, severity: 3)
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 7 (domain: testing, severity: 3)
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 6 (domain: testing, severity: 3)
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 10 (domain: testing, severity: 3)
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 11 (domain: testing, severity: 3)
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Pre-flight checks passed
+[2025-12-01 17:58:09] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 13 (domain: testing, severity: 3)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 12 (domain: testing, severity: 3)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 14 (domain: testing, severity: 3)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 17 (domain: testing, severity: 3)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Script started
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 18 (domain: testing, severity: 3)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Running in non-interactive mode
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 15 (domain: testing, severity: 3)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 19 (domain: testing, severity: 3)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 16 (domain: testing, severity: 3)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Recording failure: Concurrency Test Failure 20 (domain: testing, severity: 3)
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-5.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-4.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-1.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-8.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-6.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-2.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-5.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-9.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-4.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-3.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-8.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-7.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-1.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-6.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-2.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-10.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-3.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-9.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-7.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-10.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-11.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-12.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-13.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-17.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-11.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-12.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-14.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-13.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-17.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-19.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-14.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-15.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-18.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-19.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-20.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-15.md
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Atomic write successful: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-16.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-18.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-20.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-16.md
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 151)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 152)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 153)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 154)
+[2025-12-01 17:58:10] [DEBUG] [record-failure-v3] Acquired git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 156)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 155)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 157)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 158)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 159)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 160)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 162)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 161)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 164)
+[2025-12-01 17:58:10] [INFO] [record-failure-v3] Database record created (ID: 163)
+[2025-12-01 17:58:11] [INFO] [record-failure-v3] Database record created (ID: 165)
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] SQLite busy, retry 1/5 (sleeping 0.100559s)...
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] SQLite busy, retry 1/5 (sleeping 0.100559s)...
+[2025-12-01 17:58:11] [INFO] [record-failure-v3] Database record created (ID: 166)
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] SQLite busy, retry 1/5 (sleeping 0.100559s)...
+[2025-12-01 17:58:11] [INFO] [record-failure-v3] Git commit created
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] SQLite busy, retry 1/5 (sleeping 0.145544s)...
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Released git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [ERROR] [record-failure-v3] Database insert failed - invalid ID: '0'
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [ERROR] [record-failure-v3] Database insert failed - invalid ID: '0'
+[2025-12-01 17:58:11] [INFO] [record-failure-v3] Failure recorded successfully: Concurrency Test Failure 5
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Cannot determine lock age, assuming recent
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-8.md
+[2025-12-01 17:58:11] [ERROR] [record-failure-v3] Database insert failed - invalid ID: '0'
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Stale lock detected: /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir (age: 1764633491s, max: 60s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Stale lock detected: /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir (age: 1764633491s, max: 60s)
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Stale lock detected: /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir (age: 1764633491s, max: 60s)
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-11.md
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-13.md
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Lock is stale during acquire attempt, cleaning...
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Lock is stale during acquire attempt, cleaning...
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Lock is stale during acquire attempt, cleaning...
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Acquired git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [INFO] [record-failure-v3] Database record created (ID: 166)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [INFO] [record-failure-v3] Git commit created
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.245544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Released git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.245544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.245544s)
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Stale lock detected: /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir (age: 1764633491s, max: 60s)
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Stale lock detected: /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir (age: 1764633491s, max: 60s)
+[2025-12-01 17:58:11] [INFO] [record-failure-v3] Failure recorded successfully: Concurrency Test Failure 15
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Cannot determine lock age, assuming recent
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Cannot determine lock age, assuming recent
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Lock is stale during acquire attempt, cleaning...
+[2025-12-01 17:58:11] [WARN] [record-failure-v3] Lock is stale during acquire attempt, cleaning...
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.245544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.245544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Acquired git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.245544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.245544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 1 (sleep 0.145544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.245544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.245544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.245544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.245544s)
+[2025-12-01 17:58:11] [INFO] [record-failure-v3] Git commit created
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.245544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.245544s)
+[2025-12-01 17:58:11] [DEBUG] [record-failure-v3] Released git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:12] [INFO] [record-failure-v3] Failure recorded successfully: Concurrency Test Failure 9
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Acquired git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 3 (sleep 0.49051s)
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 2 (sleep 0.29051s)
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 3 (sleep 0.49051s)
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 3 (sleep 0.49051s)
+[2025-12-01 17:58:12] [INFO] [record-failure-v3] Git commit created
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Released git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 3 (sleep 0.49051s)
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 3 (sleep 0.49051s)
+[2025-12-01 17:58:12] [INFO] [record-failure-v3] Failure recorded successfully: Concurrency Test Failure 7
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 3 (sleep 0.49051s)
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Acquired git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:12] [WARN] [record-failure-v3] Cannot determine lock age, assuming recent
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 3 (sleep 0.49051s)
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 3 (sleep 0.49051s)
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 3 (sleep 0.49051s)
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 3 (sleep 0.49051s)
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 3 (sleep 0.49051s)
+[2025-12-01 17:58:12] [INFO] [record-failure-v3] Git commit created
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Released git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Acquired git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:12] [INFO] [record-failure-v3] Failure recorded successfully: Concurrency Test Failure 19
+[2025-12-01 17:58:12] [INFO] [record-failure-v3] Git commit created
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Released git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:12] [INFO] [record-failure-v3] Failure recorded successfully: Concurrency Test Failure 20
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Acquired git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 4 (sleep 0.89051s)
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 4 (sleep 0.89051s)
+[2025-12-01 17:58:12] [INFO] [record-failure-v3] Git commit created
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Released git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:12] [DEBUG] [record-failure-v3] Acquired git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:12] [INFO] [record-failure-v3] Failure recorded successfully: Concurrency Test Failure 4
+[2025-12-01 17:58:13] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 4 (sleep 0.89051s)
+[2025-12-01 17:58:13] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 4 (sleep 0.89051s)
+[2025-12-01 17:58:13] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 4 (sleep 0.89051s)
+[2025-12-01 17:58:13] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 4 (sleep 0.89051s)
+[2025-12-01 17:58:13] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 4 (sleep 0.89051s)
+[2025-12-01 17:58:13] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 4 (sleep 0.823849s)
+[2025-12-01 17:58:13] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 4 (sleep 0.823849s)
+[2025-12-01 17:58:13] [INFO] [record-failure-v3] Git commit created
+[2025-12-01 17:58:13] [DEBUG] [record-failure-v3] Released git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:13] [INFO] [record-failure-v3] Failure recorded successfully: Concurrency Test Failure 18
+[2025-12-01 17:58:13] [DEBUG] [record-failure-v3] Acquired git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:13] [INFO] [record-failure-v3] Git commit created
+[2025-12-01 17:58:13] [DEBUG] [record-failure-v3] Released git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:13] [WARN] [record-failure-v3] Cannot determine lock age, assuming recent
+[2025-12-01 17:58:13] [INFO] [record-failure-v3] Failure recorded successfully: Concurrency Test Failure 6
+[2025-12-01 17:58:13] [DEBUG] [record-failure-v3] Acquired git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:13] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 5 (sleep 1.62385s)
+[2025-12-01 17:58:14] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 5 (sleep 1.69977s)
+[2025-12-01 17:58:14] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 5 (sleep 1.69977s)
+[2025-12-01 17:58:14] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 5 (sleep 1.69977s)
+[2025-12-01 17:58:14] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 5 (sleep 1.69977s)
+[2025-12-01 17:58:14] [INFO] [record-failure-v3] Git commit created
+[2025-12-01 17:58:14] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 5 (sleep 1.69977s)
+[2025-12-01 17:58:14] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 5 (sleep 1.69977s)
+[2025-12-01 17:58:14] [DEBUG] [record-failure-v3] Released git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:14] [INFO] [record-failure-v3] Failure recorded successfully: Concurrency Test Failure 12
+[2025-12-01 17:58:15] [DEBUG] [record-failure-v3] Acquired git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:15] [INFO] [record-failure-v3] Git commit created
+[2025-12-01 17:58:15] [DEBUG] [record-failure-v3] Released git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:15] [INFO] [record-failure-v3] Failure recorded successfully: Concurrency Test Failure 1
+[2025-12-01 17:58:15] [DEBUG] [record-failure-v3] Acquired git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:16] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 6 (sleep 2.0s)
+[2025-12-01 17:58:16] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 6 (sleep 2.0s)
+[2025-12-01 17:58:16] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 6 (sleep 2.0s)
+[2025-12-01 17:58:16] [INFO] [record-failure-v3] Git commit created
+[2025-12-01 17:58:16] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 6 (sleep 2.0s)
+[2025-12-01 17:58:16] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 6 (sleep 2.0s)
+[2025-12-01 17:58:16] [DEBUG] [record-failure-v3] Released git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:16] [INFO] [record-failure-v3] Failure recorded successfully: Concurrency Test Failure 3
+[2025-12-01 17:58:18] [DEBUG] [record-failure-v3] Acquired git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:18] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 7 (sleep 2.0s)
+[2025-12-01 17:58:18] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 7 (sleep 2.0s)
+[2025-12-01 17:58:18] [INFO] [record-failure-v3] Git commit created
+[2025-12-01 17:58:18] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 7 (sleep 2.0s)
+[2025-12-01 17:58:18] [DEBUG] [record-failure-v3] Waiting for git lock: attempt 7 (sleep 2.0s)
+[2025-12-01 17:58:18] [DEBUG] [record-failure-v3] Released git lock (mkdir): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:18] [INFO] [record-failure-v3] Failure recorded successfully: Concurrency Test Failure 2
+[2025-12-01 17:58:20] [ERROR] [record-failure-v3] Failed to acquire git lock (timeout): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:20] [ERROR] [record-failure-v3] Failed to acquire git lock (timeout): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:20] [ERROR] [record-failure-v3] Could not acquire git lock - rolling back
+[2025-12-01 17:58:20] [ERROR] [record-failure-v3] Failed to acquire git lock (timeout): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:20] [ERROR] [record-failure-v3] Could not acquire git lock - rolling back
+[2025-12-01 17:58:20] [WARN] [record-failure-v3] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-10.md
+[2025-12-01 17:58:20] [ERROR] [record-failure-v3] Failed to acquire git lock (timeout): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
+[2025-12-01 17:58:20] [ERROR] [record-failure-v3] Could not acquire git lock - rolling back
+[2025-12-01 17:58:20] [WARN] [record-failure-v3] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-14.md
+[2025-12-01 17:58:20] [ERROR] [record-failure-v3] Could not acquire git lock - rolling back
+[2025-12-01 17:58:20] [WARN] [record-failure-v3] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-16.md
+[2025-12-01 17:58:20] [WARN] [record-failure-v3] Rolling back: removing DB record 160
+[2025-12-01 17:58:20] [WARN] [record-failure-v3] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-17.md
+[2025-12-01 17:58:20] [WARN] [record-failure-v3] Rolling back: removing DB record 161
+[2025-12-01 17:58:20] [WARN] [record-failure-v3] Rolling back: removing DB record 166
+[2025-12-01 17:58:20] [WARN] [record-failure-v3] Rolling back: removing DB record 162
+[2025-12-01 17:59:58] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:59:58] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:59:58] [INFO] [record-failure] Script started
+[2025-12-01 17:59:58] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:59:58] [INFO] [record-failure] Recording failure: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (domain: test, severity: 3)
+[2025-12-01 17:59:58] [ERROR] [record-failure] Title exceeds maximum length (500 characters, got 600)
+[2025-12-01 17:59:58] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 17:59:58] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 17:59:58] [INFO] [record-failure] Script started
+[2025-12-01 17:59:58] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 17:59:58] [INFO] [record-failure] Recording failure:     (domain: test, severity: 3)
+[2025-12-01 17:59:58] [ERROR] [record-failure] Title cannot be empty (or whitespace-only)
+[2025-12-01 18:00:16] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:00:16] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:00:16] [INFO] [record-failure] Script started
+[2025-12-01 18:00:16] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:00:16] [INFO] [record-failure] Recording failure: Midnight Test 1764633616 (domain: time-testing, severity: 1)
+[2025-12-01 18:00:16] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_midnight-test-1764633616.md
+[2025-12-01 18:00:16] [INFO] [record-failure] Database record created (ID: 167)
+[2025-12-01 18:00:16] [INFO] [record-failure] Git commit created
+[2025-12-01 18:00:16] [INFO] [record-failure] Failure recorded successfully: Midnight Test 1764633616
+[2025-12-01 18:00:17] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:00:17] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:00:17] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:00:17] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:00:17] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:00:17] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:00:17] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:00:17] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:00:17] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:00:17] [INFO] [record-failure] Script started
+[2025-12-01 18:00:17] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:00:17] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:00:17] [INFO] [record-failure] Script started
+[2025-12-01 18:00:17] [INFO] [record-failure] Script started
+[2025-12-01 18:00:17] [INFO] [record-failure] Script started
+[2025-12-01 18:00:17] [INFO] [record-failure] Recording failure: Rapid Test 1 (domain: time-testing, severity: 1)
+[2025-12-01 18:00:17] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:00:17] [INFO] [record-failure] Script started
+[2025-12-01 18:00:17] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:00:17] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:00:17] [INFO] [record-failure] Recording failure: Rapid Test 4 (domain: time-testing, severity: 1)
+[2025-12-01 18:00:17] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:00:17] [INFO] [record-failure] Recording failure: Rapid Test 2 (domain: time-testing, severity: 1)
+[2025-12-01 18:00:17] [INFO] [record-failure] Recording failure: Rapid Test 3 (domain: time-testing, severity: 1)
+[2025-12-01 18:00:17] [INFO] [record-failure] Recording failure: Rapid Test 5 (domain: time-testing, severity: 1)
+[2025-12-01 18:00:17] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rapid-test-1.md
+[2025-12-01 18:00:17] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rapid-test-4.md
+[2025-12-01 18:00:17] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rapid-test-2.md
+[2025-12-01 18:00:17] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rapid-test-3.md
+[2025-12-01 18:00:17] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rapid-test-5.md
+[2025-12-01 18:00:17] [INFO] [record-failure] Database record created (ID: 169)
+[2025-12-01 18:00:17] [INFO] [record-failure] Database record created (ID: 168)
+[2025-12-01 18:00:17] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:00:17] [INFO] [record-failure] Database record created (ID: 170)
+[2025-12-01 18:00:17] [INFO] [record-failure] Database record created (ID: 171)
+[2025-12-01 18:00:17] [INFO] [record-failure] Git commit created
+[2025-12-01 18:00:17] [INFO] [record-failure] Failure recorded successfully: Rapid Test 1
+[2025-12-01 18:00:17] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:00:17] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_rapid-test-2.md
+[2025-12-01 18:00:18] [INFO] [record-failure] Git commit created
+[2025-12-01 18:00:18] [INFO] [record-failure] Failure recorded successfully: Rapid Test 4
+[2025-12-01 18:00:19] [INFO] [record-failure] Git commit created
+[2025-12-01 18:00:19] [INFO] [record-failure] Failure recorded successfully: Rapid Test 3
+[2025-12-01 18:00:20] [INFO] [record-failure] Git commit created
+[2025-12-01 18:00:20] [INFO] [record-failure] Failure recorded successfully: Rapid Test 5
+[2025-12-01 18:01:04] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:01:04] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:01:04] [INFO] [record-failure] Script started
+[2025-12-01 18:01:04] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:01:04] [INFO] [record-failure] Recording failure: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (domain: test, severity: 3)
+[2025-12-01 18:01:04] [ERROR] [record-failure] Title exceeds maximum length (500 characters, got 600)
+[2025-12-01 18:01:04] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:01:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:01:05] [INFO] [record-failure] Script started
+[2025-12-01 18:01:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:01:05] [INFO] [record-failure] Recording failure: test (domain: test, severity: 3)
+[2025-12-01 18:01:05] [ERROR] [record-failure] Summary exceeds maximum length (50000 characters, got 60000)
+[2025-12-01 18:01:05] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:01:05] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:01:05] [INFO] [record-failure] Script started
+[2025-12-01 18:01:05] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:01:05] [INFO] [record-failure] Recording failure: test (domain: domaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomain, severity: 3)
+[2025-12-01 18:01:05] [ERROR] [record-failure] Domain exceeds maximum length (100 characters)
+[2025-12-01 18:01:05] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 18:01:05] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 18:01:05] [INFO] [record-heuristic] Script started
+[2025-12-01 18:01:05] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 18:01:05] [INFO] [record-heuristic] Recording heuristic: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC (domain: test, confidence: 0.7)
+[2025-12-01 18:01:05] [ERROR] [record-heuristic] Rule exceeds maximum length (500 characters, got 600)
+[2025-12-01 18:01:06] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:01:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:01:06] [INFO] [record-failure] Script started
+[2025-12-01 18:01:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:01:06] [INFO] [record-failure] Recording failure:       (domain: test, severity: 3)
+[2025-12-01 18:01:06] [ERROR] [record-failure] Title cannot be empty (or whitespace-only)
+[2025-12-01 18:01:06] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:01:06] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:01:06] [INFO] [record-failure] Script started
+[2025-12-01 18:01:06] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:01:06] [INFO] [record-failure] Recording failure: test (domain: 			, severity: 3)
+[2025-12-01 18:01:06] [ERROR] [record-failure] Domain cannot be empty (or whitespace-only)
+[2025-12-01 18:01:06] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 18:01:06] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 18:01:06] [INFO] [record-heuristic] Script started
+[2025-12-01 18:01:06] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 18:01:06] [INFO] [record-heuristic] Recording heuristic:       (domain: test, confidence: 0.7)
+[2025-12-01 18:01:06] [ERROR] [record-heuristic] Rule cannot be empty (or whitespace-only)
+[2025-12-01 18:01:07] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:01:07] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:01:07] [INFO] [record-failure] Script started
+[2025-12-01 18:01:07] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:01:07] [INFO] [record-failure] Recording failure: test'; DELETE FROM learnings; -- (domain: test, severity: 3)
+[2025-12-01 18:01:08] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test-delete-from-learnings---.md
+[2025-12-01 18:01:08] [INFO] [record-failure] Database record created (ID: 172)
+[2025-12-01 18:01:08] [INFO] [record-failure] Git commit created
+[2025-12-01 18:01:08] [INFO] [record-failure] Failure recorded successfully: test'; DELETE FROM learnings; --
+[2025-12-01 18:01:08] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:01:08] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:01:08] [INFO] [record-failure] Script started
+[2025-12-01 18:01:08] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:01:08] [INFO] [record-failure] Recording failure: test; touch /tmp/hardening_test_file (domain: test, severity: 3)
+[2025-12-01 18:01:08] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test-touch-tmphardeningtestfile.md
+[2025-12-01 18:01:09] [INFO] [record-failure] Database record created (ID: 173)
+[2025-12-01 18:01:09] [INFO] [record-failure] Git commit created
+[2025-12-01 18:01:09] [INFO] [record-failure] Failure recorded successfully: test; touch /tmp/hardening_test_file
+[2025-12-01 18:01:09] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:01:09] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:01:09] [INFO] [record-failure] Script started
+[2025-12-01 18:01:09] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:01:09] [INFO] [record-failure] Recording failure: DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD (domain: test, severity: 3)
+[2025-12-01 18:01:09] [ERROR] [record-failure] Script failed at line 303
+[2025-12-01 18:01:10] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:01:10] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:01:10] [INFO] [record-failure] Script started
+[2025-12-01 18:01:10] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:01:10] [INFO] [record-failure] Recording failure: EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE (domain: test, severity: 3)
+[2025-12-01 18:01:10] [ERROR] [record-failure] Title exceeds maximum length (500 characters, got 501)
+[2025-12-01 18:01:10] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:01:10] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:01:10] [INFO] [record-failure] Script started
+[2025-12-01 18:01:10] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:01:10] [INFO] [record-failure] Recording failure: ​                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         (domain: test, severity: 3)
+[2025-12-01 18:01:10] [ERROR] [record-failure] Title exceeds maximum length (500 characters, got 601)
+[2025-12-01 18:01:55] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 18:01:55] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 18:01:55] [INFO] [record-heuristic] Script started
+[2025-12-01 18:01:55] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 18:01:55] [INFO] [record-heuristic] Recording heuristic: test (domain: ../../../tmp/evil, confidence: 0.7)
+[2025-12-01 18:01:55] [WARN] [record-heuristic] SECURITY: Domain sanitized from '../../../tmp/evil' to 'tmpevil'
+[2025-12-01 18:01:55] [INFO] [record-heuristic] Database record created (ID: 78)
+[2025-12-01 18:01:55] [INFO] [record-heuristic] Created new domain file: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/tmpevil.md
+[2025-12-01 18:01:55] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/tmpevil.md
+[2025-12-01 18:01:55] [INFO] [record-heuristic] Git commit created
+[2025-12-01 18:01:55] [INFO] [record-heuristic] Heuristic recorded successfully: test
+[2025-12-01 18:02:16] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:02:16] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:02:16] [INFO] [record-failure] Script started
+[2025-12-01 18:02:16] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:02:16] [INFO] [record-failure] Recording failure: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (domain: test, severity: 3)
+[2025-12-01 18:02:16] [ERROR] [record-failure] Title exceeds maximum length (500 characters, got 600)
+[2025-12-01 18:02:17] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:02:17] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:02:17] [INFO] [record-failure] Script started
+[2025-12-01 18:02:17] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:02:17] [INFO] [record-failure] Recording failure: test (domain: test, severity: 3)
+[2025-12-01 18:02:17] [ERROR] [record-failure] Summary exceeds maximum length (50000 characters, got 60000)
+[2025-12-01 18:02:17] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:02:17] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:02:17] [INFO] [record-failure] Script started
+[2025-12-01 18:02:17] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:02:17] [INFO] [record-failure] Recording failure: test (domain: domaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomaindomain, severity: 3)
+[2025-12-01 18:02:17] [ERROR] [record-failure] Domain exceeds maximum length (100 characters)
+[2025-12-01 18:02:17] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 18:02:17] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 18:02:17] [INFO] [record-heuristic] Script started
+[2025-12-01 18:02:17] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 18:02:17] [INFO] [record-heuristic] Recording heuristic: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC (domain: test, confidence: 0.7)
+[2025-12-01 18:02:17] [ERROR] [record-heuristic] Rule exceeds maximum length (500 characters, got 600)
+[2025-12-01 18:02:18] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:02:18] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:02:18] [INFO] [record-failure] Script started
+[2025-12-01 18:02:18] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:02:18] [INFO] [record-failure] Recording failure:       (domain: test, severity: 3)
+[2025-12-01 18:02:18] [ERROR] [record-failure] Title cannot be empty (or whitespace-only)
+[2025-12-01 18:02:18] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:02:18] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:02:18] [INFO] [record-failure] Script started
+[2025-12-01 18:02:18] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:02:18] [INFO] [record-failure] Recording failure: test (domain: 			, severity: 3)
+[2025-12-01 18:02:18] [ERROR] [record-failure] Domain cannot be empty (or whitespace-only)
+[2025-12-01 18:02:18] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 18:02:18] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 18:02:18] [INFO] [record-heuristic] Script started
+[2025-12-01 18:02:19] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 18:02:19] [INFO] [record-heuristic] Recording heuristic:       (domain: test, confidence: 0.7)
+[2025-12-01 18:02:19] [ERROR] [record-heuristic] Rule cannot be empty (or whitespace-only)
+[2025-12-01 18:02:20] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:02:20] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:02:20] [INFO] [record-failure] Script started
+[2025-12-01 18:02:20] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:02:20] [INFO] [record-failure] Recording failure: test'; DELETE FROM learnings; -- (domain: test, severity: 3)
+[2025-12-01 18:02:20] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test-delete-from-learnings---.md
+[2025-12-01 18:02:20] [INFO] [record-failure] Database record created (ID: 174)
+[2025-12-01 18:02:20] [INFO] [record-failure] Git commit created
+[2025-12-01 18:02:20] [INFO] [record-failure] Failure recorded successfully: test'; DELETE FROM learnings; --
+[2025-12-01 18:02:20] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:02:20] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:02:20] [INFO] [record-failure] Script started
+[2025-12-01 18:02:21] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:02:21] [INFO] [record-failure] Recording failure: test; touch /tmp/hardening_test_file (domain: test, severity: 3)
+[2025-12-01 18:02:21] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test-touch-tmphardeningtestfile.md
+[2025-12-01 18:02:21] [INFO] [record-failure] Database record created (ID: 175)
+[2025-12-01 18:02:21] [INFO] [record-failure] Git commit created
+[2025-12-01 18:02:21] [INFO] [record-failure] Failure recorded successfully: test; touch /tmp/hardening_test_file
+[2025-12-01 18:02:21] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:02:21] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:02:21] [INFO] [record-failure] Script started
+[2025-12-01 18:02:21] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:02:21] [INFO] [record-failure] Recording failure: DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD (domain: test, severity: 3)
+[2025-12-01 18:02:22] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd.md
+[2025-12-01 18:02:22] [INFO] [record-failure] Database record created (ID: 176)
+[2025-12-01 18:02:22] [INFO] [record-failure] Git commit created
+[2025-12-01 18:02:22] [INFO] [record-failure] Failure recorded successfully: DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+[2025-12-01 18:02:22] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:02:22] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:02:22] [INFO] [record-failure] Script started
+[2025-12-01 18:02:22] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:02:22] [INFO] [record-failure] Recording failure: EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE (domain: test, severity: 3)
+[2025-12-01 18:02:22] [ERROR] [record-failure] Title exceeds maximum length (500 characters, got 501)
+[2025-12-01 18:02:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:02:23] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:02:23] [INFO] [record-failure] Script started
+[2025-12-01 18:02:23] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:02:23] [INFO] [record-failure] Recording failure: ​                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         (domain: test, severity: 3)
+[2025-12-01 18:02:23] [ERROR] [record-failure] Title exceeds maximum length (500 characters, got 601)
+[2025-12-01 18:04:16] [INFO] [test-observability] [corr:000141cc-0f10] test=1 component=logging Logging test started
+[2025-12-01 18:04:16] [WARN] [test-observability] [corr:000141cc-0f10] severity=low Warning message test
+[2025-12-01 18:04:16] [ERROR] [test-observability] [corr:000141cc-0f10] recoverable=true Error message test (non-fatal)
+[2025-12-01 18:04:17] [INFO] [test-observability] [corr:000141cc-0f10] timer=test_timer duration_ms=551 duration_s=551 status=success Timer completed
+[2025-12-01 18:04:17] [INFO] [health-check] [corr:000141fa-0f11] Starting health check
+[2025-12-01 18:04:18] [WARN] [health-check] [corr:000141fa-0f11] Uncommitted changes detected
+[2025-12-01 18:04:18] [ERROR] [health-check] [corr:000141fa-0f11] count=188 High error rate detected
+[2025-12-01 18:04:23] [INFO] [sync-db-markdown] Error handling library loaded (version 1.0.0)
+[2025-12-01 18:04:23] [INFO] [sync-db-markdown] Script started
+[2025-12-01 18:04:23] [INFO] [sync-db-markdown] Running in false mode (verbose: false)
+[2025-12-01 18:04:23] [INFO] [sync-db-markdown] Starting pre-flight checks
+[2025-12-01 18:04:23] [INFO] [sync-db-markdown] Dependency check passed: sqlite3
+[2025-12-01 18:04:23] [INFO] [sync-db-markdown] File exists: /c/Users/Evede/.claude/emergent-learning/memory/index.db
+[2025-12-01 18:04:23] [INFO] [sync-db-markdown] File exists: /c/Users/Evede/.claude/emergent-learning/memory/index.db
+[2025-12-01 18:04:23] [INFO] [sync-db-markdown] Database integrity check passed: /c/Users/Evede/.claude/emergent-learning/memory/index.db
+[2025-12-01 18:04:23] [SUCCESS] [sync-db-markdown] Pre-flight checks passed
+[2025-12-01 18:04:23] [INFO] [sync-db-markdown] SQLite operation succeeded (attempt 1/5)
+[2025-12-01 18:04:23] [INFO] [sync-db-markdown] SQLite operation succeeded (attempt 1/5)
+[2025-12-01 18:04:24] [INFO] [sync-db-markdown] SQLite operation succeeded (attempt 1/5)
+[2025-12-01 18:04:24] [INFO] [sync-db-markdown] SQLite operation succeeded (attempt 1/5)
+[2025-12-01 18:04:24] [INFO] [sync-db-markdown] SQLite operation succeeded (attempt 1/5)
+[2025-12-01 18:04:24] [INFO] [sync-db-markdown] SQLite operation succeeded (attempt 1/5)
+[2025-12-01 18:04:24] [INFO] [sync-db-markdown] SQLite operation succeeded (attempt 1/5)
+[2025-12-01 18:04:24] [FATAL] [sync-db-markdown] Script failed at line 281 (exit code: 1)
+[2025-12-01 18:04:24] [INFO] [sync-db-markdown] Running cleanup functions (0 registered)
+[2025-12-01 18:04:24] [INFO] [sync-db-markdown] Running cleanup functions (0 registered)
+[2025-12-01 18:04:30] [INFO] [test-observability] [corr:0001433a-0f1e] test=1 component=logging Logging test started
+[2025-12-01 18:04:30] [WARN] [test-observability] [corr:0001433a-0f1e] severity=low Warning message test
+[2025-12-01 18:04:30] [ERROR] [test-observability] [corr:0001433a-0f1e] recoverable=true Error message test (non-fatal)
+[2025-12-01 18:04:31] [INFO] [test-observability] [corr:0001433a-0f1e] timer=test_timer duration_ms=547 duration_s=547 status=success Timer completed
+[2025-12-01 18:04:31] [INFO] [health-check] [corr:00014375-0f1f] Starting health check
+[2025-12-01 18:04:32] [WARN] [health-check] [corr:00014375-0f1f] Uncommitted changes detected
+[2025-12-01 18:04:32] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:04:32] [ERROR] [health-check] [corr:00014375-0f1f] count=191 High error rate detected
+[2025-12-01 18:04:32] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:04:32] [INFO] [record-failure] Script started
+[2025-12-01 18:04:32] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:04:32] [INFO] [record-failure] Recording failure: Domain path traversal vulnerability in record-heuristic.sh (domain: security, severity: 5)
+[2025-12-01 18:04:32] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_domain-path-traversal-vulnerability-in-record-heuristicsh.md
+[2025-12-01 18:04:32] [INFO] [record-failure] Database record created (ID: 177)
+[2025-12-01 18:04:32] [INFO] [record-failure] Git commit created
+[2025-12-01 18:04:32] [INFO] [record-failure] Failure recorded successfully: Domain path traversal vulnerability in record-heuristic.sh
+[2025-12-01 18:04:46] [INFO] [test-observability] [corr:000144eb-0f2e] test=1 component=logging Logging test started
+[2025-12-01 18:04:46] [WARN] [test-observability] [corr:000144eb-0f2e] severity=low Warning message test
+[2025-12-01 18:04:46] [ERROR] [test-observability] [corr:000144eb-0f2e] recoverable=true Error message test (non-fatal)
+[2025-12-01 18:04:46] [INFO] [test-observability] [corr:000144eb-0f2e] timer=test_timer duration_ms=560 duration_s=560 status=success Timer completed
+[2025-12-01 18:04:47] [INFO] [health-check] [corr:0001451c-0f2f] Starting health check
+[2025-12-01 18:04:47] [WARN] [health-check] [corr:0001451c-0f2f] Uncommitted changes detected
+[2025-12-01 18:04:48] [ERROR] [health-check] [corr:0001451c-0f2f] count=193 High error rate detected
+[2025-12-01 18:04:48] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 18:04:48] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 18:04:48] [INFO] [record-heuristic] Script started
+[2025-12-01 18:04:48] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 18:04:48] [INFO] [record-heuristic] Recording heuristic: Always sanitize user input used in file paths - use character whitelisting not blacklisting (domain: security, confidence: 0.95)
+[2025-12-01 18:04:48] [INFO] [record-heuristic] Database record created (ID: 79)
+[2025-12-01 18:04:49] [INFO] [record-heuristic] Created new domain file: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/security.md
+[2025-12-01 18:04:49] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/security.md
+[2025-12-01 18:04:49] [INFO] [record-heuristic] Git commit created
+[2025-12-01 18:04:49] [INFO] [record-heuristic] Heuristic recorded successfully: Always sanitize user input used in file paths - use character whitelisting not blacklisting

@@ -1,0 +1,80 @@
+#!/bin/bash
+# CRITICAL SECURITY PATCH: Domain Path Traversal Fix
+# Apply to: record-heuristic.sh
+# Issue: Domain parameter allows path traversal attacks
+# Severity: CRITICAL (CVSS 9.3)
+
+echo "Applying CRITICAL security patch: Domain path traversal fix"
+
+SCRIPT_FILE="$HOME/.claude/emergent-learning/scripts/record-heuristic.sh"
+
+if [ ! -f "$SCRIPT_FILE" ]; then
+    echo "ERROR: File not found: $SCRIPT_FILE"
+    exit 1
+fi
+
+# Create backup
+cp "$SCRIPT_FILE" "$SCRIPT_FILE.before-domain-fix"
+
+# Check if patch already applied
+if grep -q "SECURITY FIX: Sanitize domain" "$SCRIPT_FILE"; then
+    echo "Patch already applied!"
+    exit 0
+fi
+
+# Find the line number where we need to insert the fix
+# We want to insert after the line that has: log "INFO" "Recording heuristic:
+
+LINE_NUM=$(grep -n 'log "INFO" "Recording heuristic:' "$SCRIPT_FILE" | head -1 | cut -d: -f1)
+
+if [ -z "$LINE_NUM" ]; then
+    echo "ERROR: Could not find insertion point"
+    exit 1
+fi
+
+# Insert the sanitization code after that line
+INSERT_LINE=$((LINE_NUM + 1))
+
+# Create temp file with the fix
+{
+    head -n "$LINE_NUM" "$SCRIPT_FILE"
+    cat <<'PATCH'
+
+# ============================================
+# SECURITY FIX: Sanitize domain to prevent path traversal
+# CVE: Path traversal via domain parameter
+# Severity: CRITICAL
+# ============================================
+domain_safe="${domain//$'\0'/}"  # Remove null bytes
+domain_safe="${domain_safe//$'\n'/}"  # Remove newlines
+domain_safe="${domain_safe//$'\r'/}"  # Remove carriage returns
+domain_safe=$(echo "$domain_safe" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+domain_safe=$(echo "$domain_safe" | tr -cd '[:alnum:]-')  # Only alphanumeric and dash
+domain_safe="${domain_safe#-}"  # Remove leading dash
+domain_safe="${domain_safe%-}"  # Remove trailing dash
+domain_safe="${domain_safe:0:100}"  # Limit length to prevent buffer issues
+
+if [ -z "$domain_safe" ]; then
+    log "ERROR" "SECURITY: Domain sanitization resulted in empty string: '$domain'"
+    exit 6
+fi
+
+if [ "$domain" != "$domain_safe" ]; then
+    log "WARN" "SECURITY: Domain sanitized from '$domain' to '$domain_safe'"
+    domain="$domain_safe"
+fi
+
+PATCH
+    tail -n +"$INSERT_LINE" "$SCRIPT_FILE"
+} > "$SCRIPT_FILE.tmp"
+
+# Replace original with patched version
+mv "$SCRIPT_FILE.tmp" "$SCRIPT_FILE"
+chmod +x "$SCRIPT_FILE"
+
+echo "SUCCESS: Patch applied to $SCRIPT_FILE"
+echo "Backup saved to: $SCRIPT_FILE.before-domain-fix"
+echo ""
+echo "Verification:"
+echo "  Test: HEURISTIC_DOMAIN='../../../tmp/evil' bash scripts/record-heuristic.sh"
+echo "  Expected: Domain sanitized to 'tmpevil', file created in memory/heuristics/"

@@ -1,0 +1,107 @@
+#!/bin/bash
+# MEDIUM SECURITY PATCH: Hardlink Attack Protection
+# Apply to: record-failure.sh, record-heuristic.sh, start-experiment.sh
+# Issue: Files not checked for hardlinks before overwrite
+# Severity: MEDIUM (CVSS 5.4)
+
+echo "Applying MEDIUM security patch: Hardlink attack protection"
+
+# Function to patch a file
+patch_file() {
+    local SCRIPT_FILE="$1"
+    local FILE_WRITE_PATTERN="$2"
+
+    if [ ! -f "$SCRIPT_FILE" ]; then
+        echo "WARNING: File not found: $SCRIPT_FILE"
+        return 1
+    fi
+
+    # Create backup
+    cp "$SCRIPT_FILE" "$SCRIPT_FILE.before-hardlink-fix"
+
+    # Check if patch already applied
+    if grep -q "SECURITY FIX: Hardlink attack protection" "$SCRIPT_FILE"; then
+        echo "Patch already applied to $(basename $SCRIPT_FILE)!"
+        return 0
+    fi
+
+    # Find line number of the file write operation
+    LINE_NUM=$(grep -n "$FILE_WRITE_PATTERN" "$SCRIPT_FILE" | head -1 | cut -d: -f1)
+
+    if [ -z "$LINE_NUM" ]; then
+        echo "ERROR: Could not find file write pattern in $(basename $SCRIPT_FILE)"
+        return 1
+    fi
+
+    # Insert hardlink check right before file write
+    INSERT_LINE=$((LINE_NUM - 1))
+
+    # Create patched version
+    {
+        head -n "$INSERT_LINE" "$SCRIPT_FILE"
+        cat <<'PATCH'
+
+# ============================================
+# SECURITY FIX: Hardlink attack protection
+# CVE: Hardlink-based file overwrite attack
+# Severity: MEDIUM
+# ============================================
+check_hardlink_attack() {
+    local filepath="$1"
+
+    # If file doesn't exist yet, it's safe
+    [ ! -f "$filepath" ] && return 0
+
+    # Get number of hardlinks to this file
+    local link_count
+    if command -v stat &> /dev/null; then
+        # Try Linux format first
+        link_count=$(stat -c '%h' "$filepath" 2>/dev/null)
+        # If that fails, try macOS/BSD format
+        if [ $? -ne 0 ]; then
+            link_count=$(stat -f '%l' "$filepath" 2>/dev/null)
+        fi
+    else
+        # stat not available, can't check
+        log "WARN" "SECURITY: Cannot check hardlinks (stat unavailable)"
+        return 0
+    fi
+
+    # If file has more than 1 link, it's a potential hardlink attack
+    if [ -n "$link_count" ] && [ "$link_count" -gt 1 ]; then
+        log "ERROR" "SECURITY: File has $link_count hardlinks (attack suspected): $filepath"
+        log "ERROR" "SECURITY: Refusing to overwrite file with multiple hardlinks"
+        return 1
+    fi
+
+    return 0
+}
+
+if ! check_hardlink_attack "$filepath"; then
+    exit 6
+fi
+
+PATCH
+        tail -n +"$LINE_NUM" "$SCRIPT_FILE"
+    } > "$SCRIPT_FILE.tmp"
+
+    # Replace original
+    mv "$SCRIPT_FILE.tmp" "$SCRIPT_FILE"
+    chmod +x "$SCRIPT_FILE"
+
+    echo "SUCCESS: Hardlink patch applied to $(basename $SCRIPT_FILE)"
+}
+
+# Apply to all vulnerable scripts
+BASE_DIR="$HOME/.claude/emergent-learning/scripts"
+
+patch_file "$BASE_DIR/record-failure.sh" "cat > \"\$filepath\""
+patch_file "$BASE_DIR/record-heuristic.sh" "cat >> \"\$domain_file\""
+
+echo ""
+echo "All hardlink patches applied!"
+echo "Backups saved with .before-hardlink-fix extension"
+echo ""
+echo "Verification:"
+echo "  Test: touch file1.md; ln file1.md file2.md; run script to overwrite file1.md"
+echo "  Expected: Script exits with 'SECURITY: File has 2 hardlinks'"

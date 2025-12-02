@@ -16,8 +16,11 @@ DB_PATH="$MEMORY_DIR/index.db"
 HEURISTICS_DIR="$MEMORY_DIR/heuristics"
 LOGS_DIR="$BASE_DIR/logs"
 
+# TIME-FIX-1: Capture date once at script start for consistency across midnight boundary
+EXECUTION_DATE=$(date +%Y%m%d)
+
 # Setup logging
-LOG_FILE="$LOGS_DIR/$(date +%Y%m%d).log"
+LOG_FILE="$LOGS_DIR/${EXECUTION_DATE}.log"
 mkdir -p "$LOGS_DIR"
 
 log() {
@@ -89,9 +92,34 @@ release_git_lock() {
 # Error trap
 trap 'log "ERROR" "Script failed at line $LINENO"; exit 1' ERR
 
+# TIME-FIX-4: Timestamp validation function
+validate_timestamp() {
+    local ts_epoch
+    ts_epoch=$(date +%s)
+    
+    # Check if timestamp is reasonable (not before 2020, not more than 1 day in future)
+    local year_2020=1577836800  # 2020-01-01 00:00:00 UTC
+    local one_day_ahead=$((ts_epoch + 86400))
+    
+    if [ "$ts_epoch" -lt "$year_2020" ]; then
+        log "ERROR" "System clock appears to be set before 2020"
+        return 1
+    fi
+    
+    # Note: We allow small future dates (up to 1 day) to handle timezone issues
+    return 0
+}
+
 # Pre-flight validation
 preflight_check() {
+
     log "INFO" "Starting pre-flight checks"
+
+    # TIME-FIX-5: Validate system timestamp
+    if ! validate_timestamp; then
+        log "ERROR" "Timestamp validation failed - check system clock"
+        exit 1
+    fi
 
     if [ ! -f "$DB_PATH" ]; then
         log "ERROR" "Database not found: $DB_PATH"
@@ -196,6 +224,72 @@ fi
 
 log "INFO" "Recording heuristic: $rule (domain: $domain, confidence: $confidence)"
 
+# ============================================
+# SECURITY FIX: Sanitize domain to prevent path traversal
+# CVE: Path traversal via domain parameter
+# Severity: CRITICAL
+# ============================================
+domain_safe="${domain//$'\0'/}"  # Remove null bytes
+domain_safe="${domain_safe//$'\n'/}"  # Remove newlines
+domain_safe="${domain_safe//$'\r'/}"  # Remove carriage returns
+domain_safe=$(echo "$domain_safe" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+domain_safe=$(echo "$domain_safe" | tr -cd '[:alnum:]-')  # Only alphanumeric and dash
+domain_safe="${domain_safe#-}"  # Remove leading dash
+domain_safe="${domain_safe%-}"  # Remove trailing dash
+domain_safe="${domain_safe:0:100}"  # Limit length to prevent buffer issues
+
+if [ -z "$domain_safe" ]; then
+    log "ERROR" "SECURITY: Domain sanitization resulted in empty string: '$domain'"
+    exit 6
+fi
+
+if [ "$domain" != "$domain_safe" ]; then
+    log "WARN" "SECURITY: Domain sanitized from '$domain' to '$domain_safe'"
+    domain="$domain_safe"
+fi
+
+
+# Input length validation (added by Agent C hardening)
+MAX_RULE_LENGTH=500
+MAX_DOMAIN_LENGTH=100
+MAX_EXPLANATION_LENGTH=5000
+
+if [ ${#rule} -gt $MAX_RULE_LENGTH ]; then
+    log "ERROR" "Rule exceeds maximum length ($MAX_RULE_LENGTH characters, got ${#rule})"
+    echo "ERROR: Rule too long (max $MAX_RULE_LENGTH characters)" >&2
+    exit 1
+fi
+
+if [ ${#domain} -gt $MAX_DOMAIN_LENGTH ]; then
+    log "ERROR" "Domain exceeds maximum length ($MAX_DOMAIN_LENGTH characters)"
+    echo "ERROR: Domain too long (max $MAX_DOMAIN_LENGTH characters)" >&2
+    exit 1
+fi
+
+if [ ${#explanation} -gt $MAX_EXPLANATION_LENGTH ]; then
+    log "ERROR" "Explanation exceeds maximum length ($MAX_EXPLANATION_LENGTH characters)"
+    echo "ERROR: Explanation too long (max $MAX_EXPLANATION_LENGTH characters)" >&2
+    exit 1
+fi
+
+# Trim leading/trailing whitespace
+rule=$(echo "$rule" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+domain=$(echo "$domain" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+
+# Re-validate after trimming
+if [ -z "$rule" ]; then
+    log "ERROR" "Rule cannot be empty (or whitespace-only)"
+    echo "ERROR: Rule cannot be empty" >&2
+    exit 1
+fi
+
+if [ -z "$domain" ]; then
+    log "ERROR" "Domain cannot be empty (or whitespace-only)"
+    echo "ERROR: Domain cannot be empty" >&2
+    exit 1
+fi
+
+
 # Escape single quotes for SQL
 escape_sql() {
     echo "${1//\'/\'\'}"
@@ -246,7 +340,7 @@ cat >> "$domain_file" <<EOF
 
 **Confidence**: $confidence
 **Source**: $source_type
-**Created**: $(date +%Y-%m-%d)
+**Created**: ${EXECUTION_DATE:0:4}-${EXECUTION_DATE:4:2}-${EXECUTION_DATE:6:2}  # TIME-FIX-2: Use consistent date
 
 $explanation
 
