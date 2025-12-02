@@ -1,0 +1,5 @@
+ALERT: warning
+TIME: 2025-12-02T00:29:13Z
+MESSAGE: Demo warning - resource usage high
+CONTEXT: cpu=75% correlation_id=000192bb-14e4 
+STATUS: active

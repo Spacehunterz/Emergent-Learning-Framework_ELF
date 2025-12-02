@@ -1,0 +1,60 @@
+
+--- Item 1 ---
+id: 184
+type: failure
+filepath: memory/failures/20251201_hardlink-attack-test.md
+title: Hardlink Attack Test
+summary: Testing hardlink protection
+tags: 
+domain: security
+severity: 3
+created_at: 2025-12-02 00:24:51
+updated_at: 2025-12-02 00:24:51
+
+--- Item 2 ---
+id: 181
+type: failure
+filepath: memory/failures/20251201_racetest.md
+title: racetest
+summary: test
+tags: 
+domain: test
+severity: 3
+created_at: 2025-12-02 00:21:48
+updated_at: 2025-12-02 00:21:48
+
+--- Item 3 ---
+id: 179
+type: failure
+filepath: memory/failures/20251201_meta-learning-capabilities-implementation-complete.md
+title: Meta-learning capabilities implementation complete
+summary: Opus Agent J successfully implemented comprehensive meta-learning capabilities:
+tags: meta-learning,success,agent-j,self-awareness,automation
+domain: meta-learning
+severity: 3
+created_at: 2025-12-02 00:05:57
+updated_at: 2025-12-02 00:05:57
+
+--- Item 4 ---
+id: 178
+type: success
+filepath: memory/successes/20251201_backup-and-disaster-recovery-system.md
+title: Backup and Disaster Recovery System
+summary: Implemented comprehensive backup and disaster recovery system with multiple restore paths, automated verification, and complete documentation
+tags: infrastructure,reliability,disaster-recovery,backups,automation,testing,documentation
+domain: infrastructure
+severity: 3
+created_at: 2025-12-02 00:04:40
+updated_at: 2025-12-02 00:04:40
+
+--- Item 5 ---
+id: 177
+type: failure
+filepath: memory/failures/20251201_domain-path-traversal-vulnerability-in-record-heuristicsh.md
+title: Domain path traversal vulnerability in record-heuristic.sh
+summary: Domain parameter allowed arbitrary path traversal, enabling attacker to write files anywhere on filesystem. CVSS 9.3. Fixed with domain sanitization.
+tags: security,filesystem,path-traversal,critical,fixed
+domain: security
+severity: 3
+created_at: 2025-12-02 00:04:32
+updated_at: 2025-12-02 00:04:32

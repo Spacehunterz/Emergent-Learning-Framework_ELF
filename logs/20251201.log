@@ -1886,3 +1886,1132 @@
 [2025-12-01 18:05:57] [INFO] [record-failure] Database record created (ID: 179)
 [2025-12-01 18:05:58] [INFO] [record-failure] Git commit created
 [2025-12-01 18:05:58] [INFO] [record-failure] Failure recorded successfully: Meta-learning capabilities implementation complete
+[2025-12-01 18:21:46] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:21:46] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:21:46] [INFO] [record-failure] Script started
+[2025-12-01 18:21:46] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:21:46] [INFO] [record-failure] Recording failure: test%00../../sensitive/secrets (domain: test, severity: 3)
+[2025-12-01 18:21:46] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test00sensitivesecrets.md
+[2025-12-01 18:21:46] [INFO] [record-failure] Database record created (ID: 180)
+[2025-12-01 18:21:47] [INFO] [record-failure] Git commit created
+[2025-12-01 18:21:47] [INFO] [record-failure] Failure recorded successfully: test%00../../sensitive/secrets
+[2025-12-01 18:21:47] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 18:21:47] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 18:21:47] [INFO] [record-heuristic] Script started
+[2025-12-01 18:21:47] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 18:21:47] [INFO] [record-heuristic] Recording heuristic: attack (domain: ../../..//c/Users/Evede/.claude/emergent-learning/tests/attack-sandbox/sensitive/injected, confidence: 0.7)
+[2025-12-01 18:21:47] [WARN] [record-heuristic] SECURITY: Domain sanitized from '../../..//c/Users/Evede/.claude/emergent-learning/tests/attack-sandbox/sensitive/injected' to 'cusersevedeclaudeemergent-learningtestsattack-sandboxsensitiveinjected'
+[2025-12-01 18:21:47] [INFO] [record-heuristic] Database record created (ID: 80)
+[2025-12-01 18:21:47] [INFO] [record-heuristic] Created new domain file: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/cusersevedeclaudeemergent-learningtestsattack-sandboxsensitiveinjected.md
+[2025-12-01 18:21:47] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/cusersevedeclaudeemergent-learningtestsattack-sandboxsensitiveinjected.md
+[2025-12-01 18:21:48] [INFO] [record-heuristic] Git commit created
+[2025-12-01 18:21:48] [INFO] [record-heuristic] Heuristic recorded successfully: attack
+[2025-12-01 18:21:48] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:21:48] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:21:48] [INFO] [record-failure] Script started
+[2025-12-01 18:21:48] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:21:48] [INFO] [record-failure] Recording failure: racetest (domain: test, severity: 3)
+[2025-12-01 18:21:48] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_racetest.md
+[2025-12-01 18:21:48] [INFO] [record-failure] Database record created (ID: 181)
+[2025-12-01 18:21:48] [INFO] [record-failure] Git commit created
+[2025-12-01 18:21:48] [INFO] [record-failure] Failure recorded successfully: racetest
+[2025-12-01 18:21:58] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:21:58] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:21:58] [INFO] [record-failure] Script started
+[2025-12-01 18:21:58] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:21:58] [INFO] [record-failure] Recording failure: test%00../../sensitive/secrets (domain: test, severity: 3)
+[2025-12-01 18:21:58] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test00sensitivesecrets.md
+[2025-12-01 18:21:59] [INFO] [record-failure] Database record created (ID: 182)
+[2025-12-01 18:21:59] [INFO] [record-failure] Git commit created
+[2025-12-01 18:21:59] [INFO] [record-failure] Failure recorded successfully: test%00../../sensitive/secrets
+[2025-12-01 18:21:59] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 18:21:59] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 18:21:59] [INFO] [record-heuristic] Script started
+[2025-12-01 18:21:59] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 18:21:59] [INFO] [record-heuristic] Recording heuristic: attack (domain: ../../..//c/Users/Evede/.claude/emergent-learning/tests/attack-sandbox/sensitive/injected, confidence: 0.7)
+[2025-12-01 18:21:59] [WARN] [record-heuristic] SECURITY: Domain sanitized from '../../..//c/Users/Evede/.claude/emergent-learning/tests/attack-sandbox/sensitive/injected' to 'cusersevedeclaudeemergent-learningtestsattack-sandboxsensitiveinjected'
+[2025-12-01 18:21:59] [INFO] [record-heuristic] Database record created (ID: 81)
+[2025-12-01 18:21:59] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/cusersevedeclaudeemergent-learningtestsattack-sandboxsensitiveinjected.md
+[2025-12-01 18:22:00] [INFO] [record-heuristic] Git commit created
+[2025-12-01 18:22:00] [INFO] [record-heuristic] Heuristic recorded successfully: attack
+[2025-12-01 18:22:21] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:22:21] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:22:21] [INFO] [record-failure] Script started
+[2025-12-01 18:22:21] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:22:21] [INFO] [record-failure] Recording failure: test%00../../sensitive/secrets (domain: test, severity: 3)
+[2025-12-01 18:22:22] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test00sensitivesecrets.md
+[2025-12-01 18:22:22] [INFO] [record-failure] Database record created (ID: 183)
+[2025-12-01 18:22:22] [INFO] [record-failure] Git commit created
+[2025-12-01 18:22:22] [INFO] [record-failure] Failure recorded successfully: test%00../../sensitive/secrets
+[2025-12-01 18:22:22] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 18:22:22] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 18:22:22] [INFO] [record-heuristic] Script started
+[2025-12-01 18:22:22] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 18:22:22] [INFO] [record-heuristic] Recording heuristic: attack (domain: ../../..//c/Users/Evede/.claude/emergent-learning/tests/attack-sandbox/sensitive/injected, confidence: 0.7)
+[2025-12-01 18:22:22] [WARN] [record-heuristic] SECURITY: Domain sanitized from '../../..//c/Users/Evede/.claude/emergent-learning/tests/attack-sandbox/sensitive/injected' to 'cusersevedeclaudeemergent-learningtestsattack-sandboxsensitiveinjected'
+[2025-12-01 18:22:23] [INFO] [record-heuristic] Database record created (ID: 82)
+[2025-12-01 18:22:23] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/cusersevedeclaudeemergent-learningtestsattack-sandboxsensitiveinjected.md
+[2025-12-01 18:22:23] [INFO] [record-heuristic] Git commit created
+[2025-12-01 18:22:23] [INFO] [record-heuristic] Heuristic recorded successfully: attack
+[2025-12-01 18:24:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:24:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:24:51] [INFO] [record-failure] Script started
+[2025-12-01 18:24:51] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:24:51] [INFO] [record-failure] Recording failure: Hardlink Attack Test (domain: security, severity: 3)
+[2025-12-01 18:24:51] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_hardlink-attack-test.md
+[2025-12-01 18:24:51] [INFO] [record-failure] Database record created (ID: 184)
+[2025-12-01 18:24:51] [INFO] [record-failure] Git commit created
+[2025-12-01 18:24:51] [INFO] [record-failure] Failure recorded successfully: Hardlink Attack Test
+[2025-12-01 18:24:51] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 18:24:51] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 18:24:51] [INFO] [record-heuristic] Script started
+[2025-12-01 18:24:52] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 18:24:52] [INFO] [record-heuristic] Recording heuristic: Test path traversal (domain: ../../../tmp/evil, confidence: 0.7)
+[2025-12-01 18:24:52] [WARN] [record-heuristic] SECURITY: Domain sanitized from '../../../tmp/evil' to 'tmpevil'
+[2025-12-01 18:24:52] [INFO] [record-heuristic] Database record created (ID: 83)
+[2025-12-01 18:24:52] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/tmpevil.md
+[2025-12-01 18:24:52] [INFO] [record-heuristic] Git commit created
+[2025-12-01 18:24:52] [INFO] [record-heuristic] Heuristic recorded successfully: Test path traversal
+[2025-12-01 18:24:52] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:24:52] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:24:53] [INFO] [record-failure] Script started
+[2025-12-01 18:24:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:24:53] [INFO] [record-failure] Recording failure: Test/../sensitive (domain: security, severity: 3)
+[2025-12-01 18:24:53] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_testsensitive.md
+[2025-12-01 18:24:53] [INFO] [record-failure] Database record created (ID: 185)
+[2025-12-01 18:24:53] [INFO] [record-failure] Git commit created
+[2025-12-01 18:24:53] [INFO] [record-failure] Failure recorded successfully: Test/../sensitive
+[2025-12-01 18:24:53] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 18:24:53] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 18:24:53] [INFO] [record-heuristic] Script started
+[2025-12-01 18:24:53] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 18:24:54] [INFO] [record-heuristic] Recording heuristic: Dot test .. (domain: test..tmp, confidence: 0.7)
+[2025-12-01 18:24:54] [WARN] [record-heuristic] SECURITY: Domain sanitized from 'test..tmp' to 'testtmp'
+[2025-12-01 18:24:54] [INFO] [record-heuristic] Database record created (ID: 84)
+[2025-12-01 18:24:54] [INFO] [record-heuristic] Created new domain file: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/testtmp.md
+[2025-12-01 18:24:54] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/testtmp.md
+[2025-12-01 18:24:54] [INFO] [record-heuristic] Git commit created
+[2025-12-01 18:24:54] [INFO] [record-heuristic] Heuristic recorded successfully: Dot test ..
+[2025-12-01 18:24:54] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 18:24:54] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 18:24:54] [INFO] [record-heuristic] Script started
+[2025-12-01 18:24:54] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 18:24:55] [INFO] [record-heuristic] Recording heuristic: Dot test ... (domain: test...tmp, confidence: 0.7)
+[2025-12-01 18:24:55] [WARN] [record-heuristic] SECURITY: Domain sanitized from 'test...tmp' to 'testtmp'
+[2025-12-01 18:24:55] [INFO] [record-heuristic] Database record created (ID: 85)
+[2025-12-01 18:24:55] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/testtmp.md
+[2025-12-01 18:24:55] [INFO] [record-heuristic] Git commit created
+[2025-12-01 18:24:55] [INFO] [record-heuristic] Heuristic recorded successfully: Dot test ...
+[2025-12-01 18:24:55] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-01 18:24:55] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-01 18:24:55] [INFO] [record-heuristic] Script started
+[2025-12-01 18:24:55] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-01 18:24:55] [INFO] [record-heuristic] Recording heuristic: Dot test ..... (domain: test.....tmp, confidence: 0.7)
+[2025-12-01 18:24:56] [WARN] [record-heuristic] SECURITY: Domain sanitized from 'test.....tmp' to 'testtmp'
+[2025-12-01 18:24:56] [INFO] [record-heuristic] Database record created (ID: 86)
+[2025-12-01 18:24:56] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/testtmp.md
+[2025-12-01 18:24:56] [INFO] [record-heuristic] Git commit created
+[2025-12-01 18:24:56] [INFO] [record-heuristic] Heuristic recorded successfully: Dot test .....
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:0001746f-1494] user=Evede correlation_id=0001746f-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:0001747a-1494] user=Evede correlation_id=0001747a-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:00017483-1494] user=Evede correlation_id=00017483-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:0001747e-1494] user=Evede correlation_id=0001747e-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:0001746c-1494] user=Evede correlation_id=0001746c-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:00017469-1494] user=Evede correlation_id=00017469-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:00017472-1494] user=Evede correlation_id=00017472-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:00017487-1494] user=Evede correlation_id=00017487-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:000174ac-1494] user=Evede correlation_id=000174ac-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:0001749d-1494] user=Evede correlation_id=0001749d-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:0001749a-1494] user=Evede correlation_id=0001749a-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:000174cb-1495] user=Evede correlation_id=000174cb-1495 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:0001748c-1494] user=Evede correlation_id=0001748c-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:49] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:49] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:000174c7-1495] user=Evede correlation_id=000174c7-1495 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:000174b6-1494] user=Evede correlation_id=000174b6-1494 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:000174d5-1495] user=Evede correlation_id=000174d5-1495 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:000174e3-1495] user=Evede correlation_id=000174e3-1495 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:000174ae-1494] user=Evede correlation_id=000174ae-1494 Script started
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:000174ca-1495] user=Evede correlation_id=000174ca-1495 Script started
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:000174f4-1495] user=Evede correlation_id=000174f4-1495 Script started
+[2025-12-01 18:27:50] [INFO] [record-failure] [corr:000174e0-1495] user=Evede correlation_id=000174e0-1495 Script started
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] [corr:0001750d-1495] user=Evede correlation_id=0001750d-1495 Script started
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] [corr:00017522-1495] user=Evede correlation_id=00017522-1495 Script started
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] [corr:0001756d-1495] user=Evede correlation_id=0001756d-1495 Script started
+[2025-12-01 18:27:50] [INFO] [record-failure] [corr:0001755a-1495] user=Evede correlation_id=0001755a-1495 Script started
+[2025-12-01 18:27:50] [INFO] [record-failure] [corr:00017526-1495] user=Evede correlation_id=00017526-1495 Script started
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] [corr:00017548-1495] user=Evede correlation_id=00017548-1495 Script started
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] [corr:0001757a-1495] user=Evede correlation_id=0001757a-1495 Script started
+[2025-12-01 18:27:50] [INFO] [record-failure] [corr:0001758f-1495] user=Evede correlation_id=0001758f-1495 Script started
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:27:50] [INFO] [record-failure] [corr:0001746c-1494] user=Evede correlation_id=0001746c-1494 Script started
+[2025-12-01 18:27:50] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:0001747e-1494] user=Evede correlation_id=0001747e-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:00017469-1494] user=Evede correlation_id=00017469-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:0001746f-1494] user=Evede correlation_id=0001746f-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:00017472-1494] user=Evede correlation_id=00017472-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:00017483-1494] user=Evede correlation_id=00017483-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:000174ac-1494] user=Evede correlation_id=000174ac-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:0001747a-1494] user=Evede correlation_id=0001747a-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:0001749a-1494] user=Evede correlation_id=0001749a-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:00017487-1494] user=Evede correlation_id=00017487-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:000174cb-1495] user=Evede correlation_id=000174cb-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:0001749d-1494] user=Evede correlation_id=0001749d-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:0001748c-1494] user=Evede correlation_id=0001748c-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:000174c7-1495] user=Evede correlation_id=000174c7-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:000174d5-1495] user=Evede correlation_id=000174d5-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:000174ca-1495] user=Evede correlation_id=000174ca-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:000174ae-1494] user=Evede correlation_id=000174ae-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:000174b6-1494] user=Evede correlation_id=000174b6-1494 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:000174e3-1495] user=Evede correlation_id=000174e3-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:000174e0-1495] user=Evede correlation_id=000174e0-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:000174f4-1495] user=Evede correlation_id=000174f4-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:0001750d-1495] user=Evede correlation_id=0001750d-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:00017522-1495] user=Evede correlation_id=00017522-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:00017526-1495] user=Evede correlation_id=00017526-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:0001755a-1495] user=Evede correlation_id=0001755a-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:0001756d-1495] user=Evede correlation_id=0001756d-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:00017548-1495] user=Evede correlation_id=00017548-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:0001757a-1495] user=Evede correlation_id=0001757a-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] [corr:0001758f-1495] user=Evede correlation_id=0001758f-1495 Script started
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:51] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:52] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:52] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:52] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:52] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:0001747e-1494] user=Evede correlation_id=0001747e-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:0001746c-1494] user=Evede correlation_id=0001746c-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:00017469-1494] user=Evede correlation_id=00017469-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:000174ac-1494] user=Evede correlation_id=000174ac-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:00017483-1494] user=Evede correlation_id=00017483-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:0001746f-1494] user=Evede correlation_id=0001746f-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:00017472-1494] user=Evede correlation_id=00017472-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:000174cb-1495] user=Evede correlation_id=000174cb-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:0001747a-1494] user=Evede correlation_id=0001747a-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:00017487-1494] user=Evede correlation_id=00017487-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:0001749d-1494] user=Evede correlation_id=0001749d-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:000174c7-1495] user=Evede correlation_id=000174c7-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:000174e0-1495] user=Evede correlation_id=000174e0-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:000174d5-1495] user=Evede correlation_id=000174d5-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:000174ca-1495] user=Evede correlation_id=000174ca-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:0001748c-1494] user=Evede correlation_id=0001748c-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:000174ae-1494] user=Evede correlation_id=000174ae-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:0001749a-1494] user=Evede correlation_id=0001749a-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:000174b6-1494] user=Evede correlation_id=000174b6-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:00017522-1495] user=Evede correlation_id=00017522-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:000174e3-1495] user=Evede correlation_id=000174e3-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:0001750d-1495] user=Evede correlation_id=0001750d-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:00017526-1495] user=Evede correlation_id=00017526-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:0001755a-1495] user=Evede correlation_id=0001755a-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:000174f4-1495] user=Evede correlation_id=000174f4-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:00017548-1495] user=Evede correlation_id=00017548-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:0001756d-1495] user=Evede correlation_id=0001756d-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:0001757a-1495] user=Evede correlation_id=0001757a-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:0001758f-1495] user=Evede correlation_id=0001758f-1495 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:0001747e-1494] user=Evede correlation_id=0001747e-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:0001746c-1494] user=Evede correlation_id=0001746c-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:00017483-1494] user=Evede correlation_id=00017483-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:0001746f-1494] user=Evede correlation_id=0001746f-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:000174ac-1494] user=Evede correlation_id=000174ac-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:00017472-1494] user=Evede correlation_id=00017472-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:00017469-1494] user=Evede correlation_id=00017469-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:0001747a-1494] user=Evede correlation_id=0001747a-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:000174cb-1495] user=Evede correlation_id=000174cb-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:000174e0-1495] user=Evede correlation_id=000174e0-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:00017487-1494] user=Evede correlation_id=00017487-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:000174c7-1495] user=Evede correlation_id=000174c7-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:0001749d-1494] user=Evede correlation_id=0001749d-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:000174ca-1495] user=Evede correlation_id=000174ca-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:000174ae-1494] user=Evede correlation_id=000174ae-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:000174d5-1495] user=Evede correlation_id=000174d5-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:0001749a-1494] user=Evede correlation_id=0001749a-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:0001748c-1494] user=Evede correlation_id=0001748c-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:000174b6-1494] user=Evede correlation_id=000174b6-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:00017526-1495] user=Evede correlation_id=00017526-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:0001750d-1495] user=Evede correlation_id=0001750d-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:000174e3-1495] user=Evede correlation_id=000174e3-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:000174f4-1495] user=Evede correlation_id=000174f4-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:00017522-1495] user=Evede correlation_id=00017522-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:0001755a-1495] user=Evede correlation_id=0001755a-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:0001757a-1495] user=Evede correlation_id=0001757a-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:00017548-1495] user=Evede correlation_id=00017548-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:0001758f-1495] user=Evede correlation_id=0001758f-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:0001756d-1495] user=Evede correlation_id=0001756d-1495 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:54] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:54] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:54] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:54] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:54] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:0001747e-1494] user=Evede correlation_id=0001747e-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:54] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:0001746f-1494] user=Evede correlation_id=0001746f-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:00017483-1494] user=Evede correlation_id=00017483-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:0001746c-1494] user=Evede correlation_id=0001746c-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:00017472-1494] user=Evede correlation_id=00017472-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:0001747a-1494] user=Evede correlation_id=0001747a-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 5 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:000174ac-1494] user=Evede correlation_id=000174ac-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 7 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:00017469-1494] user=Evede correlation_id=00017469-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:00017487-1494] user=Evede correlation_id=00017487-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 3 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 2 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:000174cb-1495] user=Evede correlation_id=000174cb-1495 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:000174e0-1495] user=Evede correlation_id=000174e0-1495 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:000174c7-1495] user=Evede correlation_id=000174c7-1495 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 8 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:0001749d-1494] user=Evede correlation_id=0001749d-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:000174ae-1494] user=Evede correlation_id=000174ae-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 1 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 14 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 4 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:000174d5-1495] user=Evede correlation_id=000174d5-1495 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:0001749a-1494] user=Evede correlation_id=0001749a-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 9 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 6 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:0001748c-1494] user=Evede correlation_id=0001748c-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:000174ca-1495] user=Evede correlation_id=000174ca-1495 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:000174b6-1494] user=Evede correlation_id=000174b6-1494 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 19 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 18 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:00017526-1495] user=Evede correlation_id=00017526-1495 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 12 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:0001750d-1495] user=Evede correlation_id=0001750d-1495 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 13 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] Recording failure: Stress Test 16 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:000174f4-1495] user=Evede correlation_id=000174f4-1495 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:000174e3-1495] user=Evede correlation_id=000174e3-1495 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:0001755a-1495] user=Evede correlation_id=0001755a-1495 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:00017548-1495] user=Evede correlation_id=00017548-1495 Script started
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 20 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:00017522-1495] user=Evede correlation_id=00017522-1495 Script started
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 11 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:0001756d-1495] user=Evede correlation_id=0001756d-1495 Script started
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:0001757a-1495] user=Evede correlation_id=0001757a-1495 Script started
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 10 (domain: stress, severity: 2)
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 17 (domain: stress, severity: 2)
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:0001758f-1495] user=Evede correlation_id=0001758f-1495 Script started
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 15 (domain: stress, severity: 2)
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 25 (domain: stress, severity: 2)
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 23 (domain: stress, severity: 2)
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 22 (domain: stress, severity: 2)
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 21 (domain: stress, severity: 2)
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 27 (domain: stress, severity: 2)
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 26 (domain: stress, severity: 2)
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 28 (domain: stress, severity: 2)
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 24 (domain: stress, severity: 2)
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 30 (domain: stress, severity: 2)
+[2025-12-01 18:27:55] [INFO] [record-failure] Recording failure: Stress Test 29 (domain: stress, severity: 2)
+[2025-12-01 18:27:55] [INFO] [record-failure] [corr:0001747e-1494] user=Evede correlation_id=0001747e-1494 Script started
+[2025-12-01 18:27:55] [INFO] [record-failure] [corr:0001746c-1494] user=Evede correlation_id=0001746c-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:0001746f-1494] user=Evede correlation_id=0001746f-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-2.md
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-7.md
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:00017469-1494] user=Evede correlation_id=00017469-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:00017487-1494] user=Evede correlation_id=00017487-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:0001747a-1494] user=Evede correlation_id=0001747a-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:0001749d-1494] user=Evede correlation_id=0001749d-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:000174ac-1494] user=Evede correlation_id=000174ac-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:00017483-1494] user=Evede correlation_id=00017483-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:000174ae-1494] user=Evede correlation_id=000174ae-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:00017472-1494] user=Evede correlation_id=00017472-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:000174e0-1495] user=Evede correlation_id=000174e0-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-3.md
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:000174cb-1495] user=Evede correlation_id=000174cb-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-5.md
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:000174d5-1495] user=Evede correlation_id=000174d5-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:000174c7-1495] user=Evede correlation_id=000174c7-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-1.md
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-6.md
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-9.md
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-12.md
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-14.md
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:00017526-1495] user=Evede correlation_id=00017526-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-8.md
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:0001750d-1495] user=Evede correlation_id=0001750d-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:0001748c-1494] user=Evede correlation_id=0001748c-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-13.md
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-4.md
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:000174ca-1495] user=Evede correlation_id=000174ca-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-19.md
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:000174b6-1494] user=Evede correlation_id=000174b6-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-20.md
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-18.md
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:000174f4-1495] user=Evede correlation_id=000174f4-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:0001749a-1494] user=Evede correlation_id=0001749a-1494 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:00017548-1495] user=Evede correlation_id=00017548-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:0001756d-1495] user=Evede correlation_id=0001756d-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:00017522-1495] user=Evede correlation_id=00017522-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-16.md
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:000174e3-1495] user=Evede correlation_id=000174e3-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:0001758f-1495] user=Evede correlation_id=0001758f-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:0001757a-1495] user=Evede correlation_id=0001757a-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:0001755a-1495] user=Evede correlation_id=0001755a-1495 Script started
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-25.md
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-23.md
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-17.md
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-15.md
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-10.md
+[2025-12-01 18:27:56] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-22.md
+[2025-12-01 18:27:57] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-27.md
+[2025-12-01 18:27:57] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-26.md
+[2025-12-01 18:27:57] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-24.md
+[2025-12-01 18:27:57] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-21.md
+[2025-12-01 18:27:57] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-11.md
+[2025-12-01 18:27:57] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-30.md
+[2025-12-01 18:27:57] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-29.md
+[2025-12-01 18:27:57] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-28.md
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:0001747e-1494] user=Evede correlation_id=0001747e-1494 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:0001746c-1494] user=Evede correlation_id=0001746c-1494 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:0001746f-1494] user=Evede correlation_id=0001746f-1494 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] Database record created (ID: 187)
+[2025-12-01 18:27:57] [INFO] [record-failure] Database record created (ID: 186)
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:00017487-1494] user=Evede correlation_id=00017487-1494 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:00017469-1494] user=Evede correlation_id=00017469-1494 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:00017483-1494] user=Evede correlation_id=00017483-1494 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:0001747a-1494] user=Evede correlation_id=0001747a-1494 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:000174ac-1494] user=Evede correlation_id=000174ac-1494 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:000174ae-1494] user=Evede correlation_id=000174ae-1494 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:0001749d-1494] user=Evede correlation_id=0001749d-1494 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:000174cb-1495] user=Evede correlation_id=000174cb-1495 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:00017472-1494] user=Evede correlation_id=00017472-1494 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] Database record created (ID: 188)
+[2025-12-01 18:27:57] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:000174d5-1495] user=Evede correlation_id=000174d5-1495 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:000174e0-1495] user=Evede correlation_id=000174e0-1495 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:000174c7-1495] user=Evede correlation_id=000174c7-1495 Script started
+[2025-12-01 18:27:57] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:27:57] [INFO] [record-failure] Database record created (ID: 189)
+[2025-12-01 18:27:57] [INFO] [record-failure] Database record created (ID: 190)
+[2025-12-01 18:27:57] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:27:57] [INFO] [record-failure] Database record created (ID: 193)
+[2025-12-01 18:27:57] [INFO] [record-failure] Database record created (ID: 191)
+[2025-12-01 18:27:58] [INFO] [record-failure] Database record created (ID: 194)
+[2025-12-01 18:27:58] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:27:58] [INFO] [record-failure] Database record created (ID: 192)
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:00017526-1495] user=Evede correlation_id=00017526-1495 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:000174b6-1494] user=Evede correlation_id=000174b6-1494 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:0001750d-1495] user=Evede correlation_id=0001750d-1495 Script started
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:0001748c-1494] user=Evede correlation_id=0001748c-1494 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:000174ca-1495] user=Evede correlation_id=000174ca-1495 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:0001756d-1495] user=Evede correlation_id=0001756d-1495 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:0001749a-1494] user=Evede correlation_id=0001749a-1494 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:0001755a-1495] user=Evede correlation_id=0001755a-1495 Script started
+[2025-12-01 18:27:58] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:0001758f-1495] user=Evede correlation_id=0001758f-1495 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] Database record created (ID: 195)
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:00017548-1495] user=Evede correlation_id=00017548-1495 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:00017522-1495] user=Evede correlation_id=00017522-1495 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:000174e3-1495] user=Evede correlation_id=000174e3-1495 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:000174f4-1495] user=Evede correlation_id=000174f4-1495 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:0001757a-1495] user=Evede correlation_id=0001757a-1495 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] Database record created (ID: 196)
+[2025-12-01 18:27:58] [INFO] [record-failure] Database record created (ID: 198)
+[2025-12-01 18:27:58] [INFO] [record-failure] Database record created (ID: 199)
+[2025-12-01 18:27:58] [INFO] [record-failure] Database record created (ID: 197)
+[2025-12-01 18:27:58] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:27:58] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:27:58] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:27:58] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:27:58] [INFO] [record-failure] Database record created (ID: 201)
+[2025-12-01 18:27:58] [INFO] [record-failure] Database record created (ID: 202)
+[2025-12-01 18:27:58] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:27:58] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:27:58] [INFO] [record-failure] Database record created (ID: 200)
+[2025-12-01 18:27:58] [INFO] [record-failure] Database record created (ID: 203)
+[2025-12-01 18:27:58] [INFO] [record-failure] Database record created (ID: 204)
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:0001747e-1494] user=Evede correlation_id=0001747e-1494 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:00017483-1494] user=Evede correlation_id=00017483-1494 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] Git commit created
+[2025-12-01 18:27:58] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:0001747a-1494] user=Evede correlation_id=0001747a-1494 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:000174d5-1495] user=Evede correlation_id=000174d5-1495 Script started
+[2025-12-01 18:27:58] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:00017487-1494] user=Evede correlation_id=00017487-1494 Script started
+[2025-12-01 18:27:58] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:27:58] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:00017522-1495] user=Evede correlation_id=00017522-1495 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:00017483-1494] user=Evede correlation_id=00017483-1494 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:0001748c-1494] user=Evede correlation_id=0001748c-1494 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:0001755a-1495] user=Evede correlation_id=0001755a-1495 Script started
+[2025-12-01 18:27:58] [INFO] [record-failure] [corr:0001747e-1494] user=Evede correlation_id=0001747e-1494 Script started
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:00017472-1494] user=Evede correlation_id=00017472-1494 Script started
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:0001758f-1495] user=Evede correlation_id=0001758f-1495 Script started
+[2025-12-01 18:27:59] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:27:59] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-8.md
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:000174ca-1495] user=Evede correlation_id=000174ca-1495 Script started
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:0001747a-1494] user=Evede correlation_id=0001747a-1494 Script started
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:000174d5-1495] user=Evede correlation_id=000174d5-1495 Script started
+[2025-12-01 18:27:59] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:27:59] [INFO] [record-failure] Failure recorded successfully: Stress Test 7
+[2025-12-01 18:27:59] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:27:59] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:27:59] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:00017487-1494] user=Evede correlation_id=00017487-1494 Script started
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:0001749a-1494] user=Evede correlation_id=0001749a-1494 Script started
+[2025-12-01 18:27:59] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:27:59] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-6.md
+[2025-12-01 18:27:59] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-20.md
+[2025-12-01 18:27:59] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-9.md
+[2025-12-01 18:27:59] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:00017522-1495] user=Evede correlation_id=00017522-1495 Script started
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:0001746c-1494] user=Evede correlation_id=0001746c-1494 Script started
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:0001748c-1494] user=Evede correlation_id=0001748c-1494 Script started
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:0001755a-1495] user=Evede correlation_id=0001755a-1495 Script started
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:00017472-1494] user=Evede correlation_id=00017472-1494 Script started
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:0001758f-1495] user=Evede correlation_id=0001758f-1495 Script started
+[2025-12-01 18:27:59] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-24.md
+[2025-12-01 18:27:59] [INFO] [record-failure] Git commit created
+[2025-12-01 18:27:59] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-10.md
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:000174ca-1495] user=Evede correlation_id=000174ca-1495 Script started
+[2025-12-01 18:27:59] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-28.md
+[2025-12-01 18:27:59] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-30.md
+[2025-12-01 18:27:59] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-4.md
+[2025-12-01 18:27:59] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-17.md
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:0001749a-1494] user=Evede correlation_id=0001749a-1494 Script started
+[2025-12-01 18:27:59] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-11.md
+[2025-12-01 18:27:59] [INFO] [record-failure] [corr:0001746c-1494] user=Evede correlation_id=0001746c-1494 Script started
+[2025-12-01 18:27:59] [INFO] [record-failure] Failure recorded successfully: Stress Test 2
+[2025-12-01 18:28:00] [INFO] [record-failure] [corr:0001746f-1494] user=Evede correlation_id=0001746f-1494 Script started
+[2025-12-01 18:28:00] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:00] [INFO] [record-failure] [corr:0001746f-1494] user=Evede correlation_id=0001746f-1494 Script started
+[2025-12-01 18:28:00] [INFO] [record-failure] Failure recorded successfully: Stress Test 3
+[2025-12-01 18:28:01] [INFO] [record-failure] [corr:000174ae-1494] user=Evede correlation_id=000174ae-1494 Script started
+[2025-12-01 18:28:01] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:01] [INFO] [record-failure] [corr:000174ae-1494] user=Evede correlation_id=000174ae-1494 Script started
+[2025-12-01 18:28:01] [INFO] [record-failure] Failure recorded successfully: Stress Test 13
+[2025-12-01 18:28:02] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+[2025-12-01 18:28:02] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:02] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+[2025-12-01 18:28:03] [INFO] [record-failure] Failure recorded successfully: Stress Test 5
+[2025-12-01 18:28:03] [INFO] [record-failure] [corr:000174cb-1495] user=Evede correlation_id=000174cb-1495 Script started
+[2025-12-01 18:28:03] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:04] [INFO] [record-failure] [corr:000174cb-1495] user=Evede correlation_id=000174cb-1495 Script started
+[2025-12-01 18:28:04] [INFO] [record-failure] Failure recorded successfully: Stress Test 18
+[2025-12-01 18:28:04] [INFO] [record-failure] [corr:000174ac-1494] user=Evede correlation_id=000174ac-1494 Script started
+[2025-12-01 18:28:04] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:05] [INFO] [record-failure] [corr:000174ac-1494] user=Evede correlation_id=000174ac-1494 Script started
+[2025-12-01 18:28:05] [INFO] [record-failure] Failure recorded successfully: Stress Test 14
+[2025-12-01 18:28:05] [INFO] [record-failure] [corr:0001749d-1494] user=Evede correlation_id=0001749d-1494 Script started
+[2025-12-01 18:28:05] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:06] [INFO] [record-failure] [corr:0001749d-1494] user=Evede correlation_id=0001749d-1494 Script started
+[2025-12-01 18:28:06] [INFO] [record-failure] Failure recorded successfully: Stress Test 12
+[2025-12-01 18:28:06] [INFO] [record-failure] [corr:00017469-1494] user=Evede correlation_id=00017469-1494 Script started
+[2025-12-01 18:28:06] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:07] [INFO] [record-failure] [corr:00017469-1494] user=Evede correlation_id=00017469-1494 Script started
+[2025-12-01 18:28:07] [INFO] [record-failure] Failure recorded successfully: Stress Test 1
+[2025-12-01 18:28:07] [INFO] [record-failure] [corr:000174b6-1494] user=Evede correlation_id=000174b6-1494 Script started
+[2025-12-01 18:28:08] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:08] [INFO] [record-failure] [corr:000174b6-1494] user=Evede correlation_id=000174b6-1494 Script started
+[2025-12-01 18:28:08] [INFO] [record-failure] Failure recorded successfully: Stress Test 15
+[2025-12-01 18:28:09] [INFO] [record-failure] [corr:000174c7-1495] user=Evede correlation_id=000174c7-1495 Script started
+[2025-12-01 18:28:09] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:09] [INFO] [record-failure] [corr:000174c7-1495] user=Evede correlation_id=000174c7-1495 Script started
+[2025-12-01 18:28:09] [INFO] [record-failure] Failure recorded successfully: Stress Test 16
+[2025-12-01 18:28:10] [INFO] [record-failure] [corr:0001756d-1495] user=Evede correlation_id=0001756d-1495 Script started
+[2025-12-01 18:28:10] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:10] [INFO] [record-failure] [corr:0001756d-1495] user=Evede correlation_id=0001756d-1495 Script started
+[2025-12-01 18:28:10] [INFO] [record-failure] Failure recorded successfully: Stress Test 27
+[2025-12-01 18:28:11] [INFO] [record-failure] [corr:00017548-1495] user=Evede correlation_id=00017548-1495 Script started
+[2025-12-01 18:28:11] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:11] [INFO] [record-failure] [corr:00017548-1495] user=Evede correlation_id=00017548-1495 Script started
+[2025-12-01 18:28:11] [INFO] [record-failure] Failure recorded successfully: Stress Test 26
+[2025-12-01 18:28:12] [INFO] [record-failure] [corr:0001750d-1495] user=Evede correlation_id=0001750d-1495 Script started
+[2025-12-01 18:28:12] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:12] [INFO] [record-failure] [corr:0001750d-1495] user=Evede correlation_id=0001750d-1495 Script started
+[2025-12-01 18:28:12] [INFO] [record-failure] Failure recorded successfully: Stress Test 23
+[2025-12-01 18:28:13] [INFO] [record-failure] [corr:000174e0-1495] user=Evede correlation_id=000174e0-1495 Script started
+[2025-12-01 18:28:13] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:13] [INFO] [record-failure] [corr:000174e0-1495] user=Evede correlation_id=000174e0-1495 Script started
+[2025-12-01 18:28:13] [INFO] [record-failure] Failure recorded successfully: Stress Test 19
+[2025-12-01 18:28:14] [INFO] [record-failure] [corr:00017526-1495] user=Evede correlation_id=00017526-1495 Script started
+[2025-12-01 18:28:14] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:14] [INFO] [record-failure] [corr:00017526-1495] user=Evede correlation_id=00017526-1495 Script started
+[2025-12-01 18:28:15] [INFO] [record-failure] Failure recorded successfully: Stress Test 25
+[2025-12-01 18:28:15] [INFO] [record-failure] [corr:000174f4-1495] user=Evede correlation_id=000174f4-1495 Script started
+[2025-12-01 18:28:15] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:15] [INFO] [record-failure] [corr:000174f4-1495] user=Evede correlation_id=000174f4-1495 Script started
+[2025-12-01 18:28:15] [INFO] [record-failure] Failure recorded successfully: Stress Test 22
+[2025-12-01 18:28:16] [INFO] [record-failure] [corr:0001757a-1495] user=Evede correlation_id=0001757a-1495 Script started
+[2025-12-01 18:28:16] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:16] [INFO] [record-failure] [corr:0001757a-1495] user=Evede correlation_id=0001757a-1495 Script started
+[2025-12-01 18:28:16] [INFO] [record-failure] Failure recorded successfully: Stress Test 29
+[2025-12-01 18:28:17] [INFO] [record-failure] [corr:000174e3-1495] user=Evede correlation_id=000174e3-1495 Script started
+[2025-12-01 18:28:17] [INFO] [record-failure] Git commit created
+[2025-12-01 18:28:17] [INFO] [record-failure] [corr:000174e3-1495] user=Evede correlation_id=000174e3-1495 Script started
+[2025-12-01 18:28:17] [INFO] [record-failure] Failure recorded successfully: Stress Test 21
+[2025-12-01 18:29:08] [DEBUG] [observability-demo] [corr:000192bb-14e4] operation=demo step=1 correlation_id=000192bb-14e4 Debug message with context
+[2025-12-01 18:29:09] [INFO] [observability-demo] [corr:000192bb-14e4] user=Evede action=demo correlation_id=000192bb-14e4 Info message with tags
+[2025-12-01 18:29:09] [WARN] [observability-demo] [corr:000192bb-14e4] severity=low correlation_id=000192bb-14e4 Warning message
+[2025-12-01 18:29:09] [ERROR] [observability-demo] [corr:000192bb-14e4] error_type=simulated correlation_id=000192bb-14e4 Error simulation (not a real error)
+[2025-12-01 18:29:10] [INFO] [observability-demo] [corr:000192bb-14e4] timer=demo_operation duration_ms=549 duration_s=549 status=success correlation_id=000192bb-14e4 Timer completed
+[2025-12-01 18:29:11] [INFO] [observability-demo] [corr:000192bb-14e4] timer=demo_query duration_ms=247 duration_s=247 status=success query_type=SELECT correlation_id=000192bb-14e4 Timer completed
+[2025-12-01 18:29:13] [INFO] [observability-demo] [corr:000192bb-14e4] severity=info correlation_id=000192bb-14e4 ALERT: Demo info alert
+[2025-12-01 18:29:13] [WARN] [observability-demo] [corr:000192bb-14e4] severity=warning cpu=75% correlation_id=000192bb-14e4 ALERT: Demo warning - resource usage high
+[2025-12-01 18:29:14] [ERROR] [observability-demo] [corr:000192bb-14e4] severity=critical test=true correlation_id=000192bb-14e4 ALERT: Demo critical alert - testing escalation
+[2025-12-01 18:29:15] [INFO] [observability-demo] [corr:000192bb-14e4] correlation_id=000192bb-14e4 step=validate Step 1: Validate input
+[2025-12-01 18:29:15] [INFO] [observability-demo] [corr:000192bb-14e4] correlation_id=000192bb-14e4 step=process Step 2: Process data
+[2025-12-01 18:29:15] [INFO] [observability-demo] [corr:000192bb-14e4] correlation_id=000192bb-14e4 step=store Step 3: Store results
+[2025-12-01 18:29:15] [INFO] [observability-demo] [corr:000192bb-14e4] correlation_id=000192bb-14e4 step=complete Step 4: Complete
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a47-1569] user=Evede correlation_id=00019a47-1569 Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a41-1569] user=Evede correlation_id=00019a41-1569 Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a44-1569] user=Evede correlation_id=00019a44-1569 Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a5c-1569] user=Evede correlation_id=00019a5c-1569 Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a3e-1569] user=Evede correlation_id=00019a3e-1569 Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a4d-1569] user=Evede correlation_id=00019a4d-1569 Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a4a-1569] user=Evede correlation_id=00019a4a-1569 Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a53-1569] user=Evede correlation_id=00019a53-1569 Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a69-1569] user=Evede correlation_id=00019a69-1569 Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a60-1569] user=Evede correlation_id=00019a60-1569 Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a79-156a] user=Evede correlation_id=00019a79-156a Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a7c-1569] user=Evede correlation_id=00019a7c-1569 Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:22] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a64-1569] user=Evede correlation_id=00019a64-1569 Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a90-156a] user=Evede correlation_id=00019a90-156a Script started
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a97-156a] user=Evede correlation_id=00019a97-156a Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019aad-156a] user=Evede correlation_id=00019aad-156a Script started
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a9f-156a] user=Evede correlation_id=00019a9f-156a Script started
+[2025-12-01 18:31:22] [INFO] [record-failure] [corr:00019a98-156a] user=Evede correlation_id=00019a98-156a Script started
+[2025-12-01 18:31:23] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+[2025-12-01 18:31:23] [INFO] [record-failure] [corr:00019aca-156a] user=Evede correlation_id=00019aca-156a Script started
+[2025-12-01 18:31:23] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] [corr:00019aee-156a] user=Evede correlation_id=00019aee-156a Script started
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] [corr:00019ae6-156a] user=Evede correlation_id=00019ae6-156a Script started
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] [corr:00019b10-156a] user=Evede correlation_id=00019b10-156a Script started
+[2025-12-01 18:31:23] [INFO] [record-failure] [corr:00019b05-156a] user=Evede correlation_id=00019b05-156a Script started
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:23] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:24] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:24] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:24] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a5c-1569] user=Evede correlation_id=00019a5c-1569 Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a47-1569] user=Evede correlation_id=00019a47-1569 Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a41-1569] user=Evede correlation_id=00019a41-1569 Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a44-1569] user=Evede correlation_id=00019a44-1569 Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a69-1569] user=Evede correlation_id=00019a69-1569 Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a3e-1569] user=Evede correlation_id=00019a3e-1569 Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a4a-1569] user=Evede correlation_id=00019a4a-1569 Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a53-1569] user=Evede correlation_id=00019a53-1569 Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a4d-1569] user=Evede correlation_id=00019a4d-1569 Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a60-1569] user=Evede correlation_id=00019a60-1569 Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a7c-1569] user=Evede correlation_id=00019a7c-1569 Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a90-156a] user=Evede correlation_id=00019a90-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019aad-156a] user=Evede correlation_id=00019aad-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a64-1569] user=Evede correlation_id=00019a64-1569 Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a97-156a] user=Evede correlation_id=00019a97-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a79-156a] user=Evede correlation_id=00019a79-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a98-156a] user=Evede correlation_id=00019a98-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019ae6-156a] user=Evede correlation_id=00019ae6-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019a9f-156a] user=Evede correlation_id=00019a9f-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019aca-156a] user=Evede correlation_id=00019aca-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019b10-156a] user=Evede correlation_id=00019b10-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019aee-156a] user=Evede correlation_id=00019aee-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019b05-156a] user=Evede correlation_id=00019b05-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:25] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:25] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:25] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:25] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:25] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:25] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:25] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:25] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a5c-1569] user=Evede correlation_id=00019a5c-1569 Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a44-1569] user=Evede correlation_id=00019a44-1569 Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a41-1569] user=Evede correlation_id=00019a41-1569 Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a47-1569] user=Evede correlation_id=00019a47-1569 Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a3e-1569] user=Evede correlation_id=00019a3e-1569 Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a69-1569] user=Evede correlation_id=00019a69-1569 Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a53-1569] user=Evede correlation_id=00019a53-1569 Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a4a-1569] user=Evede correlation_id=00019a4a-1569 Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a90-156a] user=Evede correlation_id=00019a90-156a Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a7c-1569] user=Evede correlation_id=00019a7c-1569 Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a60-1569] user=Evede correlation_id=00019a60-1569 Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a4d-1569] user=Evede correlation_id=00019a4d-1569 Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019aad-156a] user=Evede correlation_id=00019aad-156a Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a79-156a] user=Evede correlation_id=00019a79-156a Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a64-1569] user=Evede correlation_id=00019a64-1569 Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a98-156a] user=Evede correlation_id=00019a98-156a Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a9f-156a] user=Evede correlation_id=00019a9f-156a Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019ae6-156a] user=Evede correlation_id=00019ae6-156a Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019b10-156a] user=Evede correlation_id=00019b10-156a Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019a97-156a] user=Evede correlation_id=00019a97-156a Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019aca-156a] user=Evede correlation_id=00019aca-156a Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019aee-156a] user=Evede correlation_id=00019aee-156a Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] [corr:00019b05-156a] user=Evede correlation_id=00019b05-156a Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] [corr:00019a5c-1569] user=Evede correlation_id=00019a5c-1569 Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] [corr:00019a41-1569] user=Evede correlation_id=00019a41-1569 Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] [corr:00019a47-1569] user=Evede correlation_id=00019a47-1569 Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] [corr:00019a44-1569] user=Evede correlation_id=00019a44-1569 Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] [corr:00019a3e-1569] user=Evede correlation_id=00019a3e-1569 Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] [corr:00019a69-1569] user=Evede correlation_id=00019a69-1569 Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] [corr:00019a4a-1569] user=Evede correlation_id=00019a4a-1569 Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:26] [INFO] [record-failure] [corr:00019a53-1569] user=Evede correlation_id=00019a53-1569 Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:26] [INFO] [record-failure] [corr:00019a90-156a] user=Evede correlation_id=00019a90-156a Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:26] [INFO] [record-failure] [corr:00019a4d-1569] user=Evede correlation_id=00019a4d-1569 Script started
+[2025-12-01 18:31:26] [INFO] [record-failure] [corr:00019a60-1569] user=Evede correlation_id=00019a60-1569 Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:26] [INFO] [record-failure] [corr:00019a7c-1569] user=Evede correlation_id=00019a7c-1569 Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019aad-156a] user=Evede correlation_id=00019aad-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a79-156a] user=Evede correlation_id=00019a79-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a98-156a] user=Evede correlation_id=00019a98-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a64-1569] user=Evede correlation_id=00019a64-1569 Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019ae6-156a] user=Evede correlation_id=00019ae6-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019b10-156a] user=Evede correlation_id=00019b10-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a9f-156a] user=Evede correlation_id=00019a9f-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019aca-156a] user=Evede correlation_id=00019aca-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a97-156a] user=Evede correlation_id=00019a97-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019aee-156a] user=Evede correlation_id=00019aee-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019b05-156a] user=Evede correlation_id=00019b05-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a41-1569] user=Evede correlation_id=00019a41-1569 Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] Running in non-interactive mode
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a5c-1569] user=Evede correlation_id=00019a5c-1569 Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a47-1569] user=Evede correlation_id=00019a47-1569 Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a69-1569] user=Evede correlation_id=00019a69-1569 Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a3e-1569] user=Evede correlation_id=00019a3e-1569 Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a44-1569] user=Evede correlation_id=00019a44-1569 Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a4d-1569] user=Evede correlation_id=00019a4d-1569 Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] Recording failure: Stress Test 8 (domain: stress, severity: 2)
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a90-156a] user=Evede correlation_id=00019a90-156a Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 2 (domain: stress, severity: 2)
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a4a-1569] user=Evede correlation_id=00019a4a-1569 Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019a53-1569] user=Evede correlation_id=00019a53-1569 Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 4 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 11 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 1 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019a60-1569] user=Evede correlation_id=00019a60-1569 Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 3 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019aad-156a] user=Evede correlation_id=00019aad-156a Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 6 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019b10-156a] user=Evede correlation_id=00019b10-156a Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019ae6-156a] user=Evede correlation_id=00019ae6-156a Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019a7c-1569] user=Evede correlation_id=00019a7c-1569 Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 14 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019a64-1569] user=Evede correlation_id=00019a64-1569 Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 7 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 5 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019a98-156a] user=Evede correlation_id=00019a98-156a Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019a79-156a] user=Evede correlation_id=00019a79-156a Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019a9f-156a] user=Evede correlation_id=00019a9f-156a Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 18 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019aee-156a] user=Evede correlation_id=00019aee-156a Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 9 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019a97-156a] user=Evede correlation_id=00019a97-156a Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 19 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019b05-156a] user=Evede correlation_id=00019b05-156a Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019aca-156a] user=Evede correlation_id=00019aca-156a Script started
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 25 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 10 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 12 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 22 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 20 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 16 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 13 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 23 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 17 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 21 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 15 (domain: stress, severity: 2)
+[2025-12-01 18:31:28] [INFO] [record-failure] Recording failure: Stress Test 24 (domain: stress, severity: 2)
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019a69-1569] user=Evede correlation_id=00019a69-1569 Script started
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019a5c-1569] user=Evede correlation_id=00019a5c-1569 Script started
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019a47-1569] user=Evede correlation_id=00019a47-1569 Script started
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019a41-1569] user=Evede correlation_id=00019a41-1569 Script started
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019a4d-1569] user=Evede correlation_id=00019a4d-1569 Script started
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019a3e-1569] user=Evede correlation_id=00019a3e-1569 Script started
+[2025-12-01 18:31:29] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-11.md
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019a4a-1569] user=Evede correlation_id=00019a4a-1569 Script started
+[2025-12-01 18:31:29] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-4.md
+[2025-12-01 18:31:29] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-8.md
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019a53-1569] user=Evede correlation_id=00019a53-1569 Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-6.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-2.md
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019a44-1569] user=Evede correlation_id=00019a44-1569 Script started
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019a90-156a] user=Evede correlation_id=00019a90-156a Script started
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019a60-1569] user=Evede correlation_id=00019a60-1569 Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-1.md
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019a64-1569] user=Evede correlation_id=00019a64-1569 Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019ae6-156a] user=Evede correlation_id=00019ae6-156a Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019aad-156a] user=Evede correlation_id=00019aad-156a Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019b10-156a] user=Evede correlation_id=00019b10-156a Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-5.md
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019a98-156a] user=Evede correlation_id=00019a98-156a Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019a7c-1569] user=Evede correlation_id=00019a7c-1569 Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019a9f-156a] user=Evede correlation_id=00019a9f-156a Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019a79-156a] user=Evede correlation_id=00019a79-156a Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-3.md
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019aee-156a] user=Evede correlation_id=00019aee-156a Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-18.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-7.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-9.md
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019aca-156a] user=Evede correlation_id=00019aca-156a Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019b05-156a] user=Evede correlation_id=00019b05-156a Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-14.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-10.md
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019a97-156a] user=Evede correlation_id=00019a97-156a Script started
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-22.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-25.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-19.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-20.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-16.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-17.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-23.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-12.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-13.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-24.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-21.md
+[2025-12-01 18:31:30] [INFO] [record-failure] Created markdown file: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-15.md
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019a47-1569] user=Evede correlation_id=00019a47-1569 Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a69-1569] user=Evede correlation_id=00019a69-1569 Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a4d-1569] user=Evede correlation_id=00019a4d-1569 Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a41-1569] user=Evede correlation_id=00019a41-1569 Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a5c-1569] user=Evede correlation_id=00019a5c-1569 Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a3e-1569] user=Evede correlation_id=00019a3e-1569 Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 206)
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a4a-1569] user=Evede correlation_id=00019a4a-1569 Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 205)
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 207)
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 208)
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a64-1569] user=Evede correlation_id=00019a64-1569 Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a53-1569] user=Evede correlation_id=00019a53-1569 Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a90-156a] user=Evede correlation_id=00019a90-156a Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a44-1569] user=Evede correlation_id=00019a44-1569 Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019ae6-156a] user=Evede correlation_id=00019ae6-156a Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a60-1569] user=Evede correlation_id=00019a60-1569 Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 209)
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 210)
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 211)
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019b10-156a] user=Evede correlation_id=00019b10-156a Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019aee-156a] user=Evede correlation_id=00019aee-156a Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a98-156a] user=Evede correlation_id=00019a98-156a Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019aad-156a] user=Evede correlation_id=00019aad-156a Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a7c-1569] user=Evede correlation_id=00019a7c-1569 Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 214)
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a79-156a] user=Evede correlation_id=00019a79-156a Script started
+[2025-12-01 18:31:31] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019b05-156a] user=Evede correlation_id=00019b05-156a Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 215)
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 212)
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a9f-156a] user=Evede correlation_id=00019a9f-156a Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 213)
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 217)
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019aca-156a] user=Evede correlation_id=00019aca-156a Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 216)
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 218)
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 223)
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 219)
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 220)
+[2025-12-01 18:31:31] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a97-156a] user=Evede correlation_id=00019a97-156a Script started
+[2025-12-01 18:31:31] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 222)
+[2025-12-01 18:31:31] [WARN] [record-failure] SQLite busy, retry 1/5...
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 221)
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 224)
+[2025-12-01 18:31:31] [INFO] [record-failure] Database record created (ID: 225)
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019a47-1569] user=Evede correlation_id=00019a47-1569 Script started
+[2025-12-01 18:31:32] [INFO] [record-failure] Git commit created
+[2025-12-01 18:31:32] [INFO] [record-failure] [corr:00019a44-1569] user=Evede correlation_id=00019a44-1569 Script started
+[2025-12-01 18:31:32] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+[2025-12-01 18:31:32] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:31:32] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:31:32] [INFO] [record-failure] [corr:00019a79-156a] user=Evede correlation_id=00019a79-156a Script started
+[2025-12-01 18:31:32] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:31:32] [INFO] [record-failure] [corr:00019a47-1569] user=Evede correlation_id=00019a47-1569 Script started
+[2025-12-01 18:31:32] [INFO] [record-failure] [corr:00019a44-1569] user=Evede correlation_id=00019a44-1569 Script started
+[2025-12-01 18:31:32] [INFO] [record-failure] Failure recorded successfully: Stress Test 4
+[2025-12-01 18:31:32] [INFO] [record-failure] [corr:00019a7c-1569] user=Evede correlation_id=00019a7c-1569 Script started
+[2025-12-01 18:31:32] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-3.md
+[2025-12-01 18:31:32] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+[2025-12-01 18:31:32] [ERROR] [record-failure] Database insert failed - invalid ID: '0'
+[2025-12-01 18:31:32] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-20.md
+[2025-12-01 18:31:32] [INFO] [record-failure] [corr:00019a79-156a] user=Evede correlation_id=00019a79-156a Script started
+[2025-12-01 18:31:32] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-13.md
+[2025-12-01 18:31:32] [INFO] [record-failure] [corr:00019a7c-1569] user=Evede correlation_id=00019a7c-1569 Script started
+[2025-12-01 18:31:32] [INFO] [record-failure] [corr:00019a69-1569] user=Evede correlation_id=00019a69-1569 Script started
+[2025-12-01 18:31:32] [WARN] [record-failure] Rolling back: removing file /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-12.md
+[2025-12-01 18:31:32] [INFO] [record-failure] Git commit created
+[2025-12-01 18:31:33] [INFO] [record-failure] [corr:00019a69-1569] user=Evede correlation_id=00019a69-1569 Script started
+[2025-12-01 18:31:33] [INFO] [record-failure] Failure recorded successfully: Stress Test 11
+[2025-12-01 18:31:33] [INFO] [record-failure] [corr:00019a4d-1569] user=Evede correlation_id=00019a4d-1569 Script started
+[2025-12-01 18:31:34] [INFO] [record-failure] Git commit created
+[2025-12-01 18:31:34] [INFO] [record-failure] [corr:00019a4d-1569] user=Evede correlation_id=00019a4d-1569 Script started
+[2025-12-01 18:31:34] [INFO] [record-failure] Failure recorded successfully: Stress Test 6
+[2025-12-01 18:31:34] [INFO] [record-failure] [corr:00019a41-1569] user=Evede correlation_id=00019a41-1569 Script started
+[2025-12-01 18:31:35] [WARN] [record-failure] Git commit failed or no changes to commit
+[2025-12-01 18:31:35] [INFO] [record-failure] [corr:00019a41-1569] user=Evede correlation_id=00019a41-1569 Script started
+[2025-12-01 18:31:35] [INFO] [record-failure] Failure recorded successfully: Stress Test 2
+[2025-12-01 18:31:36] [INFO] [record-failure] [corr:00019a5c-1569] user=Evede correlation_id=00019a5c-1569 Script started
+[2025-12-01 18:31:36] [INFO] [record-failure] Git commit created
+[2025-12-01 18:31:36] [INFO] [record-failure] [corr:00019a5c-1569] user=Evede correlation_id=00019a5c-1569 Script started
+[2025-12-01 18:31:36] [INFO] [record-failure] Failure recorded successfully: Stress Test 8
+[2025-12-01 18:31:37] [INFO] [record-failure] [corr:00019a4a-1569] user=Evede correlation_id=00019a4a-1569 Script started
+[2025-12-01 18:31:37] [WARN] [record-failure] Git commit failed or no changes to commit
+[2025-12-01 18:31:37] [INFO] [record-failure] [corr:00019a4a-1569] user=Evede correlation_id=00019a4a-1569 Script started
+[2025-12-01 18:31:37] [INFO] [record-failure] Failure recorded successfully: Stress Test 5
+[2025-12-01 18:31:38] [INFO] [record-failure] [corr:00019a3e-1569] user=Evede correlation_id=00019a3e-1569 Script started
+[2025-12-01 18:31:38] [WARN] [record-failure] Git commit failed or no changes to commit
+[2025-12-01 18:31:38] [INFO] [record-failure] [corr:00019a3e-1569] user=Evede correlation_id=00019a3e-1569 Script started
+[2025-12-01 18:31:38] [INFO] [record-failure] Failure recorded successfully: Stress Test 1
+[2025-12-01 18:31:39] [INFO] [record-failure] [corr:00019a64-1569] user=Evede correlation_id=00019a64-1569 Script started
+[2025-12-01 18:31:39] [INFO] [record-failure] Git commit created
+[2025-12-01 18:31:39] [INFO] [record-failure] [corr:00019a64-1569] user=Evede correlation_id=00019a64-1569 Script started
+[2025-12-01 18:31:39] [INFO] [record-failure] Failure recorded successfully: Stress Test 10
+[2025-12-01 18:31:40] [INFO] [record-failure] [corr:00019a90-156a] user=Evede correlation_id=00019a90-156a Script started
+[2025-12-01 18:31:40] [WARN] [record-failure] Git commit failed or no changes to commit
+[2025-12-01 18:31:40] [INFO] [record-failure] [corr:00019a90-156a] user=Evede correlation_id=00019a90-156a Script started
+[2025-12-01 18:31:40] [INFO] [record-failure] Failure recorded successfully: Stress Test 14
+[2025-12-01 18:31:41] [INFO] [record-failure] [corr:00019a53-1569] user=Evede correlation_id=00019a53-1569 Script started
+[2025-12-01 18:31:41] [WARN] [record-failure] Git commit failed or no changes to commit
+[2025-12-01 18:31:41] [INFO] [record-failure] [corr:00019a53-1569] user=Evede correlation_id=00019a53-1569 Script started
+[2025-12-01 18:31:41] [INFO] [record-failure] Failure recorded successfully: Stress Test 7
+[2025-12-01 18:31:42] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+[2025-12-01 18:31:42] [WARN] [record-failure] Git commit failed or no changes to commit
+[2025-12-01 18:31:42] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+[2025-12-01 18:31:42] [INFO] [record-failure] Failure recorded successfully: Stress Test 18
+[2025-12-01 18:31:43] [INFO] [record-failure] [corr:00019aad-156a] user=Evede correlation_id=00019aad-156a Script started
+[2025-12-01 18:31:43] [WARN] [record-failure] Git commit failed or no changes to commit
+[2025-12-01 18:31:43] [INFO] [record-failure] [corr:00019aad-156a] user=Evede correlation_id=00019aad-156a Script started
+[2025-12-01 18:31:43] [INFO] [record-failure] Failure recorded successfully: Stress Test 19
+[2025-12-01 18:31:44] [INFO] [record-failure] [corr:00019a60-1569] user=Evede correlation_id=00019a60-1569 Script started
+[2025-12-01 18:31:44] [INFO] [record-failure] Git commit created
+[2025-12-01 18:31:44] [INFO] [record-failure] [corr:00019a60-1569] user=Evede correlation_id=00019a60-1569 Script started
+[2025-12-01 18:31:45] [INFO] [record-failure] Failure recorded successfully: Stress Test 9
+[2025-12-01 18:31:45] [INFO] [record-failure] [corr:00019aee-156a] user=Evede correlation_id=00019aee-156a Script started
+[2025-12-01 18:31:45] [WARN] [record-failure] Git commit failed or no changes to commit
+[2025-12-01 18:31:45] [INFO] [record-failure] [corr:00019aee-156a] user=Evede correlation_id=00019aee-156a Script started
+[2025-12-01 18:31:46] [INFO] [record-failure] Failure recorded successfully: Stress Test 23
+[2025-12-01 18:31:46] [INFO] [record-failure] [corr:00019ae6-156a] user=Evede correlation_id=00019ae6-156a Script started
+[2025-12-01 18:31:46] [WARN] [record-failure] Git commit failed or no changes to commit
+[2025-12-01 18:31:47] [INFO] [record-failure] [corr:00019ae6-156a] user=Evede correlation_id=00019ae6-156a Script started
+[2025-12-01 18:31:47] [INFO] [record-failure] Failure recorded successfully: Stress Test 22
+[2025-12-01 18:31:47] [INFO] [record-failure] [corr:00019a98-156a] user=Evede correlation_id=00019a98-156a Script started
+[2025-12-01 18:31:47] [WARN] [record-failure] Git commit failed or no changes to commit
+[2025-12-01 18:31:48] [INFO] [record-failure] [corr:00019a98-156a] user=Evede correlation_id=00019a98-156a Script started
+[2025-12-01 18:31:48] [INFO] [record-failure] Failure recorded successfully: Stress Test 16
+[2025-12-01 18:31:48] [INFO] [record-failure] [corr:00019b10-156a] user=Evede correlation_id=00019b10-156a Script started
+[2025-12-01 18:31:48] [WARN] [record-failure] Git commit failed or no changes to commit
+[2025-12-01 18:31:49] [INFO] [record-failure] [corr:00019b10-156a] user=Evede correlation_id=00019b10-156a Script started
+[2025-12-01 18:31:49] [INFO] [record-failure] Failure recorded successfully: Stress Test 25
+[2025-12-01 18:31:49] [INFO] [record-failure] [corr:00019b05-156a] user=Evede correlation_id=00019b05-156a Script started
+[2025-12-01 18:31:49] [INFO] [record-failure] Git commit created
+[2025-12-01 18:31:50] [INFO] [record-failure] [corr:00019b05-156a] user=Evede correlation_id=00019b05-156a Script started
+[2025-12-01 18:31:50] [INFO] [record-failure] Failure recorded successfully: Stress Test 24
+[2025-12-01 18:31:50] [INFO] [record-failure] [corr:00019aca-156a] user=Evede correlation_id=00019aca-156a Script started
+[2025-12-01 18:31:51] [WARN] [record-failure] Git commit failed or no changes to commit
+[2025-12-01 18:31:51] [INFO] [record-failure] [corr:00019aca-156a] user=Evede correlation_id=00019aca-156a Script started
+[2025-12-01 18:31:51] [INFO] [record-failure] Failure recorded successfully: Stress Test 21
+[2025-12-01 18:31:51] [INFO] [record-failure] [corr:00019a9f-156a] user=Evede correlation_id=00019a9f-156a Script started
+[2025-12-01 18:31:52] [INFO] [record-failure] Git commit created
+[2025-12-01 18:31:52] [INFO] [record-failure] [corr:00019a9f-156a] user=Evede correlation_id=00019a9f-156a Script started
+[2025-12-01 18:31:52] [INFO] [record-failure] Failure recorded successfully: Stress Test 17
+[2025-12-01 18:31:53] [INFO] [record-failure] [corr:00019a97-156a] user=Evede correlation_id=00019a97-156a Script started
+[2025-12-01 18:31:53] [WARN] [record-failure] Git commit failed or no changes to commit
+[2025-12-01 18:31:54] [INFO] [record-failure] [corr:00019a97-156a] user=Evede correlation_id=00019a97-156a Script started
+[2025-12-01 18:31:54] [INFO] [record-failure] Failure recorded successfully: Stress Test 15

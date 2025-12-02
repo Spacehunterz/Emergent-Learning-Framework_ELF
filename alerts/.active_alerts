@@ -1,0 +1,3 @@
+alert_1764635353_103099|info|2025-12-02T00:29:13Z|Demo info alert
+alert_1764635353_103099|warning|2025-12-02T00:29:13Z|Demo warning - resource usage high
+alert_1764635354_103099|critical|2025-12-02T00:29:13Z|Demo critical alert - testing escalation

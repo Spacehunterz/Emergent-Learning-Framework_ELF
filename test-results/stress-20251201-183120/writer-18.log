@@ -1,0 +1,125 @@
+[2025-12-01 18:31:23] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+=== Record Failure (non-interactive) ===
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+Created: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-18.md
+[2025-12-01 18:31:29] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+Database record created (ID: 213)
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+On branch master
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   logs/20251201.log
+	deleted:    memory/failures/20251201_concurrency-test-failure-1.md
+	deleted:    memory/failures/20251201_concurrency-test-failure-12.md
+	deleted:    memory/failures/20251201_concurrency-test-failure-15.md
+	deleted:    memory/failures/20251201_concurrency-test-failure-18.md
+	deleted:    memory/failures/20251201_concurrency-test-failure-19.md
+	deleted:    memory/failures/20251201_concurrency-test-failure-2.md
+	deleted:    memory/failures/20251201_concurrency-test-failure-20.md
+	deleted:    memory/failures/20251201_concurrency-test-failure-3.md
+	deleted:    memory/failures/20251201_concurrency-test-failure-4.md
+	deleted:    memory/failures/20251201_concurrency-test-failure-5.md
+	deleted:    memory/failures/20251201_concurrency-test-failure-6.md
+	deleted:    memory/failures/20251201_concurrency-test-failure-7.md
+	deleted:    memory/failures/20251201_concurrency-test-failure-9.md
+	deleted:    memory/failures/20251201_dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd.md
+	deleted:    memory/failures/20251201_domain-path-traversal-vulnerability-in-record-heuristicsh.md
+	deleted:    memory/failures/20251201_meta-learning-capabilities-implementation-complete.md
+	deleted:    memory/failures/20251201_stress-test-12.md
+	deleted:    memory/failures/20251201_stress-test-13.md
+	deleted:    memory/failures/20251201_stress-test-3.md
+	deleted:    memory/failures/20251201_test--cat--tmpfuzztestpwned.md
+	deleted:    memory/failures/20251201_test-delete-from-learnings---.md
+	deleted:    memory/failures/20251201_test-drop-table-learnings---.md
+	deleted:    memory/failures/20251201_test-touch-tmpfuzztesthacked-echo-done.md
+	deleted:    memory/failures/20251201_test-touch-tmphardeningtestfile.md
+	deleted:    memory/failures/20251201_test-union-select--from-heuristics-where-11.md
+	deleted:    memory/failures/20251201_test.md
+	deleted:    memory/failures/20251201_test00sensitivesecrets.md
+	deleted:    memory/failures/20251201_testdatedata.md
+	deleted:    memory/failures/20251201_testwhoamidata.md
+	deleted:    memory/heuristics/cusersevedeclaudeemergent-learningtestsattack-sandboxsensitiveinjected.md
+	deleted:    memory/heuristics/test.md
+	deleted:    memory/heuristics/testing.md
+	deleted:    memory/heuristics/tmpevil.md
+	modified:   query/__pycache__/query.cpython-314.pyc
+	modified:   query/query.py
+	modified:   query/query.py.backup
+	modified:   scripts/lib/security.sh
+	modified:   scripts/record-failure.sh
+	modified:   scripts/record-heuristic.sh
+	modified:   scripts/start-experiment.sh
+	modified:   scripts/sync-db-markdown.sh
+	modified:   tests/security_audit_report.md
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	AGENT_H2_FINAL_REPORT.md
+	BACKUP_RECOVERY_10_OF_10_CERTIFICATION.md
+	BACKUP_SYSTEM_INDEX.md
+	EXECUTIVE_SUMMARY_10_OF_10.md
+	FINAL_REPORT.txt
+	IMPLEMENTATION_SUMMARY.md
+	RECOVERY_SCENARIOS_TEST_REPORT_20251201_182231.md
+	SECURITY_SCORE_10_VERIFICATION.md
+	advanced-concurrency-stress-test.sh
+	alerts/
+	apply-perfect-security.sh
+	ceo-inbox/alert_20251201_182914.md
+	memory/failures.safe/failures/
+	memory/failures/20251201_stress-test-17.md
+	memory/failures/20251201_stress-test-24.md
+	memory/failures/20251201_stress-test-9.md
+	memory/index.db.backup_20251201_182818
+	memory/index.db.backup_20251201_182832
+	memory/index.db.backup_20251201_182848
+	monitor-locks.sh
+	query/ENHANCEMENTS_10_10.md
+	query/MISSION_REPORT_I2.md
+	query/QUICK_REFERENCE.md
+	query/db_robustness_10.py
+	query/demo.sh
+	query/fix_migration.py
+	query/test_query.py
+	query/verify_10_10.sh
+	scripts/apply_10_10_robustness.py
+	scripts/backup-enhanced.sh
+	scripts/dashboard.sh
+	scripts/demo-observability.sh
+	scripts/integrate-observability.sh
+	scripts/lib/alerts.sh
+	scripts/lib/concurrency.sh.backup_before_10_10
+	scripts/lib/concurrency_v2_part1.sh
+	scripts/patch-observability.sh
+	scripts/record-failure.sh.before-perfect-security
+	scripts/record-failure.sh.pre-observability-patch
+	scripts/record-heuristic.sh.before-perfect-security
+	scripts/record-heuristic.sh.pre-observability-patch
+	scripts/rotate-logs.sh
+	scripts/setup-automated-backups.sh
+	scripts/start-experiment.sh.pre-observability-patch
+	scripts/sync-db-markdown.sh.pre-observability-patch
+	scripts/test-all-recovery-scenarios.sh
+	scripts/test-full-observability.sh
+	scripts/test-recovery-simple.sh
+	scripts/verify-observability.sh
+	test-attack-vectors.sh
+	test-perfect-security.sh
+	test-results/stress-20251201-182748/
+	test-results/stress-20251201-183120/
+	test-verify.sh
+	tests/AGENT_B2_PERFECT_SECURITY_REPORT.md
+	tests/fix_test.sh
+	tests/test_database_robustness_10.sh
+
+no changes added to commit (use "git add" and/or "git commit -a")
+[2025-12-01 18:31:42] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+Note: Git commit skipped (no changes or already committed)
+[2025-12-01 18:31:42] [INFO] [record-failure] [corr:00019aa9-156a] user=Evede correlation_id=00019aa9-156a Script started
+
+Failure recorded successfully!
+Edit the full details at: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-18.md

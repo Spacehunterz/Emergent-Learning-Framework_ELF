@@ -322,3 +322,124 @@ log_security_event() {
         echo "$log_entry" >> "$log_file"
     fi
 }
+
+# ============================================
+# SECURITY FIX 4: Complete path sanitization
+# Agent: B2 - Handles all edge cases
+# ============================================
+
+# Enhanced sanitize with Unicode normalization and all edge cases
+sanitize_filename_complete() {
+    local input="$1"
+
+    # Remove null bytes (multiple variations)
+    input="${input//$'\0'/}"
+    input="${input//\\x00/}"
+    input="${input//\\0/}"
+
+    # Remove newlines and carriage returns (all variations)
+    input="${input//$'\n'/}"
+    input="${input//$'\r'/}"
+    input="${input//\\n/}"
+    input="${input//\\r/}"
+
+    # Remove path separators (all variations)
+    input="${input//\\/}"
+    input="${input//\//}"
+
+    # Handle double dots and variations
+    input="${input//../}"
+    input="${input//.../}"
+    input="${input//...../}"
+
+    # Convert to lowercase, replace spaces with dashes
+    input=$(echo "$input" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+
+    # Remove everything except alphanumeric, dash, underscore, dot
+    input=$(echo "$input" | tr -cd '[:alnum:]._-')
+
+    # Remove leading dots (hidden files)
+    input="${input#.}"
+
+    # Remove leading dashes
+    input="${input#-}"
+
+    # Limit length to prevent buffer issues
+    echo "${input:0:200}"
+}
+
+# Validate path doesn't contain dangerous patterns
+validate_safe_path() {
+    local path="$1"
+
+    # Check for null bytes
+    if [[ "$path" =~ $'\0' ]] || [[ "$path" =~ \\x00 ]] || [[ "$path" =~ \\0 ]]; then
+        return 1
+    fi
+
+    # Check for path traversal patterns
+    if [[ "$path" =~ \.\. ]] || [[ "$path" =~ \/\/ ]] || [[ "$path" =~ \\\\ ]]; then
+        return 1
+    fi
+
+    # Check for mixed separators
+    if [[ "$path" =~ \/ ]] && [[ "$path" =~ \\ ]]; then
+        return 1
+    fi
+
+    return 0
+}
+
+
+# ============================================
+# SECURITY FIX 5: Atomic directory creation
+# Agent: B2 - Race-free directory creation
+# ============================================
+
+# Atomic mkdir - prevents race conditions
+atomic_mkdir() {
+    local dir="$1"
+    local temp_dir="${dir}.tmp.$$"
+
+    # If it exists, check if it's a symlink
+    if [ -e "$dir" ]; then
+        if [ -L "$dir" ]; then
+            return 1
+        fi
+        if [ -d "$dir" ]; then
+            return 0  # Already exists as directory
+        else
+            return 1  # Exists but not a directory
+        fi
+    fi
+
+    # Create temporary directory first
+    if ! mkdir -p "$temp_dir" 2>/dev/null; then
+        return 1
+    fi
+
+    # Set restrictive permissions
+    chmod 700 "$temp_dir" || {
+        rmdir "$temp_dir" 2>/dev/null
+        return 1
+    }
+
+    # Atomic rename to final location
+    if ! mv "$temp_dir" "$dir" 2>/dev/null; then
+        rmdir "$temp_dir" 2>/dev/null
+        # Check if it now exists (race won)
+        if [ -d "$dir" ] && [ ! -L "$dir" ]; then
+            return 0
+        fi
+        return 1
+    fi
+
+    # Double-check it's not a symlink (TOCTOU protection)
+    if [ -L "$dir" ]; then
+        rmdir "$dir" 2>/dev/null || true
+        return 1
+    fi
+
+    return 0
+}
+

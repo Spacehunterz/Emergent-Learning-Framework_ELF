@@ -35,6 +35,39 @@ if ! mkdir -p "$LOGS_DIR" 2>/dev/null; then
 fi
 
 # Load error handling library
+
+# ========================================
+# OBSERVABILITY INTEGRATION
+# ========================================
+
+# Source observability libraries
+if [ -f "$SCRIPT_DIR/lib/logging.sh" ]; then
+    source "$SCRIPT_DIR/lib/logging.sh"
+    source "$SCRIPT_DIR/lib/metrics.sh" 2>/dev/null || true
+    source "$SCRIPT_DIR/lib/alerts.sh" 2>/dev/null || true
+
+    # Initialize observability
+    log_init "sync-db-markdown" "$LOGS_DIR"
+    metrics_init "$DB_PATH" 2>/dev/null || true
+    alerts_init "$BASE_DIR" 2>/dev/null || true
+
+    # Generate correlation ID for this execution
+    CORRELATION_ID=$(log_get_correlation_id)
+    export CORRELATION_ID
+
+    log_info "Script started" user="$(whoami)" correlation_id="$CORRELATION_ID"
+
+    # Start performance tracking
+    log_timer_start "sync-db-markdown_total"
+    OPERATION_START=$(metrics_operation_start "sync-db-markdown" 2>/dev/null || echo "")
+else
+    # Fallback if libraries not found
+    CORRELATION_ID="${script_name}_$(date +%s)_$$"
+    OPERATION_START=""
+fi
+
+# ========================================
+
 LIB_DIR="$SCRIPT_DIR/lib"
 if [ ! -f "$LIB_DIR/error-handling.sh" ]; then
     echo "FATAL: Error handling library not found: $LIB_DIR/error-handling.sh" >&2

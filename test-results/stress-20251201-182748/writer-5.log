@@ -1,0 +1,20 @@
+[2025-12-01 18:27:49] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+[2025-12-01 18:27:50] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+[2025-12-01 18:27:52] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+[2025-12-01 18:27:53] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+=== Record Failure (non-interactive) ===
+[2025-12-01 18:27:54] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+Created: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-5.md
+[2025-12-01 18:27:56] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+Database record created (ID: 189)
+[2025-12-01 18:27:57] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+warning: in the working copy of 'memory/failures/20251201_stress-test-5.md', LF will be replaced by CRLF the next time Git touches it
+[master 4602c81] failure: Stress Test 5
+ 1 file changed, 32 insertions(+)
+ create mode 100644 memory/failures/20251201_stress-test-5.md
+[2025-12-01 18:28:02] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+Git commit created
+[2025-12-01 18:28:02] [INFO] [record-failure] [corr:00017475-1494] user=Evede correlation_id=00017475-1494 Script started
+
+Failure recorded successfully!
+Edit the full details at: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-5.md

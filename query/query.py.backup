@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
 Emergent Learning Framework - Query System
+
+TIME-FIX-6: All timestamps are stored in UTC (via SQLite CURRENT_TIMESTAMP).
+Database uses naive datetime objects, but SQLite CURRENT_TIMESTAMP returns UTC.
+For timezone-aware operations, consider adding timezone library in future.
 A tiered retrieval system for knowledge retrieval across the learning framework.
 
 Tier 1: Golden rules (always loaded, ~500 tokens)
@@ -53,6 +57,7 @@ class QuerySystem:
     def _init_database(self):
         """Initialize the database with required schema if it does not exist."""
         conn = sqlite3.connect(str(self.db_path))
+        conn.execute("PRAGMA busy_timeout=10000")
         cursor = conn.cursor()
 
         # Create learnings table
@@ -204,6 +209,7 @@ class QuerySystem:
             Dictionary containing heuristics and learnings for the domain
         """
         conn = sqlite3.connect(str(self.db_path))
+        conn.execute("PRAGMA busy_timeout=10000")
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -249,6 +255,7 @@ class QuerySystem:
             List of learnings matching any of the tags
         """
         conn = sqlite3.connect(str(self.db_path))
+        conn.execute("PRAGMA busy_timeout=10000")
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -283,6 +290,7 @@ class QuerySystem:
             List of recent learnings
         """
         conn = sqlite3.connect(str(self.db_path))
+        conn.execute("PRAGMA busy_timeout=10000")
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -314,6 +322,7 @@ class QuerySystem:
             List of active experiments
         """
         conn = sqlite3.connect(str(self.db_path))
+        conn.execute("PRAGMA busy_timeout=10000")
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -337,6 +346,7 @@ class QuerySystem:
             List of pending CEO reviews
         """
         conn = sqlite3.connect(str(self.db_path))
+        conn.execute("PRAGMA busy_timeout=10000")
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -474,6 +484,7 @@ class QuerySystem:
             Dictionary containing various statistics
         """
         conn = sqlite3.connect(str(self.db_path))
+        conn.execute("PRAGMA busy_timeout=10000")
         cursor = conn.cursor()
 
         stats = {}
@@ -589,6 +600,25 @@ Examples:
 
     args = parser.parse_args()
 
+
+    # Cap limits to prevent resource exhaustion (added by Agent C hardening)
+    MAX_LIMIT = 1000
+    MAX_TOKENS = 50000
+
+    if hasattr(args, 'limit') and args.limit and args.limit > MAX_LIMIT:
+        print(f"Warning: Limit capped at {MAX_LIMIT} results (requested: {args.limit})",
+              file=sys.stderr)
+        args.limit = MAX_LIMIT
+
+    if hasattr(args, 'recent') and args.recent and args.recent > MAX_LIMIT:
+        print(f"Warning: Recent limit capped at {MAX_LIMIT} results (requested: {args.recent})",
+              file=sys.stderr)
+        args.recent = MAX_LIMIT
+
+    if hasattr(args, 'max_tokens') and args.max_tokens > MAX_TOKENS:
+        print(f"Warning: Max tokens capped at {MAX_TOKENS} (requested: {args.max_tokens})",
+              file=sys.stderr)
+        args.max_tokens = MAX_TOKENS
     # Initialize query system
     query_system = QuerySystem(base_path=args.base_path)
 

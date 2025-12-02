@@ -1,0 +1,13 @@
+[2025-12-01 18:31:23] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+[2025-12-01 18:31:24] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+[2025-12-01 18:31:25] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+[2025-12-01 18:31:27] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+=== Record Failure (non-interactive) ===
+[2025-12-01 18:31:28] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+Created: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_stress-test-20.md
+[2025-12-01 18:31:30] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+[2025-12-01 18:31:31] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+SQLite busy, retry 1/5...
+[2025-12-01 18:31:32] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
+ERROR: Database insert failed - invalid ID: '0'
+[2025-12-01 18:31:32] [INFO] [record-failure] [corr:00019abd-156a] user=Evede correlation_id=00019abd-156a Script started
