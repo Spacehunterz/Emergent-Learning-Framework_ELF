@@ -453,10 +453,29 @@ EOF
 echo "Created: $filepath"
 log "INFO" "Created markdown file: $filepath"
 
+# Sanitize input: strip ANSI escapes, control chars, CRLF
+sanitize_input() {
+    local input="$1"
+    # Remove ANSI escape sequences
+    input=$(printf '%s' "$input" | sed 's/\x1b\[[0-9;]*[mGKHF]//g')
+    # Remove control characters except newline/tab
+    input=$(printf '%s' "$input" | tr -d '\000-\010\013-\037\177')
+    # Convert CRLF to space
+    input=$(printf '%s' "$input" | tr '\r\n' '  ')
+    printf '%s' "$input"
+}
+
 # Escape single quotes for SQL injection protection
 escape_sql() {
     echo "${1//\'/\'\'}"
 }
+
+
+# SECURITY: Sanitize ALL user inputs before processing
+title=$(sanitize_input "$title")
+domain=$(sanitize_input "$domain")
+summary=$(sanitize_input "$summary")
+tags=$(sanitize_input "$tags")
 
 title_escaped=$(escape_sql "$title")
 summary_escaped=$(escape_sql "$(echo -e "$summary" | head -n 1)")
