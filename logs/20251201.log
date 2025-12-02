@@ -5086,3 +5086,13 @@ Newlines
 [2025-12-01 21:03:43] [INFO] [record-failure] Git commit created
 [2025-12-01 21:03:43] [INFO] [record-failure] [corr:0002640e-120c] user=Evede correlation_id=0002640e-120c Script started
 [2025-12-01 21:03:43] [INFO] [record-failure] Failure recorded successfully: RED_TEST
+[2025-12-01 22:23:13] [INFO] [record-failure] [corr:00026f98-24b1] user=Evede correlation_id=00026f98-24b1 Script started
+[2025-12-01 22:23:13] [INFO] [record-failure] Starting pre-flight checks
+[2025-12-01 22:23:14] [INFO] [record-failure] [corr:00026f98-24b1] user=Evede correlation_id=00026f98-24b1 Script started
+[2025-12-01 22:23:14] [INFO] [record-failure] Pre-flight checks passed
+[2025-12-01 22:23:14] [INFO] [record-failure] [corr:00026f98-24b1] user=Evede correlation_id=00026f98-24b1 Script started
+[2025-12-01 22:23:14] [INFO] [record-failure] Script started
+[2025-12-01 22:23:14] [INFO] [record-failure] [corr:00026f98-24b1] user=Evede correlation_id=00026f98-24b1 Script started
+[2025-12-01 22:23:14] [INFO] [record-failure] Running in interactive mode
+[2025-12-01 22:25:27] [INFO] [record-failure] [corr:00026f98-24b1] user=Evede correlation_id=00026f98-24b1 Script started
+[2025-12-01 22:25:27] [ERROR] [record-failure] Script failed at line 261

@@ -379,6 +379,39 @@ log "INFO" "Database record created (ID: $heuristic_id)"
 domain_file="$HEURISTICS_DIR/${domain}.md"
 
 if [ ! -f "$domain_file" ]; then
+
+# ============================================
+# SECURITY FIX: TOCTOU protection - re-check symlinks before write
+# CVE: Time-of-check-time-of-use symlink race
+# Severity: HIGH
+# ============================================
+check_symlink_toctou() {
+    local filepath="$1"
+    local dirpath=$(dirname "$filepath")
+    local current="$dirpath"
+
+    # Check directory and all parents up to BASE_DIR
+    while [ "$current" != "$BASE_DIR" ] && [ "$current" != "/" ] && [ -n "$current" ]; do
+        if [ -L "$current" ]; then
+            log "ERROR" "SECURITY: Symlink detected at write time (TOCTOU attack?): $current"
+            exit 6
+        fi
+        current=$(dirname "$current")
+    done
+
+    # Final check: directory exists and is not a symlink
+    if [ ! -d "$dirpath" ]; then
+        log "ERROR" "SECURITY: Target directory disappeared: $dirpath"
+        exit 6
+    fi
+    if [ -L "$dirpath" ]; then
+        log "ERROR" "SECURITY: Target directory became a symlink: $dirpath"
+        exit 6
+    fi
+}
+
+check_symlink_toctou "$filepath"
+
     cat > "$domain_file" <<EOF
 # Heuristics: $domain
 

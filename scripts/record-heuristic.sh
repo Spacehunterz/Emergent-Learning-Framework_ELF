@@ -379,6 +379,39 @@ log "INFO" "Database record created (ID: $heuristic_id)"
 domain_file="$HEURISTICS_DIR/${domain}.md"
 
 if [ ! -f "$domain_file" ]; then
+
+# ============================================
+# SECURITY FIX: TOCTOU protection - re-check symlinks before write
+# CVE: Time-of-check-time-of-use symlink race
+# Severity: HIGH
+# ============================================
+check_symlink_toctou() {
+    local filepath="$1"
+    local dirpath=$(dirname "$filepath")
+    local current="$dirpath"
+
+    # Check directory and all parents up to BASE_DIR
+    while [ "$current" != "$BASE_DIR" ] && [ "$current" != "/" ] && [ -n "$current" ]; do
+        if [ -L "$current" ]; then
+            log "ERROR" "SECURITY: Symlink detected at write time (TOCTOU attack?): $current"
+            exit 6
+        fi
+        current=$(dirname "$current")
+    done
+
+    # Final check: directory exists and is not a symlink
+    if [ ! -d "$dirpath" ]; then
+        log "ERROR" "SECURITY: Target directory disappeared: $dirpath"
+        exit 6
+    fi
+    if [ -L "$dirpath" ]; then
+        log "ERROR" "SECURITY: Target directory became a symlink: $dirpath"
+        exit 6
+    fi
+}
+
+check_symlink_toctou "$filepath"
+
     cat > "$domain_file" <<EOF
 # Heuristics: $domain
 
@@ -464,6 +497,47 @@ check_symlink_toctou "$domain_file"
 
 # Apply hardlink check
 if ! check_hardlink_attack "$domain_file"; then
+    exit 6
+fi
+
+
+# ============================================
+# SECURITY FIX: Hardlink attack protection
+# CVE: Hardlink-based file overwrite attack
+# Severity: MEDIUM
+# ============================================
+check_hardlink_attack() {
+    local filepath="$1"
+
+    # If file doesn't exist yet, it's safe
+    [ ! -f "$filepath" ] && return 0
+
+    # Get number of hardlinks to this file
+    local link_count
+    if command -v stat &> /dev/null; then
+        # Try Linux format first
+        link_count=$(stat -c '%h' "$filepath" 2>/dev/null)
+        # If that fails, try macOS/BSD format
+        if [ $? -ne 0 ]; then
+            link_count=$(stat -f '%l' "$filepath" 2>/dev/null)
+        fi
+    else
+        # stat not available, can't check
+        log "WARN" "SECURITY: Cannot check hardlinks (stat unavailable)"
+        return 0
+    fi
+
+    # If file has more than 1 link, it's a potential hardlink attack
+    if [ -n "$link_count" ] && [ "$link_count" -gt 1 ]; then
+        log "ERROR" "SECURITY: File has $link_count hardlinks (attack suspected): $filepath"
+        log "ERROR" "SECURITY: Refusing to overwrite file with multiple hardlinks"
+        return 1
+    fi
+
+    return 0
+}
+
+if ! check_hardlink_attack "$filepath"; then
     exit 6
 fi
 

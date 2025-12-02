@@ -419,6 +419,19 @@ class QuerySystem:
                 )
             """)
 
+            # Create violations table (for accountability tracking)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS violations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    rule_id INTEGER NOT NULL,
+                    rule_name TEXT NOT NULL,
+                    violation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    description TEXT,
+                    session_id TEXT,
+                    acknowledged BOOLEAN DEFAULT 0
+                )
+            """)
+
             # Create indexes for efficient querying
             cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_learnings_domain
@@ -468,6 +481,21 @@ class QuerySystem:
             cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_ceo_reviews_status
                 ON ceo_reviews(status)
+            """)
+
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_violations_date
+                ON violations(violation_date DESC)
+            """)
+
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_violations_rule
+                ON violations(rule_id)
+            """)
+
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_violations_acknowledged
+                ON violations(acknowledged)
             """)
 
             # Update query planner statistics
@@ -788,6 +816,123 @@ class QuerySystem:
         self._log_debug(f"Found {len(results)} pending CEO reviews")
         return results
 
+    def get_violations(self, days: int = 7, acknowledged: Optional[bool] = None,
+                      timeout: int = None) -> List[Dict[str, Any]]:
+        """
+        Get Golden Rule violations from the specified time period.
+
+        Args:
+            days: Number of days to look back (default: 7)
+            acknowledged: Filter by acknowledged status (None = all)
+            timeout: Query timeout in seconds (default: 30)
+
+        Returns:
+            List of violations
+
+        Raises:
+            TimeoutError: If query times out
+            DatabaseError: If database operation fails
+        """
+        timeout = timeout or self.DEFAULT_TIMEOUT
+        self._log_debug(f"Querying violations (days={days}, acknowledged={acknowledged})")
+
+        with TimeoutHandler(timeout):
+            with self._get_connection() as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+
+                if acknowledged is None:
+                    cursor.execute("""
+                        SELECT * FROM violations
+                        WHERE violation_date >= datetime('now', ? || ' days')
+                        ORDER BY violation_date DESC
+                    """, (f'-{days}',))
+                else:
+                    ack_val = 1 if acknowledged else 0
+                    cursor.execute("""
+                        SELECT * FROM violations
+                        WHERE violation_date >= datetime('now', ? || ' days')
+                        AND acknowledged = ?
+                        ORDER BY violation_date DESC
+                    """, (f'-{days}', ack_val))
+
+                results = [dict(row) for row in cursor.fetchall()]
+
+        self._log_debug(f"Found {len(results)} violations")
+        return results
+
+    def get_violation_summary(self, days: int = 7, timeout: int = None) -> Dict[str, Any]:
+        """
+        Get summary statistics of Golden Rule violations.
+
+        Args:
+            days: Number of days to look back (default: 7)
+            timeout: Query timeout in seconds (default: 30)
+
+        Returns:
+            Dictionary with violation statistics
+
+        Raises:
+            TimeoutError: If query times out
+            DatabaseError: If database operation fails
+        """
+        timeout = timeout or self.DEFAULT_TIMEOUT
+        self._log_debug(f"Querying violation summary (days={days})")
+
+        with TimeoutHandler(timeout):
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+
+                # Total count
+                cursor.execute("""
+                    SELECT COUNT(*) FROM violations
+                    WHERE violation_date >= datetime('now', ? || ' days')
+                """, (f'-{days}',))
+                total = cursor.fetchone()[0]
+
+                # By rule
+                cursor.execute("""
+                    SELECT rule_id, rule_name, COUNT(*) as count
+                    FROM violations
+                    WHERE violation_date >= datetime('now', ? || ' days')
+                    GROUP BY rule_id, rule_name
+                    ORDER BY count DESC
+                """, (f'-{days}',))
+                by_rule = [{'rule_id': r[0], 'rule_name': r[1], 'count': r[2]}
+                          for r in cursor.fetchall()]
+
+                # Acknowledged count
+                cursor.execute("""
+                    SELECT COUNT(*) FROM violations
+                    WHERE violation_date >= datetime('now', ? || ' days')
+                    AND acknowledged = 1
+                """, (f'-{days}',))
+                acknowledged = cursor.fetchone()[0]
+
+                # Recent violations (last 5)
+                cursor.execute("""
+                    SELECT rule_id, rule_name, description, violation_date
+                    FROM violations
+                    WHERE violation_date >= datetime('now', ? || ' days')
+                    ORDER BY violation_date DESC
+                    LIMIT 5
+                """, (f'-{days}',))
+                recent = [{'rule_id': r[0], 'rule_name': r[1],
+                          'description': r[2], 'date': r[3]}
+                         for r in cursor.fetchall()]
+
+        summary = {
+            'total': total,
+            'acknowledged': acknowledged,
+            'unacknowledged': total - acknowledged,
+            'by_rule': by_rule,
+            'recent': recent,
+            'days': days
+        }
+
+        self._log_debug(f"Violation summary: {total} total in {days} days")
+        return summary
+
     def build_context(
         self,
         task: str,
@@ -983,8 +1128,103 @@ class QuerySystem:
                 cursor.execute("SELECT COUNT(*) FROM ceo_reviews")
                 stats['total_ceo_reviews'] = cursor.fetchone()[0]
 
+                # Violation statistics (last 7 days)
+                cursor.execute("""
+                    SELECT COUNT(*) FROM violations
+                    WHERE violation_date >= datetime('now', '-7 days')
+                """)
+                stats['violations_7d'] = cursor.fetchone()[0]
+
+                cursor.execute("""
+                    SELECT rule_id, rule_name, COUNT(*) as count
+                    FROM violations
+                    WHERE violation_date >= datetime('now', '-7 days')
+                    GROUP BY rule_id, rule_name
+                    ORDER BY count DESC
+                """)
+                stats['violations_by_rule_7d'] = dict((f"Rule {r[0]}: {r[1]}", r[2])
+                                                      for r in cursor.fetchall())
+
         self._log_debug(f"Statistics gathered: {stats['total_learnings']} learnings total")
         return stats
+
+
+def generate_accountability_banner(summary: Dict[str, Any]) -> str:
+    """
+    Generate a visually distinct accountability banner showing violation status.
+
+    Args:
+        summary: Violation summary from get_violation_summary()
+
+    Returns:
+        Formatted banner string with box drawing characters
+    """
+    total = summary['total']
+    days = summary['days']
+    by_rule = summary['by_rule']
+    recent = summary['recent']
+
+    # Determine status level
+    if total >= 10:
+        status = "CRITICAL"
+        status_color = "RED"
+        message = "CEO ESCALATION REQUIRED"
+    elif total >= 5:
+        status = "PROBATION"
+        status_color = "YELLOW"
+        message = "INCREASED SCRUTINY MODE"
+    elif total >= 3:
+        status = "WARNING"
+        status_color = "YELLOW"
+        message = "Review adherence to rules"
+    else:
+        status = "NORMAL"
+        status_color = "GREEN"
+        message = "Acceptable compliance level"
+
+    # Build banner
+    banner = []
+    banner.append("╔═══════════════════════════════════════════════════════════════════════╗")
+    banner.append("║                    ACCOUNTABILITY TRACKING SYSTEM                     ║")
+    banner.append("║                     Golden Rule Violation Report                      ║")
+    banner.append("╠═══════════════════════════════════════════════════════════════════════╣")
+    banner.append(f"║  Period: Last {days} days                                                     ║")
+    banner.append(f"║  Total Violations: {total:<54} ║")
+    banner.append(f"║  Status: {status:<60} ║")
+    banner.append(f"║  {message:<68} ║")
+    banner.append("╠═══════════════════════════════════════════════════════════════════════╣")
+
+    if by_rule:
+        banner.append("║  Violations by Rule:                                                  ║")
+        for rule in by_rule[:5]:  # Top 5 rules
+            rule_line = f"║    Rule #{rule['rule_id']}: {rule['rule_name'][:35]:<35} ({rule['count']:>2}x) ║"
+            banner.append(rule_line)
+        if len(by_rule) > 5:
+            banner.append(f"║    ... and {len(by_rule) - 5} more                                                  ║")
+        banner.append("╠═══════════════════════════════════════════════════════════════════════╣")
+
+    if recent:
+        banner.append("║  Recent Violations:                                                   ║")
+        for v in recent[:3]:  # Top 3 recent
+            date_str = v['date'][:16] if v['date'] else "Unknown"
+            desc = v['description'][:45] if v['description'] else "No description"
+            banner.append(f"║    [{date_str}] Rule #{v['rule_id']:<2}                                   ║")
+            banner.append(f"║      {desc:<66} ║")
+        banner.append("╠═══════════════════════════════════════════════════════════════════════╣")
+
+    # Progressive consequences
+    if total >= 10:
+        banner.append("║  ⚠️  CONSEQUENCES: CEO escalation auto-created in ceo-inbox/          ║")
+    elif total >= 5:
+        banner.append("║  ⚠️  CONSEQUENCES: Under probation - violations logged prominently    ║")
+    elif total >= 3:
+        banner.append("║  ⚠️  CONSEQUENCES: Warning threshold - 2 more violations = probation  ║")
+    else:
+        banner.append("║  ✓  STATUS: Acceptable compliance. Keep up good practices.            ║")
+
+    banner.append("╚═══════════════════════════════════════════════════════════════════════╝")
+
+    return "\n".join(banner)
 
 
 def format_output(data: Any, format_type: str = 'text') -> str:
@@ -1081,6 +1321,9 @@ Error Codes:
     parser.add_argument('--ceo-reviews', action='store_true', help='List pending CEO reviews')
     parser.add_argument('--golden-rules', action='store_true', help='Display golden rules')
     parser.add_argument('--stats', action='store_true', help='Display knowledge base statistics')
+    parser.add_argument('--violations', action='store_true', help='Show violation summary')
+    parser.add_argument('--violation-days', type=int, default=7, help='Days to look back for violations (default: 7)')
+    parser.add_argument('--accountability-banner', action='store_true', help='Show accountability banner')
     parser.add_argument('--limit', type=int, default=10, help='Limit number of results (default: 10, max: 1000)')
 
     # Enhanced arguments
@@ -1153,6 +1396,15 @@ Error Codes:
 
         elif args.stats:
             result = query_system.get_statistics(args.timeout)
+
+        elif args.violations:
+            result = query_system.get_violation_summary(args.violation_days, args.timeout)
+
+        elif args.accountability_banner:
+            # Generate accountability banner
+            summary = query_system.get_violation_summary(7, args.timeout)
+            print(generate_accountability_banner(summary))
+            return exit_code
 
         else:
             parser.print_help()
