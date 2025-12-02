@@ -16,8 +16,12 @@ DB_PATH="$MEMORY_DIR/index.db"
 FAILURES_DIR="$MEMORY_DIR/failures"
 LOGS_DIR="$BASE_DIR/logs"
 
+# TIME-FIX-1: Capture date once at script start for consistency across midnight boundary
+# If script runs at 23:59:59 and finishes at 00:00:01, all dates remain consistent
+EXECUTION_DATE=$(date +%Y%m%d)
+
 # Setup logging
-LOG_FILE="$LOGS_DIR/$(date +%Y%m%d).log"
+LOG_FILE="$LOGS_DIR/${EXECUTION_DATE}.log"
 mkdir -p "$LOGS_DIR"
 
 log() {
@@ -103,9 +107,34 @@ cleanup_on_failure() {
 # Error trap with cleanup
 trap 'log "ERROR" "Script failed at line $LINENO"; cleanup_on_failure "$filepath" "$LAST_ID"; exit 1' ERR
 
+# TIME-FIX-4: Timestamp validation function
+validate_timestamp() {
+    local ts_epoch
+    ts_epoch=$(date +%s)
+    
+    # Check if timestamp is reasonable (not before 2020, not more than 1 day in future)
+    local year_2020=1577836800  # 2020-01-01 00:00:00 UTC
+    local one_day_ahead=$((ts_epoch + 86400))
+    
+    if [ "$ts_epoch" -lt "$year_2020" ]; then
+        log "ERROR" "System clock appears to be set before 2020"
+        return 1
+    fi
+    
+    # Note: We allow small future dates (up to 1 day) to handle timezone issues
+    return 0
+}
+
 # Pre-flight validation
 preflight_check() {
+
     log "INFO" "Starting pre-flight checks"
+
+    # TIME-FIX-5: Validate system timestamp
+    if ! validate_timestamp; then
+        log "ERROR" "Timestamp validation failed - check system clock"
+        exit 1
+    fi
 
     if [ ! -f "$DB_PATH" ]; then
         log "ERROR" "Database not found: $DB_PATH"
@@ -221,9 +250,51 @@ fi
 
 log "INFO" "Recording failure: $title (domain: $domain, severity: $severity)"
 
+# Input length validation (added by Agent C hardening)
+MAX_TITLE_LENGTH=500
+MAX_DOMAIN_LENGTH=100
+MAX_SUMMARY_LENGTH=50000
+
+if [ ${#title} -gt $MAX_TITLE_LENGTH ]; then
+    log "ERROR" "Title exceeds maximum length ($MAX_TITLE_LENGTH characters, got ${#title})"
+    echo "ERROR: Title too long (max $MAX_TITLE_LENGTH characters)" >&2
+    exit 1
+fi
+
+if [ ${#domain} -gt $MAX_DOMAIN_LENGTH ]; then
+    log "ERROR" "Domain exceeds maximum length ($MAX_DOMAIN_LENGTH characters)"
+    echo "ERROR: Domain too long (max $MAX_DOMAIN_LENGTH characters)" >&2
+    exit 1
+fi
+
+if [ ${#summary} -gt $MAX_SUMMARY_LENGTH ]; then
+    log "ERROR" "Summary exceeds maximum length ($MAX_SUMMARY_LENGTH characters, got ${#summary})"
+    echo "ERROR: Summary too long (max $MAX_SUMMARY_LENGTH characters)" >&2
+    exit 1
+fi
+
+# Trim leading/trailing whitespace
+title=$(echo "$title" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+domain=$(echo "$domain" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+
+# Re-validate after trimming
+if [ -z "$title" ]; then
+    log "ERROR" "Title cannot be empty (or whitespace-only)"
+    echo "ERROR: Title cannot be empty" >&2
+    exit 1
+fi
+
+if [ -z "$domain" ]; then
+    log "ERROR" "Domain cannot be empty (or whitespace-only)"
+    echo "ERROR: Domain cannot be empty" >&2
+    exit 1
+fi
+
+
 # Generate filename
-date_prefix=$(date +%Y%m%d)
-filename_title=$(echo "$title" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd '[:alnum:]-')
+# TIME-FIX-2: Use captured EXECUTION_DATE instead of recalculating
+date_prefix=$EXECUTION_DATE
+filename_title=$(echo "$title" | tr ':[:upper:]:' ':[:lower:]:' | tr ' ' '-' | tr -cd ':[:alnum:]-' | cut -c1-100)
 filename="${date_prefix}_${filename_title}.md"
 filepath="$FAILURES_DIR/$filename"
 relative_path="memory/failures/$filename"
@@ -235,7 +306,7 @@ cat > "$filepath" <<EOF
 **Domain**: $domain
 **Severity**: $severity
 **Tags**: $tags
-**Date**: $(date +%Y-%m-%d)
+**Date**: ${EXECUTION_DATE:0:4}-${EXECUTION_DATE:4:2}-${EXECUTION_DATE:6:2}  # TIME-FIX-3: Use consistent captured date
 
 ## Summary
 

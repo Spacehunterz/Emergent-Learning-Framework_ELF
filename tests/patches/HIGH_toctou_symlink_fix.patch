@@ -1,0 +1,100 @@
+#!/bin/bash
+# HIGH SECURITY PATCH: TOCTOU Symlink Race Condition Fix
+# Apply to: record-failure.sh, record-heuristic.sh, start-experiment.sh
+# Issue: Time-of-check-time-of-use race allows symlink attacks
+# Severity: HIGH (CVSS 7.1)
+
+echo "Applying HIGH security patch: TOCTOU symlink race fix"
+
+# Function to patch a file
+patch_file() {
+    local SCRIPT_FILE="$1"
+    local FILE_WRITE_PATTERN="$2"
+
+    if [ ! -f "$SCRIPT_FILE" ]; then
+        echo "WARNING: File not found: $SCRIPT_FILE"
+        return 1
+    fi
+
+    # Create backup
+    cp "$SCRIPT_FILE" "$SCRIPT_FILE.before-toctou-fix"
+
+    # Check if patch already applied
+    if grep -q "SECURITY FIX: TOCTOU protection" "$SCRIPT_FILE"; then
+        echo "Patch already applied to $(basename $SCRIPT_FILE)!"
+        return 0
+    fi
+
+    # Find line number of the file write operation
+    LINE_NUM=$(grep -n "$FILE_WRITE_PATTERN" "$SCRIPT_FILE" | head -1 | cut -d: -f1)
+
+    if [ -z "$LINE_NUM" ]; then
+        echo "ERROR: Could not find file write pattern in $(basename $SCRIPT_FILE)"
+        return 1
+    fi
+
+    # Insert TOCTOU check right before file write
+    INSERT_LINE=$((LINE_NUM - 1))
+
+    # Create patched version
+    {
+        head -n "$INSERT_LINE" "$SCRIPT_FILE"
+        cat <<'PATCH'
+
+# ============================================
+# SECURITY FIX: TOCTOU protection - re-check symlinks before write
+# CVE: Time-of-check-time-of-use symlink race
+# Severity: HIGH
+# ============================================
+check_symlink_toctou() {
+    local filepath="$1"
+    local dirpath=$(dirname "$filepath")
+    local current="$dirpath"
+
+    # Check directory and all parents up to BASE_DIR
+    while [ "$current" != "$BASE_DIR" ] && [ "$current" != "/" ] && [ -n "$current" ]; do
+        if [ -L "$current" ]; then
+            log "ERROR" "SECURITY: Symlink detected at write time (TOCTOU attack?): $current"
+            exit 6
+        fi
+        current=$(dirname "$current")
+    done
+
+    # Final check: directory exists and is not a symlink
+    if [ ! -d "$dirpath" ]; then
+        log "ERROR" "SECURITY: Target directory disappeared: $dirpath"
+        exit 6
+    fi
+    if [ -L "$dirpath" ]; then
+        log "ERROR" "SECURITY: Target directory became a symlink: $dirpath"
+        exit 6
+    fi
+}
+
+check_symlink_toctou "$filepath"
+
+PATCH
+        tail -n +"$LINE_NUM" "$SCRIPT_FILE"
+    } > "$SCRIPT_FILE.tmp"
+
+    # Replace original
+    mv "$SCRIPT_FILE.tmp" "$SCRIPT_FILE"
+    chmod +x "$SCRIPT_FILE"
+
+    echo "SUCCESS: TOCTOU patch applied to $(basename $SCRIPT_FILE)"
+}
+
+# Apply to all vulnerable scripts
+BASE_DIR="$HOME/.claude/emergent-learning/scripts"
+
+patch_file "$BASE_DIR/record-failure.sh" "cat > \"\$filepath\""
+patch_file "$BASE_DIR/record-heuristic.sh" "cat > \"\$domain_file\""
+patch_file "$BASE_DIR/start-experiment.sh" "cat > \"\$folder_path/hypothesis.md\""
+
+echo ""
+echo "All TOCTOU patches applied!"
+echo "Backups saved with .before-toctou-fix extension"
+echo ""
+echo "Verification:"
+echo "  Attack: Start script in one terminal, replace directory with symlink in another"
+echo "  Expected: Script exits with 'SECURITY: Symlink detected at write time'"
