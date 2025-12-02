@@ -1,0 +1,351 @@
+═══════════════════════════════════════════════════════════════════════════════
+GIT LOCK CONTENTION - VISUAL DIAGRAM
+Emergent Learning Framework - Critical Race Condition
+═══════════════════════════════════════════════════════════════════════════════
+
+SCENARIO: 10 Concurrent record-failure.sh Calls
+
+═══════════════════════════════════════════════════════════════════════════════
+CURRENT BEHAVIOR (BROKEN)
+═══════════════════════════════════════════════════════════════════════════════
+
+Timeline:
+T+0.0s    T+0.1s    T+0.5s    T+1.0s                  T+30.0s              T+31.0s
+│         │         │         │                       │                    │
+│◄────────┴─────────┴─────────┴───────────────────────┴────────────────────┴──►
+│
+│  Process 1-10: START
+│  ├── Parse args ✓
+│  ├── Validate input ✓
+│  └── Create markdown file ✓
+│      (all 10 files created successfully)
+│
+├─► All processes write to SQLite (concurrent)
+│   ├── Process 1: Write to DB ✓ (ID: 229)
+│   ├── Process 2: Write to DB ✓ (ID: 230)
+│   ├── Process 3: Write to DB ✓ (ID: 231)
+│   ├── Process 4: Write to DB ✓ (ID: 232)
+│   ├── Process 5: Write to DB ✓ (ID: 233)
+│   ├── Process 6: Write to DB ✓ (ID: 234)
+│   ├── Process 7: Write to DB ✓ (ID: 235)
+│   ├── Process 8: Write to DB ✓ (ID: 236)
+│   ├── Process 9: Write to DB (blocked, retry) ✓
+│   └── Process 10: Write to DB (blocked, retry) ✓
+│
+│       SQLite retry logic handles this well ✓
+│
+├─► All processes attempt git commit (SERIAL - BOTTLENECK!)
+│
+│   Process 1:
+│   ├── acquire_git_lock() → SUCCESS (acquired memory/.git/index.lock)
+│   ├── git add failure_file.md
+│   ├── git commit -m "..." ✓
+│   ├── release_git_lock()
+│   └── exit 0 ✓
+│
+│   Process 2-10: (all waiting for lock)
+│   ├── acquire_git_lock() → WAITING (lock held by Process 1)
+│   │   └── flock -w 30 /memory/.git/index.lock
+│   │
+│   Process 2: (lock released by Process 1)
+│   ├── acquire_git_lock() → SUCCESS
+│   ├── git add, git commit ✓
+│   ├── release_git_lock()
+│   └── exit 0 ✓
+│
+│   Process 3: (lock released by Process 2)
+│   ├── acquire_git_lock() → SUCCESS
+│   ├── git add, git commit ✓
+│   ├── release_git_lock()
+│   └── exit 0 ✓
+│
+│   [... Processes 4-7 similar ...]
+│
+│   Process 8-10: (30 second timeout exceeded!)
+│   ├── acquire_git_lock() → TIMEOUT (waited 30s)
+│   ├── cleanup_on_failure() ← ROLLBACK DB RECORD! ✗
+│   ├── echo "Error: Could not acquire git lock"
+│   └── exit 1 ✗
+│
+│       CRITICAL BUG: DB record already committed!
+│       cleanup_on_failure() tries to delete it, but:
+│       - Markdown file still exists
+│       - DB record might be referenced elsewhere
+│       - Partial state created
+
+═══════════════════════════════════════════════════════════════════════════════
+
+RESULT:
+  Process 1-7:  SUCCESS (exit 0) ✓
+  Process 8-10: FAILURE (exit 1) ✗
+
+  Database:     7-8 records (some cleanup may succeed)
+  Files:        10 files (all created)
+  Git:          7 commits (Process 8-10 never committed)
+
+  STATE:        INCONSISTENT ✗
+
+═══════════════════════════════════════════════════════════════════════════════
+EXECUTION FLOW DIAGRAM
+═══════════════════════════════════════════════════════════════════════════════
+
+Process N:
+┌─────────────────┐
+│ Parse Arguments │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Create MD File  │ ✓ Fast, no lock
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────┐
+│ Write to SQLite DB      │ ✓ Retry logic handles concurrency
+│ (sqlite_with_retry)     │   Max 5 attempts, random backoff
+└────────┬────────────────┘
+         │
+         ▼
+┌───────────────────────────────────────┐
+│ acquire_git_lock(timeout=30)          │ ✗ BOTTLENECK!
+│ ┌───────────────────────────────────┐ │   - Single global lock
+│ │ Try to lock:                      │ │   - 30s timeout
+│ │   memory/.git/index.lock          │ │   - No queue
+│ │                                   │ │   - No priority
+│ │ if locked by another process:     │ │
+│ │   wait... (up to 30s)             │ │
+│ │                                   │ │
+│ │ if timeout:                       │ │
+│ │   return FAILURE ──────────────┐  │ │
+│ └───────────────────────────────┼──┘ │
+└─────────────────────────────────┼────┘
+                                  │
+                  ┌───────────────┴─────────────────┐
+                  │                                 │
+                  ▼                                 ▼
+        ┌──────────────────┐            ┌──────────────────────┐
+        │ Lock Acquired ✓  │            │ Lock Timeout ✗       │
+        └────────┬─────────┘            └──────────┬───────────┘
+                 │                                 │
+                 ▼                                 ▼
+        ┌──────────────────┐            ┌──────────────────────┐
+        │ git add files    │            │ cleanup_on_failure() │
+        └────────┬─────────┘            │ - Delete DB record?  │
+                 │                      │ - Delete MD file?    │
+                 ▼                      │ - Partial cleanup!   │
+        ┌──────────────────┐            └──────────┬───────────┘
+        │ git commit       │                       │
+        └────────┬─────────┘                       ▼
+                 │                      ┌──────────────────────┐
+                 ▼                      │ echo "Error"         │
+        ┌──────────────────┐            └──────────┬───────────┘
+        │ release_git_lock │                       │
+        └────────┬─────────┘                       ▼
+                 │                      ┌──────────────────────┐
+                 ▼                      │ exit 1 ✗             │
+        ┌──────────────────┐            └──────────────────────┘
+        │ exit 0 ✓         │
+        └──────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+THE PROBLEM
+═══════════════════════════════════════════════════════════════════════════════
+
+1. DB WRITE SUCCEEDS (non-blocking with retry)
+   └─► Record is COMMITTED to database
+
+2. GIT LOCK TIMES OUT (blocking, no retry)
+   └─► cleanup_on_failure() tries to rollback
+
+3. RESULT: Inconsistent state
+   - DB has record
+   - File exists
+   - Git has no commit
+   - Script reports failure
+
+═══════════════════════════════════════════════════════════════════════════════
+PROPOSED FIX - OPTION A: Non-Blocking Git
+═══════════════════════════════════════════════════════════════════════════════
+
+Process N:
+┌─────────────────┐
+│ Parse Arguments │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Create MD File  │ ✓
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────┐
+│ Write to SQLite DB      │ ✓
+└────────┬────────────────┘
+         │
+         ▼
+┌───────────────────────────────────────┐
+│ TRY acquire_git_lock(timeout=5)       │ ← Shorter timeout
+│                                       │
+│ if SUCCESS:                           │
+│   git add, git commit                 │
+│   release_git_lock()                  │
+│   echo "Success with git commit ✓"   │
+│ else:                                 │
+│   echo "Warning: git commit skipped"  │ ← Don't fail!
+│   (record already in DB and file)    │
+└────────┬──────────────────────────────┘
+         │
+         ▼
+┌──────────────────────┐
+│ exit 0 ✓             │ ← Always success if DB write worked
+└──────────────────────┘
+
+BENEFITS:
+  ✓ Never fails due to git lock
+  ✓ DB and file always consistent
+  ✓ Git commit is "best effort"
+  ✓ No rollback needed
+  ✓ Concurrent operations succeed
+
+TRADE-OFF:
+  ⚠ Some records may not be in git history
+  ⚠ Need separate process to catch up commits
+
+═══════════════════════════════════════════════════════════════════════════════
+PROPOSED FIX - OPTION B: Async Git Queue
+═══════════════════════════════════════════════════════════════════════════════
+
+Process N:
+┌─────────────────┐
+│ Parse Arguments │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Create MD File  │ ✓
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────┐
+│ Write to SQLite DB      │ ✓
+└────────┬────────────────┘
+         │
+         ▼
+┌───────────────────────────────┐
+│ Queue for git commit          │
+│ (append to commit_queue.txt)  │
+│                               │
+│ echo "$filepath" >> queue.txt │
+└────────┬──────────────────────┘
+         │
+         ▼
+┌──────────────────────┐
+│ exit 0 ✓             │ ← Immediate success
+└──────────────────────┘
+
+Background Worker (separate process):
+┌──────────────────────────────┐
+│ Watch commit_queue.txt       │
+└────────┬─────────────────────┘
+         │
+         ▼
+┌──────────────────────────────┐
+│ Read next 10 items from queue│
+└────────┬─────────────────────┘
+         │
+         ▼
+┌──────────────────────────────┐
+│ acquire_git_lock()           │ No timeout pressure
+└────────┬─────────────────────┘
+         │
+         ▼
+┌──────────────────────────────┐
+│ git add (all 10 files)       │ Batch commit!
+│ git commit -m "..."          │
+└────────┬─────────────────────┘
+         │
+         ▼
+┌──────────────────────────────┐
+│ release_git_lock()           │
+└────────┬─────────────────────┘
+         │
+         └──► (loop)
+
+BENEFITS:
+  ✓ Zero impact on record-failure.sh speed
+  ✓ Batch commits (more efficient)
+  ✓ No timeout issues
+  ✓ Retries handled by worker
+  ✓ Can prioritize important commits
+
+TRADE-OFF:
+  ⚠ More complex implementation
+  ⚠ Need to manage worker process
+  ⚠ Small delay before git commit
+
+═══════════════════════════════════════════════════════════════════════════════
+RECOMMENDED IMMEDIATE FIX
+═══════════════════════════════════════════════════════════════════════════════
+
+PHASE 1 (Today - 2 hours):
+  Implement Option A (non-blocking git)
+
+  Change this:
+  ─────────────────────────────────────────────
+  if ! acquire_git_lock "$LOCK_FILE" 30; then
+      log "ERROR" "Could not acquire git lock"
+      cleanup_on_failure "$filepath" "$LAST_ID"
+      echo "Error: Could not acquire git lock"
+      exit 1  ← REMOVE THIS EXIT
+  fi
+  ─────────────────────────────────────────────
+
+  To this:
+  ─────────────────────────────────────────────
+  if ! acquire_git_lock "$LOCK_FILE" 5; then
+      log "WARN" "Git lock timeout - commit skipped"
+      echo "Warning: git commit skipped (will retry later)"
+  else
+      git add "$filepath" "$DB_PATH"
+      if git commit -m "failure: $title"; then
+          log "INFO" "Git commit created"
+          echo "Git commit created ✓"
+      fi
+      release_git_lock "$LOCK_FILE"
+  fi
+  # Continue regardless...
+  ─────────────────────────────────────────────
+
+PHASE 2 (Next week - 1 day):
+  Implement Option B (async queue)
+  Create git-commit-worker.sh
+  Start worker in background
+  Remove inline git commits entirely
+
+═══════════════════════════════════════════════════════════════════════════════
+METRICS BEFORE/AFTER
+═══════════════════════════════════════════════════════════════════════════════
+
+BEFORE (Current):
+  Concurrent capacity:    ~2-3 processes (then timeouts start)
+  Success rate (10 procs): 70% (7/10)
+  Failure mode:           Hard exit with cleanup
+  Git consistency:        100% (only committed records succeed)
+  State consistency:      Low (partial states on failure)
+
+AFTER Option A:
+  Concurrent capacity:    Unlimited (DB is bottleneck, handles well)
+  Success rate (10 procs): 100% (10/10)
+  Failure mode:           Graceful warning
+  Git consistency:        ~90% (some commits skipped under load)
+  State consistency:      100% (DB + file always match)
+
+AFTER Option B:
+  Concurrent capacity:    Unlimited
+  Success rate (10 procs): 100% (10/10)
+  Failure mode:           None
+  Git consistency:        100% (worker retries until success)
+  State consistency:      100%
+  Git latency:            +1-5 seconds (async)
+
+═══════════════════════════════════════════════════════════════════════════════

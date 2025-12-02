@@ -1,0 +1,268 @@
+═══════════════════════════════════════════════════════════════════
+NOVEL EDGE CASE TESTING - EXECUTIVE SUMMARY
+Emergent Learning Framework
+Test Date: 2025-12-01
+═══════════════════════════════════════════════════════════════════
+
+OVERALL RESULT: CRITICAL ISSUES FOUND
+Status: NOT SAFE FOR CONCURRENT PRODUCTION USE
+
+Tests Run: 8
+Passed: 2
+Failed: 6
+
+SEVERITY BREAKDOWN:
+  CRITICAL: 1 issue
+  HIGH:     1 issue
+  MEDIUM:   4 issues
+  LOW:      0 issues
+
+═══════════════════════════════════════════════════════════════════
+CRITICAL FINDING #1: GIT LOCK CONTENTION
+═══════════════════════════════════════════════════════════════════
+
+WHAT: Under concurrent load, git lock becomes bottleneck
+WHERE: record-failure.sh, record-heuristic.sh (all recording scripts)
+IMPACT: Scripts fail with exit code 1 despite DB writes succeeding
+
+TEST EVIDENCE (Test 1 - Rapid Sequential Calls):
+  - Launched: 10 parallel record-failure calls
+  - Database: 8/10 records successfully written (IDs 229-236)
+  - Files: 10/10 markdown files created
+  - Git: 8/10 failed with "Could not acquire git lock"
+  - Result: Exit code 1, partial state (DB ✓, Git ✗)
+
+ROOT CAUSE:
+  - Single git lock at memory/.git/index.lock
+  - 30 second timeout
+  - Hard exit on lock acquisition failure
+  - Git commit is blocking operation
+
+REAL-WORLD SCENARIO:
+  Multiple agents trying to record failures simultaneously would:
+  1. Create database records ✓
+  2. Create markdown files ✓
+  3. Fail at git commit ✗
+  4. Exit with error code 1
+  5. Leave inconsistent state (no git history)
+
+FIX REQUIRED: Make git commits non-blocking or optional
+EFFORT: 2 hours
+PRIORITY: IMMEDIATE
+
+RECOMMENDED CODE CHANGE:
+  # Before:
+  if ! acquire_git_lock "$LOCK_FILE" 30; then
+      echo "Error: Could not acquire git lock"
+      exit 1  # ← FAILS HERE
+  fi
+
+  # After:
+  if ! acquire_git_lock "$LOCK_FILE" 30; then
+      log "WARN" "Could not acquire git lock - continuing without commit"
+      echo "Warning: Git commit skipped (lock timeout)"
+      # Don't exit - record is already in DB
+  else
+      git add "$filepath" "$DB_PATH"
+      git commit -m "failure: $title"
+      release_git_lock "$LOCK_FILE"
+  fi
+
+═══════════════════════════════════════════════════════════════════
+HIGH FINDING #2: STALE GIT LOCKS NOT CLEANED
+═══════════════════════════════════════════════════════════════════
+
+WHAT: Crashed git processes leave permanent lock files
+WHERE: acquire_git_lock() function
+IMPACT: Framework permanently blocked until manual intervention
+
+TEST EVIDENCE (Test 5 - Partial Git State):
+  - Created: Stale .git/index.lock file
+  - Script: Failed to acquire lock (waited 30s, gave up)
+  - Lock: Still existed after script completion
+  - Exit code: 1
+
+FIX REQUIRED: Check lock age/PID before waiting
+EFFORT: 1 hour
+PRIORITY: HIGH
+
+═══════════════════════════════════════════════════════════════════
+MEDIUM FINDINGS
+═══════════════════════════════════════════════════════════════════
+
+ISSUE #3: NO INPUT VALIDATION (Test 7)
+  - Passed 100KB summary to script
+  - Script failed silently (exit 1)
+  - No error message explaining limit
+  - No documentation of limits
+  FIX: Add size validation with clear errors
+
+ISSUE #4: PERMISSION ERRORS NOT HANDLED (Test 6)
+  - Changed DB to read-only during write
+  - Script failed without graceful handling
+  - No pre-flight permission check
+  FIX: Check permissions before operations
+
+ISSUE #5: FILE DESCRIPTOR EXHAUSTION (Test 3)
+  - Opened 50 FDs before running script
+  - Script succeeded but hit git lock issue
+  - FD handling itself is fine (limit: 3200)
+  - Secondary failure due to Issue #1
+  FIX: No FD-specific fix needed, resolve git lock
+
+ISSUE #6: CONCURRENT SCHEMA OPS (Test 8)
+  - 5 parallel writes during schema check
+  - Database integrity: OK ✓
+  - All 5 records created ✓
+  - All 5 git commits failed (lock contention)
+  FIX: Resolve git lock issue
+
+═══════════════════════════════════════════════════════════════════
+TESTS THAT PASSED ✓
+═══════════════════════════════════════════════════════════════════
+
+TEST #2: MIDNIGHT BOUNDARY
+  ✓ TIME-FIX-1 implemented correctly
+  ✓ Date captured once at script start
+  ✓ Prevents midnight race conditions
+
+TEST #4: SIGNAL INTERRUPTION (SIGTERM)
+  ✓ Database integrity maintained
+  ✓ No corruption on abnormal termination
+  ✓ SQLite ACID properties working correctly
+
+═══════════════════════════════════════════════════════════════════
+ACTUAL vs REPORTED RESULTS
+═══════════════════════════════════════════════════════════════════
+
+NOTE: Test framework had a bug - used wrong table name
+  Query used: SELECT FROM failures (wrong)
+  Should be:  SELECT FROM learnings (correct)
+
+This caused tests to report 0 records when actually:
+  - Test 1: 8 records created (IDs 229-236)
+  - Test 2: 1 record created (ID 238)
+  - Test 3: 1 record created (ID 240)
+  - Test 4: 1 record created (ID 243)
+  - Test 5: 1 record created (ID 244)
+  - Test 8: 5 records created (IDs 250-254)
+
+TOTAL: 17 database records successfully created
+       (tests falsely reported 0)
+
+═══════════════════════════════════════════════════════════════════
+KEY TAKEAWAYS
+═══════════════════════════════════════════════════════════════════
+
+1. DATABASE LAYER IS ROBUST
+   ✓ SQLite handles concurrency correctly
+   ✓ No corruption under any test scenario
+   ✓ ACID properties maintained
+   ✓ Retry logic works
+
+2. GIT LAYER IS BOTTLENECK
+   ✗ Single point of contention
+   ✗ Blocking operation
+   ✗ Hard failures on timeout
+   ✗ Creates partial state
+
+3. FRAMEWORK DESIGN ISSUE
+   Current: DB write → Git commit (blocking) → exit
+   Problem: Git failure fails entire operation
+   Solution: DB write → Queue git commit (async) → exit success
+
+4. INPUT VALIDATION MISSING
+   No size limits enforced
+   Silent failures on large input
+   No documentation of constraints
+
+═══════════════════════════════════════════════════════════════════
+PRODUCTION READINESS
+═══════════════════════════════════════════════════════════════════
+
+Current State: NOT READY FOR CONCURRENT USE
+
+Safe for:
+  ✓ Single-user sequential operations
+  ✓ One agent at a time
+  ✓ Non-concurrent workflows
+
+NOT safe for:
+  ✗ Multiple concurrent agents
+  ✗ Parallel failure recording
+  ✗ High-frequency operations
+  ✗ Production multi-agent systems
+
+═══════════════════════════════════════════════════════════════════
+RECOMMENDED ACTIONS (Priority Order)
+═══════════════════════════════════════════════════════════════════
+
+1. IMMEDIATE (Today):
+   □ Make git commits non-blocking (Issue #1)
+   □ Don't exit on git lock timeout
+   □ Log warning instead of error
+   Effort: 2 hours
+
+2. THIS WEEK:
+   □ Add stale lock cleanup (Issue #2)
+   □ Add input validation (Issue #3)
+   □ Add permission checks (Issue #4)
+   Effort: 2.5 hours
+
+3. NEXT SPRINT:
+   □ Implement async git commit queue
+   □ Add background git worker
+   □ Document size limits
+   Effort: 1 day
+
+TOTAL ESTIMATED EFFORT: 4-5 hours for critical fixes
+                       + 1 day for long-term solution
+
+═══════════════════════════════════════════════════════════════════
+NOVEL INSIGHTS
+═══════════════════════════════════════════════════════════════════
+
+These edge cases revealed issues likely not caught before:
+
+1. Git lock contention under concurrent load
+   (Previous testing was probably sequential)
+
+2. Partial state on git failure
+   (DB succeeds, git fails, operation reports failure)
+
+3. Stale lock files not cleaned up
+   (No recovery from crashed git processes)
+
+4. Silent failures on large input
+   (No error messages, hard to debug)
+
+5. Test framework bugs
+   (Wrong table name caused false negatives)
+
+═══════════════════════════════════════════════════════════════════
+FILES AFFECTED
+═══════════════════════════════════════════════════════════════════
+
+Critical:
+  - scripts/record-failure.sh
+  - scripts/record-heuristic.sh
+  - scripts/start-experiment.sh
+
+Functions to modify:
+  - acquire_git_lock()
+  - release_git_lock()
+  - Main execution flow (git commit section)
+
+New functions needed:
+  - validate_input_sizes()
+  - check_stale_lock()
+  - async_git_commit() (long-term)
+
+═══════════════════════════════════════════════════════════════════
+
+Full detailed report: NOVEL_EDGE_CASE_TEST_REPORT.md
+Test script: test-edge-cases-simple.sh
+Test date: 2025-12-01 20:10-20:14 UTC
+Test duration: ~60 seconds
+
+═══════════════════════════════════════════════════════════════════

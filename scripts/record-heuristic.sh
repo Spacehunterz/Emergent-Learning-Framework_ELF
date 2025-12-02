@@ -327,10 +327,28 @@ if [ -z "$domain" ]; then
 fi
 
 
+# Sanitize input: strip ANSI escapes, control chars, CRLF
+sanitize_input() {
+    local input="$1"
+    # Remove ANSI escape sequences
+    input=$(printf '%s' "$input" | sed 's/\x1b\[[0-9;]*[mGKHF]//g')
+    # Remove control characters except newline/tab
+    input=$(printf '%s' "$input" | tr -d '\000-\010\013-\037\177')
+    # Convert CRLF to space
+    input=$(printf '%s' "$input" | tr '\r\n' '  ')
+    printf '%s' "$input"
+}
+
 # Escape single quotes for SQL
 escape_sql() {
     echo "${1//\'/\'\'}"
 }
+
+
+# SECURITY: Sanitize ALL user inputs before processing
+domain=$(sanitize_input "$domain")
+rule=$(sanitize_input "$rule")
+explanation=$(sanitize_input "$explanation")
 
 domain_escaped=$(escape_sql "$domain")
 rule_escaped=$(escape_sql "$rule")
