@@ -1,0 +1,69 @@
+╔═══════════════════════════════════════════════════════════════════════╗
+║           GOLDEN RULE ACCOUNTABILITY - QUICK REFERENCE               ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+RECORD VIOLATION
+─────────────────────────────────────────────────────────────────────────
+  record-violation.sh <rule_number> "description"
+
+  Example:
+    record-violation.sh 1 "Started investigation without querying building"
+
+VIEW ACCOUNTABILITY BANNER
+─────────────────────────────────────────────────────────────────────────
+  python query.py --accountability-banner
+
+VIEW VIOLATION DETAILS
+─────────────────────────────────────────────────────────────────────────
+  python query.py --violations [--violation-days 7]
+
+VIEW STATISTICS (includes violations)
+─────────────────────────────────────────────────────────────────────────
+  python query.py --stats
+
+PROGRESSIVE CONSEQUENCES
+─────────────────────────────────────────────────────────────────────────
+  0-2:   NORMAL     │ Acceptable compliance
+  3-4:   WARNING    │ Review adherence
+  5-9:   PROBATION  │ Increased scrutiny
+  10+:   CRITICAL   │ CEO escalation auto-created
+
+ACKNOWLEDGE VIOLATIONS (after CEO review)
+─────────────────────────────────────────────────────────────────────────
+  sqlite3 memory/index.db \
+    "UPDATE violations SET acknowledged = 1 \
+     WHERE violation_date >= datetime('now', '-7 days');"
+
+GOLDEN RULES (from golden-rules.md)
+─────────────────────────────────────────────────────────────────────────
+  1. Query Before Acting
+  2. Document Failures Immediately
+  3. Extract Heuristics, Not Just Outcomes
+  4. Break It Before Shipping It
+  5. Escalate Uncertainty
+  6. Record Learnings Before Ending Session
+  7. Obey Direct Commands Immediately
+  8. Log Before Summary
+
+FILES
+─────────────────────────────────────────────────────────────────────────
+  Database:      memory/index.db (violations table)
+  Recording:     scripts/record-violation.sh
+  Query System:  query/query.py
+  Documentation: ACCOUNTABILITY_SYSTEM.md
+  Test Suite:    test-accountability.sh
+
+TESTING
+─────────────────────────────────────────────────────────────────────────
+  bash test-accountability.sh
+
+CEO ESCALATION
+─────────────────────────────────────────────────────────────────────────
+  Triggered at: 10+ violations in 7 days
+  Creates:      ceo-inbox/VIOLATION_THRESHOLD_<timestamp>.md
+  DB Entry:     ceo_reviews table
+  Contains:     Full violation report + recommendations
+
+╔═══════════════════════════════════════════════════════════════════════╗
+║  TIP: Check banner at session start/end to monitor compliance        ║
+╚═══════════════════════════════════════════════════════════════════════╝
