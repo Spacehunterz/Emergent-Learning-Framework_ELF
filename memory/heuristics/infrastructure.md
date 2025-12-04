@@ -13,3 +13,13 @@ RAG queries require Ollama for embeddings/LLM. Voice generation requires ComfyUI
 
 ---
 
+## H-90: Check existing infrastructure before building new - you likely already have what you need
+
+**Confidence**: 0.85
+**Source**: observation
+**Created**: 2025-12-04  # TIME-FIX-2: Use consistent date
+
+Built SQLite FTS5 search for swarm plugin, then discovered Basic Memory already had ChromaDB + embeddings. Wasted effort. Always audit existing tools first.
+
+---
+
