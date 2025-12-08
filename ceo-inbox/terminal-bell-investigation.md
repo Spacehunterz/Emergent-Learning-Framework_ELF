@@ -1,33 +1,31 @@
-# Terminal Bell on Resize - Investigation Needed
+# Terminal Bell on Resize - CAUSE IDENTIFIED
 
 **Created:** 2025-12-08
 **Priority:** MEDIUM
-**Status:** PENDING INVESTIGATION
+**Status:** CAUSE IDENTIFIED - claudex-mcp
 
 ## Problem
-System alert sound plays when resizing the terminal window. User reports this started happening after using async agents.
+System alert sound plays when resizing the terminal window.
 
-## Environment
-- Platform: Windows (MSYS_NT-10.0)
-- MCP: claudex-mcp connected (terminal state monitoring)
-- Feature: Async agents (background Task tool)
+## Root Cause
+**Confirmed: claudex-mcp server**
 
-## Possible Causes
-1. **Claudex MCP** - Terminal state tracking may emit bell character on resize events
-2. **Background shells** - SIGWINCH handling in async agent shells
-3. **Escape sequence issues** - Malformed sequences during resize on Windows
+Test results:
+- ✓ With claudex-mcp enabled: Bell sounds on resize
+- ✓ With claudex-mcp disabled: No bell on resize
 
-## Investigation Steps
-1. [ ] Check claudex-mcp source for bell character emission
-2. [ ] Test resize with claudex-mcp disconnected
-3. [ ] Test resize with no background agents running
-4. [ ] Check Windows Terminal bell settings
-5. [ ] Review async agent shell cleanup
+## Likely Issue
+The claudex-mcp server monitors terminal state and likely:
+1. Receives resize events (SIGWINCH or equivalent)
+2. Outputs a bell character (`\x07`) somewhere in its response
+3. Or has malformed escape sequences during state refresh
 
-## Impact
-- User annoyance
-- Could affect adoption if others experience same issue
+## Fix Location
+Check claudex-mcp source code for:
+- Bell character in output
+- Error handling on resize events
+- Escape sequence generation
 
-## Notes
-- No tasks running at time of report
-- Issue persists after swarm completion
+## Action Items
+- [ ] Report issue to claudex-mcp maintainer/repo
+- [ ] Or fix locally if we have the source
