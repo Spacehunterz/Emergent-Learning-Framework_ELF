@@ -9,10 +9,6 @@
 
 set -e
 
-# SECURITY FIX 3: Restrictive umask for all file operations
-# Agent: B2 - Ensures new files are created with 0600 permissions
-umask 0077
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="$(dirname "$SCRIPT_DIR")"
 MEMORY_DIR="$BASE_DIR/memory"
@@ -20,54 +16,69 @@ DB_PATH="$MEMORY_DIR/index.db"
 HEURISTICS_DIR="$MEMORY_DIR/heuristics"
 LOGS_DIR="$BASE_DIR/logs"
 
-# TIME-FIX-1: Capture date once at script start for consistency across midnight boundary
-EXECUTION_DATE=$(date +%Y%m%d)
-
 # Setup logging
-LOG_FILE="$LOGS_DIR/${EXECUTION_DATE}.log"
+LOG_FILE="$LOGS_DIR/$(date +%Y%m%d).log"
 mkdir -p "$LOGS_DIR"
 
 log() {
     local level="$1"
-
-# ========================================
-# OBSERVABILITY INTEGRATION
-# ========================================
-
-# Source observability libraries
-if [ -f "$SCRIPT_DIR/lib/logging.sh" ]; then
-    source "$SCRIPT_DIR/lib/logging.sh"
-    source "$SCRIPT_DIR/lib/metrics.sh" 2>/dev/null || true
-    source "$SCRIPT_DIR/lib/alerts.sh" 2>/dev/null || true
-
-    # Initialize observability
-    log_init "record-heuristic" "$LOGS_DIR"
-    metrics_init "$DB_PATH" 2>/dev/null || true
-    alerts_init "$BASE_DIR" 2>/dev/null || true
-
-    # Generate correlation ID for this execution
-    CORRELATION_ID=$(log_get_correlation_id)
-    export CORRELATION_ID
-
-    log_info "Script started" user="$(whoami)" correlation_id="$CORRELATION_ID"
-
-    # Start performance tracking
-    log_timer_start "record-heuristic_total"
-    OPERATION_START=$(metrics_operation_start "record-heuristic" 2>/dev/null || echo "")
-else
-    # Fallback if libraries not found
-    CORRELATION_ID="${script_name}_$(date +%s)_$$"
-    OPERATION_START=""
-fi
-
-# ========================================
-
     shift
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$level] [record-heuristic] $*" >> "$LOG_FILE"
     if [ "$level" = "ERROR" ]; then
         echo "ERROR: $*" >&2
     fi
 }
+
+# Sanitize input: strip control chars, normalize whitespace
+sanitize_input() {
+    local input="$1"
+    # Remove most control characters (keep printable + space/tab)
+    # Use POSIX-compatible approach
+    input=$(printf '%s' "$input" | tr -cd '[:print:][:space:]')
+    # Normalize multiple spaces to single
+    input=$(printf '%s' "$input" | tr -s ' ')
+    # Trim leading/trailing whitespace
+    input=$(echo "$input" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    printf '%s' "$input"
+}
+
+# Check for symlink attacks (TOCTOU protection)
+check_symlink_safe() {
+    local filepath="$1"
+    local dirpath=$(dirname "$filepath")
+
+    if [ -L "$filepath" ]; then
+        log "ERROR" "SECURITY: Target is a symlink: $filepath"
+        return 1
+    fi
+    if [ -L "$dirpath" ]; then
+        log "ERROR" "SECURITY: Parent directory is a symlink: $dirpath"
+        return 1
+    fi
+    return 0
+}
+
+# Check for hardlink attacks
+check_hardlink_safe() {
+    local filepath="$1"
+    [ ! -f "$filepath" ] && return 0
+
+    local link_count
+    if command -v stat &> /dev/null; then
+        link_count=$(stat -c '%h' "$filepath" 2>/dev/null || stat -f '%l' "$filepath" 2>/dev/null)
+    fi
+
+    if [ -n "$link_count" ] && [ "$link_count" -gt 1 ]; then
+        log "ERROR" "SECURITY: File has $link_count hardlinks: $filepath"
+        return 1
+    fi
+    return 0
+}
+
+# Input length limits
+MAX_RULE_LENGTH=500
+MAX_DOMAIN_LENGTH=100
+MAX_EXPLANATION_LENGTH=5000
 
 # SQLite retry function for handling concurrent access
 sqlite_with_retry() {
@@ -129,34 +140,9 @@ release_git_lock() {
 # Error trap
 trap 'log "ERROR" "Script failed at line $LINENO"; exit 1' ERR
 
-# TIME-FIX-4: Timestamp validation function
-validate_timestamp() {
-    local ts_epoch
-    ts_epoch=$(date +%s)
-    
-    # Check if timestamp is reasonable (not before 2020, not more than 1 day in future)
-    local year_2020=1577836800  # 2020-01-01 00:00:00 UTC
-    local one_day_ahead=$((ts_epoch + 86400))
-    
-    if [ "$ts_epoch" -lt "$year_2020" ]; then
-        log "ERROR" "System clock appears to be set before 2020"
-        return 1
-    fi
-    
-    # Note: We allow small future dates (up to 1 day) to handle timezone issues
-    return 0
-}
-
 # Pre-flight validation
 preflight_check() {
-
     log "INFO" "Starting pre-flight checks"
-
-    # TIME-FIX-5: Validate system timestamp
-    if ! validate_timestamp; then
-        log "ERROR" "Timestamp validation failed - check system clock"
-        exit 1
-    fi
 
     if [ ! -f "$DB_PATH" ]; then
         log "ERROR" "Database not found: $DB_PATH"
@@ -228,8 +214,18 @@ if [ -n "$domain" ] && [ -n "$rule" ]; then
     fi
     explanation="${explanation:-}"
     echo "=== Record Heuristic (non-interactive) ==="
+elif [ ! -t 0 ]; then
+    # Not a terminal and no args provided - show usage and exit gracefully
+    log "INFO" "No terminal attached and no arguments provided - showing usage"
+    echo "Usage (non-interactive):"
+    echo "  $0 --domain \"domain\" --rule \"the heuristic rule\""
+    echo "  Optional: --explanation \"why\" --source failure|success|observation --confidence 0.8"
+    echo ""
+    echo "Or set environment variables:"
+    echo "  HEURISTIC_DOMAIN=\"domain\" HEURISTIC_RULE=\"rule\" $0"
+    exit 0
 else
-    # Interactive mode
+    # Interactive mode (terminal attached)
     log "INFO" "Running in interactive mode"
     echo "=== Record Heuristic ==="
     echo ""
@@ -259,96 +255,39 @@ else
     fi
 fi
 
-log "INFO" "Recording heuristic: $rule (domain: $domain, confidence: $confidence)"
-
-# ============================================
-# SECURITY FIX: Sanitize domain to prevent path traversal
-# CVE: Path traversal via domain parameter
-# Severity: CRITICAL
-# ============================================
-domain_safe="${domain//$'\0'/}"  # Remove null bytes
-domain_safe="${domain_safe//$'\n'/}"  # Remove newlines
-domain_safe="${domain_safe//$'\r'/}"  # Remove carriage returns
-domain_safe=$(echo "$domain_safe" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
-domain_safe=$(echo "$domain_safe" | tr -cd '[:alnum:]-')  # Only alphanumeric and dash
-domain_safe="${domain_safe#-}"  # Remove leading dash
-domain_safe="${domain_safe%-}"  # Remove trailing dash
-domain_safe="${domain_safe:0:100}"  # Limit length to prevent buffer issues
-
+# Sanitize domain to prevent path traversal
+domain_safe=$(echo "$domain" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd '[:alnum:]-')
+domain_safe="${domain_safe#-}"
+domain_safe="${domain_safe%-}"
+domain_safe="${domain_safe:0:100}"
 if [ -z "$domain_safe" ]; then
-    log "ERROR" "SECURITY: Domain sanitization resulted in empty string: '$domain'"
-    exit 6
+    log "ERROR" "Domain resulted in empty string after sanitization"
+    exit 1
 fi
+domain="$domain_safe"
 
-if [ "$domain" != "$domain_safe" ]; then
-    log "WARN" "SECURITY: Domain sanitized from '$domain' to '$domain_safe'"
-    domain="$domain_safe"
-fi
-
-
-# Input length validation (added by Agent C hardening)
-MAX_RULE_LENGTH=500
-MAX_DOMAIN_LENGTH=100
-MAX_EXPLANATION_LENGTH=5000
-
+# Input length validation
 if [ ${#rule} -gt $MAX_RULE_LENGTH ]; then
-    log "ERROR" "Rule exceeds maximum length ($MAX_RULE_LENGTH characters, got ${#rule})"
+    log "ERROR" "Rule exceeds maximum length ($MAX_RULE_LENGTH chars)"
     echo "ERROR: Rule too long (max $MAX_RULE_LENGTH characters)" >&2
     exit 1
 fi
-
-if [ ${#domain} -gt $MAX_DOMAIN_LENGTH ]; then
-    log "ERROR" "Domain exceeds maximum length ($MAX_DOMAIN_LENGTH characters)"
-    echo "ERROR: Domain too long (max $MAX_DOMAIN_LENGTH characters)" >&2
-    exit 1
-fi
-
 if [ ${#explanation} -gt $MAX_EXPLANATION_LENGTH ]; then
-    log "ERROR" "Explanation exceeds maximum length ($MAX_EXPLANATION_LENGTH characters)"
+    log "ERROR" "Explanation exceeds maximum length"
     echo "ERROR: Explanation too long (max $MAX_EXPLANATION_LENGTH characters)" >&2
     exit 1
 fi
 
-# Trim leading/trailing whitespace
-rule=$(echo "$rule" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-domain=$(echo "$domain" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+# Sanitize inputs (strip ANSI, control chars)
+rule=$(sanitize_input "$rule")
+explanation=$(sanitize_input "$explanation")
 
-# Re-validate after trimming
-if [ -z "$rule" ]; then
-    log "ERROR" "Rule cannot be empty (or whitespace-only)"
-    echo "ERROR: Rule cannot be empty" >&2
-    exit 1
-fi
-
-if [ -z "$domain" ]; then
-    log "ERROR" "Domain cannot be empty (or whitespace-only)"
-    echo "ERROR: Domain cannot be empty" >&2
-    exit 1
-fi
-
-
-# Sanitize input: strip ANSI escapes, control chars, CRLF
-sanitize_input() {
-    local input="$1"
-    # Remove ANSI escape sequences
-    input=$(printf '%s' "$input" | sed 's/\x1b\[[0-9;]*[mGKHF]//g')
-    # Remove control characters except newline/tab
-    input=$(printf '%s' "$input" | tr -d '\000-\010\013-\037\177')
-    # Convert CRLF to space
-    input=$(printf '%s' "$input" | tr '\r\n' '  ')
-    printf '%s' "$input"
-}
+log "INFO" "Recording heuristic: $rule (domain: $domain, confidence: $confidence)"
 
 # Escape single quotes for SQL
 escape_sql() {
     echo "${1//\'/\'\'}"
 }
-
-
-# SECURITY: Sanitize ALL user inputs before processing
-domain=$(sanitize_input "$domain")
-rule=$(sanitize_input "$rule")
-explanation=$(sanitize_input "$explanation")
 
 domain_escaped=$(escape_sql "$domain")
 rule_escaped=$(escape_sql "$rule")
@@ -378,40 +317,15 @@ log "INFO" "Database record created (ID: $heuristic_id)"
 # Append to domain markdown file
 domain_file="$HEURISTICS_DIR/${domain}.md"
 
+# Security checks before file write
+if ! check_symlink_safe "$domain_file"; then
+    exit 6
+fi
+if ! check_hardlink_safe "$domain_file"; then
+    exit 6
+fi
+
 if [ ! -f "$domain_file" ]; then
-
-# ============================================
-# SECURITY FIX: TOCTOU protection - re-check symlinks before write
-# CVE: Time-of-check-time-of-use symlink race
-# Severity: HIGH
-# ============================================
-check_symlink_toctou() {
-    local filepath="$1"
-    local dirpath=$(dirname "$filepath")
-    local current="$dirpath"
-
-    # Check directory and all parents up to BASE_DIR
-    while [ "$current" != "$BASE_DIR" ] && [ "$current" != "/" ] && [ -n "$current" ]; do
-        if [ -L "$current" ]; then
-            log "ERROR" "SECURITY: Symlink detected at write time (TOCTOU attack?): $current"
-            exit 6
-        fi
-        current=$(dirname "$current")
-    done
-
-    # Final check: directory exists and is not a symlink
-    if [ ! -d "$dirpath" ]; then
-        log "ERROR" "SECURITY: Target directory disappeared: $dirpath"
-        exit 6
-    fi
-    if [ -L "$dirpath" ]; then
-        log "ERROR" "SECURITY: Target directory became a symlink: $dirpath"
-        exit 6
-    fi
-}
-
-check_symlink_toctou "$filepath"
-
     cat > "$domain_file" <<EOF
 # Heuristics: $domain
 
@@ -423,130 +337,12 @@ EOF
     log "INFO" "Created new domain file: $domain_file"
 fi
 
-
-# ============================================
-# SECURITY FIX 1: TOCTOU protection - re-check symlinks before write
-# CVE: Time-of-check-time-of-use symlink race
-# Severity: HIGH (CVSS 7.1)
-# Agent: B2
-# ============================================
-check_symlink_toctou() {
-    local filepath="$1"
-    local dirpath=$(dirname "$filepath")
-    local current="$dirpath"
-
-    # Check directory and all parents up to BASE_DIR
-    while [ "$current" != "$BASE_DIR" ] && [ "$current" != "/" ] && [ -n "$current" ]; do
-        if [ -L "$current" ]; then
-            log "ERROR" "SECURITY: Symlink detected at write time (TOCTOU attack?): $current"
-            exit 6
-        fi
-        current=$(dirname "$current")
-    done
-
-    # Final check: directory exists and is not a symlink
-    if [ ! -d "$dirpath" ]; then
-        log "ERROR" "SECURITY: Target directory disappeared: $dirpath"
-        exit 6
-    fi
-    if [ -L "$dirpath" ]; then
-        log "ERROR" "SECURITY: Target directory became a symlink: $dirpath"
-        exit 6
-    fi
-}
-
-# ============================================
-# SECURITY FIX 2: Hardlink attack protection
-# CVE: Hardlink-based file overwrite attack
-# Severity: MEDIUM (CVSS 5.4)
-# Agent: B2
-# ============================================
-check_hardlink_attack() {
-    local filepath="$1"
-
-    # If file doesn't exist yet, it's safe
-    [ ! -f "$filepath" ] && return 0
-
-    # Get number of hardlinks to this file
-    local link_count
-    if command -v stat &> /dev/null; then
-        # Try Linux format first
-        link_count=$(stat -c '%h' "$filepath" 2>/dev/null)
-        # If that fails, try macOS/BSD format
-        if [ $? -ne 0 ]; then
-            link_count=$(stat -f '%l' "$filepath" 2>/dev/null)
-        fi
-    else
-        # stat not available, can't check
-        log "WARN" "SECURITY: Cannot check hardlinks (stat unavailable)"
-        return 0
-    fi
-
-    # If file has more than 1 link, it's a potential hardlink attack
-    if [ -n "$link_count" ] && [ "$link_count" -gt 1 ]; then
-        log "ERROR" "SECURITY: File has $link_count hardlinks (attack suspected): $filepath"
-        log "ERROR" "SECURITY: Refusing to overwrite file with multiple hardlinks"
-        return 1
-    fi
-
-    return 0
-}
-
-# Apply TOCTOU check
-check_symlink_toctou "$domain_file"
-
-# Apply hardlink check
-if ! check_hardlink_attack "$domain_file"; then
-    exit 6
-fi
-
-
-# ============================================
-# SECURITY FIX: Hardlink attack protection
-# CVE: Hardlink-based file overwrite attack
-# Severity: MEDIUM
-# ============================================
-check_hardlink_attack() {
-    local filepath="$1"
-
-    # If file doesn't exist yet, it's safe
-    [ ! -f "$filepath" ] && return 0
-
-    # Get number of hardlinks to this file
-    local link_count
-    if command -v stat &> /dev/null; then
-        # Try Linux format first
-        link_count=$(stat -c '%h' "$filepath" 2>/dev/null)
-        # If that fails, try macOS/BSD format
-        if [ $? -ne 0 ]; then
-            link_count=$(stat -f '%l' "$filepath" 2>/dev/null)
-        fi
-    else
-        # stat not available, can't check
-        log "WARN" "SECURITY: Cannot check hardlinks (stat unavailable)"
-        return 0
-    fi
-
-    # If file has more than 1 link, it's a potential hardlink attack
-    if [ -n "$link_count" ] && [ "$link_count" -gt 1 ]; then
-        log "ERROR" "SECURITY: File has $link_count hardlinks (attack suspected): $filepath"
-        log "ERROR" "SECURITY: Refusing to overwrite file with multiple hardlinks"
-        return 1
-    fi
-
-    return 0
-}
-
-if ! check_hardlink_attack "$filepath"; then
-    exit 6
-fi
-
 cat >> "$domain_file" <<EOF
 ## H-$heuristic_id: $rule
 
 **Confidence**: $confidence
 **Source**: $source_type
-**Created**: ${EXECUTION_DATE:0:4}-${EXECUTION_DATE:4:2}-${EXECUTION_DATE:6:2}  # TIME-FIX-2: Use consistent date
+**Created**: $(date +%Y-%m-%d)
 
 $explanation
 
