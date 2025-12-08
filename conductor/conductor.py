@@ -30,6 +30,50 @@ from typing import Optional, Dict, List, Any, Callable, Tuple
 from contextlib import contextmanager
 from dataclasses import dataclass, asdict
 from enum import Enum
+import re
+
+
+def safe_eval_condition(condition: str, context: dict) -> bool:
+    """Safely evaluate a condition string against a context dictionary."""
+    if not condition or not condition.strip():
+        return True
+    condition = condition.strip()
+    if condition.lower() == 'true':
+        return True
+    if condition.lower() == 'false':
+        return False
+
+    match = re.match(r"['\"](\w+)['\"]\s+not\s+in\s+context", condition)
+    if match:
+        return match.group(1) not in context
+    match = re.match(r"['\"](\w+)['\"]\s+in\s+context", condition)
+    if match:
+        return match.group(1) in context
+
+    def _parse_value(value_str):
+        value_str = value_str.strip()
+        if value_str.startswith(("'", '"')) and value_str.endswith(("'", '"')):
+            return value_str[1:-1]
+        if value_str.lower() in ('true', 'false', 'none'):
+            return {'true': True, 'false': False, 'none': None}[value_str.lower()]
+        try:
+            return float(value_str) if '.' in value_str else int(value_str)
+        except ValueError:
+            return value_str
+
+    def _compare(ctx_value, op, compare_value):
+        if ctx_value is None or compare_value is None:
+            return (ctx_value == compare_value) if op == '==' else (ctx_value != compare_value) if op == '!=' else False
+        ops = {'==': lambda a,b: a==b, '!=': lambda a,b: a!=b, '>': lambda a,b: a>b, '<': lambda a,b: a<b, '>=': lambda a,b: a>=b, '<=': lambda a,b: a<=b}
+        return ops.get(op, lambda a,b: False)(ctx_value, compare_value)
+
+    for pattern in [r"context\.get\(['\"](\w+)['\"]\)\s*(==|!=|>|<|>=|<=)\s*(.+)", r"context\[['\"](\w+)['\"]\]\s*(==|!=|>|<|>=|<=)\s*(.+)"]:
+        match = re.match(pattern, condition)
+        if match:
+            key, op, value = match.groups()
+            return _compare(context.get(key), op, _parse_value(value))
+    return False
+
 
 # Add parent utils to path for blackboard access
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "plugins" / "agent-coordination" / "utils"))

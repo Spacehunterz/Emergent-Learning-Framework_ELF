@@ -1,0 +1,30 @@
+{
+  "$schema": "https://claude.ai/schemas/hooks.json",
+  "hooks": [
+    {
+      "name": "coordination-pre-task",
+      "event": "PreToolUse",
+      "matcher": {
+        "tool_name": "Task"
+      },
+      "command": "python \"~/.claude/plugins/agent-coordination/hooks/pre_task.py\"",
+      "timeout": 10000
+    },
+    {
+      "name": "coordination-post-task",
+      "event": "PostToolUse",
+      "matcher": {
+        "tool_name": "Task"
+      },
+      "command": "python \"~/.claude/plugins/agent-coordination/hooks/post_task.py\"",
+      "timeout": 10000
+    },
+    {
+      "name": "coordination-session-start",
+      "event": "Stop",
+      "matcher": {},
+      "command": "python \"~/.claude/plugins/agent-coordination/hooks/session_end.py\"",
+      "timeout": 5000
+    }
+  ]
+}
