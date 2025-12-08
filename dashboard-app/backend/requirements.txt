@@ -1,0 +1,5 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.31.0
+websockets>=15.0
+aiosqlite>=0.20.0
+python-dateutil>=2.8.0
