@@ -26,7 +26,7 @@ import time
 import random
 import hashlib
 from pathlib import Path
-from typing import Optional, Dict, List, Any, Callable
+from typing import Optional, Dict, List, Any, Callable, IO
 from datetime import datetime
 
 # Platform-specific imports for atomic file operations
@@ -74,7 +74,7 @@ class EventLog:
     # Locking (for sequence number only - writes are lock-free via O_APPEND)
     # =========================================================================
 
-    def _get_lock(self, timeout: float = 30.0) -> Optional[Any]:
+    def _get_lock(self, timeout: float = 30.0) -> Optional[IO[str]]:
         """Acquire file lock for sequence number increment."""
         self._ensure_dir()
         start = time.time()
@@ -342,16 +342,19 @@ class EventLog:
 
         # ----- Finding Events -----
         elif event_type == "finding.added":
-            finding_id = data.get("id", f"finding-{seq}")
+            # C1 FIX: Use seq for consistent IDs across both systems
+            finding_id = f"finding-{seq}"
             state["findings"].append({
                 "id": finding_id,
+                "seq": seq,  # C1 FIX
                 "agent_id": data.get("agent_id", "unknown"),
                 "type": data.get("finding_type", "fact"),
                 "content": data.get("content", ""),
                 "files": data.get("files", []),
                 "importance": data.get("importance", "normal"),
                 "tags": data.get("tags", []),
-                "timestamp": timestamp
+                "timestamp": timestamp,
+                "expires_at": data.get("expires_at")  # C7 FIX: Support TTL
             })
 
         # ----- Message Events -----

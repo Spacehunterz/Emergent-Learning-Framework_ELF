@@ -194,7 +194,7 @@ secure_write() {
     # Set secure permissions (owner read/write only)
     chmod 600 "$temp_file" || return 1
 
-    # Check for hardlink attack
+    # S9 FIX: Check for hardlink attack BEFORE move
     if ! check_hardlink_attack "$filepath"; then
         rm -f "$temp_file"
         return 1
@@ -202,6 +202,12 @@ secure_write() {
 
     # Atomic move
     mv "$temp_file" "$filepath" || return 1
+
+    # S9 FIX: Re-check after move to prevent TOCTOU race
+    if ! check_hardlink_attack "$filepath"; then
+        rm -f "$filepath"
+        return 1
+    fi
 
     # Verify it's not a symlink after creation
     if [ -L "$filepath" ]; then
@@ -234,6 +240,8 @@ check_directory_security() {
 }
 
 # Safe mkdir - creates directory only if it doesn't exist and isn't a symlink
+# S9 NOTE: This function has a TOCTOU race between check (line 241) and mkdir (line 253).
+# For security-critical operations, use atomic_mkdir() instead (defined below).
 safe_mkdir() {
     local dir="$1"
 
@@ -253,7 +261,8 @@ safe_mkdir() {
     mkdir -p "$dir" || return 1
     chmod 700 "$dir" || return 1
 
-    # Double-check it's not a symlink (TOCTOU protection)
+    # Double-check it's not a symlink (TOCTOU protection - partial)
+    # S9 FIX: This check is still vulnerable to TOCTOU. Use atomic_mkdir() for critical paths.
     if [ -L "$dir" ]; then
         rmdir "$dir" 2>/dev/null || true
         return 1

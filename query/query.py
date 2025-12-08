@@ -144,6 +144,23 @@ class QuerySystem:
         if self.debug:
             print(f"[DEBUG] {message}", file=sys.stderr)
 
+    def _validate_connection(self, conn: sqlite3.Connection) -> bool:
+        """
+        Validate that a connection is still alive and usable (S8 FIX).
+
+        Args:
+            conn: Connection to validate
+
+        Returns:
+            True if connection is valid, False otherwise
+        """
+        try:
+            # Simple query to check if connection is alive
+            conn.execute("SELECT 1")
+            return True
+        except (sqlite3.Error, sqlite3.ProgrammingError):
+            return False
+
     @contextmanager
     def _get_connection(self):
         """
@@ -155,7 +172,13 @@ class QuerySystem:
             # Try to reuse an existing connection
             if self._connection_pool:
                 conn = self._connection_pool.pop()
-                self._log_debug("Reusing connection from pool")
+                # S8 FIX: Validate connection before reuse
+                if not self._validate_connection(conn):
+                    self._log_debug("Pooled connection invalid, creating new one")
+                    conn.close()
+                    conn = self._create_connection()
+                else:
+                    self._log_debug("Reusing connection from pool")
             else:
                 conn = self._create_connection()
                 self._log_debug("Created new connection")
@@ -163,6 +186,9 @@ class QuerySystem:
             yield conn
 
             # Return connection to pool if it's still valid
+            # Connection pool size limit: 5 connections
+            # This prevents resource exhaustion while allowing reasonable concurrency.
+            # Adjust this value based on your system's SQLite connection limits.
             if len(self._connection_pool) < 5:  # Max 5 pooled connections
                 self._connection_pool.append(conn)
                 self._log_debug("Returned connection to pool")
@@ -188,6 +214,9 @@ class QuerySystem:
             conn = sqlite3.connect(str(self.db_path), timeout=10.0)
             conn.execute("PRAGMA busy_timeout=10000")
             conn.execute("PRAGMA foreign_keys=ON")
+            # Performance pragmas for better concurrency and durability
+            conn.execute("PRAGMA journal_mode=WAL")  # Write-Ahead Logging for better concurrency
+            conn.execute("PRAGMA synchronous=NORMAL")  # Balanced durability/performance
             return conn
         except sqlite3.Error as e:
             raise DatabaseError(
@@ -201,7 +230,7 @@ class QuerySystem:
         for conn in self._connection_pool:
             try:
                 conn.close()
-            except:
+            except Exception:
                 pass
         self._connection_pool.clear()
 
