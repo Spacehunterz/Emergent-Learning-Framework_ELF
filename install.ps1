@@ -16,7 +16,7 @@ if ($Help) {
     Write-Host ""
     Write-Host "Options:"
     Write-Host "  -CoreOnly      Install only core (query system, hooks, golden rules)"
-    Write-Host "  -NoDashboard   Skip dashboard installation"
+    Write-Host "  -NoDashboard   Skip dashboard installation (skips visual UI at localhost:3000)"
     Write-Host "  -NoSwarm       Skip swarm/conductor installation"
     Write-Host "  -All           Install everything (default)"
     Write-Host "  -Help          Show this help"
@@ -37,6 +37,8 @@ Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "  Emergent Learning Framework Installer" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
+Write-Host "Estimated installation time: ~2 minutes" -ForegroundColor Cyan
+Write-Host ""
 
 Write-Host "Installation mode:"
 Write-Host "  Core:      " -NoNewline; Write-Host "Yes" -ForegroundColor Green
@@ -54,7 +56,7 @@ $HooksDir = Join-Path $ClaudeDir "hooks"
 $SettingsFile = Join-Path $ClaudeDir "settings.json"
 
 # Check prerequisites
-Write-Host "[Checking] Prerequisites..." -ForegroundColor Yellow
+Write-Host "[Step 1/5] Checking prerequisites..." -ForegroundColor Yellow
 
 # Check Python - prefer python3 if available
 $pythonCmd = "python"
@@ -68,6 +70,8 @@ if (Get-Command python3 -ErrorAction SilentlyContinue) {
     Write-Host "  Python: $pythonVersion" -ForegroundColor Green
 } else {
     Write-Host "  ERROR: Python not found. Please install Python 3.8+" -ForegroundColor Red
+    Write-Host "  Fix: Install Python from https://python.org" -ForegroundColor Yellow
+    Write-Host "  Then: Run this installer again" -ForegroundColor Yellow
     exit 1
 }
 
@@ -84,14 +88,18 @@ if ($InstallDashboard) {
             Write-Host "  Node: $nodeVersion" -ForegroundColor Green
         } catch {
             Write-Host "  ERROR: Neither Bun nor Node.js found (needed for dashboard)" -ForegroundColor Red
-            Write-Host "  Run with -NoDashboard to skip, or install Node.js/Bun" -ForegroundColor Yellow
+            Write-Host "  Fix option 1: Run with -NoDashboard to skip dashboard" -ForegroundColor Yellow
+            Write-Host "  Fix option 2: Install Bun (https://bun.sh) or Node.js (https://nodejs.org)" -ForegroundColor Yellow
+            Write-Host "  Then: Run this installer again" -ForegroundColor Yellow
             exit 1
         }
     }
 }
 
 Write-Host ""
-Write-Host "[Creating] Directory structure..." -ForegroundColor Yellow
+Write-Host "[OK] Prerequisites met" -ForegroundColor Green
+Write-Host ""
+Write-Host "[Step 2/5] Creating directory structure..." -ForegroundColor Yellow
 
 # Create directories
 $MemoryDir = Join-Path $EmergentLearningDir "memory"
@@ -124,11 +132,11 @@ foreach ($dir in $directories) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
 }
-Write-Host "  Created directory structure" -ForegroundColor Green
+Write-Host "  Created directory structure (7 directories for core)" -ForegroundColor Green
 
 # === CORE INSTALLATION ===
 Write-Host ""
-Write-Host "[Installing] Core components..." -ForegroundColor Yellow
+Write-Host "[Step 3/5] Installing core components..." -ForegroundColor Yellow
 
 $srcDir = Join-Path (Join-Path $ScriptDir "src") "emergent-learning"
 $srcQueryDir = Join-Path $srcDir "query"
@@ -282,19 +290,26 @@ if ($InstallDashboard) {
 
 # === CHECK CLAUDE CODE ===
 Write-Host ""
-Write-Host "[Checking] Claude Code installation..." -ForegroundColor Yellow
+Write-Host "[Step 5/5] Checking optional components..." -ForegroundColor Yellow
 try {
     $claudeVersion = claude --version 2>&1
     Write-Host "  Claude Code: $claudeVersion" -ForegroundColor Green
 } catch {
-    Write-Host "  WARNING: Claude Code not found in PATH" -ForegroundColor Yellow
-    Write-Host "  ELF requires Claude Code to work. Install from: https://claude.ai/download" -ForegroundColor Yellow
-    Write-Host "  Continuing anyway (you can install Claude Code later)..." -ForegroundColor Yellow
+    Write-Host "  WARNING: Claude Code not found (optional for now)" -ForegroundColor Yellow
+    Write-Host "  Note: ELF requires Claude Code to work. Install from: https://claude.ai/download" -ForegroundColor Yellow
+    Write-Host "  Installation will continue, but ELF won't be functional until you install Claude Code." -ForegroundColor Yellow
 }
 
 # === CONFIGURE SETTINGS.JSON ===
 Write-Host ""
-Write-Host "[Configuring] Claude Code settings..." -ForegroundColor Yellow
+Write-Host "[Step 4/5] Configuring Claude Code settings..." -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  About to modify settings.json:" -ForegroundColor Cyan
+Write-Host "  - Adding PreToolUse hook (runs before each task)"
+Write-Host "  - Adding PostToolUse hook (runs after each task)"
+Write-Host "  - Preserving your existing hooks (if any)"
+Write-Host "  - Creating backup at settings.json.backup"
+Write-Host ""
 
 $hookLearningLoop = Join-Path $HooksDir "learning-loop"
 $preToolHook = Join-Path $hookLearningLoop "pre_tool_learning.py"
@@ -372,6 +387,17 @@ $jsonContent = $settings | ConvertTo-Json -Depth 10
 [System.IO.File]::WriteAllText($SettingsFile, $jsonContent, [System.Text.UTF8Encoding]::new($false))
 Write-Host "  Configured hooks (preserved existing hooks)" -ForegroundColor Green
 
+# Validate settings.json
+try {
+    Get-Content $SettingsFile -Raw | ConvertFrom-Json | Out-Null
+    Write-Host "  [OK] settings.json validated" -ForegroundColor Green
+} catch {
+    Write-Host "  [ERROR] settings.json validation failed!" -ForegroundColor Red
+    Write-Host "  Fix: Restore from backup: Copy-Item $ClaudeDir\settings.json.backup $SettingsFile" -ForegroundColor Yellow
+    Write-Host "  Then: Run installer again" -ForegroundColor Yellow
+    exit 1
+}
+
 # === CLAUDE.MD ===
 $claudeMdDst = Join-Path $ClaudeDir "CLAUDE.md"
 $templatesDir = Join-Path $ScriptDir "templates"
@@ -401,10 +427,19 @@ if ($InstallSwarm) {
     Write-Host "  [+] Swarm (conductor, agent personas)" -ForegroundColor Green
 }
 Write-Host ""
-Write-Host "Next steps:"
-Write-Host "  1. Review ~/.claude/CLAUDE.md"
+Write-Host "Next steps (copy-paste ready):"
+Write-Host ""
+Write-Host "  # 1. Review your configuration:"
+Write-Host "  cat ~/.claude/CLAUDE.md"
+Write-Host ""
 if ($InstallDashboard) {
-    Write-Host "  2. Start dashboard: cd ~/.claude/emergent-learning/dashboard-app && ./run-dashboard.ps1"
+    Write-Host "  # 2. Start the dashboard:"
+    Write-Host "  cd ~/.claude/emergent-learning/dashboard-app; ./run-dashboard.ps1"
+    Write-Host ""
 }
-Write-Host "  3. Use Claude Code normally - it will now query the building!"
+Write-Host "  # 3. Test the query system:"
+Write-Host "  python3 ~/.claude/emergent-learning/query/query.py --context"
+Write-Host ""
+Write-Host "  # 4. Start using Claude Code (it will now query the building automatically!)"
+Write-Host "  claude"
 Write-Host ""

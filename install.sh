@@ -15,6 +15,8 @@ echo -e "${CYAN}============================================${NC}"
 echo -e "${CYAN}  Emergent Learning Framework Installer${NC}"
 echo -e "${CYAN}============================================${NC}"
 echo ""
+echo -e "${CYAN}Estimated installation time: ~2 minutes${NC}"
+echo ""
 
 # Get paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,7 +36,7 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  --core-only      Install only core (query system, hooks, golden rules)"
-    echo "  --no-dashboard   Skip dashboard installation"
+    echo "  --no-dashboard   Skip dashboard installation (skips visual UI at localhost:3000)"
     echo "  --no-swarm       Skip swarm/conductor installation"
     echo "  --all            Install everything (default)"
     echo "  --help           Show this help"
@@ -77,7 +79,7 @@ echo -e "  Swarm:     $([ "$INSTALL_SWARM" = true ] && echo -e "${GREEN}Yes${NC}
 echo ""
 
 # Check prerequisites
-echo -e "${YELLOW}[Checking]${NC} Prerequisites..."
+echo -e "${YELLOW}[Step 1/5]${NC} Checking prerequisites..."
 
 # Check Python
 if command -v python3 &> /dev/null; then
@@ -88,6 +90,8 @@ elif command -v python &> /dev/null; then
     echo -e "  Python: ${GREEN}$(python --version)${NC}"
 else
     echo -e "  ${RED}ERROR: Python not found. Please install Python 3.8+${NC}"
+    echo -e "  ${YELLOW}Fix: Install Python from https://python.org${NC}"
+    echo -e "  ${YELLOW}Then: Run this installer again${NC}"
     exit 1
 fi
 
@@ -101,13 +105,17 @@ if [ "$INSTALL_DASHBOARD" = true ]; then
         echo -e "  Node: ${GREEN}$(node --version)${NC}"
     else
         echo -e "  ${RED}ERROR: Neither Bun nor Node.js found (needed for dashboard)${NC}"
-        echo -e "  ${YELLOW}Run with --no-dashboard to skip, or install Node.js/Bun${NC}"
+        echo -e "  ${YELLOW}Fix option 1: Run with --no-dashboard to skip dashboard${NC}"
+        echo -e "  ${YELLOW}Fix option 2: Install Bun (https://bun.sh) or Node.js (https://nodejs.org)${NC}"
+        echo -e "  ${YELLOW}Then: Run this installer again${NC}"
         exit 1
     fi
 fi
 
 echo ""
-echo -e "${YELLOW}[Creating]${NC} Directory structure..."
+echo -e "${GREEN}[OK] Prerequisites met${NC}"
+echo ""
+echo -e "${YELLOW}[Step 2/5]${NC} Creating directory structure..."
 
 # Create directories
 mkdir -p "$CLAUDE_DIR"
@@ -125,11 +133,11 @@ if [ "$INSTALL_SWARM" = true ]; then
     mkdir -p "$EMERGENT_LEARNING_DIR/conductor"
 fi
 
-echo -e "  ${GREEN}Created directory structure${NC}"
+echo -e "  ${GREEN}Created directory structure (7 directories for core)${NC}"
 
 # === CORE INSTALLATION ===
 echo ""
-echo -e "${YELLOW}[Installing]${NC} Core components..."
+echo -e "${YELLOW}[Step 3/5]${NC} Installing core components..."
 
 SRC_DIR="$SCRIPT_DIR/src/emergent-learning"
 
@@ -233,18 +241,25 @@ fi
 
 # === CHECK CLAUDE CODE ===
 echo ""
-echo -e "${YELLOW}[Checking]${NC} Claude Code installation..."
+echo -e "${YELLOW}[Step 5/5]${NC} Checking optional components..."
 if command -v claude &> /dev/null; then
     echo -e "  Claude Code: ${GREEN}$(claude --version 2>/dev/null || echo 'installed')${NC}"
 else
-    echo -e "  ${YELLOW}WARNING: Claude Code not found in PATH${NC}"
-    echo -e "  ${YELLOW}ELF requires Claude Code to work. Install from: https://claude.ai/download${NC}"
-    echo -e "  ${YELLOW}Continuing anyway (you can install Claude Code later)...${NC}"
+    echo -e "  ${YELLOW}WARNING: Claude Code not found (optional for now)${NC}"
+    echo -e "  ${YELLOW}Note: ELF requires Claude Code to work. Install from: https://claude.ai/download${NC}"
+    echo -e "  ${YELLOW}Installation will continue, but ELF won't be functional until you install Claude Code.${NC}"
 fi
 
 # === CONFIGURE SETTINGS.JSON ===
 echo ""
-echo -e "${YELLOW}[Configuring]${NC} Claude Code settings..."
+echo -e "${YELLOW}[Step 4/5]${NC} Configuring Claude Code settings..."
+echo ""
+echo -e "  ${CYAN}About to modify settings.json:${NC}"
+echo -e "  - Adding PreToolUse hook (runs before each task)"
+echo -e "  - Adding PostToolUse hook (runs after each task)"
+echo -e "  - Preserving your existing hooks (if any)"
+echo -e "  - Creating backup at settings.json.backup${NC}"
+echo ""
 
 PRE_HOOK="$HOOKS_DIR/learning-loop/pre_tool_learning.py"
 POST_HOOK="$HOOKS_DIR/learning-loop/post_tool_learning.py"
@@ -308,6 +323,16 @@ PYEOF
 
 echo -e "  ${GREEN}Configured hooks (preserved existing hooks)${NC}"
 
+# Validate settings.json
+if $PYTHON_CMD -c "import json; json.load(open('$SETTINGS_FILE'))" 2>/dev/null; then
+    echo -e "  ${GREEN}[OK] settings.json validated${NC}"
+else
+    echo -e "  ${RED}[ERROR] settings.json validation failed!${NC}"
+    echo -e "  ${YELLOW}Fix: Restore from backup: cp $CLAUDE_DIR/settings.json.backup $SETTINGS_FILE${NC}"
+    echo -e "  ${YELLOW}Then: Run installer again${NC}"
+    exit 1
+fi
+
 # === CLAUDE.MD ===
 CLAUDE_MD_DST="$CLAUDE_DIR/CLAUDE.md"
 CLAUDE_MD_SRC="$SCRIPT_DIR/templates/CLAUDE.md.template"
@@ -332,10 +357,19 @@ echo -e "  ${GREEN}✓${NC} Core (query system, hooks, golden rules)"
 [ "$INSTALL_DASHBOARD" = true ] && echo -e "  ${GREEN}✓${NC} Dashboard (localhost:3000)"
 [ "$INSTALL_SWARM" = true ] && echo -e "  ${GREEN}✓${NC} Swarm (conductor, agent personas)"
 echo ""
-echo "Next steps:"
-echo "  1. Review ~/.claude/CLAUDE.md"
+echo "Next steps (copy-paste ready):"
+echo ""
+echo "  # 1. Review your configuration:"
+echo "  cat ~/.claude/CLAUDE.md"
+echo ""
 if [ "$INSTALL_DASHBOARD" = true ]; then
-    echo "  2. Start dashboard: cd ~/.claude/emergent-learning/dashboard-app && ./run-dashboard.sh"
+    echo "  # 2. Start the dashboard:"
+    echo "  cd ~/.claude/emergent-learning/dashboard-app && ./run-dashboard.sh"
+    echo ""
 fi
-echo "  3. Use Claude Code normally - it will now query the building!"
+echo "  # 3. Test the query system:"
+echo "  python3 ~/.claude/emergent-learning/query/query.py --context"
+echo ""
+echo "  # 4. Start using Claude Code (it will now query the building automatically!)"
+echo "  claude"
 echo ""

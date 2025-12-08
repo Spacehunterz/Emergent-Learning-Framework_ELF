@@ -101,6 +101,7 @@ class QuerySystem:
     MIN_LIMIT = 1
     MAX_LIMIT = 1000
     DEFAULT_TIMEOUT = 30
+    MAX_CONNECTION_POOL_SIZE = 5  # Maximum pooled SQLite connections for efficiency
     MAX_TOKENS = 50000
 
     def __init__(self, base_path: Optional[str] = None, debug: bool = False):
@@ -189,7 +190,7 @@ class QuerySystem:
             # Connection pool size limit: 5 connections
             # This prevents resource exhaustion while allowing reasonable concurrency.
             # Adjust this value based on your system's SQLite connection limits.
-            if len(self._connection_pool) < 5:  # Max 5 pooled connections
+            if len(self._connection_pool) < self.MAX_CONNECTION_POOL_SIZE:  # Max 5 pooled connections
                 self._connection_pool.append(conn)
                 self._log_debug("Returned connection to pool")
             else:

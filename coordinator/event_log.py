@@ -210,6 +210,10 @@ class EventLog:
             since_seq: Only return events with seq > since_seq (for delta queries)
 
         Returns: List of events, ordered by sequence number
+        
+        Performance Note:
+            This performs a full file scan O(n). For large event logs (>10k events),
+            consider using SQLite-backed event storage with indexed seq column.
         """
         if not self.event_log_file.exists():
             return []

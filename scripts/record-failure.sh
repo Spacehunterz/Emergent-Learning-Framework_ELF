@@ -330,7 +330,7 @@ fi
 
 # Generate filename
 # TIME-FIX-2: Use captured EXECUTION_DATE instead of recalculating
-date_prefix=$EXECUTION_DATE
+date_prefix="${EXECUTION_DATE}"
 filename_title=$(echo "$title" | tr ':[:upper:]:' ':[:lower:]:' | tr ' ' '-' | tr -cd ':[:alnum:]-' | cut -c1-100)
 filename="${date_prefix}_${filename_title}.md"
 filepath="$FAILURES_DIR/$filename"
