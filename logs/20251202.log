@@ -60,3 +60,63 @@
 [2025-12-02 05:36:30] [WARN] [record-heuristic] SECURITY: Domain sanitized from '../../..//c/Users/Evede/.claude/emergent-learning/tests/attack-sandbox/sensitive/injected' to 'cusersevedeclaudeemergent-learningtestsattack-sandboxsensitiveinjected'
 [2025-12-02 05:36:30] [INFO] [record-heuristic] [corr:0002cf81-150c] user=Evede correlation_id=0002cf81-150c Script started
 [2025-12-02 05:36:30] [INFO] [record-heuristic] Database record created (ID: 89)
+[2025-12-02 17:02:17] [INFO] [record-heuristic] [corr:00000856-1989] user=Evede correlation_id=00000856-1989 Script started
+[2025-12-02 17:02:17] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-02 17:02:18] [INFO] [record-heuristic] [corr:00000856-1989] user=Evede correlation_id=00000856-1989 Script started
+[2025-12-02 17:02:18] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-02 17:02:18] [INFO] [record-heuristic] [corr:00000856-1989] user=Evede correlation_id=00000856-1989 Script started
+[2025-12-02 17:02:18] [INFO] [record-heuristic] Script started
+[2025-12-02 17:02:18] [INFO] [record-heuristic] [corr:00000856-1989] user=Evede correlation_id=00000856-1989 Script started
+[2025-12-02 17:02:18] [INFO] [record-heuristic] Running in interactive mode
+[2025-12-02 17:02:18] [INFO] [record-heuristic] [corr:00000856-1989] user=Evede correlation_id=00000856-1989 Script started
+[2025-12-02 17:02:19] [ERROR] [record-heuristic] Script failed at line 237
+[2025-12-02 20:31:14] [INFO] [record-heuristic] [corr:000005f7-2372] user=Evede correlation_id=000005f7-2372 Script started
+[2025-12-02 20:31:15] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-02 20:31:15] [INFO] [record-heuristic] [corr:000005f7-2372] user=Evede correlation_id=000005f7-2372 Script started
+[2025-12-02 20:31:15] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-02 20:31:15] [INFO] [record-heuristic] [corr:000005f7-2372] user=Evede correlation_id=000005f7-2372 Script started
+[2025-12-02 20:31:15] [INFO] [record-heuristic] Script started
+[2025-12-02 20:31:15] [INFO] [record-heuristic] [corr:000005f7-2372] user=Evede correlation_id=000005f7-2372 Script started
+[2025-12-02 20:31:16] [INFO] [record-heuristic] Running in interactive mode
+[2025-12-02 20:31:16] [INFO] [record-heuristic] [corr:000005f7-2372] user=Evede correlation_id=000005f7-2372 Script started
+[2025-12-02 20:31:16] [ERROR] [record-heuristic] Script failed at line 237
+[2025-12-02 20:40:18] [INFO] [record-heuristic] [corr:000003aa-2591] user=Evede correlation_id=000003aa-2591 Script started
+[2025-12-02 20:40:18] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-02 20:40:18] [INFO] [record-heuristic] [corr:000003aa-2591] user=Evede correlation_id=000003aa-2591 Script started
+[2025-12-02 20:40:18] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-02 20:40:18] [INFO] [record-heuristic] [corr:000003aa-2591] user=Evede correlation_id=000003aa-2591 Script started
+[2025-12-02 20:40:18] [INFO] [record-heuristic] Script started
+[2025-12-02 20:40:18] [INFO] [record-heuristic] [corr:000003aa-2591] user=Evede correlation_id=000003aa-2591 Script started
+[2025-12-02 20:40:19] [INFO] [record-heuristic] Running in interactive mode
+[2025-12-02 20:40:19] [INFO] [record-heuristic] [corr:000003aa-2591] user=Evede correlation_id=000003aa-2591 Script started
+[2025-12-02 20:40:19] [ERROR] [record-heuristic] Script failed at line 237
+[2025-12-02 23:51:40] [INFO] [record-heuristic] [corr:00001b8c-044b] user=Evede correlation_id=00001b8c-044b Script started
+[2025-12-02 23:51:40] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-02 23:51:40] [INFO] [record-heuristic] [corr:00001b8c-044b] user=Evede correlation_id=00001b8c-044b Script started
+[2025-12-02 23:51:40] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-02 23:51:40] [INFO] [record-heuristic] [corr:00001b8c-044b] user=Evede correlation_id=00001b8c-044b Script started
+[2025-12-02 23:51:40] [INFO] [record-heuristic] Script started
+[2025-12-02 23:51:40] [INFO] [record-heuristic] [corr:00001b8c-044b] user=Evede correlation_id=00001b8c-044b Script started
+[2025-12-02 23:51:40] [INFO] [record-heuristic] Running in interactive mode
+[2025-12-02 23:51:41] [INFO] [record-heuristic] [corr:00001b8c-044b] user=Evede correlation_id=00001b8c-044b Script started
+[2025-12-02 23:51:41] [ERROR] [record-heuristic] Script failed at line 237
+[2025-12-02 23:51:45] [INFO] [record-heuristic] [corr:00001c12-0451] user=Evede correlation_id=00001c12-0451 Script started
+[2025-12-02 23:51:45] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-02 23:51:45] [INFO] [record-heuristic] [corr:00001c12-0451] user=Evede correlation_id=00001c12-0451 Script started
+[2025-12-02 23:51:45] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-02 23:51:46] [INFO] [record-heuristic] [corr:00001c12-0451] user=Evede correlation_id=00001c12-0451 Script started
+[2025-12-02 23:51:46] [INFO] [record-heuristic] Script started
+[2025-12-02 23:51:46] [INFO] [record-heuristic] [corr:00001c12-0451] user=Evede correlation_id=00001c12-0451 Script started
+[2025-12-02 23:51:46] [INFO] [record-heuristic] Running in interactive mode
+[2025-12-02 23:51:46] [INFO] [record-heuristic] [corr:00001c12-0451] user=Evede correlation_id=00001c12-0451 Script started
+[2025-12-02 23:51:46] [ERROR] [record-heuristic] Script failed at line 237
+[2025-12-02 23:51:52] [INFO] [record-heuristic] [corr:00001c98-0458] user=Evede correlation_id=00001c98-0458 Script started
+[2025-12-02 23:51:52] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-02 23:51:52] [INFO] [record-heuristic] [corr:00001c98-0458] user=Evede correlation_id=00001c98-0458 Script started
+[2025-12-02 23:51:52] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-02 23:51:52] [INFO] [record-heuristic] [corr:00001c98-0458] user=Evede correlation_id=00001c98-0458 Script started
+[2025-12-02 23:51:52] [INFO] [record-heuristic] Script started
+[2025-12-02 23:51:53] [INFO] [record-heuristic] [corr:00001c98-0458] user=Evede correlation_id=00001c98-0458 Script started
+[2025-12-02 23:51:53] [INFO] [record-heuristic] Running in interactive mode
+[2025-12-02 23:51:53] [INFO] [record-heuristic] [corr:00001c98-0458] user=Evede correlation_id=00001c98-0458 Script started
+[2025-12-02 23:51:53] [ERROR] [record-heuristic] Script failed at line 237
