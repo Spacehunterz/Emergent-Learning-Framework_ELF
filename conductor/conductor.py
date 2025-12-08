@@ -50,7 +50,7 @@ def safe_eval_condition(condition: str, context: dict) -> bool:
     if match:
         return match.group(1) in context
 
-    def _parse_value(value_str):
+    def _parse_value(value_str) -> Union[str, int, float, bool, None]:
         value_str = value_str.strip()
         if value_str.startswith(("'", '"')) and value_str.endswith(("'", '"')):
             return value_str[1:-1]
@@ -61,7 +61,7 @@ def safe_eval_condition(condition: str, context: dict) -> bool:
         except ValueError:
             return value_str
 
-    def _compare(ctx_value, op, compare_value):
+    def _compare(ctx_value, op, compare_value) -> bool:
         if ctx_value is None or compare_value is None:
             return (ctx_value == compare_value) if op == '==' else (ctx_value != compare_value) if op == '!=' else False
         ops = {'==': lambda a,b: a==b, '!=': lambda a,b: a!=b, '>': lambda a,b: a>b, '<': lambda a,b: a<b, '>=': lambda a,b: a>=b, '<=': lambda a,b: a<=b}
@@ -192,7 +192,7 @@ class Conductor:
         # Node execution callbacks (for external integration)
         self._node_executor: Optional[Callable] = None
 
-    def set_node_executor(self, executor: Callable[[Node, Dict], Tuple[str, Dict]]):
+    def set_node_executor(self, executor: Callable[[Node, Dict], Tuple[str, Dict]]) -> None:
         """
         Set the callback function for executing nodes.
 
@@ -881,10 +881,10 @@ class Conductor:
                     if edge.condition:
                         # Evaluate condition
                         try:
-                            if eval(edge.condition, {"context": context}):
+                            if safe_eval_condition(edge.condition, context):
                                 next_nodes.append(edge.to_node)
-                        except Exception:
-                            pass  # Condition failed
+                        except Exception as e:
+                            sys.stderr.write(f"Warning: Condition evaluation failed for edge: {e}\n")  # Condition failed
                     else:
                         next_nodes.append(edge.to_node)
 

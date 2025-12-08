@@ -65,17 +65,35 @@ class BlackboardV2:
 
         # Track if event log is healthy
         self._event_log_healthy = True
+        
+        # C8 FIX: Track operations for periodic validation
+        self._operation_count = 0
+        self._validation_interval = 10  # Validate every N operations
 
     def _write_to_event_log(self, event_type: str, data: Dict) -> Optional[int]:
         """Write to event log, gracefully handling failures."""
         if not self._event_log_healthy:
             return None
         try:
-            return self.event_log.append_event(event_type, data)
+            result = self.event_log.append_event(event_type, data)
+            
+            # C8 FIX: Periodic divergence detection
+            self._operation_count += 1
+            if self._operation_count >= self._validation_interval:
+                self._operation_count = 0
+                validation = self.validate_state_consistency()
+                if not validation["consistent"]:
+                    import sys
+                    print(f"[WARNING] State divergence detected after {self._validation_interval} operations:", file=sys.stderr)
+                    for diff in validation["differences"]:
+                        print(f"  - {diff}", file=sys.stderr)
+            
+            return result
         except Exception as e:
-            # Log but don't fail - old blackboard is still source of truth
-            print(f"[BlackboardV2] Event log write failed (non-fatal): {e}")
-            return None
+            # C2 FIX: Raise exception instead of silently ignoring
+            # Mark event log as unhealthy to prevent cascade failures
+            self._event_log_healthy = False
+            raise RuntimeError(f"Event log write failed: {e}") from e
 
     # =========================================================================
     # Agent Registry (dual-write)
@@ -318,11 +336,44 @@ class BlackboardV2:
         if bb_findings != el_findings:
             differences.append(f"Finding count mismatch: blackboard has {bb_findings}, event_log has {el_findings}")
 
+        # C10 FIX: Validate finding IDs match
+        bb_finding_ids = set(f.get("id") for f in bb_state.get("findings", []))
+        el_finding_ids = set(f.get("id") for f in el_state.get("findings", []))
+        if bb_finding_ids != el_finding_ids:
+            only_bb = bb_finding_ids - el_finding_ids
+            only_el = el_finding_ids - bb_finding_ids
+            if only_bb:
+                differences.append(f"Finding IDs only in blackboard: {only_bb}")
+            if only_el:
+                differences.append(f"Finding IDs only in event_log: {only_el}")
+
         # Compare question counts
         bb_questions = len(bb_state.get("questions", []))
         el_questions = len(el_state.get("questions", []))
         if bb_questions != el_questions:
             differences.append(f"Question count mismatch: blackboard has {bb_questions}, event_log has {el_questions}")
+        
+        # C10 FIX: Validate question IDs match
+        bb_question_ids = set(q.get("id") for q in bb_state.get("questions", []))
+        el_question_ids = set(q.get("id") for q in el_state.get("questions", []))
+        if bb_question_ids != el_question_ids:
+            only_bb = bb_question_ids - el_question_ids
+            only_el = el_question_ids - bb_question_ids
+            if only_bb:
+                differences.append(f"Question IDs only in blackboard: {only_bb}")
+            if only_el:
+                differences.append(f"Question IDs only in event_log: {only_el}")
+
+        # C10 FIX: Validate task IDs match
+        bb_task_ids = set(t.get("id") for t in bb_state.get("task_queue", []))
+        el_task_ids = set(t.get("id") for t in el_state.get("task_queue", []))
+        if bb_task_ids != el_task_ids:
+            only_bb = bb_task_ids - el_task_ids
+            only_el = el_task_ids - bb_task_ids
+            if only_bb:
+                differences.append(f"Task IDs only in blackboard: {only_bb}")
+            if only_el:
+                differences.append(f"Task IDs only in event_log: {only_el}")
 
         return {
             "consistent": len(differences) == 0,
@@ -340,46 +391,3 @@ class BlackboardV2:
 if __name__ == "__main__":
     import json
 
-    bb = BlackboardV2()
-
-    if len(sys.argv) < 2:
-        print("BlackboardV2 - Dual-write adapter")
-        print("=" * 40)
-        print("\nBlackboard state:")
-        print(bb.get_summary())
-        print("\nEvent log stats:")
-        print(json.dumps(bb.get_event_log_stats(), indent=2))
-        sys.exit(0)
-
-    cmd = sys.argv[1]
-
-    if cmd == "validate":
-        result = bb.validate_state_consistency()
-        print("State Validation")
-        print("=" * 40)
-        if result["consistent"]:
-            print("CONSISTENT - Both systems match!")
-        else:
-            print("INCONSISTENT - Found differences:")
-            for diff in result["differences"]:
-                print(f"  - {diff}")
-    elif cmd == "stats":
-        print("Event Log Stats:")
-        print(json.dumps(bb.get_event_log_stats(), indent=2))
-    elif cmd == "test":
-        # Quick test of dual-write
-        print("Testing dual-write...")
-        bb.register_agent("test-agent", "Testing dual-write", interests=["testing"])
-        bb.add_finding("test-agent", "fact", "Dual-write test finding", tags=["test"])
-        print("  Registered agent and added finding")
-
-        result = bb.validate_state_consistency()
-        if result["consistent"]:
-            print("  PASS - Both systems consistent!")
-        else:
-            print("  FAIL - Systems diverged:")
-            for diff in result["differences"]:
-                print(f"    - {diff}")
-    else:
-        print(f"Unknown command: {cmd}")
-        print("Commands: validate, stats, test")
