@@ -212,7 +212,7 @@ class Blackboard:
 
     def add_finding(self, agent_id: str, finding_type: str, content: str,
                     files: List[str] = None, importance: str = "normal",
-                    tags: List[str] = None) -> Dict:
+                    tags: List[str] = None, finding_id: str = None) -> Dict:
         """Add a finding to share with other agents.
 
         Args:
@@ -222,14 +222,17 @@ class Blackboard:
             files: Related file paths
             importance: low, normal, high, critical
             tags: Topic tags for filtering (e.g., ["auth", "jwt", "security"])
+            finding_id: Optional explicit ID (for dual-write consistency with event log)
 
         NOTE: For semantic search, agents should also write findings to Basic Memory
         using mcp__basic-memory__write_note() for persistence and embedding search.
         """
         def op():
             state = self._read_state()
+            # RACE CONDITION FIX: Use explicit ID if provided (from event log sequence)
+            fid = finding_id if finding_id else f"finding-{len(state['findings']) + 1}"
             finding = {
-                "id": f"finding-{len(state['findings']) + 1}",
+                "id": fid,
                 "agent_id": agent_id,
                 "type": finding_type,  # discovery, warning, decision, blocker, fact, hypothesis
                 "content": content,

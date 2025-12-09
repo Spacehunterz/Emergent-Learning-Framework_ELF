@@ -137,8 +137,12 @@ class BlackboardV2:
     def add_finding(self, agent_id: str, finding_type: str, content: str,
                     files: List[str] = None, importance: str = "normal",
                     tags: List[str] = None) -> Dict:
-        """Add a finding - writes to both systems."""
-        self._write_to_event_log("finding.added", {
+        """Add a finding - writes to both systems with consistent IDs.
+        
+        RACE CONDITION FIX: Use event log sequence number as canonical ID
+        to ensure blackboard.json and event log have identical finding IDs.
+        """
+        seq = self._write_to_event_log("finding.added", {
             "agent_id": agent_id,
             "finding_type": finding_type,
             "content": content,
@@ -146,7 +150,9 @@ class BlackboardV2:
             "importance": importance,
             "tags": tags or []
         })
-        return self.blackboard.add_finding(agent_id, finding_type, content, files, importance, tags)
+        # Pass the sequence-based ID to ensure consistency
+        finding_id = f"finding-{seq}" if seq else None
+        return self.blackboard.add_finding(agent_id, finding_type, content, files, importance, tags, finding_id=finding_id)
 
     def get_findings(self, since: str = None, finding_type: str = None,
                      importance: str = None) -> List[Dict]:

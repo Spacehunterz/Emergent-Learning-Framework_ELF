@@ -286,12 +286,17 @@ class EventLog:
 
         This is the event sourcing pattern: State = f(events)
         """
-        # Check cache
-        if use_cache and self._state_cache is not None:
+        # RACE CONDITION FIX: Capture cache reference atomically
+        # Without this, another thread could set _state_cache = None between
+        # the "is not None" check and the .copy() call, causing AttributeError
+        cached = self._state_cache
+        cached_seq = self._cache_seq
+
+        if use_cache and cached is not None:
             # Verify cache is still valid
             current_seq = self.get_latest_sequence()
-            if current_seq == self._cache_seq:
-                return self._state_cache.copy()
+            if current_seq == cached_seq:
+                return cached.copy()
 
         # Initialize empty state (matches blackboard.json structure)
         state = {
