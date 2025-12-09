@@ -820,6 +820,72 @@ class Conductor:
             self.record_node_failure(exec_id, str(e), "exception", duration_ms)
             return False, {"error": str(e)}
 
+    def _build_edge_index(self, edges: List[Dict]) -> Dict[str, List[Edge]]:
+        """
+        Build node_id -> outgoing edges index.
+
+        Args:
+            edges: List of edge dictionaries from workflow
+
+        Returns:
+            Dictionary mapping node IDs to lists of outgoing edges
+        """
+        edges_from = {}
+        for e in edges:
+            edge = Edge(**e)
+            edges_from.setdefault(edge.from_node, []).append(edge)
+        return edges_from
+
+    def _get_initial_nodes(self, edges_from: Dict[str, List[Edge]]) -> List[str]:
+        """
+        Get starting nodes from __start__.
+
+        Args:
+            edges_from: Dictionary mapping node IDs to outgoing edges
+
+        Returns:
+            List of node IDs to start execution from
+        """
+        return [e.to_node for e in edges_from.get("__start__", [])]
+
+    def _evaluate_edge_condition(self, edge: Edge, context: Dict) -> bool:
+        """
+        Evaluate edge condition, returning True if should traverse.
+
+        Args:
+            edge: Edge object with optional condition
+            context: Current workflow context for condition evaluation
+
+        Returns:
+            True if edge should be traversed, False otherwise
+        """
+        if not edge.condition:
+            return True
+        try:
+            return safe_eval_condition(edge.condition, context)
+        except Exception as e:
+            sys.stderr.write(f"Warning: Condition evaluation failed for edge: {e}\n")
+            return False
+
+    def _get_next_nodes(self, current_node: str, edges_from: Dict[str, List[Edge]],
+                        context: Dict) -> List[str]:
+        """
+        Get next nodes to traverse based on edge conditions.
+
+        Args:
+            current_node: Current node ID
+            edges_from: Dictionary mapping node IDs to outgoing edges
+            context: Current workflow context for condition evaluation
+
+        Returns:
+            List of next node IDs to execute
+        """
+        next_nodes = []
+        for edge in edges_from.get(current_node, []):
+            if self._evaluate_edge_condition(edge, context):
+                next_nodes.append(edge.to_node)
+        return next_nodes
+
     def run_workflow(self, workflow_name: str, input_data: Dict = None,
                      on_node_complete: Callable = None) -> int:
         """
@@ -843,14 +909,9 @@ class Conductor:
         context = input_data.copy()
         nodes_by_id = {n["id"]: Node(**n) for n in workflow["nodes"]}
 
-        # Build adjacency list from edges
-        edges_from: Dict[str, List[Edge]] = {}
-        for e in workflow["edges"]:
-            edge = Edge(**e)
-            edges_from.setdefault(edge.from_node, []).append(edge)
-
-        # Start from __start__ node
-        current_nodes = [e.to_node for e in edges_from.get("__start__", [])]
+        # Build adjacency list from edges and get initial nodes
+        edges_from = self._build_edge_index(workflow["edges"])
+        current_nodes = self._get_initial_nodes(edges_from)
         completed_nodes = set()
 
         while current_nodes:
@@ -876,17 +937,8 @@ class Conductor:
                 if on_node_complete:
                     on_node_complete(node_id, success, result)
 
-                # Get next nodes from edges
-                for edge in edges_from.get(node_id, []):
-                    if edge.condition:
-                        # Evaluate condition
-                        try:
-                            if safe_eval_condition(edge.condition, context):
-                                next_nodes.append(edge.to_node)
-                        except Exception as e:
-                            sys.stderr.write(f"Warning: Condition evaluation failed for edge: {e}\n")  # Condition failed
-                    else:
-                        next_nodes.append(edge.to_node)
+                # Get next nodes based on edge conditions
+                next_nodes.extend(self._get_next_nodes(node_id, edges_from, context))
 
             current_nodes = list(set(next_nodes))
 

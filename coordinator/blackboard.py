@@ -25,8 +25,10 @@ import os
 import time
 import random
 from pathlib import Path
-from typing import Optional, Dict, List, Any, Callable
-from datetime import datetime
+from typing import Optional, Dict, List, Any, Callable, Set
+from datetime import datetime, timedelta
+from dataclasses import dataclass
+import uuid
 
 # Windows-compatible file locking
 try:
@@ -35,6 +37,51 @@ try:
 except ImportError:
     import fcntl
     WINDOWS = False
+
+
+@dataclass
+class ClaimChain:
+    """Represents a transactional claim on multiple files."""
+    chain_id: str
+    agent_id: str
+    files: Set[str]
+    reason: str
+    claimed_at: datetime
+    expires_at: datetime
+    status: str  # active, completed, expired, released
+
+    def to_dict(self) -> Dict:
+        """Convert to JSON-serializable dict."""
+        return {
+            "chain_id": self.chain_id,
+            "agent_id": self.agent_id,
+            "files": sorted(list(self.files)),  # Convert set to sorted list
+            "reason": self.reason,
+            "claimed_at": self.claimed_at.isoformat(),
+            "expires_at": self.expires_at.isoformat(),
+            "status": self.status
+        }
+
+    @staticmethod
+    def from_dict(data: Dict) -> 'ClaimChain':
+        """Create ClaimChain from dict."""
+        return ClaimChain(
+            chain_id=data["chain_id"],
+            agent_id=data["agent_id"],
+            files=set(data["files"]),  # Convert list back to set
+            reason=data["reason"],
+            claimed_at=datetime.fromisoformat(data["claimed_at"]),
+            expires_at=datetime.fromisoformat(data["expires_at"]),
+            status=data["status"]
+        )
+
+
+class BlockedError(Exception):
+    """Raised when a claim chain cannot be acquired due to existing claims."""
+    def __init__(self, message: str, blocking_chains: List[ClaimChain], conflicting_files: Set[str]):
+        super().__init__(message)
+        self.blocking_chains = blocking_chains
+        self.conflicting_files = conflicting_files
 
 
 class Blackboard:
@@ -136,7 +183,8 @@ class Blackboard:
             "messages": [],
             "task_queue": [],
             "questions": [],
-            "context": {}
+            "context": {},
+            "claim_chains": []
         }
 
     def _with_lock(self, operation):
@@ -533,6 +581,229 @@ class Blackboard:
         if key:
             return state.get("context", {}).get(key, {}).get("value")
         return {k: v["value"] for k, v in state.get("context", {}).items()}
+
+
+    # =========================================================================
+    # Claim Chains (Transactional File Claims)
+    # =========================================================================
+
+    def _expire_old_chains(self, state: Dict) -> None:
+        """Mark expired chains as expired."""
+        now = datetime.now()
+        for chain_data in state.get("claim_chains", []):
+            if chain_data["status"] == "active":
+                expires_at = datetime.fromisoformat(chain_data["expires_at"])
+                if now > expires_at:
+                    chain_data["status"] = "expired"
+
+    def claim_chain(
+        self,
+        agent_id: str,
+        files: List[str],
+        reason: str = "",
+        ttl_minutes: int = 30
+    ) -> ClaimChain:
+        """Atomically claim all files or raise BlockedError.
+
+        Args:
+            agent_id: ID of the agent claiming the files
+            files: List of file paths to claim
+            reason: Description of why these files are being claimed
+            ttl_minutes: Time-to-live for the claim in minutes
+
+        Returns:
+            ClaimChain object representing the successful claim
+
+        Raises:
+            BlockedError: If any file is already claimed by another agent
+        """
+        def op():
+            state = self._read_state()
+            self._expire_old_chains(state)
+
+            # Normalize file paths
+            normalized_files = set(str(Path(f)) for f in files)
+
+            # Check for conflicts
+            blocking_chains = []
+            conflicting_files = set()
+
+            for chain_data in state.get("claim_chains", []):
+                if chain_data["status"] != "active":
+                    continue
+
+                chain_files = set(chain_data["files"])
+                overlap = normalized_files & chain_files
+
+                if overlap and chain_data["agent_id"] != agent_id:
+                    blocking_chains.append(ClaimChain.from_dict(chain_data))
+                    conflicting_files.update(overlap)
+
+            if blocking_chains:
+                msg = f"Cannot claim {len(conflicting_files)} file(s). Blocked by {len(blocking_chains)} chain(s)."
+                raise BlockedError(msg, blocking_chains, conflicting_files)
+
+            # Create new claim chain
+            now = datetime.now()
+            chain = ClaimChain(
+                chain_id=str(uuid.uuid4()),
+                agent_id=agent_id,
+                files=normalized_files,
+                reason=reason,
+                claimed_at=now,
+                expires_at=now + timedelta(minutes=ttl_minutes),
+                status="active"
+            )
+
+            # Add to state
+            if "claim_chains" not in state:
+                state["claim_chains"] = []
+            state["claim_chains"].append(chain.to_dict())
+            state["updated_at"] = datetime.now().isoformat()
+            self._write_state(state)
+
+            return chain
+
+        return self._with_lock(op)
+
+    def release_chain(self, agent_id: str, chain_id: str) -> bool:
+        """Release all files in a claim chain.
+
+        Args:
+            agent_id: ID of the agent releasing the chain
+            chain_id: ID of the chain to release
+
+        Returns:
+            True if chain was released, False if not found or not owned by agent
+        """
+        def op():
+            state = self._read_state()
+
+            for chain_data in state.get("claim_chains", []):
+                if chain_data["chain_id"] == chain_id:
+                    if chain_data["agent_id"] != agent_id:
+                        return False  # Not owned by this agent
+
+                    if chain_data["status"] == "active":
+                        chain_data["status"] = "released"
+                        state["updated_at"] = datetime.now().isoformat()
+                        self._write_state(state)
+                        return True
+
+            return False
+
+        return self._with_lock(op)
+
+    def complete_chain(self, agent_id: str, chain_id: str) -> bool:
+        """Mark a claim chain as completed.
+
+        Args:
+            agent_id: ID of the agent completing the chain
+            chain_id: ID of the chain to complete
+
+        Returns:
+            True if chain was completed, False if not found or not owned by agent
+        """
+        def op():
+            state = self._read_state()
+
+            for chain_data in state.get("claim_chains", []):
+                if chain_data["chain_id"] == chain_id:
+                    if chain_data["agent_id"] != agent_id:
+                        return False  # Not owned by this agent
+
+                    if chain_data["status"] == "active":
+                        chain_data["status"] = "completed"
+                        state["updated_at"] = datetime.now().isoformat()
+                        self._write_state(state)
+                        return True
+
+            return False
+
+        return self._with_lock(op)
+
+    def get_blocking_chains(self, files: List[str]) -> List[ClaimChain]:
+        """Get claim chains that block the specified files.
+
+        Args:
+            files: List of file paths to check
+
+        Returns:
+            List of ClaimChain objects that claim any of the specified files
+        """
+        state = self._read_state()
+        self._expire_old_chains(state)
+
+        normalized_files = set(str(Path(f)) for f in files)
+        blocking = []
+
+        for chain_data in state.get("claim_chains", []):
+            if chain_data["status"] != "active":
+                continue
+
+            chain_files = set(chain_data["files"])
+            if normalized_files & chain_files:
+                blocking.append(ClaimChain.from_dict(chain_data))
+
+        return blocking
+
+    def get_claim_for_file(self, file_path: str) -> Optional[ClaimChain]:
+        """Get the active claim chain containing this file.
+
+        Args:
+            file_path: Path to the file
+
+        Returns:
+            ClaimChain if file is claimed, None otherwise
+        """
+        state = self._read_state()
+        self._expire_old_chains(state)
+
+        normalized_path = str(Path(file_path))
+
+        for chain_data in state.get("claim_chains", []):
+            if chain_data["status"] != "active":
+                continue
+
+            if normalized_path in chain_data["files"]:
+                return ClaimChain.from_dict(chain_data)
+
+        return None
+
+    def get_agent_chains(self, agent_id: str) -> List[ClaimChain]:
+        """Get all claim chains for an agent.
+
+        Args:
+            agent_id: ID of the agent
+
+        Returns:
+            List of ClaimChain objects owned by the agent
+        """
+        state = self._read_state()
+        chains = []
+
+        for chain_data in state.get("claim_chains", []):
+            if chain_data["agent_id"] == agent_id:
+                chains.append(ClaimChain.from_dict(chain_data))
+
+        return chains
+
+    def get_all_active_chains(self) -> List[ClaimChain]:
+        """Get all active claim chains.
+
+        Returns:
+            List of all active ClaimChain objects
+        """
+        state = self._read_state()
+        self._expire_old_chains(state)
+
+        chains = []
+        for chain_data in state.get("claim_chains", []):
+            if chain_data["status"] == "active":
+                chains.append(ClaimChain.from_dict(chain_data))
+
+        return chains
+
 
     # =========================================================================
     # Utilities

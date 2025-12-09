@@ -66,6 +66,24 @@ class EventLog:
         self._state_cache: Optional[Dict] = None
         self._cache_seq: int = 0  # Sequence number when cache was built
 
+        # Event handler dispatch table (dictionary dispatch pattern)
+        # Maps event types to their respective handler methods
+        self._event_handlers = {
+            "agent.registered": self._handle_agent_registered,
+            "agent.status_updated": self._handle_agent_status_updated,
+            "agent.cursor_updated": self._handle_agent_cursor_updated,
+            "agent.heartbeat": self._handle_agent_heartbeat,
+            "finding.added": self._handle_finding_added,
+            "message.sent": self._handle_message_sent,
+            "message.read": self._handle_message_read,
+            "task.added": self._handle_task_added,
+            "task.claimed": self._handle_task_claimed,
+            "task.completed": self._handle_task_completed,
+            "question.asked": self._handle_question_asked,
+            "question.answered": self._handle_question_answered,
+            "context.set": self._handle_context_set,
+        }
+
     def _ensure_dir(self) -> None:
         """Create coordination directory if it doesn't exist."""
         self.coordination_dir.mkdir(parents=True, exist_ok=True)
@@ -301,156 +319,182 @@ class EventLog:
 
     def _apply_event(self, state: Dict, event: Dict) -> Dict:
         """
-        Apply a single event to derive new state.
+        Apply a single event to derive new state using dictionary dispatch pattern.
+
         Pure function: state' = apply(state, event)
+
+        This method uses the dispatch pattern to route events to their specific handlers,
+        replacing the previous if/elif chain for better maintainability and extensibility.
+        Adding new event types requires:
+        1. Creating a new _handle_* method
+        2. Adding it to self._event_handlers in __init__
         """
         event_type = event.get("type", "")
-        data = event.get("data", {})
-        timestamp = event.get("ts", datetime.now().isoformat())
         seq = event.get("seq", 0)
+        timestamp = event.get("ts", datetime.now().isoformat())
+        data = event.get("data", {})
 
-        # ----- Agent Events -----
-        if event_type == "agent.registered":
-            agent_id = data.get("agent_id")
-            if agent_id:
-                state["agents"][agent_id] = {
-                    "task": data.get("task", ""),
-                    "scope": data.get("scope", []),
-                    "interests": data.get("interests", []),
-                    "status": "active",
-                    "started_at": timestamp,
-                    "last_seen": timestamp,
-                    "context_cursor": data.get("context_cursor", 0)
-                }
-
-        elif event_type == "agent.status_updated":
-            agent_id = data.get("agent_id")
-            if agent_id and agent_id in state["agents"]:
-                state["agents"][agent_id]["status"] = data.get("status", "active")
-                state["agents"][agent_id]["last_seen"] = timestamp
-                if "result" in data:
-                    state["agents"][agent_id]["result"] = data["result"]
-                if data.get("status") in ("completed", "failed"):
-                    state["agents"][agent_id]["finished_at"] = timestamp
-
-        elif event_type == "agent.cursor_updated":
-            agent_id = data.get("agent_id")
-            if agent_id and agent_id in state["agents"]:
-                state["agents"][agent_id]["context_cursor"] = data.get("cursor", 0)
-                state["agents"][agent_id]["last_seen"] = timestamp
-
-        elif event_type == "agent.heartbeat":
-            agent_id = data.get("agent_id")
-            if agent_id and agent_id in state["agents"]:
-                state["agents"][agent_id]["last_seen"] = timestamp
-
-        # ----- Finding Events -----
-        elif event_type == "finding.added":
-            # C1 FIX: Use seq for consistent IDs across both systems
-            finding_id = f"finding-{seq}"
-            state["findings"].append({
-                "id": finding_id,
-                "seq": seq,  # C1 FIX
-                "agent_id": data.get("agent_id", "unknown"),
-                "type": data.get("finding_type", "fact"),
-                "content": data.get("content", ""),
-                "files": data.get("files", []),
-                "importance": data.get("importance", "normal"),
-                "tags": data.get("tags", []),
-                "timestamp": timestamp,
-                "expires_at": data.get("expires_at")  # C7 FIX: Support TTL
-            })
-
-        # ----- Message Events -----
-        elif event_type == "message.sent":
-            msg_id = data.get("id", f"msg-{seq}")
-            state["messages"].append({
-                "id": msg_id,
-                "from": data.get("from_agent", "unknown"),
-                "to": data.get("to_agent", "*"),
-                "type": data.get("msg_type", "info"),
-                "content": data.get("content", ""),
-                "read": False,
-                "timestamp": timestamp
-            })
-
-        elif event_type == "message.read":
-            msg_id = data.get("message_id")
-            for msg in state["messages"]:
-                if msg["id"] == msg_id:
-                    msg["read"] = True
-                    break
-
-        # ----- Task Events -----
-        elif event_type == "task.added":
-            task_id = data.get("id", f"task-{seq}")
-            state["task_queue"].append({
-                "id": task_id,
-                "task": data.get("task", ""),
-                "priority": data.get("priority", 5),
-                "depends_on": data.get("depends_on", []),
-                "assigned_to": data.get("assigned_to"),
-                "status": "pending",
-                "created_at": timestamp
-            })
-
-        elif event_type == "task.claimed":
-            task_id = data.get("task_id")
-            for task in state["task_queue"]:
-                if task["id"] == task_id:
-                    task["assigned_to"] = data.get("agent_id")
-                    task["status"] = "in_progress"
-                    task["claimed_at"] = timestamp
-                    break
-
-        elif event_type == "task.completed":
-            task_id = data.get("task_id")
-            for task in state["task_queue"]:
-                if task["id"] == task_id:
-                    task["status"] = "completed"
-                    if "result" in data:
-                        task["result"] = data["result"]
-                    task["completed_at"] = timestamp
-                    break
-
-        # ----- Question Events -----
-        elif event_type == "question.asked":
-            q_id = data.get("id", f"q-{seq}")
-            state["questions"].append({
-                "id": q_id,
-                "agent_id": data.get("agent_id", "unknown"),
-                "question": data.get("question", ""),
-                "options": data.get("options"),
-                "blocking": data.get("blocking", True),
-                "status": "open",
-                "answer": None,
-                "answered_by": None,
-                "created_at": timestamp
-            })
-
-        elif event_type == "question.answered":
-            q_id = data.get("question_id")
-            for q in state["questions"]:
-                if q["id"] == q_id:
-                    q["answer"] = data.get("answer")
-                    q["answered_by"] = data.get("answered_by")
-                    q["status"] = "resolved"
-                    q["answered_at"] = timestamp
-                    break
-
-        # ----- Context Events -----
-        elif event_type == "context.set":
-            key = data.get("key")
-            if key:
-                state["context"][key] = {
-                    "value": data.get("value"),
-                    "updated_at": timestamp
-                }
+        # Get handler or use no-op for unknown events
+        handler = self._event_handlers.get(event_type, self._handle_unknown)
+        handler(state, seq, timestamp, data)
 
         # Update state timestamp
         state["updated_at"] = timestamp
 
         return state
+
+    # =========================================================================
+    # Event Handlers (Dictionary Dispatch Pattern)
+    # =========================================================================
+
+    def _handle_unknown(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle unknown event types (no-op with warning)."""
+        sys.stderr.write(f"Warning: Unknown event type at seq {seq}, ignoring\n")
+
+    def _handle_agent_registered(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle agent.registered event."""
+        agent_id = data.get("agent_id")
+        if agent_id:
+            state["agents"][agent_id] = {
+                "task": data.get("task", ""),
+                "scope": data.get("scope", []),
+                "interests": data.get("interests", []),
+                "status": "active",
+                "started_at": timestamp,
+                "last_seen": timestamp,
+                "context_cursor": data.get("context_cursor", 0)
+            }
+
+    def _handle_agent_status_updated(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle agent.status_updated event."""
+        agent_id = data.get("agent_id")
+        if agent_id and agent_id in state["agents"]:
+            state["agents"][agent_id]["status"] = data.get("status", "active")
+            state["agents"][agent_id]["last_seen"] = timestamp
+            if "result" in data:
+                state["agents"][agent_id]["result"] = data["result"]
+            if data.get("status") in ("completed", "failed"):
+                state["agents"][agent_id]["finished_at"] = timestamp
+
+    def _handle_agent_cursor_updated(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle agent.cursor_updated event."""
+        agent_id = data.get("agent_id")
+        if agent_id and agent_id in state["agents"]:
+            state["agents"][agent_id]["context_cursor"] = data.get("cursor", 0)
+            state["agents"][agent_id]["last_seen"] = timestamp
+
+    def _handle_agent_heartbeat(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle agent.heartbeat event."""
+        agent_id = data.get("agent_id")
+        if agent_id and agent_id in state["agents"]:
+            state["agents"][agent_id]["last_seen"] = timestamp
+
+    def _handle_finding_added(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle finding.added event."""
+        # C1 FIX: Use seq for consistent IDs across both systems
+        finding_id = f"finding-{seq}"
+        state["findings"].append({
+            "id": finding_id,
+            "seq": seq,  # C1 FIX
+            "agent_id": data.get("agent_id", "unknown"),
+            "type": data.get("finding_type", "fact"),
+            "content": data.get("content", ""),
+            "files": data.get("files", []),
+            "importance": data.get("importance", "normal"),
+            "tags": data.get("tags", []),
+            "timestamp": timestamp,
+            "expires_at": data.get("expires_at")  # C7 FIX: Support TTL
+        })
+
+    def _handle_message_sent(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle message.sent event."""
+        msg_id = data.get("id", f"msg-{seq}")
+        state["messages"].append({
+            "id": msg_id,
+            "from": data.get("from_agent", "unknown"),
+            "to": data.get("to_agent", "*"),
+            "type": data.get("msg_type", "info"),
+            "content": data.get("content", ""),
+            "read": False,
+            "timestamp": timestamp
+        })
+
+    def _handle_message_read(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle message.read event."""
+        msg_id = data.get("message_id")
+        for msg in state["messages"]:
+            if msg["id"] == msg_id:
+                msg["read"] = True
+                break
+
+    def _handle_task_added(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle task.added event."""
+        task_id = data.get("id", f"task-{seq}")
+        state["task_queue"].append({
+            "id": task_id,
+            "task": data.get("task", ""),
+            "priority": data.get("priority", 5),
+            "depends_on": data.get("depends_on", []),
+            "assigned_to": data.get("assigned_to"),
+            "status": "pending",
+            "created_at": timestamp
+        })
+
+    def _handle_task_claimed(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle task.claimed event."""
+        task_id = data.get("task_id")
+        for task in state["task_queue"]:
+            if task["id"] == task_id:
+                task["assigned_to"] = data.get("agent_id")
+                task["status"] = "in_progress"
+                task["claimed_at"] = timestamp
+                break
+
+    def _handle_task_completed(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle task.completed event."""
+        task_id = data.get("task_id")
+        for task in state["task_queue"]:
+            if task["id"] == task_id:
+                task["status"] = "completed"
+                if "result" in data:
+                    task["result"] = data["result"]
+                task["completed_at"] = timestamp
+                break
+
+    def _handle_question_asked(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle question.asked event."""
+        q_id = data.get("id", f"q-{seq}")
+        state["questions"].append({
+            "id": q_id,
+            "agent_id": data.get("agent_id", "unknown"),
+            "question": data.get("question", ""),
+            "options": data.get("options"),
+            "blocking": data.get("blocking", True),
+            "status": "open",
+            "answer": None,
+            "answered_by": None,
+            "created_at": timestamp
+        })
+
+    def _handle_question_answered(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle question.answered event."""
+        q_id = data.get("question_id")
+        for q in state["questions"]:
+            if q["id"] == q_id:
+                q["answer"] = data.get("answer")
+                q["answered_by"] = data.get("answered_by")
+                q["status"] = "resolved"
+                q["answered_at"] = timestamp
+                break
+
+    def _handle_context_set(self, state: Dict, seq: int, timestamp: str, data: Dict) -> None:
+        """Handle context.set event."""
+        key = data.get("key")
+        if key:
+            state["context"][key] = {
+                "value": data.get("value"),
+                "updated_at": timestamp
+            }
 
     # =========================================================================
     # Utility Methods
