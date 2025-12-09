@@ -42,7 +42,7 @@ def test_event_log_basic_operations():
         
         # Verify finding details
         assert state["findings"][0]["content"] == "Found something interesting"
-        assert state["findings"][0]["finding_type"] == "discovery"
+        assert state["findings"][0]["type"] == "discovery"
 
 
 def test_event_log_stats():
