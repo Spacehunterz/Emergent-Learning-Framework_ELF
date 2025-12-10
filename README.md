@@ -276,12 +276,35 @@ Then open http://localhost:3000
 
 ![Cosmic Dashboard - Heuristics View](docs/images/cosmic-dashboard-heuristics.png)
 
-The dashboard shows:
-- **Overview** - Hotspot treemap, anomalies, golden rules
-- **Heuristics** - All learned patterns with confidence scores
-- **Runs** - Agent execution history
-- **Timeline** - Activity over time
-- **Query** - Natural language search
+### Dashboard Tabs
+
+| Tab | What It Shows |
+|-----|---------------|
+| **Overview** | Hotspot treemap (D3.js), anomalies, active golden rules |
+| **Heuristics** | All learned patterns with confidence scores, promote/demote to golden |
+| **Runs** | Agent execution history with status filtering, retry failed runs |
+| **Timeline** | Event-by-event history with playback controls |
+| **Query** | Natural language search across all knowledge |
+
+### Stats Bar
+
+The top bar shows real-time metrics with drill-down capability:
+- **Total Runs** - Click to see run history
+- **Success Rate** - Percentage of successful executions
+- **Heuristics** - Total patterns learned (84 in screenshot)
+- **Golden Rules** - Constitutional principles (8 active)
+- **Hotspots** - High-activity code locations
+- **Queries** - Building queries made (177 in screenshot)
+
+### Tech Stack
+
+- **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
+- **Backend**: FastAPI (Python) with WebSocket real-time updates
+- **Visualization**: D3.js for treemaps
+- **Database**: Reads from `~/.claude/emergent-learning/memory/index.db`
+- **Themes**: 10 cosmic themes (black-hole, nebula, aurora, etc.)
+
+The dashboard operates **without consuming API tokens** - it reads directly from your local SQLite database.
 
 ## How It Works
 
