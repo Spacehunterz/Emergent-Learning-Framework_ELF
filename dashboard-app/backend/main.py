@@ -51,13 +51,22 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS for development
+# CORS - restricted to local development origins only
+# SECURITY: Since backend is localhost-only, this primarily prevents
+# malicious websites from making requests if user visits them
+ALLOWED_ORIGINS = [
+    "http://localhost:3001",   # Vite dev server
+    "http://localhost:8888",   # Backend serving frontend
+    "http://127.0.0.1:3001",
+    "http://127.0.0.1:8888",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
