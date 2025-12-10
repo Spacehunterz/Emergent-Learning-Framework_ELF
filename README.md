@@ -1128,6 +1128,48 @@ The framework uses these main libraries:
 - **Discussions:** GitHub Discussions (ask questions, share learnings)
 - **Troubleshooting:** See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 
+## Git Workflow (Keep It Clean)
+
+**Stay on `main`. Don't create random branches.**
+
+```bash
+# Before working - always pull latest
+git pull
+
+# After making changes - commit and push immediately
+git add -A
+git commit -m "description of what you did"
+git push
+
+# Check you're clean
+git status
+```
+
+**Rules:**
+- Always work on `main` branch
+- Pull before you start, push when you're done
+- Don't let commits pile up locally
+- Never force push unless you know what you're doing
+
+**If things get weird:**
+```bash
+# See what branch you're on
+git branch
+
+# If you're not on main, get back there
+git checkout main
+git pull
+
+# Delete stray branches
+git branch -D branch-name
+```
+
+**What NOT to commit:**
+- `memory/index.db` - Your live database (changes constantly)
+- `.vite/` - Build cache
+- `desktop.ini` - Windows junk
+- `node_modules/` - Dependencies (already gitignored)
+
 ## Contributing
 
 Contributions welcome - bug fixes, improvements, documentation.
