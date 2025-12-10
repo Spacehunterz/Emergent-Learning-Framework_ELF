@@ -892,7 +892,7 @@ class QuerySystem:
             )
 
     def query_recent(self, type_filter: Optional[str] = None, limit: int = 10,
-                    timeout: int = None) -> List[Dict[str, Any]]:
+                    timeout: int = None, days: int = 2) -> List[Dict[str, Any]]:
         """
         Get recent learnings, optionally filtered by type.
 
@@ -900,6 +900,7 @@ class QuerySystem:
             type_filter: Optional type filter (e.g., 'incident', 'success')
             limit: Maximum number of results to return
             timeout: Query timeout in seconds (default: 30)
+            days: Only return learnings from the last N days (default: 2)
 
         Returns:
             List of recent learnings
@@ -923,7 +924,7 @@ class QuerySystem:
             if type_filter:
                 type_filter = self._validate_query(type_filter)
 
-            self._log_debug(f"Querying recent learnings (type={type_filter}, limit={limit})")
+            self._log_debug(f"Querying recent learnings (type={type_filter}, limit={limit}, days={days})")
             with TimeoutHandler(timeout):
                 with self._get_connection() as conn:
                     conn.row_factory = sqlite3.Row
@@ -933,15 +934,17 @@ class QuerySystem:
                         cursor.execute("""
                             SELECT * FROM learnings
                             WHERE type = ?
+                            AND created_at >= datetime('now', ? || ' days')
                             ORDER BY created_at DESC
                             LIMIT ?
-                        """, (type_filter, limit))
+                        """, (type_filter, f'-{days}', limit))
                     else:
                         cursor.execute("""
                             SELECT * FROM learnings
+                            WHERE created_at >= datetime('now', ? || ' days')
                             ORDER BY created_at DESC
                             LIMIT ?
-                        """, (limit,))
+                        """, (f'-{days}', limit))
 
                     results = [dict(row) for row in cursor.fetchall()]
 
