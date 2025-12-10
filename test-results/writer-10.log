@@ -1,6 +1,0 @@
-=== Record Failure (non-interactive) ===
-Created: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-10.md
-Database record created (ID: 160)
-ERROR: Failed to acquire git lock (timeout): /c/Users/Evede/.claude/emergent-learning/.git/claude-lock.dir
-ERROR: Could not acquire git lock - rolling back
-Error: Could not acquire git lock

@@ -1,0 +1,38 @@
+[2025-12-09 00:03:22] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-09 00:03:22] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-09 00:03:22] [INFO] [record-heuristic] Script started
+[2025-12-09 00:03:22] [INFO] [record-heuristic] No terminal attached and no arguments provided - showing usage
+[2025-12-09 00:03:29] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-09 00:03:29] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-09 00:03:29] [INFO] [record-heuristic] Script started
+[2025-12-09 00:03:29] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-09 00:03:29] [INFO] [record-heuristic] Recording heuristic: QTimer operations must be called from Qt main thread. When callbacks come from worker threads (audio, network), emit a pyqtSignal and handle the timer in the connected main thread slot. (domain: pyqt, confidence: 0.9)
+[2025-12-09 00:03:29] [INFO] [record-heuristic] Database record created (ID: 106)
+[2025-12-09 00:03:29] [INFO] [record-heuristic] Created new domain file: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/pyqt.md
+[2025-12-09 00:03:29] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/pyqt.md
+[2025-12-09 00:03:29] [INFO] [record-heuristic] Git commit created
+[2025-12-09 00:03:30] [INFO] [record-heuristic] Heuristic recorded successfully: QTimer operations must be called from Qt main thread. When callbacks come from worker threads (audio, network), emit a pyqtSignal and handle the timer in the connected main thread slot.
+[2025-12-09 00:03:36] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-09 00:03:36] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-09 00:03:36] [INFO] [record-heuristic] Script started
+[2025-12-09 00:03:36] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-09 00:03:36] [INFO] [record-heuristic] Recording heuristic: Animated characters/avatars should linger 2 seconds after voice/action completes. Immediate hide (100ms) feels jarring; give users time to process what they saw. (domain: ux-overlay, confidence: 0.85)
+[2025-12-09 00:03:36] [INFO] [record-heuristic] Database record created (ID: 107)
+[2025-12-09 00:03:36] [INFO] [record-heuristic] Created new domain file: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/ux-overlay.md
+[2025-12-09 00:03:36] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/ux-overlay.md
+[2025-12-09 00:03:37] [INFO] [record-heuristic] Git commit created
+[2025-12-09 00:03:37] [INFO] [record-heuristic] Heuristic recorded successfully: Animated characters/avatars should linger 2 seconds after voice/action completes. Immediate hide (100ms) feels jarring; give users time to process what they saw.
+[2025-12-09 16:49:03] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-09 16:49:03] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-09 16:49:03] [INFO] [record-heuristic] Script started
+[2025-12-09 16:49:03] [INFO] [record-heuristic] No terminal attached and no arguments provided - showing usage
+[2025-12-09 16:49:10] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-09 16:49:10] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-09 16:49:10] [INFO] [record-heuristic] Script started
+[2025-12-09 16:49:10] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-09 16:49:10] [INFO] [record-heuristic] Recording heuristic: UI component enhancement parallelizes well - use parallel agents for independent component work (domain: swarm, confidence: 0.8)
+[2025-12-09 16:49:10] [INFO] [record-heuristic] Database record created (ID: 108)
+[2025-12-09 16:49:10] [INFO] [record-heuristic] Created new domain file: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/swarm.md
+[2025-12-09 16:49:10] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/swarm.md
+[2025-12-09 16:49:10] [INFO] [record-heuristic] Git commit created
+[2025-12-09 16:49:10] [INFO] [record-heuristic] Heuristic recorded successfully: UI component enhancement parallelizes well - use parallel agents for independent component work

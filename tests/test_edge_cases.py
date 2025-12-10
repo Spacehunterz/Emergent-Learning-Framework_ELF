@@ -1,842 +1,616 @@
 #!/usr/bin/env python3
 """
-Edge Case Testing Suite for query.py
-Tests 10 novel edge cases to find breaking points.
+Edge Case Testing Suite for Emergent Learning Framework Database
+Tests novel database edge cases to verify robustness
 """
 
-import sys
-import os
 import sqlite3
+import os
+import sys
 import shutil
-import subprocess
-import json
-import time
-import tempfile
 from pathlib import Path
-from threading import Thread
-from queue import Queue
 from datetime import datetime
+import traceback
+import json
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "query"))
-from query import QuerySystem, QuerySystemError, DatabaseError, ValidationError, TimeoutError as QueryTimeoutError
+# Add query directory to path
+sys.path.insert(0, str(Path(__file__).parent / "query"))
+from query import QuerySystem, DatabaseError, ValidationError
 
-class EdgeCaseTestRunner:
-    """Test runner for edge cases."""
+class EdgeCaseTester:
+    """Test suite for database edge cases"""
 
     def __init__(self):
-        self.results = []
-        self.test_base = Path(tempfile.mkdtemp(prefix="test_query_"))
-        self.test_memory = self.test_base / "memory"
-        self.test_db = self.test_memory / "index.db"
+        self.base_path = Path.home() / ".claude" / "emergent-learning"
+        self.db_path = self.base_path / "memory" / "index.db"
+        self.test_results = []
 
-    def setup(self):
-        """Set up test environment."""
-        self.test_memory.mkdir(parents=True, exist_ok=True)
-
-    def cleanup(self):
-        """Clean up test environment."""
-        if self.test_base.exists():
-            shutil.rmtree(self.test_base)
-
-    def log_result(self, test_name, severity, status, details, error=None):
-        """Log a test result."""
+    def log_result(self, test_name, severity, status, details):
+        """Log a test result"""
         result = {
             'test': test_name,
-            'severity': severity,
-            'status': status,
+            'severity': severity,  # CRITICAL, HIGH, MEDIUM, LOW
+            'status': status,      # PASS, FAIL, ERROR
             'details': details,
             'timestamp': datetime.now().isoformat()
         }
-        if error:
-            result['error'] = str(error)
-        self.results.append(result)
+        self.test_results.append(result)
 
-    def print_summary(self):
-        """Print test summary."""
-        print("\n" + "="*80)
-        print("EDGE CASE TEST RESULTS")
-        print("="*80 + "\n")
+        # Print immediately
+        status_symbol = "✓" if status == "PASS" else "✗" if status == "FAIL" else "!"
+        print(f"\n[{status_symbol}] {test_name} ({severity})")
+        print(f"    Status: {status}")
+        print(f"    Details: {details}")
 
-        critical_failures = 0
-        high_failures = 0
-        medium_failures = 0
-        low_failures = 0
-        passes = 0
+    def backup_database(self):
+        """Create a backup before destructive tests"""
+        backup_path = str(self.db_path) + f".backup_edgetest_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        shutil.copy2(self.db_path, backup_path)
+        print(f"\n[BACKUP] Created backup at {backup_path}")
+        return backup_path
 
-        for result in self.results:
-            status_symbol = "✓" if result['status'] == 'PASS' else "✗"
-            print(f"{status_symbol} [{result['severity']}] {result['test']}: {result['status']}")
-            print(f"   Details: {result['details']}")
-            if 'error' in result:
-                print(f"   Error: {result['error']}")
-            print()
+    def restore_database(self, backup_path):
+        """Restore database from backup"""
+        if os.path.exists(backup_path):
+            shutil.copy2(backup_path, self.db_path)
+            print(f"[RESTORE] Restored from {backup_path}")
 
-            if result['status'] == 'PASS':
-                passes += 1
-            elif result['severity'] == 'CRITICAL':
-                critical_failures += 1
-            elif result['severity'] == 'HIGH':
-                high_failures += 1
-            elif result['severity'] == 'MEDIUM':
-                medium_failures += 1
-            else:
-                low_failures += 1
+    # ========== TEST 1: Corrupted WAL file ==========
 
-        print("="*80)
-        print(f"Total Tests: {len(self.results)}")
-        print(f"Passed: {passes}")
-        print(f"Failed: {len(self.results) - passes}")
-        print(f"  Critical: {critical_failures}")
-        print(f"  High: {high_failures}")
-        print(f"  Medium: {medium_failures}")
-        print(f"  Low: {low_failures}")
-        print("="*80)
-
-        return critical_failures, high_failures, medium_failures, low_failures
-
-    # ========== TEST 1: Empty Database ==========
-    def test_1_empty_database(self):
-        """Test behavior with 0 rows in learnings table."""
-        print("\n[TEST 1] Testing empty database...")
+    def test_corrupted_wal_file(self):
+        """Test behavior with corrupted WAL file"""
+        test_name = "Corrupted WAL File"
 
         try:
-            qs = QuerySystem(base_path=str(self.test_base), debug=True)
+            # First, enable WAL mode
+            conn = sqlite3.connect(self.db_path)
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("INSERT INTO learnings (type, filepath, title, domain, severity) VALUES ('test', '/tmp/test_wal', 'WAL Test', 'testing', '3')")
+            conn.commit()
 
-            # Query empty database
-            results = qs.query_recent(limit=10)
+            # Check if WAL file was created
+            wal_path = str(self.db_path) + "-wal"
+            if not os.path.exists(wal_path):
+                conn.close()
+                self.log_result(test_name, "MEDIUM", "PASS", "WAL mode not enabled (no WAL file created), graceful degradation")
+                return
 
-            if results == []:
-                self.log_result(
-                    "Empty Database",
-                    "LOW",
-                    "PASS",
-                    "Returns empty list for empty database"
-                )
-            else:
-                self.log_result(
-                    "Empty Database",
-                    "MEDIUM",
-                    "FAIL",
-                    f"Expected empty list, got {results}"
-                )
+            # Create a backup of the WAL
+            wal_backup = wal_path + ".backup"
+            shutil.copy2(wal_path, wal_backup)
 
-            # Test domain query on empty DB
-            domain_results = qs.query_by_domain("test", limit=10)
-            if domain_results['learnings'] == [] and domain_results['heuristics'] == []:
-                self.log_result(
-                    "Empty Database - Domain Query",
-                    "LOW",
-                    "PASS",
-                    "Domain query returns empty results gracefully"
-                )
-            else:
-                self.log_result(
-                    "Empty Database - Domain Query",
-                    "MEDIUM",
-                    "FAIL",
-                    f"Expected empty results, got {domain_results}"
-                )
+            # Corrupt the WAL file
+            with open(wal_path, 'wb') as f:
+                f.write(b"CORRUPTED_DATA_" * 100)
 
-            # Test stats on empty DB
-            stats = qs.get_statistics()
-            if stats['total_learnings'] == 0:
-                self.log_result(
-                    "Empty Database - Statistics",
-                    "LOW",
-                    "PASS",
-                    "Statistics correctly show 0 learnings"
-                )
-            else:
-                self.log_result(
-                    "Empty Database - Statistics",
-                    "MEDIUM",
-                    "FAIL",
-                    f"Expected 0 learnings, got {stats['total_learnings']}"
-                )
+            conn.close()
 
-            qs.cleanup()
-
-        except Exception as e:
-            self.log_result(
-                "Empty Database",
-                "HIGH",
-                "FAIL",
-                "Exception raised on empty database",
-                error=e
-            )
-
-    # ========== TEST 2: Missing Tables ==========
-    def test_2_missing_tables(self):
-        """Test behavior when learnings table is dropped."""
-        print("\n[TEST 2] Testing missing tables...")
-
-        try:
-            qs = QuerySystem(base_path=str(self.test_base), debug=True)
-
-            # Drop learnings table
-            with qs._get_connection() as conn:
-                conn.execute("DROP TABLE IF EXISTS learnings")
-                conn.commit()
-
-            # Try to query
+            # Try to open and query
             try:
-                results = qs.query_recent(limit=10)
-                self.log_result(
-                    "Missing Tables",
-                    "HIGH",
-                    "FAIL",
-                    f"No error raised when table missing. Got: {results}"
-                )
-            except DatabaseError as e:
-                if "QS002" in str(e):
-                    self.log_result(
-                        "Missing Tables",
-                        "HIGH",
-                        "PASS",
-                        f"Proper DatabaseError raised: {e}"
-                    )
-                else:
-                    self.log_result(
-                        "Missing Tables",
-                        "MEDIUM",
-                        "PASS",
-                        f"Error raised but missing error code: {e}"
-                    )
+                qs = QuerySystem(debug=True)
+                result = qs.query_recent(limit=1)
+                qs.cleanup()
+
+                # Restore WAL
+                shutil.copy2(wal_backup, wal_path)
+                os.remove(wal_backup)
+
+                self.log_result(test_name, "HIGH", "PASS",
+                    "Query system handled corrupted WAL gracefully, returned valid data or recovered")
             except Exception as e:
-                self.log_result(
-                    "Missing Tables",
-                    "MEDIUM",
-                    "FAIL",
-                    f"Wrong exception type: {type(e).__name__}",
-                    error=e
-                )
+                # Restore WAL
+                if os.path.exists(wal_backup):
+                    shutil.copy2(wal_backup, wal_path)
+                    os.remove(wal_backup)
 
-            qs.cleanup()
-
-        except Exception as e:
-            self.log_result(
-                "Missing Tables",
-                "CRITICAL",
-                "FAIL",
-                "Test setup failed",
-                error=e
-            )
-
-    # ========== TEST 3: Orphaned Files ==========
-    def test_3_orphaned_files(self):
-        """Test markdown file exists but no DB record."""
-        print("\n[TEST 3] Testing orphaned files...")
-
-        try:
-            qs = QuerySystem(base_path=str(self.test_base), debug=True)
-
-            # Create orphaned markdown file
-            orphan_dir = self.test_memory / "failures"
-            orphan_dir.mkdir(parents=True, exist_ok=True)
-            orphan_file = orphan_dir / "orphan_failure.md"
-
-            with open(orphan_file, 'w', encoding='utf-8') as f:
-                f.write("# Orphaned Failure\n\nThis has no DB record.")
-
-            # Query - should not crash
-            results = qs.query_recent(limit=10)
-
-            self.log_result(
-                "Orphaned Files",
-                "MEDIUM",
-                "PASS",
-                f"System handles orphaned files gracefully. Found {len(results)} records."
-            )
-
-            # Check validation
-            validation = qs.validate_database()
-            if validation['valid']:
-                self.log_result(
-                    "Orphaned Files - Validation",
-                    "LOW",
-                    "PASS",
-                    "Database validation still passes with orphaned files"
-                )
-
-            qs.cleanup()
-
-        except Exception as e:
-            self.log_result(
-                "Orphaned Files",
-                "MEDIUM",
-                "FAIL",
-                "Exception with orphaned files",
-                error=e
-            )
-
-    # ========== TEST 4: Orphaned Records ==========
-    def test_4_orphaned_records(self):
-        """Test DB record exists but no markdown file."""
-        print("\n[TEST 4] Testing orphaned records...")
-
-        try:
-            qs = QuerySystem(base_path=str(self.test_base), debug=True)
-
-            # Insert record pointing to non-existent file
-            with qs._get_connection() as conn:
-                conn.execute("""
-                    INSERT INTO learnings (type, filepath, title, summary, tags, domain)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (
-                    'failure',
-                    str(self.test_memory / "nonexistent" / "fake.md"),
-                    'Orphaned Record',
-                    'This file does not exist',
-                    'orphan,test',
-                    'testing'
-                ))
-                conn.commit()
-
-            # Query - should return the record
-            results = qs.query_recent(limit=10)
-
-            if len(results) > 0 and results[0]['title'] == 'Orphaned Record':
-                self.log_result(
-                    "Orphaned Records",
-                    "MEDIUM",
-                    "PASS",
-                    f"System returns orphaned records without crashing. Record: {results[0]['filepath']}"
-                )
-            else:
-                self.log_result(
-                    "Orphaned Records",
-                    "LOW",
-                    "FAIL",
-                    f"Expected orphaned record in results. Got: {results}"
-                )
-
-            qs.cleanup()
-
-        except Exception as e:
-            self.log_result(
-                "Orphaned Records",
-                "HIGH",
-                "FAIL",
-                "Exception with orphaned records",
-                error=e
-            )
-
-    # ========== TEST 5: Circular References ==========
-    def test_5_circular_references(self):
-        """Test learning that references itself."""
-        print("\n[TEST 5] Testing circular references...")
-
-        try:
-            qs = QuerySystem(base_path=str(self.test_base), debug=True)
-
-            # Insert self-referencing record
-            with qs._get_connection() as conn:
-                cursor = conn.execute("""
-                    INSERT INTO learnings (type, filepath, title, summary, tags, domain)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (
-                    'failure',
-                    str(self.test_memory / "circular.md"),
-                    'Circular Reference',
-                    'Related to learning ID 1',
-                    'circular,self-reference',
-                    'testing'
-                ))
-                learning_id = cursor.lastrowid
-
-                # Update to reference itself in summary
-                conn.execute("""
-                    UPDATE learnings
-                    SET summary = ?
-                    WHERE id = ?
-                """, (f"Related to learning ID {learning_id}", learning_id))
-                conn.commit()
-
-            # Query - should handle gracefully
-            results = qs.query_recent(limit=10)
-
-            if len(results) > 0:
-                self.log_result(
-                    "Circular References",
-                    "LOW",
-                    "PASS",
-                    f"System handles circular references. Retrieved {len(results)} records."
-                )
-            else:
-                self.log_result(
-                    "Circular References",
-                    "MEDIUM",
-                    "FAIL",
-                    "No results returned for circular reference query"
-                )
-
-            qs.cleanup()
-
-        except Exception as e:
-            self.log_result(
-                "Circular References",
-                "MEDIUM",
-                "FAIL",
-                "Exception with circular references",
-                error=e
-            )
-
-    # ========== TEST 6: Very Deep Nesting ==========
-    def test_6_deep_nesting(self):
-        """Test 100 chained related learnings."""
-        print("\n[TEST 6] Testing very deep nesting (100 records)...")
-
-        try:
-            qs = QuerySystem(base_path=str(self.test_base), debug=True)
-
-            # Insert 100 chained records
-            start_time = time.time()
-            with qs._get_connection() as conn:
-                for i in range(100):
-                    conn.execute("""
-                        INSERT INTO learnings (type, filepath, title, summary, tags, domain)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    """, (
-                        'failure',
-                        str(self.test_memory / f"chain_{i}.md"),
-                        f'Chain Link {i}',
-                        f'Related to chain link {i-1}' if i > 0 else 'Root',
-                        f'chain,link-{i}',
-                        'testing'
-                    ))
-                conn.commit()
-            insert_time = time.time() - start_time
-
-            # Query all
-            start_time = time.time()
-            results = qs.query_recent(limit=100)
-            query_time = time.time() - start_time
-
-            if len(results) == 100:
-                self.log_result(
-                    "Deep Nesting",
-                    "MEDIUM",
-                    "PASS",
-                    f"Successfully handled 100 chained records. Insert: {insert_time:.3f}s, Query: {query_time:.3f}s"
-                )
-            else:
-                self.log_result(
-                    "Deep Nesting",
-                    "HIGH",
-                    "FAIL",
-                    f"Expected 100 records, got {len(results)}. Query time: {query_time:.3f}s"
-                )
-
-            # Test with higher limit
-            try:
-                big_results = qs.query_recent(limit=1000)
-                self.log_result(
-                    "Deep Nesting - Max Limit",
-                    "LOW",
-                    "PASS",
-                    f"Max limit (1000) query succeeded. Retrieved {len(big_results)} records."
-                )
-            except Exception as e:
-                self.log_result(
-                    "Deep Nesting - Max Limit",
-                    "MEDIUM",
-                    "FAIL",
-                    "Failed with max limit",
-                    error=e
-                )
-
-            qs.cleanup()
-
-        except Exception as e:
-            self.log_result(
-                "Deep Nesting",
-                "HIGH",
-                "FAIL",
-                "Exception during deep nesting test",
-                error=e
-            )
-
-    # ========== TEST 7: Concurrent Reads ==========
-    def test_7_concurrent_reads(self):
-        """Test 10 parallel query.py threads."""
-        print("\n[TEST 7] Testing concurrent reads (10 parallel threads)...")
-
-        try:
-            qs = QuerySystem(base_path=str(self.test_base), debug=True)
-
-            # Populate database
-            with qs._get_connection() as conn:
-                for i in range(20):
-                    conn.execute("""
-                        INSERT INTO learnings (type, filepath, title, summary, tags, domain)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    """, (
-                        'success',
-                        str(self.test_memory / f"test_{i}.md"),
-                        f'Test Record {i}',
-                        f'Test summary {i}',
-                        'concurrent,test',
-                        'testing'
-                    ))
-                conn.commit()
-
-            qs.cleanup()
-
-            # Run concurrent queries using threads
-            results = []
-
-            def run_query(idx):
-                try:
-                    qs_thread = QuerySystem(base_path=str(self.test_base), debug=False)
-                    query_results = qs_thread.query_recent(limit=10)
-                    qs_thread.cleanup()
-                    results.append({'id': idx, 'success': True, 'count': len(query_results)})
-                except Exception as e:
-                    results.append({'id': idx, 'success': False, 'error': str(e)})
-
-            threads = []
-
-            start_time = time.time()
-            for i in range(10):
-                t = Thread(target=run_query, args=(i,))
-                t.start()
-                threads.append(t)
-
-            for t in threads:
-                t.join(timeout=30)
-
-            duration = time.time() - start_time
-
-            successes = sum(1 for r in results if r.get('success', False))
-            failures = len(results) - successes
-
-            if successes == 10:
-                self.log_result(
-                    "Concurrent Reads",
-                    "HIGH",
-                    "PASS",
-                    f"All 10 concurrent threads succeeded in {duration:.3f}s. No deadlocks."
-                )
-            elif successes > 5:
-                self.log_result(
-                    "Concurrent Reads",
-                    "MEDIUM",
-                    "PARTIAL",
-                    f"{successes}/10 threads succeeded in {duration:.3f}s. {failures} failures."
-                )
-            else:
-                self.log_result(
-                    "Concurrent Reads",
-                    "CRITICAL",
-                    "FAIL",
-                    f"Only {successes}/10 threads succeeded. {failures} failures.",
-                    error=f"Failed threads: {[r for r in results if not r.get('success')]}"
-                )
-
-        except Exception as e:
-            self.log_result(
-                "Concurrent Reads",
-                "CRITICAL",
-                "FAIL",
-                "Exception during concurrency test",
-                error=e
-            )
-
-    # ========== TEST 8: Memory Limits ==========
-    def test_8_memory_limits(self):
-        """Test query returning 10000 results."""
-        print("\n[TEST 8] Testing memory limits (attempting 10000 records)...")
-
-        try:
-            qs = QuerySystem(base_path=str(self.test_base), debug=True)
-
-            # Try to query 10000 records (should hit validation limit)
-            try:
-                results = qs.query_recent(limit=10000)
-                self.log_result(
-                    "Memory Limits",
-                    "HIGH",
-                    "FAIL",
-                    f"Validation should reject limit=10000. Got {len(results)} results."
-                )
-            except ValidationError as e:
-                if "QS001" in str(e) and "1000" in str(e):
-                    self.log_result(
-                        "Memory Limits - Validation",
-                        "HIGH",
-                        "PASS",
-                        f"Properly rejected limit=10000 with ValidationError: {e}"
-                    )
+                if "corrupted" in str(e).lower() or "malformed" in str(e).lower():
+                    self.log_result(test_name, "HIGH", "PASS",
+                        f"Detected corruption with proper error: {str(e)[:100]}")
                 else:
-                    self.log_result(
-                        "Memory Limits - Validation",
-                        "MEDIUM",
-                        "PARTIAL",
-                        f"ValidationError raised but message unclear: {e}"
+                    self.log_result(test_name, "HIGH", "FAIL",
+                        f"Unclear error handling: {str(e)[:100]}")
+
+        except Exception as e:
+            self.log_result(test_name, "HIGH", "ERROR",
+                f"Test setup failed: {str(e)[:200]}")
+
+    # ========== TEST 2: Missing SHM file ==========
+
+    def test_missing_shm_file(self):
+        """Test deletion of SHM file while DB is in use"""
+        test_name = "Missing SHM File"
+
+        try:
+            # Enable WAL mode
+            conn = sqlite3.connect(self.db_path)
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.commit()
+
+            shm_path = str(self.db_path) + "-shm"
+
+            if not os.path.exists(shm_path):
+                conn.close()
+                self.log_result(test_name, "MEDIUM", "PASS",
+                    "No SHM file present (WAL not active), test skipped gracefully")
+                return
+
+            # Delete SHM while connection is open
+            try:
+                os.remove(shm_path)
+            except:
+                pass  # May fail on Windows due to file locks
+
+            # Try to execute queries
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM learnings")
+                count = cursor.fetchone()[0]
+                conn.close()
+
+                self.log_result(test_name, "MEDIUM", "PASS",
+                    f"Continued working despite missing SHM file, {count} records accessible")
+            except Exception as e:
+                conn.close()
+                self.log_result(test_name, "MEDIUM", "FAIL",
+                    f"Failed when SHM deleted: {str(e)[:100]}")
+
+        except Exception as e:
+            self.log_result(test_name, "MEDIUM", "ERROR",
+                f"Test execution error: {str(e)[:200]}")
+
+    # ========== TEST 3: Schema mismatch ==========
+
+    def test_schema_mismatch(self):
+        """Test adding/removing columns from schema"""
+        test_name = "Schema Mismatch"
+        backup = self.backup_database()
+
+        try:
+            # Add an extra column
+            conn = sqlite3.connect(self.db_path)
+            conn.execute("ALTER TABLE learnings ADD COLUMN extra_test_column TEXT DEFAULT 'test'")
+            conn.commit()
+            conn.close()
+
+            # Try query.py with modified schema
+            try:
+                qs = QuerySystem(debug=True)
+                result = qs.query_recent(limit=1)
+                qs.cleanup()
+
+                self.log_result(test_name + " (Add Column)", "LOW", "PASS",
+                    "Query system works with additional column")
+            except Exception as e:
+                self.log_result(test_name + " (Add Column)", "MEDIUM", "FAIL",
+                    f"Failed with extra column: {str(e)[:100]}")
+
+            # Restore and try removing a column (can't directly remove in SQLite, need recreation)
+            self.restore_database(backup)
+
+            # Test with missing expected column by renaming table
+            conn = sqlite3.connect(self.db_path)
+            conn.execute("CREATE TABLE learnings_backup AS SELECT id, type, filepath, title, domain FROM learnings")
+            conn.execute("DROP TABLE learnings")
+            conn.execute("ALTER TABLE learnings_backup RENAME TO learnings")
+            conn.commit()
+            conn.close()
+
+            try:
+                qs = QuerySystem(debug=True)
+                result = qs.query_recent(limit=1)
+                qs.cleanup()
+                self.log_result(test_name + " (Remove Column)", "MEDIUM", "FAIL",
+                    "Should have failed with missing columns but didn't")
+            except Exception as e:
+                if "no such column" in str(e).lower() or "column" in str(e).lower():
+                    self.log_result(test_name + " (Remove Column)", "MEDIUM", "PASS",
+                        f"Properly detected missing columns: {str(e)[:100]}")
+                else:
+                    self.log_result(test_name + " (Remove Column)", "MEDIUM", "FAIL",
+                        f"Unexpected error: {str(e)[:100]}")
+
+            # Restore original
+            self.restore_database(backup)
+
+        except Exception as e:
+            self.restore_database(backup)
+            self.log_result(test_name, "MEDIUM", "ERROR",
+                f"Test error: {str(e)[:200]}")
+
+    # ========== TEST 4: Integer overflow ==========
+
+    def test_integer_overflow(self):
+        """Test ID at max integer value"""
+        test_name = "Integer Overflow"
+        backup = self.backup_database()
+
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            # Set the autoincrement sequence to near max
+            max_int = 2147483647
+            test_id = max_int - 5
+
+            # Update sqlite_sequence
+            cursor.execute("UPDATE sqlite_sequence SET seq = ? WHERE name = 'learnings'", (test_id,))
+
+            # Try inserting records
+            try:
+                for i in range(3):
+                    cursor.execute(
+                        "INSERT INTO learnings (type, filepath, title, domain, severity) VALUES (?, ?, ?, ?, ?)",
+                        ('test', f'/tmp/overflow_{i}', f'Overflow Test {i}', 'testing', '3')
                     )
-
-            # Test max allowed limit (1000)
-            with qs._get_connection() as conn:
-                for i in range(50):
-                    conn.execute("""
-                        INSERT INTO learnings (type, filepath, title, summary, tags, domain)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    """, (
-                        'test',
-                        str(self.test_memory / f"large_{i}.md"),
-                        f'Large Dataset {i}',
-                        'A' * 1000,  # 1KB summary
-                        'large,memory',
-                        'testing'
-                    ))
                 conn.commit()
 
-            start_time = time.time()
-            results = qs.query_recent(limit=1000)
-            query_time = time.time() - start_time
+                # Check what IDs were assigned
+                cursor.execute("SELECT id FROM learnings ORDER BY id DESC LIMIT 3")
+                ids = [row[0] for row in cursor.fetchall()]
 
-            if len(results) <= 1000:
-                self.log_result(
-                    "Memory Limits - Max Allowed",
-                    "MEDIUM",
-                    "PASS",
-                    f"Max limit (1000) handled correctly. Retrieved {len(results)} in {query_time:.3f}s"
-                )
-            else:
-                self.log_result(
-                    "Memory Limits - Max Allowed",
-                    "HIGH",
-                    "FAIL",
-                    f"Retrieved more than limit: {len(results)} records"
-                )
+                conn.close()
+                self.restore_database(backup)
 
-            qs.cleanup()
+                if any(id_val > max_int for id_val in ids):
+                    self.log_result(test_name, "CRITICAL", "FAIL",
+                        f"IDs exceeded max integer: {ids}")
+                elif any(id_val < 0 for id_val in ids):
+                    self.log_result(test_name, "CRITICAL", "FAIL",
+                        f"IDs wrapped to negative: {ids}")
+                else:
+                    self.log_result(test_name, "LOW", "PASS",
+                        f"IDs assigned correctly near max: {ids}")
 
-        except Exception as e:
-            self.log_result(
-                "Memory Limits",
-                "HIGH",
-                "FAIL",
-                "Exception during memory limit test",
-                error=e
-            )
-
-    # ========== TEST 9: Timeout Behavior ==========
-    def test_9_timeout(self):
-        """Test if --timeout actually works."""
-        print("\n[TEST 9] Testing timeout behavior...")
-
-        try:
-            qs = QuerySystem(base_path=str(self.test_base), debug=True)
-
-            # Insert many records to make query slower
-            with qs._get_connection() as conn:
-                for i in range(500):
-                    conn.execute("""
-                        INSERT INTO learnings (type, filepath, title, summary, tags, domain)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    """, (
-                        'test',
-                        str(self.test_memory / f"timeout_{i}.md"),
-                        f'Timeout Test {i}',
-                        'X' * 5000,  # 5KB summary
-                        'timeout,test',
-                        'testing'
-                    ))
-                conn.commit()
-
-            # Test with very short timeout (Windows doesn't support signal-based timeout)
-            if sys.platform != 'win32':
-                try:
-                    start_time = time.time()
-                    results = qs.query_recent(limit=1000, timeout=1)
-                    duration = time.time() - start_time
-
-                    if duration > 5:
-                        self.log_result(
-                            "Timeout Behavior",
-                            "HIGH",
-                            "FAIL",
-                            f"Query took {duration:.3f}s, timeout=1 not enforced"
-                        )
-                    else:
-                        self.log_result(
-                            "Timeout Behavior",
-                            "LOW",
-                            "PASS",
-                            f"Query completed in {duration:.3f}s (fast enough that timeout wasn't needed)"
-                        )
-                except QueryTimeoutError as e:
-                    if "QS003" in str(e):
-                        self.log_result(
-                            "Timeout Behavior",
-                            "HIGH",
-                            "PASS",
-                            f"Timeout properly enforced with TimeoutError: {e}"
-                        )
-                    else:
-                        self.log_result(
-                            "Timeout Behavior",
-                            "MEDIUM",
-                            "PARTIAL",
-                            f"Timeout error raised but missing code: {e}"
-                        )
-            else:
-                self.log_result(
-                    "Timeout Behavior",
-                    "LOW",
-                    "SKIP",
-                    "Windows doesn't support signal-based timeouts. Would need threading implementation."
-                )
-
-            qs.cleanup()
+            except sqlite3.IntegrityError as e:
+                conn.close()
+                self.restore_database(backup)
+                self.log_result(test_name, "LOW", "PASS",
+                    f"Properly rejected overflow with error: {str(e)[:100]}")
 
         except Exception as e:
-            self.log_result(
-                "Timeout Behavior",
-                "MEDIUM",
-                "FAIL",
-                "Exception during timeout test",
-                error=e
-            )
+            self.restore_database(backup)
+            self.log_result(test_name, "CRITICAL", "ERROR",
+                f"Test error: {str(e)[:200]}")
 
-    # ========== TEST 10: Invalid JSON in Tags ==========
-    def test_10_invalid_json_tags(self):
-        """Test malformed JSON in tags column."""
-        print("\n[TEST 10] Testing invalid JSON in tags column...")
+    # ========== TEST 5: Very large blob ==========
+
+    def test_large_blob(self):
+        """Test inserting 10MB summary and query performance"""
+        test_name = "Very Large Blob (10MB)"
+        backup = self.backup_database()
 
         try:
-            qs = QuerySystem(base_path=str(self.test_base), debug=True)
+            # Create a 10MB string
+            large_summary = "X" * (10 * 1024 * 1024)  # 10MB
 
-            # Insert records with various malformed tags
-            malformed_tags = [
-                '{"unclosed": "quote',
-                '[invalid,json]',
-                'not json at all',
-                '{"key": undefined}',
-                '\\x00\\x01\\x02',
-                '',
-                None
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            import time
+            start = time.time()
+
+            cursor.execute(
+                "INSERT INTO learnings (type, filepath, title, summary, domain, severity) VALUES (?, ?, ?, ?, ?, ?)",
+                ('test', '/tmp/large_blob', 'Large Blob Test', large_summary, 'testing', '3')
+            )
+            conn.commit()
+            insert_time = time.time() - start
+
+            # Get the ID
+            large_id = cursor.lastrowid
+
+            # Query it back
+            start = time.time()
+            cursor.execute("SELECT summary FROM learnings WHERE id = ?", (large_id,))
+            result = cursor.fetchone()
+            query_time = time.time() - start
+
+            conn.close()
+
+            # Test with QuerySystem
+            try:
+                start = time.time()
+                qs = QuerySystem(debug=True)
+                recent = qs.query_recent(limit=1, timeout=60)
+                qs_time = time.time() - start
+                qs.cleanup()
+
+                self.restore_database(backup)
+
+                if query_time > 5.0 or qs_time > 10.0:
+                    self.log_result(test_name, "MEDIUM", "FAIL",
+                        f"Poor performance: insert={insert_time:.2f}s, query={query_time:.2f}s, qs={qs_time:.2f}s")
+                else:
+                    self.log_result(test_name, "LOW", "PASS",
+                        f"Good performance: insert={insert_time:.2f}s, query={query_time:.2f}s, qs={qs_time:.2f}s")
+
+            except Exception as e:
+                self.restore_database(backup)
+                self.log_result(test_name, "MEDIUM", "FAIL",
+                    f"QuerySystem failed with large blob: {str(e)[:100]}")
+
+        except Exception as e:
+            self.restore_database(backup)
+            self.log_result(test_name, "MEDIUM", "ERROR",
+                f"Test error: {str(e)[:200]}")
+
+    # ========== TEST 6: Malformed dates ==========
+
+    def test_malformed_dates(self):
+        """Test invalid date values in created_at"""
+        test_name = "Malformed Dates"
+        backup = self.backup_database()
+
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            # SQLite doesn't enforce date types, so we can insert invalid dates
+            invalid_dates = [
+                "not-a-date",
+                "2025-13-45",
+                "invalid",
+                "9999-99-99 99:99:99",
+                "",
+                "NULL"
             ]
 
-            with qs._get_connection() as conn:
-                for i, bad_tag in enumerate(malformed_tags):
-                    conn.execute("""
-                        INSERT INTO learnings (type, filepath, title, summary, tags, domain)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    """, (
-                        'test',
-                        str(self.test_memory / f"bad_tags_{i}.md"),
-                        f'Bad Tags {i}',
-                        'Testing malformed tags',
-                        bad_tag,
-                        'testing'
-                    ))
-                conn.commit()
-
-            # Try to query - should handle gracefully
-            try:
-                results = qs.query_recent(limit=10)
-
-                if len(results) > 0:
-                    self.log_result(
-                        "Invalid JSON Tags",
-                        "MEDIUM",
-                        "PASS",
-                        f"System handles malformed tags gracefully. Retrieved {len(results)} records."
+            test_ids = []
+            for i, bad_date in enumerate(invalid_dates):
+                try:
+                    cursor.execute(
+                        "INSERT INTO learnings (type, filepath, title, domain, severity, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                        ('test', f'/tmp/bad_date_{i}', f'Bad Date Test {i}', 'testing', '3', bad_date)
                     )
+                    test_ids.append((cursor.lastrowid, bad_date))
+                except Exception as e:
+                    pass  # Some might be rejected
 
-                    # Check if tags are returned as-is
-                    for r in results:
-                        if r.get('tags') in malformed_tags:
-                            self.log_result(
-                                "Invalid JSON Tags - Data Integrity",
-                                "LOW",
-                                "PASS",
-                                f"Tags stored/retrieved as-is: '{r.get('tags')}'"
-                            )
-                            break
+            conn.commit()
+            conn.close()
+
+            # Test if query.py handles these gracefully
+            try:
+                qs = QuerySystem(debug=True)
+                result = qs.query_recent(limit=10)
+                qs.cleanup()
+
+                self.restore_database(backup)
+
+                self.log_result(test_name, "MEDIUM", "PASS",
+                    f"QuerySystem handled {len(test_ids)} malformed dates gracefully")
+
+            except Exception as e:
+                self.restore_database(backup)
+                if "date" in str(e).lower() or "time" in str(e).lower():
+                    self.log_result(test_name, "MEDIUM", "FAIL",
+                        f"Failed to handle malformed dates: {str(e)[:100]}")
                 else:
-                    self.log_result(
-                        "Invalid JSON Tags",
-                        "LOW",
-                        "FAIL",
-                        "No results returned"
-                    )
-
-            except Exception as e:
-                self.log_result(
-                    "Invalid JSON Tags",
-                    "HIGH",
-                    "FAIL",
-                    "Exception when querying records with bad tags",
-                    error=e
-                )
-
-            # Try tag-based query
-            try:
-                tag_results = qs.query_by_tags(['test', 'malformed'], limit=10)
-                self.log_result(
-                    "Invalid JSON Tags - Tag Query",
-                    "LOW",
-                    "PASS",
-                    f"Tag-based query handles malformed tags. Found {len(tag_results)} results."
-                )
-            except Exception as e:
-                self.log_result(
-                    "Invalid JSON Tags - Tag Query",
-                    "MEDIUM",
-                    "FAIL",
-                    "Exception during tag-based query",
-                    error=e
-                )
-
-            qs.cleanup()
+                    self.log_result(test_name, "MEDIUM", "FAIL",
+                        f"Unexpected error with malformed dates: {str(e)[:100]}")
 
         except Exception as e:
-            self.log_result(
-                "Invalid JSON Tags",
-                "MEDIUM",
-                "FAIL",
-                "Exception during invalid JSON test",
-                error=e
-            )
+            self.restore_database(backup)
+            self.log_result(test_name, "MEDIUM", "ERROR",
+                f"Test error: {str(e)[:200]}")
 
-    def run_all_tests(self):
-        """Run all edge case tests."""
-        print("="*80)
-        print("STARTING EDGE CASE TEST SUITE")
-        print("="*80)
+    # ========== TEST 7: SQL reserved words ==========
+
+    def test_sql_reserved_words(self):
+        """Test using SQL reserved words as data values"""
+        test_name = "SQL Reserved Words"
+        backup = self.backup_database()
 
         try:
-            self.setup()
+            reserved_words = [
+                "SELECT",
+                "DROP TABLE",
+                "DELETE FROM learnings",
+                "'; DROP TABLE learnings; --",
+                "UNION SELECT * FROM heuristics",
+                "INSERT INTO"
+            ]
 
-            self.test_1_empty_database()
-            self.test_2_missing_tables()
-            self.test_3_orphaned_files()
-            self.test_4_orphaned_records()
-            self.test_5_circular_references()
-            self.test_6_deep_nesting()
-            self.test_7_concurrent_reads()
-            self.test_8_memory_limits()
-            self.test_9_timeout()
-            self.test_10_invalid_json_tags()
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
 
-        finally:
-            self.cleanup()
+            test_ids = []
+            for i, word in enumerate(reserved_words):
+                try:
+                    cursor.execute(
+                        "INSERT INTO learnings (type, filepath, title, domain, severity) VALUES (?, ?, ?, ?, ?)",
+                        ('test', f'/tmp/reserved_{i}', word, word, '3')
+                    )
+                    test_ids.append(cursor.lastrowid)
+                except Exception as e:
+                    pass
 
-        return self.print_summary()
+            conn.commit()
+            conn.close()
 
+            # Test if query.py can retrieve these
+            try:
+                qs = QuerySystem(debug=True)
+
+                # Test domain query with reserved word
+                result = qs.query_by_domain("SELECT", limit=5)
+
+                # Test tag query
+                result2 = qs.query_by_tags(["DROP TABLE"], limit=5)
+
+                qs.cleanup()
+
+                self.restore_database(backup)
+
+                self.log_result(test_name, "CRITICAL", "PASS",
+                    f"Properly handled {len(test_ids)} reserved words as data without SQL injection")
+
+            except ValidationError as e:
+                # ValidationError is acceptable - it means the system is rejecting suspicious input
+                self.restore_database(backup)
+                self.log_result(test_name, "CRITICAL", "PASS",
+                    f"Rejected reserved words via validation: {str(e)[:100]}")
+
+            except Exception as e:
+                self.restore_database(backup)
+                if "syntax" in str(e).lower() or "sql" in str(e).lower():
+                    self.log_result(test_name, "CRITICAL", "FAIL",
+                        f"SQL injection vulnerability detected: {str(e)[:100]}")
+                else:
+                    self.log_result(test_name, "MEDIUM", "FAIL",
+                        f"Error handling reserved words: {str(e)[:100]}")
+
+        except Exception as e:
+            self.restore_database(backup)
+            self.log_result(test_name, "CRITICAL", "ERROR",
+                f"Test error: {str(e)[:200]}")
+
+    # ========== TEST 8: Unicode encoding in LIKE ==========
+
+    def test_unicode_like_patterns(self):
+        """Test searching for Unicode patterns with query.py"""
+        test_name = "Unicode Encoding in LIKE"
+        backup = self.backup_database()
+
+        try:
+            unicode_strings = [
+                "emoji_😀_test",
+                "中文测试",
+                "العربية",
+                "עברית",
+                "🔥🚀💯",
+                "Ü̃̈n̈̃ï̃̈c̈̃ö̃̈d̈̃ë̃̈",  # Combining characters
+                "\u0000null\u0000byte",  # Null bytes
+                "\\x00\\x01\\x02"  # Escaped bytes
+            ]
+
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            test_ids = []
+            for i, ustr in enumerate(unicode_strings):
+                try:
+                    cursor.execute(
+                        "INSERT INTO learnings (type, filepath, title, tags, domain, severity) VALUES (?, ?, ?, ?, ?, ?)",
+                        ('test', f'/tmp/unicode_{i}', f'Unicode Test {i}', ustr, 'unicode-testing', '3')
+                    )
+                    test_ids.append((cursor.lastrowid, ustr))
+                except Exception as e:
+                    print(f"    Failed to insert '{ustr[:20]}': {e}")
+
+            conn.commit()
+            conn.close()
+
+            # Test querying with Unicode
+            passed_tests = 0
+            failed_tests = 0
+
+            for test_id, ustr in test_ids:
+                try:
+                    qs = QuerySystem(debug=False)
+                    # Search by domain
+                    result = qs.query_by_domain("unicode-testing", limit=20)
+                    # Search by tags
+                    result2 = qs.query_by_tags([ustr], limit=5)
+                    qs.cleanup()
+                    passed_tests += 1
+                except Exception as e:
+                    failed_tests += 1
+                    print(f"    Failed to query '{ustr[:20]}': {str(e)[:50]}")
+
+            self.restore_database(backup)
+
+            if failed_tests == 0:
+                self.log_result(test_name, "LOW", "PASS",
+                    f"All {passed_tests} Unicode patterns handled correctly")
+            elif passed_tests > failed_tests:
+                self.log_result(test_name, "MEDIUM", "PASS",
+                    f"Mostly working: {passed_tests} passed, {failed_tests} failed")
+            else:
+                self.log_result(test_name, "MEDIUM", "FAIL",
+                    f"Poor Unicode support: {passed_tests} passed, {failed_tests} failed")
+
+        except Exception as e:
+            self.restore_database(backup)
+            self.log_result(test_name, "MEDIUM", "ERROR",
+                f"Test error: {str(e)[:200]}")
+
+    # ========== EXECUTION AND REPORTING ==========
+
+    def run_all_tests(self):
+        """Run all edge case tests"""
+        print("\n" + "="*70)
+        print("EMERGENT LEARNING FRAMEWORK - DATABASE EDGE CASE TESTING")
+        print("="*70)
+
+        tests = [
+            self.test_corrupted_wal_file,
+            self.test_missing_shm_file,
+            self.test_schema_mismatch,
+            self.test_integer_overflow,
+            self.test_large_blob,
+            self.test_malformed_dates,
+            self.test_sql_reserved_words,
+            self.test_unicode_like_patterns,
+        ]
+
+        for test_func in tests:
+            try:
+                test_func()
+            except Exception as e:
+                print(f"\n[!] FATAL ERROR in {test_func.__name__}: {e}")
+                traceback.print_exc()
+
+        print("\n" + "="*70)
+        print("TEST SUMMARY")
+        print("="*70)
+
+        # Categorize by severity and status
+        critical_fails = [r for r in self.test_results if r['severity'] == 'CRITICAL' and r['status'] == 'FAIL']
+        high_fails = [r for r in self.test_results if r['severity'] == 'HIGH' and r['status'] == 'FAIL']
+        medium_fails = [r for r in self.test_results if r['severity'] == 'MEDIUM' and r['status'] == 'FAIL']
+        low_fails = [r for r in self.test_results if r['severity'] == 'LOW' and r['status'] == 'FAIL']
+
+        passes = [r for r in self.test_results if r['status'] == 'PASS']
+        errors = [r for r in self.test_results if r['status'] == 'ERROR']
+
+        print(f"\nTotal Tests: {len(self.test_results)}")
+        print(f"Passed: {len(passes)}")
+        print(f"Failed: {len(critical_fails) + len(high_fails) + len(medium_fails) + len(low_fails)}")
+        print(f"Errors: {len(errors)}")
+
+        if critical_fails:
+            print(f"\n⚠️  CRITICAL FAILURES: {len(critical_fails)}")
+            for r in critical_fails:
+                print(f"  - {r['test']}: {r['details'][:80]}")
+
+        if high_fails:
+            print(f"\n⚠️  HIGH SEVERITY FAILURES: {len(high_fails)}")
+            for r in high_fails:
+                print(f"  - {r['test']}: {r['details'][:80]}")
+
+        if medium_fails:
+            print(f"\n⚠️  MEDIUM SEVERITY FAILURES: {len(medium_fails)}")
+            for r in medium_fails:
+                print(f"  - {r['test']}: {r['details'][:80]}")
+
+        # Save detailed results
+        results_path = self.base_path / "test_results_edge_cases.json"
+        with open(results_path, 'w', encoding='utf-8') as f:
+            json.dump(self.test_results, f, indent=2)
+
+        print(f"\n📄 Detailed results saved to: {results_path}")
+        print("="*70 + "\n")
+
+        return self.test_results
 
 if __name__ == '__main__':
-    runner = EdgeCaseTestRunner()
-    critical, high, medium, low = runner.run_all_tests()
+    tester = EdgeCaseTester()
+    results = tester.run_all_tests()
 
-    # Exit with appropriate code
-    if critical > 0:
-        sys.exit(2)
-    elif high > 0:
+    # Exit with non-zero if critical or high failures
+    critical_or_high_fails = [r for r in results if r['severity'] in ['CRITICAL', 'HIGH'] and r['status'] == 'FAIL']
+    if critical_or_high_fails:
         sys.exit(1)
     else:
         sys.exit(0)

@@ -1,4 +1,0 @@
-=== Record Failure (non-interactive) ===
-Created: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_concurrency-test-failure-11.md
-SQLite busy, retry 1/5 (sleeping 0.100559s)...
-ERROR: Database insert failed - invalid ID: '0'

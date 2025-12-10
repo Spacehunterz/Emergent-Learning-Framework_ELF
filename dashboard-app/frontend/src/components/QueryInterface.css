@@ -1,0 +1,387 @@
+/* QueryInterface.css - AI-powered animations and enhancements */
+
+/* ========================================
+   Query Input Enhancements
+   ======================================== */
+.query-input-wrapper {
+  position: relative;
+}
+
+.query-input {
+  transition: all 0.3s ease;
+}
+
+.query-input:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1),
+              0 0 20px rgba(14, 165, 233, 0.3);
+  background: linear-gradient(to right,
+    rgba(14, 165, 233, 0.05) 0%,
+    transparent 100%);
+}
+
+.query-input::placeholder {
+  animation: placeholderFade 3s ease-in-out infinite;
+}
+
+@keyframes placeholderFade {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+.submit-button {
+  transition: all 0.3s ease;
+}
+
+.submit-button:hover:not(:disabled) {
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);
+}
+
+.submit-button:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.95);
+}
+
+/* ========================================
+   Suggestion Chips
+   ======================================== */
+.suggestion-chip {
+  animation: chipAppear 0.5s ease-out forwards;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@keyframes chipAppear {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.suggestion-chip:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+  background: linear-gradient(135deg,
+    rgba(14, 165, 233, 0.1) 0%,
+    rgba(168, 85, 247, 0.1) 100%);
+}
+
+.suggestion-chip:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ========================================
+   AI Processing Animation
+   ======================================== */
+.ai-processing-container {
+  position: relative;
+  min-height: 200px;
+}
+
+/* Brain pulse animation */
+.brain-pulse {
+  animation: brainPulse 2s ease-in-out infinite;
+}
+
+@keyframes brainPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* Orbiting dots around brain */
+.orbit-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, #0ea5e9, #8b5cf6);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  animation: orbit 3s linear infinite;
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+}
+
+.orbit-dot-1 {
+  animation-delay: 0s;
+}
+
+.orbit-dot-2 {
+  animation-delay: 1s;
+}
+
+.orbit-dot-3 {
+  animation-delay: 2s;
+}
+
+@keyframes orbit {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) translateX(40px) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg) translateX(40px) rotate(-360deg);
+  }
+}
+
+/* Typing dots */
+.typing-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background: #0ea5e9;
+  border-radius: 50%;
+  animation: typingBounce 1.4s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  30% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
+/* Typewriter text effect */
+.typewriter-text {
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typewriter 2s steps(30) infinite;
+}
+
+@keyframes typewriter {
+  0%, 100% {
+    max-width: 0;
+  }
+  50% {
+    max-width: 100%;
+  }
+}
+
+/* Neural network background */
+.neural-network {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.neural-line {
+  position: absolute;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    #0ea5e9 50%,
+    transparent 100%);
+  animation: neuralPulse 3s ease-in-out infinite;
+}
+
+.neural-line-1 {
+  top: 20%;
+  left: -100%;
+  width: 200%;
+  animation-delay: 0s;
+}
+
+.neural-line-2 {
+  top: 50%;
+  left: -100%;
+  width: 200%;
+  animation-delay: 1s;
+}
+
+.neural-line-3 {
+  top: 80%;
+  left: -100%;
+  width: 200%;
+  animation-delay: 2s;
+}
+
+@keyframes neuralPulse {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(50%);
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   Results Animations
+   ======================================== */
+.results-container {
+  animation: resultsAppear 0.5s ease-out;
+}
+
+@keyframes resultsAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Summary Card */
+.summary-card {
+  animation: summarySlideIn 0.6s ease-out;
+}
+
+@keyframes summarySlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Category Sections */
+.category-section {
+  animation-duration: 0.6s;
+  animation-fill-mode: both;
+  animation-timing-function: ease-out;
+}
+
+.category-slide-left {
+  animation-name: slideInFromLeft;
+}
+
+.category-slide-right {
+  animation-name: slideInFromRight;
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Result Cards */
+.result-card {
+  animation: cardFadeIn 0.5s ease-out forwards;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@keyframes cardFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.result-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.15);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+/* ========================================
+   Empty State
+   ======================================== */
+.empty-state {
+  animation: emptyStateFade 0.8s ease-out;
+}
+
+@keyframes emptyStateFade {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Breathing icon for empty state */
+.breathing-icon {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+/* ========================================
+   Smooth scrollbar for results
+   ======================================== */
+.space-y-4.max-h-\[400px\]::-webkit-scrollbar {
+  width: 6px;
+}
+
+.space-y-4.max-h-\[400px\]::-webkit-scrollbar-track {
+  background: rgba(51, 65, 85, 0.3);
+  border-radius: 3px;
+}
+
+.space-y-4.max-h-\[400px\]::-webkit-scrollbar-thumb {
+  background: rgba(14, 165, 233, 0.3);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.space-y-4.max-h-\[400px\]::-webkit-scrollbar-thumb:hover {
+  background: rgba(14, 165, 233, 0.5);
+}

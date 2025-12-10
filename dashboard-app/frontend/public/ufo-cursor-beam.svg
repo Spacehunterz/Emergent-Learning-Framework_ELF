@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="saucerTop" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c0c0c0"/>
+      <stop offset="50%" stop-color="#808080"/>
+      <stop offset="100%" stop-color="#404040"/>
+    </linearGradient>
+    <linearGradient id="saucerBottom" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#505050"/>
+      <stop offset="100%" stop-color="#252525"/>
+    </linearGradient>
+    <radialGradient id="dome" cx="35%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#a8d4ff"/>
+      <stop offset="40%" stop-color="#4a90c2"/>
+      <stop offset="100%" stop-color="#1a3a52"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e0e0e0"/>
+      <stop offset="50%" stop-color="#a0a0a0"/>
+      <stop offset="100%" stop-color="#606060"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(0, 255, 200, 0.6)"/>
+      <stop offset="100%" stop-color="rgba(0, 255, 200, 0)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Tractor beam -->
+  <path d="M12 17 L8 32 L24 32 L20 17 Z" fill="url(#beam)"/>
+
+  <!-- Main saucer body - bottom half -->
+  <ellipse cx="16" cy="15" rx="13" ry="4" fill="url(#saucerBottom)"/>
+
+  <!-- Main saucer body - top half -->
+  <ellipse cx="16" cy="13" rx="13" ry="5" fill="url(#saucerTop)"/>
+
+  <!-- Metallic rim -->
+  <ellipse cx="16" cy="14" rx="14" ry="3" fill="none" stroke="url(#rim)" stroke-width="1.5"/>
+
+  <!-- Cockpit dome -->
+  <ellipse cx="16" cy="11" rx="6" ry="5" fill="url(#dome)"/>
+
+  <!-- Dome reflection -->
+  <ellipse cx="14" cy="9" rx="2.5" ry="1.5" fill="rgba(255,255,255,0.35)"/>
+
+  <!-- Panel lines on saucer -->
+  <ellipse cx="16" cy="14" rx="10" ry="2" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="0.5"/>
+
+  <!-- Lights ON (glowing cyan) -->
+  <circle cx="7" cy="14" r="1.2" fill="#0fc"/>
+  <circle cx="11" cy="16" r="1.2" fill="#0fc"/>
+  <circle cx="16" cy="17" r="1.2" fill="#0fc"/>
+  <circle cx="21" cy="16" r="1.2" fill="#0fc"/>
+  <circle cx="25" cy="14" r="1.2" fill="#0fc"/>
+</svg>
