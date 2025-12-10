@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/header.jpg" alt="Emergent Learning Framework" width="100%">
+</p>
+
 # Emergent Learning Framework
 
 > Persistent memory and pattern tracking for Claude Code sessions.
