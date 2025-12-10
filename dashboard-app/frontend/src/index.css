@@ -2,64 +2,242 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   THEME COLOR PALETTES
+   Space-themed color systems
+   ============================================ */
+
+/* Default theme (Black Hole) */
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0f172a;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Black Hole - True black with orange/amber accretion disk */
+  color-scheme: dark;
+  --theme-bg-primary: #000000;
+  --theme-bg-secondary: #0a0a0a;
+  --theme-bg-card: #111111;
+  --theme-accent: #f59e0b;
+  --theme-accent-glow: rgba(245, 158, 11, 0.4);
+  --theme-accent-rgb: 245, 158, 11;
+  --theme-panel-rgb: 17, 17, 17;
+  --theme-text-primary: rgba(255, 255, 255, 0.95);
+  --theme-text-secondary: rgba(255, 255, 255, 0.60);
+  --theme-text-muted: rgba(255, 255, 255, 0.40);
+  --theme-particle-color: 245, 158, 11;
+  --glass-opacity: 0.2;
+
+  color: var(--theme-text-primary);
+  background-color: var(--theme-bg-primary);
 }
 
+/* Black Hole (explicit) */
+[data-theme="black-hole"] {
+  color-scheme: dark;
+  --theme-bg-primary: #000000;
+  --theme-bg-secondary: #0a0a0a;
+  --theme-bg-card: #111111;
+  --theme-accent: #f59e0b;
+  --theme-accent-glow: rgba(245, 158, 11, 0.4);
+  --theme-accent-rgb: 245, 158, 11;
+  --theme-panel-rgb: 17, 17, 17;
+  --theme-text-primary: rgba(255, 255, 255, 0.95);
+  --theme-text-secondary: rgba(255, 255, 255, 0.60);
+  --theme-text-muted: rgba(255, 255, 255, 0.40);
+  --theme-particle-color: 245, 158, 11;
+  --glass-opacity: 0.2;
+}
+
+/* White Dwarf - Light mode, clean whites with blue accent */
+[data-theme="white-dwarf"] {
+  color-scheme: light;
+  --theme-bg-primary: #f8fafc;
+  --theme-bg-secondary: #f1f5f9;
+  --theme-bg-card: #ffffff;
+  --theme-accent: #3b82f6;
+  --theme-accent-glow: rgba(59, 130, 246, 0.3);
+  --theme-accent-rgb: 59, 130, 246;
+  --theme-panel-rgb: 255, 255, 255;
+  --theme-text-primary: rgba(15, 23, 42, 0.95);
+  --theme-text-secondary: rgba(15, 23, 42, 0.60);
+  --theme-text-muted: rgba(15, 23, 42, 0.40);
+  --theme-particle-color: 59, 130, 246;
+}
+
+/* Deep Space - Deep navy blues */
+[data-theme="deep-space"] {
+  color-scheme: dark;
+  --theme-bg-primary: #030712;
+  --theme-bg-secondary: #0f172a;
+  --theme-bg-card: #1e293b;
+  --theme-accent: #38bdf8;
+  --theme-accent-glow: rgba(56, 189, 248, 0.4);
+  --theme-accent-rgb: 56, 189, 248;
+  --theme-panel-rgb: 30, 41, 59;
+  --theme-text-primary: rgba(255, 255, 255, 0.95);
+  --theme-text-secondary: rgba(255, 255, 255, 0.60);
+  --theme-text-muted: rgba(255, 255, 255, 0.40);
+  --theme-particle-color: 56, 189, 248;
+}
+
+/* Nebula - Rich purples */
+[data-theme="nebula"] {
+  color-scheme: dark;
+  --theme-bg-primary: #0c0015;
+  --theme-bg-secondary: #150025;
+  --theme-bg-card: #1f0035;
+  --theme-accent: #a855f7;
+  --theme-accent-glow: rgba(168, 85, 247, 0.4);
+  --theme-accent-rgb: 168, 85, 247;
+  --theme-panel-rgb: 31, 0, 53;
+  --theme-text-primary: rgba(255, 255, 255, 0.95);
+  --theme-text-secondary: rgba(255, 255, 255, 0.60);
+  --theme-text-muted: rgba(255, 255, 255, 0.40);
+  --theme-particle-color: 168, 85, 247;
+}
+
+/* Supernova - Fiery oranges and reds */
+[data-theme="supernova"] {
+  color-scheme: dark;
+  --theme-bg-primary: #0a0000;
+  --theme-bg-secondary: #150505;
+  --theme-bg-card: #1f0a0a;
+  --theme-accent: #ef4444;
+  --theme-accent-glow: rgba(239, 68, 68, 0.4);
+  --theme-accent-rgb: 239, 68, 68;
+  --theme-panel-rgb: 31, 10, 10;
+  --theme-text-primary: rgba(255, 255, 255, 0.95);
+  --theme-text-secondary: rgba(255, 255, 255, 0.60);
+  --theme-text-muted: rgba(255, 255, 255, 0.40);
+  --theme-particle-color: 251, 146, 60;
+}
+
+/* Aurora - Northern lights greens */
+[data-theme="aurora"] {
+  color-scheme: dark;
+  --theme-bg-primary: #00100a;
+  --theme-bg-secondary: #001a10;
+  --theme-bg-card: #002818;
+  --theme-accent: #10b981;
+  --theme-accent-glow: rgba(16, 185, 129, 0.4);
+  --theme-accent-rgb: 16, 185, 129;
+  --theme-panel-rgb: 0, 40, 24;
+  --theme-text-primary: rgba(255, 255, 255, 0.95);
+  --theme-text-secondary: rgba(255, 255, 255, 0.60);
+  --theme-text-muted: rgba(255, 255, 255, 0.40);
+  --theme-particle-color: 52, 211, 153;
+}
+
+/* Solar - Golden yellows */
+[data-theme="solar"] {
+  color-scheme: dark;
+  --theme-bg-primary: #0a0800;
+  --theme-bg-secondary: #151000;
+  --theme-bg-card: #1f1800;
+  --theme-accent: #eab308;
+  --theme-accent-glow: rgba(234, 179, 8, 0.4);
+  --theme-accent-rgb: 234, 179, 8;
+  --theme-panel-rgb: 31, 24, 0;
+  --theme-text-primary: rgba(255, 255, 255, 0.95);
+  --theme-text-secondary: rgba(255, 255, 255, 0.60);
+  --theme-text-muted: rgba(255, 255, 255, 0.40);
+  --theme-particle-color: 250, 204, 21;
+}
+
+/* Crimson - Deep reds */
+[data-theme="crimson"] {
+  color-scheme: dark;
+  --theme-bg-primary: #0f0000;
+  --theme-bg-secondary: #1a0505;
+  --theme-bg-card: #250a0a;
+  --theme-accent: #dc2626;
+  --theme-accent-glow: rgba(220, 38, 38, 0.4);
+  --theme-accent-rgb: 220, 38, 38;
+  --theme-panel-rgb: 37, 10, 10;
+  --theme-text-primary: rgba(255, 255, 255, 0.95);
+  --theme-text-secondary: rgba(255, 255, 255, 0.60);
+  --theme-text-muted: rgba(255, 255, 255, 0.40);
+  --theme-particle-color: 248, 113, 113;
+}
+
+/* Cyan - Teals and cyans */
+[data-theme="cyan"] {
+  color-scheme: dark;
+  --theme-bg-primary: #00080a;
+  --theme-bg-secondary: #001015;
+  --theme-bg-card: #00181f;
+  --theme-accent: #06b6d4;
+  --theme-accent-glow: rgba(6, 182, 212, 0.4);
+  --theme-accent-rgb: 6, 182, 212;
+  --theme-panel-rgb: 0, 24, 31;
+  --theme-text-primary: rgba(255, 255, 255, 0.95);
+  --theme-text-secondary: rgba(255, 255, 255, 0.60);
+  --theme-text-muted: rgba(255, 255, 255, 0.40);
+  --theme-particle-color: 34, 211, 238;
+}
+
+/* Rose - Pinks and magentas */
+[data-theme="rose"] {
+  color-scheme: dark;
+  --theme-bg-primary: #0f0008;
+  --theme-bg-secondary: #1a0510;
+  --theme-bg-card: #250a18;
+  --theme-accent: #ec4899;
+  --theme-accent-glow: rgba(236, 72, 153, 0.4);
+  --theme-accent-rgb: 236, 72, 153;
+  --theme-panel-rgb: 37, 10, 24;
+  --theme-text-primary: rgba(255, 255, 255, 0.95);
+  --theme-text-secondary: rgba(255, 255, 255, 0.60);
+  --theme-text-muted: rgba(255, 255, 255, 0.40);
+  --theme-particle-color: 244, 114, 182;
+}
+
+/* ============================================
+   END THEME COLOR PALETTES
+   ============================================ */
+
 body {
+  cursor: url("/ufo-cursor.svg") 16 16, auto;
+  background-color: var(--theme-bg-primary);
+  color: var(--theme-text-primary);
+  transition: background-color 0.5s ease, color 0.5s ease;
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
 }
 
-/* Custom scrollbar */
+/* ============================================
+   SCROLLBAR STYLES
+   ============================================ */
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: rgba(var(--theme-panel-rgb), 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: rgba(var(--theme-panel-rgb), 0.8);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: var(--theme-accent);
 }
 
-/* Treemap styles */
-.treemap-cell {
-  transition: all 0.2s ease;
-}
+/* ============================================
+   ANIMATIONS
+   ============================================ */
 
-.treemap-cell:hover {
-  filter: brightness(1.2);
-}
-
-/* Timeline styles */
-.timeline-event {
-  transition: all 0.2s ease;
-}
-
-.timeline-event:hover {
-  transform: scale(1.05);
-}
-
-/* Pulse animation for live indicator */
 @keyframes live-pulse {
   0%, 100% {
     opacity: 1;
@@ -73,16 +251,200 @@ body {
   animation: live-pulse 2s ease-in-out infinite;
 }
 
-/* Card glow effect */
+@keyframes fade-in {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* ============================================
+   TREEMAP STYLES
+   ============================================ */
+
+.treemap-cell {
+  transition: all 0.2s ease;
+}
+
+.treemap-cell:hover {
+  filter: brightness(1.2);
+}
+
+/* ============================================
+   TIMELINE STYLES
+   ============================================ */
+
+.timeline-event {
+  transition: all 0.2s ease;
+}
+
+.timeline-event:hover {
+  transform: scale(1.05);
+}
+
+/* ============================================
+   GLASSMORPHISM AND PANEL STYLES
+   ============================================ */
+
+/* Glass Panel Effect */
+.glass-panel {
+  background: rgba(var(--theme-panel-rgb), var(--glass-opacity)) !important;
+  backdrop-filter: blur(calc(var(--glass-opacity) * 20px));
+  -webkit-backdrop-filter: blur(calc(var(--glass-opacity) * 20px));
+  border: 1px solid rgba(var(--theme-panel-rgb), calc(var(--glass-opacity) + 0.1));
+  transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+  background: rgba(var(--theme-panel-rgb), calc(var(--glass-opacity) + 0.05)) !important;
+}
+
+/* Override Tailwind slate backgrounds */
+.bg-slate-700 {
+  background-color: rgba(var(--theme-panel-rgb), 0.8) !important;
+}
+
+.bg-slate-800 {
+  background-color: rgba(var(--theme-panel-rgb), 0.6) !important;
+}
+
+.bg-slate-900 {
+  background-color: rgba(var(--theme-panel-rgb), 0.4) !important;
+}
+
+/* Override slate background variants with opacity */
+.bg-slate-700\/50 {
+  background-color: rgba(var(--theme-panel-rgb), 0.5) !important;
+}
+
+.bg-slate-800\/50 {
+  background-color: rgba(var(--theme-panel-rgb), 0.3) !important;
+}
+
+.bg-slate-800\/80 {
+  background-color: rgba(var(--theme-panel-rgb), 0.48) !important;
+}
+
+/* Text color overrides */
+.text-white {
+  color: var(--theme-text-primary) !important;
+}
+
+.text-slate-300 {
+  color: var(--theme-text-primary) !important;
+}
+
+.text-slate-400 {
+  color: var(--theme-text-secondary) !important;
+}
+
+.text-slate-500 {
+  color: var(--theme-text-muted) !important;
+}
+
+/* ============================================
+   CARD GLOW EFFECTS
+   ============================================ */
+
 .card-glow {
-  box-shadow: 0 0 20px rgba(14, 165, 233, 0.1);
+  box-shadow: 0 0 20px rgba(var(--theme-accent-rgb), 0.1);
+  transition: box-shadow 0.3s ease;
 }
 
 .card-glow:hover {
-  box-shadow: 0 0 30px rgba(14, 165, 233, 0.2);
+  box-shadow: 0 0 30px var(--theme-accent-glow), 0 0 60px rgba(var(--theme-accent-rgb), 0.15);
 }
+
+/* ============================================
+   THEME UTILITY CLASSES
+   ============================================ */
+
+.theme-bg-primary {
+  background-color: var(--theme-bg-primary) !important;
+  transition: background-color 0.3s ease;
+}
+
+.theme-bg-secondary {
+  background-color: var(--theme-bg-secondary) !important;
+  transition: background-color 0.3s ease;
+}
+
+.theme-bg-card {
+  background-color: rgba(var(--theme-panel-rgb), var(--glass-opacity)) !important;
+  backdrop-filter: blur(calc(var(--glass-opacity) * 20px));
+  -webkit-backdrop-filter: blur(calc(var(--glass-opacity) * 20px));
+  transition: all 0.3s ease;
+}
+
+.theme-accent {
+  color: var(--theme-accent) !important;
+  transition: color 0.3s ease;
+}
+
+.theme-glow {
+  box-shadow: 0 0 20px var(--theme-accent-glow), 0 0 40px rgba(var(--theme-accent-rgb), 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+/* ============================================
+   MISC STYLES
+   ============================================ */
 
 /* Modal backdrop */
 .modal-backdrop {
   backdrop-filter: blur(4px);
+}
+
+/* UFO Cursor - Beam on click */
+body:active {
+  cursor: url("/ufo-beam.svg") 16 16, auto;
+}
+
+/* All interactive elements use UFO cursor */
+a, button, [role='button'], .cursor-pointer,
+input, select, textarea, label[for],
+input[type='checkbox'], input[type='radio'],
+[onclick], [tabindex]:not([tabindex='-1']) {
+  cursor: url("/ufo-cursor.svg") 16 16, pointer !important;
+}
+
+/* Beam on for active/clicking state on interactive elements */
+a:active, button:active, [role='button']:active,
+input:active, select:active, .cursor-pointer:active {
+  cursor: url("/ufo-beam.svg") 16 16, pointer !important;
+}
+
+/* Shimmer animation for cosmic title */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.cosmic-title {
+  animation: shimmer 12s ease-in-out infinite;
+}
+
+/* Cosmic title - gradient shimmer */
+.cosmic-title {
+  background: linear-gradient(
+    120deg,
+    var(--theme-accent) 0%,
+    #ccc 45%,
+    #ccc 55%,
+    var(--theme-accent) 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 12s ease-in-out infinite;
+  filter: drop-shadow(0 0 15px var(--theme-accent-glow));
 }
