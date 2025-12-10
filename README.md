@@ -264,7 +264,9 @@ The installer has three components you can mix and match:
 
 ## Using the Dashboard
 
-Start the dashboard:
+**Auto-Start (Recommended):** The dashboard starts automatically when you launch Claude Code via a startup hook. The hook starts both the FastAPI backend (port 8888) and React frontend (port 3001) in the background.
+
+**Manual Start:** If you need to start it manually:
 
 ```bash
 cd ~/.claude/emergent-learning/dashboard-app
@@ -272,7 +274,7 @@ cd ~/.claude/emergent-learning/dashboard-app
 ./run-dashboard.sh   # Mac/Linux
 ```
 
-Then open http://localhost:3000
+Then open http://localhost:3001 (or http://localhost:3000 if using manual start)
 
 ![Cosmic Dashboard - Heuristics View](docs/images/cosmic-dashboard-heuristics.png)
 
