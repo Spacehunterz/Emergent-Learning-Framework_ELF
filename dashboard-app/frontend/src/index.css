@@ -101,16 +101,16 @@
   --theme-particle-color: 168, 85, 247;
 }
 
-/* Supernova - Fiery oranges and reds */
+/* Supernova - Fiery oranges */
 [data-theme="supernova"] {
   color-scheme: dark;
-  --theme-bg-primary: #0a0000;
-  --theme-bg-secondary: #150505;
-  --theme-bg-card: #1f0a0a;
-  --theme-accent: #ef4444;
-  --theme-accent-glow: rgba(239, 68, 68, 0.4);
-  --theme-accent-rgb: 239, 68, 68;
-  --theme-panel-rgb: 31, 10, 10;
+  --theme-bg-primary: #0a0500;
+  --theme-bg-secondary: #151005;
+  --theme-bg-card: #1f150a;
+  --theme-accent: #f97316;
+  --theme-accent-glow: rgba(249, 115, 22, 0.4);
+  --theme-accent-rgb: 249, 115, 22;
+  --theme-panel-rgb: 50, 30, 15;
   --theme-text-primary: rgba(255, 255, 255, 0.95);
   --theme-text-secondary: rgba(255, 255, 255, 0.60);
   --theme-text-muted: rgba(255, 255, 255, 0.40);

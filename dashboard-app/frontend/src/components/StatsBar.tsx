@@ -492,10 +492,15 @@ export default function StatsBar({ stats }: StatsBarProps) {
           <div
             key={label}
             onClick={() => setExpandedCard(expandedCard === label ? null : label)}
-            className="glass-panel rounded-lg p-4 card-glow transition-all hover:scale-105 cursor-pointer hover:ring-2 hover:ring-slate-600"
+            className="rounded-lg p-4 card-glow transition-all hover:scale-105 cursor-pointer"
+            style={{
+              background: `linear-gradient(135deg, rgba(var(--theme-accent-rgb), calc(var(--glass-opacity) * 0.3)), rgba(var(--theme-panel-rgb), var(--glass-opacity)))`,
+              border: '1px solid rgba(var(--theme-accent-rgb), calc(var(--glass-opacity) * 0.5))',
+              backdropFilter: 'blur(calc(var(--glass-opacity) * 20px))',
+            }}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-slate-400 font-medium">{label}</span>
+              <span className="text-xs font-medium" style={{ color: 'var(--theme-text-secondary)' }}>{label}</span>
               <div className={`p-1.5 rounded-md ${bgColor}`}>
                 <Icon className={`w-3.5 h-3.5 ${color}`} />
               </div>
