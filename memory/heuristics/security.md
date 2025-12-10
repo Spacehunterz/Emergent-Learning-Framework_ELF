@@ -24,3 +24,13 @@ Domain parameter path traversal attack demonstrated that any user input used in 
 
 ---
 
+## H-118: Run security audits with parallel agents before pushing public code
+
+**Confidence**: 0.85
+**Source**: success
+**Created**: 2025-12-10
+
+Use multiple specialized agents (backend, frontend, database/filesystem) to audit different attack surfaces simultaneously. Catches more issues than a single pass.
+
+---
+
