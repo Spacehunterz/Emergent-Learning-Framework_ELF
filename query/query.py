@@ -89,6 +89,19 @@ class TimeoutHandler:
         )
 
 
+def escape_like(s: str) -> str:
+    """
+    Escape SQL LIKE wildcards to prevent wildcard injection.
+
+    Args:
+        s: String to escape
+
+    Returns:
+        String with SQL LIKE wildcards escaped
+    """
+    return s.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+
+
 class QuerySystem:
     """Manages knowledge retrieval from the Emergent Learning Framework."""
 
@@ -466,6 +479,9 @@ class QuerySystem:
 
     def _init_database(self):
         """Initialize the database with required schema if it does not exist."""
+        # SECURITY: Check if database file was just created, set secure permissions
+        db_just_created = not self.db_path.exists()
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
 
@@ -613,6 +629,35 @@ class QuerySystem:
             cursor.execute("ANALYZE")
 
             conn.commit()
+
+        # SECURITY: Set secure file permissions on database file (owner read/write only)
+        # This prevents other users from reading sensitive learning data
+        if db_just_created or True:  # Always enforce secure permissions
+            try:
+                import stat
+                # Set permissions to 0600 (owner read/write only)
+                os.chmod(str(self.db_path), stat.S_IRUSR | stat.S_IWUSR)
+
+                # On Windows, also restrict ACLs to current user only
+                if sys.platform == 'win32':
+                    try:
+                        import subprocess
+                        # Remove inheritance and grant full control only to current user
+                        # icacls command: /inheritance:r removes inherited permissions
+                        # /grant:r grants permissions, replacing existing ones
+                        subprocess.run(
+                            ['icacls', str(self.db_path), '/inheritance:r',
+                             '/grant:r', f'{os.environ.get("USERNAME")}:F'],
+                            check=False, capture_output=True
+                        )
+                        self._log_debug(f"Set Windows ACLs for {self.db_path}")
+                    except Exception as win_err:
+                        self._log_debug(f"Warning: Could not set Windows ACLs: {win_err}")
+
+                self._log_debug(f"Set secure permissions (0600) on database file: {self.db_path}")
+            except Exception as e:
+                # Non-fatal: log warning but don't fail initialization
+                self._log_debug(f"Warning: Could not set secure permissions on database: {e}")
 
     def validate_database(self) -> Dict[str, Any]:
         """
@@ -850,7 +895,8 @@ class QuerySystem:
                     """
 
                     # Prepare parameters with wildcards for LIKE queries
-                    params = [f"%{tag}%" for tag in tags] + [limit]
+                    # Escape SQL wildcards to prevent wildcard injection
+                    params = [f"%{escape_like(tag)}%" for tag in tags] + [limit]
 
                     cursor.execute(query, params)
                     results = [dict(row) for row in cursor.fetchall()]
