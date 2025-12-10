@@ -2,6 +2,17 @@
 
 **Location:** `C:\Users\Evede\.claude\emergent-learning\`
 
+---
+
+## GIT REMOTES - READ THIS BEFORE PUSHING
+
+- `origin` = **PUBLIC REPO** (Emergent-Learning-Framework_ELF) - PUSH HERE
+- `private-backup` = private backup only - DO NOT PUSH unless explicitly asked
+
+When user says "push" or "push to git", use: `git push origin`
+
+---
+
 ## What This Framework Is
 
 This is your persistent learning system. You are a **temporary worker** - each conversation starts fresh - but this framework is **permanent infrastructure** that accumulates knowledge across all your iterations.
