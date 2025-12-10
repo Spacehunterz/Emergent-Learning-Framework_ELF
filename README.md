@@ -1169,6 +1169,15 @@ git branch -D branch-name
 - `.vite/` - Build cache
 - `desktop.ini` - Windows junk
 - `node_modules/` - Dependencies (already gitignored)
+- `.env` files - API keys, secrets, credentials
+- Personal paths or usernames hardcoded in code
+- Tokens, passwords, or API keys
+- Anything with your real name/email if you want privacy
+
+**Before pushing, ask yourself:**
+- Does this contain any secrets or credentials?
+- Does this expose personal information?
+- Would I be okay if a stranger saw this?
 
 ## Contributing
 
