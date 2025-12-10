@@ -269,6 +269,13 @@ async def get_stats():
         cursor.execute("SELECT COUNT(*) FROM learnings WHERE type = 'success'")
         stats["successes"] = cursor.fetchone()[0]
 
+        # Get actual run success/failure counts from workflow_runs status
+        cursor.execute("SELECT COUNT(*) FROM workflow_runs WHERE status = 'completed'")
+        stats["successful_runs"] = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM workflow_runs WHERE status IN ('failed', 'cancelled')")
+        stats["failed_runs"] = cursor.fetchone()[0]
+
         # Averages
         cursor.execute("SELECT AVG(confidence) FROM heuristics")
         stats["avg_confidence"] = cursor.fetchone()[0] or 0
@@ -285,6 +292,29 @@ async def get_stats():
             WHERE timestamp > datetime('now', '-1 hour')
         """)
         stats["metrics_last_hour"] = cursor.fetchone()[0]
+
+        # Runs today (actual workflow runs in last 24 hours)
+        cursor.execute("""
+            SELECT COUNT(*) FROM workflow_runs
+            WHERE created_at > datetime('now', '-24 hours')
+        """)
+        stats["runs_today"] = cursor.fetchone()[0]
+
+        # Query statistics
+        cursor.execute("SELECT COUNT(*) FROM building_queries")
+        stats["total_queries"] = cursor.fetchone()[0]
+
+        cursor.execute("""
+            SELECT COUNT(*) FROM building_queries
+            WHERE created_at > datetime('now', '-24 hours')
+        """)
+        stats["queries_today"] = cursor.fetchone()[0]
+
+        cursor.execute("""
+            SELECT AVG(duration_ms) FROM building_queries
+            WHERE duration_ms IS NOT NULL
+        """)
+        stats["avg_query_duration_ms"] = cursor.fetchone()[0] or 0
 
         return stats
 
@@ -673,6 +703,62 @@ async def get_learnings(
             params.append(domain)
 
         query += " ORDER BY created_at DESC LIMIT ?"
+        params.append(limit)
+
+        cursor.execute(query, params)
+        return [dict_from_row(r) for r in cursor.fetchall()]
+
+
+@app.get("/api/queries")
+async def get_queries(
+    limit: int = 50,
+    since: Optional[str] = None,
+    domain: Optional[str] = None,
+    query_type: Optional[str] = None,
+    status: Optional[str] = None,
+    sort_by: str = "recent"
+):
+    """Get building queries with optional filtering."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        query = """
+            SELECT id, query_type, session_id, agent_id, domain, tags,
+                   limit_requested, max_tokens_requested, results_returned,
+                   tokens_approximated, duration_ms, status, error_message,
+                   error_code, golden_rules_returned, heuristics_count,
+                   learnings_count, experiments_count, ceo_reviews_count,
+                   query_summary, created_at, completed_at
+            FROM building_queries
+            WHERE 1=1
+        """
+        params = []
+
+        if since:
+            query += " AND created_at > ?"
+            params.append(since)
+
+        if domain:
+            query += " AND domain = ?"
+            params.append(domain)
+
+        if query_type:
+            query += " AND query_type = ?"
+            params.append(query_type)
+
+        if status:
+            query += " AND status = ?"
+            params.append(status)
+
+        # Apply sorting
+        sort_map = {
+            "recent": "created_at DESC",
+            "oldest": "created_at ASC",
+            "slowest": "duration_ms DESC"
+        }
+        query += f" ORDER BY {sort_map.get(sort_by, 'created_at DESC')}"
+
+        query += " LIMIT ?"
         params.append(limit)
 
         cursor.execute(query, params)

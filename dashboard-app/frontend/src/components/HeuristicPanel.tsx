@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Heuristic } from '../types'
-import { Brain, Star, TrendingUp, TrendingDown, Shield, Filter, ChevronDown, ChevronUp, Award, AlertTriangle } from 'lucide-react'
+import { Brain, Star, TrendingUp, TrendingDown, Shield, Filter, ChevronDown, ChevronUp, Award, AlertTriangle, Trash2, Edit2, X, Save } from 'lucide-react'
 
 interface HeuristicPanelProps {
   heuristics: Heuristic[]
   onPromote: (id: number) => void
   onDemote: (id: number) => void
+  onDelete: (id: number) => void
+  onUpdate: (id: number, updates: { rule?: string; explanation?: string; domain?: string }) => void
   selectedDomain: string | null
   onDomainFilter: (domain: string | null) => void
 }
@@ -17,6 +19,8 @@ export default function HeuristicPanel({
   heuristics,
   onPromote,
   onDemote,
+  onDelete,
+  onUpdate,
   selectedDomain,
   onDomainFilter
 }: HeuristicPanelProps) {
@@ -24,6 +28,9 @@ export default function HeuristicPanel({
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [showGoldenOnly, setShowGoldenOnly] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editForm, setEditForm] = useState<{ rule: string; explanation: string; domain: string }>({ rule: '', explanation: '', domain: '' })
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
 
   const domains = Array.from(new Set(heuristics.map(h => h.domain)))
 
@@ -89,6 +96,27 @@ export default function HeuristicPanel({
     if (h.times_validated >= 5) return { stage: 'Validated', color: 'text-sky-400', icon: Shield }
     if (h.times_violated > h.times_validated) return { stage: 'At Risk', color: 'text-red-400', icon: AlertTriangle }
     return { stage: 'Learning', color: 'text-slate-400', icon: Brain }
+  }
+
+  const startEdit = (h: Heuristic) => {
+    setEditingId(h.id)
+    setEditForm({ rule: h.rule, explanation: h.explanation || '', domain: h.domain })
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditForm({ rule: '', explanation: '', domain: '' })
+  }
+
+  const saveEdit = (id: number) => {
+    onUpdate(id, editForm)
+    setEditingId(null)
+    setEditForm({ rule: '', explanation: '', domain: '' })
+  }
+
+  const confirmDelete = (id: number) => {
+    onDelete(id)
+    setDeleteConfirmId(null)
   }
 
   return (
@@ -243,27 +271,112 @@ export default function HeuristicPanel({
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center space-x-2 pt-2">
-                      {!h.is_golden && h.confidence >= 0.8 && (
+                    {/* Edit Form */}
+                    {editingId === h.id ? (
+                      <div className="space-y-3 pt-2 border-t border-slate-600 mt-2">
+                        <div>
+                          <label className="text-xs text-slate-400 block mb-1">Rule</label>
+                          <input
+                            type="text"
+                            value={editForm.rule}
+                            onChange={(e) => setEditForm({ ...editForm, rule: e.target.value })}
+                            className="w-full bg-slate-600 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400 block mb-1">Explanation</label>
+                          <textarea
+                            value={editForm.explanation}
+                            onChange={(e) => setEditForm({ ...editForm, explanation: e.target.value })}
+                            className="w-full bg-slate-600 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
+                            rows={2}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400 block mb-1">Domain</label>
+                          <input
+                            type="text"
+                            value={editForm.domain}
+                            onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
+                            className="w-full bg-slate-600 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); saveEdit(h.id) }}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm hover:bg-emerald-500/30 transition"
+                          >
+                            <Save className="w-4 h-4" />
+                            <span>Save</span>
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); cancelEdit() }}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-slate-600 text-slate-300 rounded-lg text-sm hover:bg-slate-500 transition"
+                          >
+                            <X className="w-4 h-4" />
+                            <span>Cancel</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : deleteConfirmId === h.id ? (
+                      /* Delete Confirmation */
+                      <div className="flex items-center space-x-3 pt-2 border-t border-red-500/30 mt-2">
+                        <span className="text-sm text-red-400">Delete this heuristic?</span>
                         <button
-                          onClick={(e) => { e.stopPropagation(); onPromote(h.id) }}
-                          className="flex items-center space-x-1 px-3 py-1.5 bg-amber-500/20 text-amber-400 rounded-lg text-sm hover:bg-amber-500/30 transition"
+                          onClick={(e) => { e.stopPropagation(); confirmDelete(h.id) }}
+                          className="flex items-center space-x-1 px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-sm hover:bg-red-500/30 transition"
                         >
-                          <Star className="w-4 h-4" />
-                          <span>Promote to Golden</span>
+                          <Trash2 className="w-4 h-4" />
+                          <span>Yes, Delete</span>
                         </button>
-                      )}
-                      {h.is_golden && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); onDemote(h.id) }}
+                          onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null) }}
                           className="flex items-center space-x-1 px-3 py-1.5 bg-slate-600 text-slate-300 rounded-lg text-sm hover:bg-slate-500 transition"
                         >
-                          <TrendingDown className="w-4 h-4" />
-                          <span>Demote from Golden</span>
+                          <X className="w-4 h-4" />
+                          <span>Cancel</span>
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      /* Actions */
+                      <div className="flex items-center space-x-2 pt-2">
+                        {!h.is_golden && h.confidence >= 0.8 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onPromote(h.id) }}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-amber-500/20 text-amber-400 rounded-lg text-sm hover:bg-amber-500/30 transition"
+                          >
+                            <Star className="w-4 h-4" />
+                            <span>Promote to Golden</span>
+                          </button>
+                        )}
+                        {h.is_golden && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onDemote(h.id) }}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-slate-600 text-slate-300 rounded-lg text-sm hover:bg-slate-500 transition"
+                          >
+                            <TrendingDown className="w-4 h-4" />
+                            <span>Demote from Golden</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); startEdit(h) }}
+                          className="flex items-center space-x-1 px-3 py-1.5 bg-sky-500/20 text-sky-400 rounded-lg text-sm hover:bg-sky-500/30 transition"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(h.id) }}
+                          className="flex items-center space-x-1 px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg text-sm hover:bg-red-500/30 transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

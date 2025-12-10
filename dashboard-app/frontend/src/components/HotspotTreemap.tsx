@@ -147,7 +147,7 @@ export default function HotspotTreemap({ hotspots, onSelect, selectedDomain, onD
       }
     }
 
-    const leaves = root.leaves()
+    const leaves = root.leaves() as any[]
 
     // Create cells
     const cells = svg.selectAll('g')

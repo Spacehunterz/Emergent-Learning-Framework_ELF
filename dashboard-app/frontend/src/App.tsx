@@ -237,6 +237,28 @@ function App() {
     }
   }
 
+  const handleDeleteHeuristic = async (id: number) => {
+    try {
+      await api.del(`/api/heuristics/${id}`)
+      setHeuristics(prev => prev.filter(h => h.id !== id))
+      // Reload stats to update counts
+      loadStats()
+    } catch (err) {
+      console.error('Failed to delete heuristic:', err)
+    }
+  }
+
+  const handleUpdateHeuristic = async (id: number, updates: { rule?: string; explanation?: string; domain?: string }) => {
+    try {
+      await api.put(`/api/heuristics/${id}`, updates)
+      setHeuristics(prev => prev.map(h =>
+        h.id === id ? { ...h, ...updates } : h
+      ))
+    } catch (err) {
+      console.error('Failed to update heuristic:', err)
+    }
+  }
+
   const handleRetryRun = async (runId: string) => {
     try {
       await api.post(`/api/runs/${runId}/retry`)
@@ -341,6 +363,8 @@ function App() {
               heuristics={normalizedHeuristics}
               onPromote={handlePromoteHeuristic}
               onDemote={handleDemoteHeuristic}
+              onDelete={handleDeleteHeuristic}
+              onUpdate={handleUpdateHeuristic}
               selectedDomain={selectedDomain}
               onDomainFilter={setSelectedDomain}
             />
