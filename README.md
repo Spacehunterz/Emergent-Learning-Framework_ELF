@@ -1186,3 +1186,7 @@ Contributions welcome - bug fixes, improvements, documentation.
 ## License
 
 MIT License
+
+<a href="https://www.buymeacoffee.com/Spacehunterz">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="150">
+</a>
