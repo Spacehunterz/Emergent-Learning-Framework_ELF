@@ -64,7 +64,7 @@ export default function ExportPanel({ onClose }: ExportPanelProps) {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `emergent-learning-${selectedType}-${new Date().toISOString().split('T')[0]}.${extension}`
+      a.download = `cosmic-dashboard-${selectedType}-${new Date().toISOString().split('T')[0]}.${extension}`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -98,7 +98,7 @@ export default function ExportPanel({ onClose }: ExportPanelProps) {
 
   const convertToMarkdown = (data: any, type: string): string => {
     const lines: string[] = [
-      `# Emergent Learning Export: ${type}`,
+      `# Cosmic Dashboard Export: ${type}`,
       `Generated: ${new Date().toISOString()}`,
       '',
     ]
