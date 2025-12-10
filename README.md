@@ -274,6 +274,8 @@ cd ~/.claude/emergent-learning/dashboard-app
 
 Then open http://localhost:3000
 
+![Cosmic Dashboard - Heuristics View](docs/images/cosmic-dashboard-heuristics.png)
+
 The dashboard shows:
 - **Overview** - Hotspot treemap, anomalies, golden rules
 - **Heuristics** - All learned patterns with confidence scores
