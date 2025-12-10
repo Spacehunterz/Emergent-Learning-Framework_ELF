@@ -1000,12 +1000,18 @@ async def open_in_editor(path: str = Query(...)):
     """Open a file in VS Code."""
     try:
         # Normalize path
-        file_path = Path(path)
-        if not file_path.is_absolute():
-            file_path = Path.cwd() / path
+        file_path = Path(path).resolve()
 
-        # Try VS Code first
-        subprocess.Popen(["code", "-g", str(file_path)], shell=True)
+        # SECURITY: Only allow opening files within emergent-learning directory
+        allowed_root = EMERGENT_LEARNING_PATH.resolve()
+        if not str(file_path).startswith(str(allowed_root)):
+            return ActionResult(success=False, message="Access denied: path outside allowed directory")
+
+        if not file_path.exists():
+            return ActionResult(success=False, message="File not found")
+
+        # SECURITY: Removed shell=True to prevent command injection
+        subprocess.Popen(["code", "-g", str(file_path)])
 
         return ActionResult(success=True, message=f"Opened {path} in VS Code")
     except Exception as e:
@@ -1220,4 +1226,5 @@ if FRONTEND_PATH.exists():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8888, reload=True)
+    # SECURITY: Bind to localhost only - prevents exposure on public networks
+    uvicorn.run(app, host="127.0.0.1", port=8888, reload=True)
