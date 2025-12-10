@@ -31,6 +31,16 @@ from typing import Dict, Tuple, Optional, List
 from datetime import datetime
 import sqlite3
 
+# Import validation utilities
+from validation import (
+    validate_identifier,
+    validate_node_id,
+    validate_agent_id,
+    validate_agent_type,
+    validate_filename_safe,
+    ValidationError
+)
+
 
 class CLIExecutor:
     """
@@ -80,6 +90,18 @@ class CLIExecutor:
 
     def _execute_single(self, node, context: Dict) -> Tuple[str, Dict]:
         """Execute a single agent node."""
+        # Validate node.id before using it
+        try:
+            validated_node_id = validate_node_id(node.id)
+        except ValidationError as e:
+            error_msg = f"[VALIDATION ERROR] {str(e)}"
+            return error_msg, {
+                "error": "validation_error",
+                "error_message": str(e),
+                "findings": [],
+                "files_modified": []
+            }
+
         # Format prompt with context
         prompt = node.prompt_template
         if context:
@@ -88,15 +110,25 @@ class CLIExecutor:
             except KeyError:
                 pass  # Keep original if formatting fails
 
-        # Get agent type from config
+        # Get agent type from config and validate it
         agent_type = node.config.get("agent_type", "general-purpose") if node.config else "general-purpose"
+        try:
+            validated_agent_type = validate_agent_type(agent_type)
+        except ValidationError as e:
+            error_msg = f"[VALIDATION ERROR] {str(e)}"
+            return error_msg, {
+                "error": "validation_error",
+                "error_message": str(e),
+                "findings": [],
+                "files_modified": []
+            }
 
         # Write signal file for execution
-        signal_file = self._write_signal(node.id, {
+        signal_file = self._write_signal(validated_node_id, {
             "action": "execute_node",
-            "node_id": node.id,
+            "node_id": validated_node_id,
             "node_name": node.name,
-            "agent_type": agent_type,
+            "agent_type": validated_agent_type,
             "prompt": prompt,
             "context": context,
             "timestamp": datetime.now().isoformat()
@@ -105,9 +137,9 @@ class CLIExecutor:
         # For CLI execution, we need to spawn the actual process
         # This uses claude CLI with the prompt
         result_text, result_dict = self._spawn_claude_task(
-            node_id=node.id,
+            node_id=validated_node_id,
             prompt=prompt,
-            agent_type=agent_type
+            agent_type=validated_agent_type
         )
 
         # Clean up signal file
@@ -117,9 +149,34 @@ class CLIExecutor:
 
     def _execute_swarm(self, node, context: Dict) -> Tuple[str, Dict]:
         """Execute a swarm phase with multiple ants."""
+        # Validate base node.id
+        try:
+            validated_node_id = validate_node_id(node.id)
+        except ValidationError as e:
+            error_msg = f"[VALIDATION ERROR] {str(e)}"
+            return error_msg, {
+                "error": "validation_error",
+                "error_message": str(e),
+                "findings": [],
+                "files_modified": []
+            }
+
         config = node.config or {}
         num_ants = config.get("num_ants", 3)
         roles = config.get("roles", ["scout", "analyzer", "fixer"])
+
+        # Validate agent_type if provided
+        agent_type = config.get("agent_type", "Explore")
+        try:
+            validated_agent_type = validate_agent_type(agent_type)
+        except ValidationError as e:
+            error_msg = f"[VALIDATION ERROR] {str(e)}"
+            return error_msg, {
+                "error": "validation_error",
+                "error_message": str(e),
+                "findings": [],
+                "files_modified": []
+            }
 
         # Format base prompt
         base_prompt = node.prompt_template
@@ -133,7 +190,14 @@ class CLIExecutor:
         results = []
         for i in range(min(num_ants, len(roles))):
             role = roles[i % len(roles)]
-            ant_prompt = f"""[SWARM] You are a {role} agent.
+            # Validate role before using it in node_id
+            try:
+                validated_role = validate_identifier(role, "role", max_length=50)
+            except ValidationError as e:
+                # Skip invalid roles
+                continue
+
+            ant_prompt = f"""[SWARM] You are a {validated_role} agent.
 
 {base_prompt}
 
@@ -144,12 +208,12 @@ Types: fact, discovery, warning, blocker, hypothesis
 Importance: low, normal, high, critical
 """
             result_text, result_dict = self._spawn_claude_task(
-                node_id=f"{node.id}-{role}-{i}",
+                node_id=f"{validated_node_id}-{validated_role}-{i}",
                 prompt=ant_prompt,
-                agent_type=config.get("agent_type", "Explore")
+                agent_type=validated_agent_type
             )
             results.append({
-                "role": role,
+                "role": validated_role,
                 "result_text": result_text,
                 "result_dict": result_dict
             })
@@ -173,8 +237,33 @@ Importance: low, normal, high, critical
 
     def _execute_parallel(self, node, context: Dict) -> Tuple[str, Dict]:
         """Execute parallel sub-nodes."""
+        # Validate base node.id
+        try:
+            validated_node_id = validate_node_id(node.id)
+        except ValidationError as e:
+            error_msg = f"[VALIDATION ERROR] {str(e)}"
+            return error_msg, {
+                "error": "validation_error",
+                "error_message": str(e),
+                "findings": [],
+                "files_modified": []
+            }
+
         config = node.config or {}
         sub_prompts = config.get("prompts", [node.prompt_template])
+
+        # Validate agent_type if provided
+        agent_type = config.get("agent_type", "general-purpose")
+        try:
+            validated_agent_type = validate_agent_type(agent_type)
+        except ValidationError as e:
+            error_msg = f"[VALIDATION ERROR] {str(e)}"
+            return error_msg, {
+                "error": "validation_error",
+                "error_message": str(e),
+                "findings": [],
+                "files_modified": []
+            }
 
         results = []
         for i, sub_prompt in enumerate(sub_prompts):
@@ -185,9 +274,9 @@ Importance: low, normal, high, critical
                     pass
 
             result_text, result_dict = self._spawn_claude_task(
-                node_id=f"{node.id}-parallel-{i}",
+                node_id=f"{validated_node_id}-parallel-{i}",
                 prompt=sub_prompt,
-                agent_type=config.get("agent_type", "general-purpose")
+                agent_type=validated_agent_type
             )
             results.append({
                 "index": i,
@@ -216,10 +305,43 @@ Importance: low, normal, high, critical
         Spawn a Claude Code task and capture results.
 
         This is the core execution that actually runs claude CLI.
+
+        Args:
+            node_id: Node identifier (must be pre-validated)
+            prompt: Prompt text to execute
+            agent_type: Agent type (must be pre-validated)
+
+        Returns:
+            Tuple of (result_text, result_dict)
         """
-        # Create a temp file for the prompt
-        prompt_file = self.coordination_dir / f"prompt-{node_id}.md"
-        result_file = self.coordination_dir / f"result-{node_id}.json"
+        # SECURITY: Validate node_id before using it in filenames and environment variables
+        # This prevents command injection through malicious node IDs
+        try:
+            validated_node_id = validate_node_id(node_id)
+        except ValidationError as e:
+            error_msg = f"[SECURITY ERROR] Invalid node_id: {str(e)}"
+            return error_msg, {
+                "error": "validation_error",
+                "error_message": str(e),
+                "findings": [],
+                "files_modified": []
+            }
+
+        # Validate agent_type
+        try:
+            validated_agent_type = validate_agent_type(agent_type)
+        except ValidationError as e:
+            error_msg = f"[SECURITY ERROR] Invalid agent_type: {str(e)}"
+            return error_msg, {
+                "error": "validation_error",
+                "error_message": str(e),
+                "findings": [],
+                "files_modified": []
+            }
+
+        # Create a temp file for the prompt using validated node_id
+        prompt_file = self.coordination_dir / f"prompt-{validated_node_id}.md"
+        result_file = self.coordination_dir / f"result-{validated_node_id}.json"
 
         # Write prompt to file
         prompt_file.write_text(prompt, encoding='utf-8')
@@ -234,14 +356,14 @@ Importance: low, normal, high, critical
         ]
 
         try:
-            # Execute claude CLI
+            # Execute claude CLI with validated node_id in environment
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=self.timeout,
                 cwd=str(self.project_root),
-                env={**os.environ, "CLAUDE_SWARM_NODE": node_id}
+                env={**os.environ, "CLAUDE_SWARM_NODE": validated_node_id}
             )
 
             result_text = result.stdout or ""
@@ -259,9 +381,9 @@ Importance: low, normal, high, critical
                 "success": result.returncode == 0
             }
 
-            # Save result
+            # Save result using validated_node_id
             result_file.write_text(json.dumps({
-                "node_id": node_id,
+                "node_id": validated_node_id,
                 "result_text": result_text[:10000],  # Truncate
                 "result_dict": result_dict,
                 "timestamp": datetime.now().isoformat()
@@ -270,7 +392,7 @@ Importance: low, normal, high, critical
             return result_text, result_dict
 
         except subprocess.TimeoutExpired:
-            return f"[TIMEOUT] Node {node_id} timed out after {self.timeout}s", {
+            return f"[TIMEOUT] Node {validated_node_id} timed out after {self.timeout}s", {
                 "error": "timeout",
                 "findings": [],
                 "files_modified": []
@@ -292,8 +414,25 @@ Importance: low, normal, high, critical
             prompt_file.unlink(missing_ok=True)
 
     def _write_signal(self, node_id: str, data: Dict) -> Path:
-        """Write a signal file for hook coordination."""
-        signal_file = self.coordination_dir / f"signal-{node_id}.json"
+        """
+        Write a signal file for hook coordination.
+
+        Args:
+            node_id: Node identifier (must be pre-validated)
+            data: Signal data to write
+
+        Returns:
+            Path to the signal file
+        """
+        # SECURITY: Validate node_id before using it in filename
+        # This should already be validated by callers, but defense in depth
+        try:
+            validated_node_id = validate_node_id(node_id)
+        except ValidationError as e:
+            # If validation fails, raise an exception since this is a programming error
+            raise ValueError(f"Invalid node_id passed to _write_signal: {str(e)}")
+
+        signal_file = self.coordination_dir / f"signal-{validated_node_id}.json"
         signal_file.write_text(json.dumps(data, indent=2), encoding='utf-8')
         return signal_file
 
@@ -357,12 +496,22 @@ class HookSignalExecutor:
         The active Claude session should pick up the signal via hooks
         and execute the task.
         """
-        node_id = node.id
+        # SECURITY: Validate node_id before using it
+        try:
+            validated_node_id = validate_node_id(node.id)
+        except ValidationError as e:
+            error_msg = f"[VALIDATION ERROR] {str(e)}"
+            return error_msg, {
+                "error": "validation_error",
+                "error_message": str(e),
+                "findings": [],
+                "files_modified": []
+            }
 
         # Write instruction signal
         instruction = {
             "action": "execute",
-            "node_id": node_id,
+            "node_id": validated_node_id,
             "node_name": node.name,
             "prompt": node.prompt_template.format(**context) if context else node.prompt_template,
             "node_type": node.node_type.value if hasattr(node.node_type, 'value') else str(node.node_type),
@@ -371,7 +520,7 @@ class HookSignalExecutor:
             "status": "pending"
         }
 
-        signal_file = self.coordination_dir / f"conductor-signal-{node_id}.json"
+        signal_file = self.coordination_dir / f"conductor-signal-{validated_node_id}.json"
         signal_file.write_text(json.dumps(instruction, indent=2), encoding='utf-8')
 
         # Wait for result (hook should update the signal file)
@@ -393,7 +542,7 @@ class HookSignalExecutor:
             time.sleep(1)
 
         signal_file.unlink(missing_ok=True)
-        return f"[TIMEOUT] Waiting for node {node_id}", {"error": "timeout"}
+        return f"[TIMEOUT] Waiting for node {validated_node_id}", {"error": "timeout"}
 
 
 # CLI for testing

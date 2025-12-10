@@ -14,6 +14,7 @@ Run: uvicorn main:app --reload --port 8888
 
 import asyncio
 import json
+import logging
 import os
 import re
 import sqlite3
@@ -30,11 +31,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # Paths
 EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
 DB_PATH = EMERGENT_LEARNING_PATH / "memory" / "index.db"
 FRONTEND_PATH = Path(__file__).parent.parent / "frontend" / "dist"
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Emergent Learning Dashboard",
@@ -50,6 +59,54 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ==============================================================================
+# Security Headers Middleware
+# ==============================================================================
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to all HTTP responses."""
+
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+
+        # Prevent clickjacking attacks
+        response.headers["X-Frame-Options"] = "DENY"
+
+        # Prevent MIME type sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+
+        # Enable XSS protection
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+
+        # Control referrer information
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+        # Restrict browser features
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+
+# ==============================================================================
+# SQL Security
+# ==============================================================================
+
+def escape_like(s: str) -> str:
+    """
+    Escape SQL LIKE wildcards to prevent wildcard injection.
+
+    Args:
+        s: String to escape
+
+    Returns:
+        String with SQL LIKE wildcards escaped
+    """
+    return s.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
 
 
 # ==============================================================================
@@ -196,7 +253,7 @@ async def monitor_changes():
                     last_run_count = run_count
 
         except Exception as e:
-            print(f"Monitor error: {e}")
+            logger.error(f"Monitor error: {e}", exc_info=True)
 
         await asyncio.sleep(2)  # Check every 2 seconds
 
@@ -431,13 +488,15 @@ async def get_hotspots(days: int = 7, limit: int = 50):
             filename = location_lower.split("/")[-1].split("\\")[-1]
             base_name = filename.rsplit(".", 1)[0] if "." in filename else filename
 
+            # Escape SQL wildcards to prevent wildcard injection
+            base_name_escaped = escape_like(base_name)
             cursor.execute("""
                 SELECT id, rule, confidence, domain
                 FROM heuristics
                 WHERE LOWER(rule) LIKE ? OR LOWER(domain) LIKE ?
                 ORDER BY confidence DESC
                 LIMIT 3
-            """, (f'%{base_name}%', f'%{base_name}%'))
+            """, (f'%{base_name_escaped}%', f'%{base_name_escaped}%'))
             hs["related_heuristics"] = [dict_from_row(r) for r in cursor.fetchall()]
 
             hotspots.append(hs)
@@ -992,7 +1051,8 @@ async def retry_run(run_id: int) -> ActionResult:
             data={"new_run_id": new_run_id}
         )
     except Exception as e:
-        return ActionResult(success=False, message=str(e))
+        logger.error(f"Error retrying run {run_id}: {e}", exc_info=True)
+        return ActionResult(success=False, message="Failed to retry workflow run. Please try again.")
 
 
 @app.post("/api/open-in-editor")
@@ -1015,7 +1075,8 @@ async def open_in_editor(path: str = Query(...)):
 
         return ActionResult(success=True, message=f"Opened {path} in VS Code")
     except Exception as e:
-        return ActionResult(success=False, message=str(e))
+        logger.error(f"Error opening file in editor: {e}", exc_info=True)
+        return ActionResult(success=False, message="Failed to open file in editor. Please try again.")
 
 
 # ==============================================================================
@@ -1040,7 +1101,9 @@ async def natural_language_query(request: QueryRequest):
 
         # Extract keywords
         keywords = re.findall(r'\b\w{3,}\b', query)
-        keyword_pattern = "%".join(keywords) if keywords else "%"
+        # Escape each keyword individually before joining to prevent wildcard injection
+        escaped_keywords = [escape_like(kw) for kw in keywords]
+        keyword_pattern = "%".join(escaped_keywords) if escaped_keywords else "%"
 
         # Search heuristics
         cursor.execute("""
@@ -1202,7 +1265,8 @@ async def create_workflow(workflow: WorkflowCreate) -> ActionResult:
             data={"workflow_id": workflow_id}
         )
     except Exception as e:
-        return ActionResult(success=False, message=str(e))
+        logger.error(f"Error creating workflow '{workflow.name}': {e}", exc_info=True)
+        return ActionResult(success=False, message="Failed to create workflow. Please check workflow configuration.")
 
 
 # ==============================================================================
