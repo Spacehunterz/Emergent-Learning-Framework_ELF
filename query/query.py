@@ -39,7 +39,6 @@ if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
-
 # Custom error classes for better error handling
 class QuerySystemError(Exception):
     """Base exception for query system errors."""
@@ -104,7 +103,8 @@ class QuerySystem:
     MAX_CONNECTION_POOL_SIZE = 5  # Maximum pooled SQLite connections for efficiency
     MAX_TOKENS = 50000
 
-    def __init__(self, base_path: Optional[str] = None, debug: bool = False):
+    def __init__(self, base_path: Optional[str] = None, debug: bool = False,
+                 session_id: Optional[str] = None, agent_id: Optional[str] = None):
         """
         Initialize the query system.
 
@@ -112,9 +112,15 @@ class QuerySystem:
             base_path: Base path to the emergent-learning directory.
                       Defaults to ~/.claude/emergent-learning
             debug: Enable debug logging
+            session_id: Optional session ID for query logging (fallback to CLAUDE_SESSION_ID env var)
+            agent_id: Optional agent ID for query logging (fallback to CLAUDE_AGENT_ID env var)
         """
         self.debug = debug
         self._connection_pool: List[sqlite3.Connection] = []
+
+        # Set session_id and agent_id with fallbacks
+        self.session_id = session_id or os.environ.get('CLAUDE_SESSION_ID')
+        self.agent_id = agent_id or os.environ.get('CLAUDE_AGENT_ID')
 
         if base_path is None:
             home = Path.home()
@@ -144,6 +150,81 @@ class QuerySystem:
         """Log debug message if debug mode is enabled."""
         if self.debug:
             print(f"[DEBUG] {message}", file=sys.stderr)
+
+    def _get_current_time_ms(self) -> int:
+        """Get current time in milliseconds since epoch."""
+        return int(datetime.now().timestamp() * 1000)
+
+    def _log_query(
+        self,
+        query_type: str,
+        domain: Optional[str] = None,
+        tags: Optional[str] = None,
+        limit_requested: Optional[int] = None,
+        max_tokens_requested: Optional[int] = None,
+        results_returned: int = 0,
+        tokens_approximated: Optional[int] = None,
+        duration_ms: Optional[int] = None,
+        status: str = 'success',
+        error_message: Optional[str] = None,
+        error_code: Optional[str] = None,
+        golden_rules_returned: int = 0,
+        heuristics_count: int = 0,
+        learnings_count: int = 0,
+        experiments_count: int = 0,
+        ceo_reviews_count: int = 0,
+        query_summary: Optional[str] = None
+    ):
+        """
+        Log a query to the building_queries table.
+
+        This is a non-blocking operation - if logging fails, it will not raise an exception.
+
+        Args:
+            query_type: Type of query (e.g., 'build_context', 'query_by_domain')
+            domain: Domain queried (if applicable)
+            tags: Tags queried (if applicable, comma-separated string)
+            limit_requested: Limit parameter used
+            max_tokens_requested: Max tokens parameter used
+            results_returned: Number of results returned
+            tokens_approximated: Approximate token count
+            duration_ms: Query duration in milliseconds
+            status: Query status ('success', 'error', 'timeout')
+            error_message: Error message if status is 'error'
+            error_code: Error code if status is 'error'
+            golden_rules_returned: Number of golden rules returned
+            heuristics_count: Number of heuristics returned
+            learnings_count: Number of learnings returned
+            experiments_count: Number of experiments returned
+            ceo_reviews_count: Number of CEO reviews returned
+            query_summary: Brief summary of the query
+        """
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO building_queries (
+                        query_type, session_id, agent_id, domain, tags,
+                        limit_requested, max_tokens_requested,
+                        results_returned, tokens_approximated, duration_ms,
+                        status, error_message, error_code,
+                        golden_rules_returned, heuristics_count, learnings_count,
+                        experiments_count, ceo_reviews_count, query_summary,
+                        completed_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """, (
+                    query_type, self.session_id, self.agent_id, domain, tags,
+                    limit_requested, max_tokens_requested,
+                    results_returned, tokens_approximated, duration_ms,
+                    status, error_message, error_code,
+                    golden_rules_returned, heuristics_count, learnings_count,
+                    experiments_count, ceo_reviews_count, query_summary
+                ))
+                conn.commit()
+                self._log_debug(f"Logged query: {query_type} (status={status}, duration={duration_ms}ms)")
+        except Exception as e:
+            # Non-blocking: log the error but don't raise
+            self._log_debug(f"Failed to log query to building_queries: {e}")
 
     def _validate_connection(self, conn: sqlite3.Connection) -> bool:
         """
@@ -639,48 +720,90 @@ class QuerySystem:
             TimeoutError: If query times out
             DatabaseError: If database operation fails
         """
-        # Validate inputs
-        domain = self._validate_domain(domain)
-        limit = self._validate_limit(limit)
-        timeout = timeout or self.DEFAULT_TIMEOUT
+        start_time = self._get_current_time_ms()
+        error_msg = None
+        error_code = None
+        status = 'success'
+        result = None
 
-        self._log_debug(f"Querying domain '{domain}' with limit {limit}")
+        try:
+            # Validate inputs
+            domain = self._validate_domain(domain)
+            limit = self._validate_limit(limit)
+            timeout = timeout or self.DEFAULT_TIMEOUT
 
-        with TimeoutHandler(timeout):
-            with self._get_connection() as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+            self._log_debug(f"Querying domain '{domain}' with limit {limit}")
+            with TimeoutHandler(timeout):
+                with self._get_connection() as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
 
-                # Get heuristics for domain
-                cursor.execute("""
-                    SELECT * FROM heuristics
-                    WHERE domain = ?
-                    ORDER BY confidence DESC, times_validated DESC
-                    LIMIT ?
-                """, (domain, limit))
-                heuristics = [dict(row) for row in cursor.fetchall()]
+                    # Get heuristics for domain
+                    cursor.execute("""
+                        SELECT * FROM heuristics
+                        WHERE domain = ?
+                        ORDER BY confidence DESC, times_validated DESC
+                        LIMIT ?
+                    """, (domain, limit))
+                    heuristics = [dict(row) for row in cursor.fetchall()]
 
-                # Get learnings for domain
-                cursor.execute("""
-                    SELECT * FROM learnings
-                    WHERE domain = ?
-                    ORDER BY created_at DESC
-                    LIMIT ?
-                """, (domain, limit))
-                learnings = [dict(row) for row in cursor.fetchall()]
+                    # Get learnings for domain
+                    cursor.execute("""
+                        SELECT * FROM learnings
+                        WHERE domain = ?
+                        ORDER BY created_at DESC
+                        LIMIT ?
+                    """, (domain, limit))
+                    learnings = [dict(row) for row in cursor.fetchall()]
 
-        result = {
-            'domain': domain,
-            'heuristics': heuristics,
-            'learnings': learnings,
-            'count': {
-                'heuristics': len(heuristics),
-                'learnings': len(learnings)
+            result = {
+                'domain': domain,
+                'heuristics': heuristics,
+                'learnings': learnings,
+                'count': {
+                    'heuristics': len(heuristics),
+                    'learnings': len(learnings)
+                }
             }
-        }
 
-        self._log_debug(f"Found {len(heuristics)} heuristics and {len(learnings)} learnings")
-        return result
+            self._log_debug(f"Found {len(heuristics)} heuristics and {len(learnings)} learnings")
+            return result
+
+        except TimeoutError as e:
+            status = 'timeout'
+            error_msg = str(e)
+            error_code = 'QS003'
+            raise
+        except (ValidationError, DatabaseError, QuerySystemError) as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = getattr(e, 'error_code', 'QS000')
+            raise
+        except Exception as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = 'QS000'
+            raise
+        finally:
+            # Log the query (non-blocking)
+            duration_ms = self._get_current_time_ms() - start_time
+            heuristics_count = len(result['heuristics']) if result else 0
+            learnings_count = len(result['learnings']) if result else 0
+            total_results = heuristics_count + learnings_count
+
+            self._log_query(
+                query_type='query_by_domain',
+                domain=domain,
+                limit_requested=limit,
+                results_returned=total_results,
+                duration_ms=duration_ms,
+                status=status,
+                error_message=error_msg,
+                error_code=error_code,
+                heuristics_count=heuristics_count,
+                learnings_count=learnings_count,
+                query_summary=f"Domain query for '{domain}'"
+            )
 
     def query_by_tags(self, tags: List[str], limit: int = 10, timeout: int = None) -> List[Dict[str, Any]]:
         """
@@ -699,35 +822,74 @@ class QuerySystem:
             TimeoutError: If query times out
             DatabaseError: If database operation fails
         """
-        # Validate inputs
-        tags = self._validate_tags(tags)
-        limit = self._validate_limit(limit)
-        timeout = timeout or self.DEFAULT_TIMEOUT
+        start_time = self._get_current_time_ms()
+        error_msg = None
+        error_code = None
+        status = 'success'
+        results = None
 
-        self._log_debug(f"Querying tags {tags} with limit {limit}")
+        try:
+            # Validate inputs
+            tags = self._validate_tags(tags)
+            limit = self._validate_limit(limit)
+            timeout = timeout or self.DEFAULT_TIMEOUT
 
-        with TimeoutHandler(timeout):
-            with self._get_connection() as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+            self._log_debug(f"Querying tags {tags} with limit {limit}")
+            with TimeoutHandler(timeout):
+                with self._get_connection() as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
 
-                # Build query for tag matching (tags stored as comma-separated string)
-                tag_conditions = " OR ".join(["tags LIKE ?" for _ in tags])
-                query = f"""
-                    SELECT * FROM learnings
-                    WHERE {tag_conditions}
-                    ORDER BY created_at DESC
-                    LIMIT ?
-                """
+                    # Build query for tag matching (tags stored as comma-separated string)
+                    tag_conditions = " OR ".join(["tags LIKE ?" for _ in tags])
+                    query = f"""
+                        SELECT * FROM learnings
+                        WHERE {tag_conditions}
+                        ORDER BY created_at DESC
+                        LIMIT ?
+                    """
 
-                # Prepare parameters with wildcards for LIKE queries
-                params = [f"%{tag}%" for tag in tags] + [limit]
+                    # Prepare parameters with wildcards for LIKE queries
+                    params = [f"%{tag}%" for tag in tags] + [limit]
 
-                cursor.execute(query, params)
-                results = [dict(row) for row in cursor.fetchall()]
+                    cursor.execute(query, params)
+                    results = [dict(row) for row in cursor.fetchall()]
 
-        self._log_debug(f"Found {len(results)} results for tags")
-        return results
+            self._log_debug(f"Found {len(results)} results for tags")
+            return results
+
+        except TimeoutError as e:
+            status = 'timeout'
+            error_msg = str(e)
+            error_code = 'QS003'
+            raise
+        except (ValidationError, DatabaseError, QuerySystemError) as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = getattr(e, 'error_code', 'QS000')
+            raise
+        except Exception as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = 'QS000'
+            raise
+        finally:
+            # Log the query (non-blocking)
+            duration_ms = self._get_current_time_ms() - start_time
+            learnings_count = len(results) if results else 0
+
+            self._log_query(
+                query_type='query_by_tags',
+                tags=','.join(tags),
+                limit_requested=limit,
+                results_returned=learnings_count,
+                duration_ms=duration_ms,
+                status=status,
+                error_message=error_msg,
+                error_code=error_code,
+                learnings_count=learnings_count,
+                query_summary=f"Tag query for {len(tags)} tags"
+            )
 
     def query_recent(self, type_filter: Optional[str] = None, limit: int = 10,
                     timeout: int = None) -> List[Dict[str, Any]]:
@@ -747,38 +909,76 @@ class QuerySystem:
             TimeoutError: If query times out
             DatabaseError: If database operation fails
         """
-        # Validate inputs
-        limit = self._validate_limit(limit)
-        timeout = timeout or self.DEFAULT_TIMEOUT
+        start_time = self._get_current_time_ms()
+        error_msg = None
+        error_code = None
+        status = 'success'
+        results = None
 
-        if type_filter:
-            type_filter = self._validate_query(type_filter)
+        try:
+            # Validate inputs
+            limit = self._validate_limit(limit)
+            timeout = timeout or self.DEFAULT_TIMEOUT
 
-        self._log_debug(f"Querying recent learnings (type={type_filter}, limit={limit})")
+            if type_filter:
+                type_filter = self._validate_query(type_filter)
 
-        with TimeoutHandler(timeout):
-            with self._get_connection() as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+            self._log_debug(f"Querying recent learnings (type={type_filter}, limit={limit})")
+            with TimeoutHandler(timeout):
+                with self._get_connection() as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
 
-                if type_filter:
-                    cursor.execute("""
-                        SELECT * FROM learnings
-                        WHERE type = ?
-                        ORDER BY created_at DESC
-                        LIMIT ?
-                    """, (type_filter, limit))
-                else:
-                    cursor.execute("""
-                        SELECT * FROM learnings
-                        ORDER BY created_at DESC
-                        LIMIT ?
-                    """, (limit,))
+                    if type_filter:
+                        cursor.execute("""
+                            SELECT * FROM learnings
+                            WHERE type = ?
+                            ORDER BY created_at DESC
+                            LIMIT ?
+                        """, (type_filter, limit))
+                    else:
+                        cursor.execute("""
+                            SELECT * FROM learnings
+                            ORDER BY created_at DESC
+                            LIMIT ?
+                        """, (limit,))
 
-                results = [dict(row) for row in cursor.fetchall()]
+                    results = [dict(row) for row in cursor.fetchall()]
 
-        self._log_debug(f"Found {len(results)} recent learnings")
-        return results
+            self._log_debug(f"Found {len(results)} recent learnings")
+            return results
+
+        except TimeoutError as e:
+            status = 'timeout'
+            error_msg = str(e)
+            error_code = 'QS003'
+            raise
+        except (ValidationError, DatabaseError, QuerySystemError) as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = getattr(e, 'error_code', 'QS000')
+            raise
+        except Exception as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = 'QS000'
+            raise
+        finally:
+            # Log the query (non-blocking)
+            duration_ms = self._get_current_time_ms() - start_time
+            learnings_count = len(results) if results else 0
+
+            self._log_query(
+                query_type='query_recent',
+                limit_requested=limit,
+                results_returned=learnings_count,
+                duration_ms=duration_ms,
+                status=status,
+                error_message=error_msg,
+                error_code=error_code,
+                learnings_count=learnings_count,
+                query_summary=f"Recent learnings query{' (type=' + type_filter + ')' if type_filter else ''}"
+            )
 
     def get_active_experiments(self, timeout: int = None) -> List[Dict[str, Any]]:
         """
@@ -797,21 +997,59 @@ class QuerySystem:
         timeout = timeout or self.DEFAULT_TIMEOUT
         self._log_debug("Querying active experiments")
 
-        with TimeoutHandler(timeout):
-            with self._get_connection() as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+        start_time = self._get_current_time_ms()
+        error_msg = None
+        error_code = None
+        status = 'success'
+        results = None
 
-                cursor.execute("""
-                    SELECT * FROM experiments
-                    WHERE status = 'active'
-                    ORDER BY updated_at DESC
-                """)
+        try:
+            with TimeoutHandler(timeout):
+                with self._get_connection() as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
 
-                results = [dict(row) for row in cursor.fetchall()]
+                    cursor.execute("""
+                        SELECT * FROM experiments
+                        WHERE status = 'active'
+                        ORDER BY updated_at DESC
+                    """)
 
-        self._log_debug(f"Found {len(results)} active experiments")
-        return results
+                    results = [dict(row) for row in cursor.fetchall()]
+
+            self._log_debug(f"Found {len(results)} active experiments")
+            return results
+
+        except TimeoutError as e:
+            status = 'timeout'
+            error_msg = str(e)
+            error_code = 'QS003'
+            raise
+        except (DatabaseError, QuerySystemError) as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = getattr(e, 'error_code', 'QS000')
+            raise
+        except Exception as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = 'QS000'
+            raise
+        finally:
+            # Log the query (non-blocking)
+            duration_ms = self._get_current_time_ms() - start_time
+            experiments_count = len(results) if results else 0
+
+            self._log_query(
+                query_type='get_active_experiments',
+                results_returned=experiments_count,
+                duration_ms=duration_ms,
+                status=status,
+                error_message=error_msg,
+                error_code=error_code,
+                experiments_count=experiments_count,
+                query_summary="Active experiments query"
+            )
 
     def get_pending_ceo_reviews(self, timeout: int = None) -> List[Dict[str, Any]]:
         """
@@ -830,21 +1068,59 @@ class QuerySystem:
         timeout = timeout or self.DEFAULT_TIMEOUT
         self._log_debug("Querying pending CEO reviews")
 
-        with TimeoutHandler(timeout):
-            with self._get_connection() as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+        start_time = self._get_current_time_ms()
+        error_msg = None
+        error_code = None
+        status = 'success'
+        results = None
 
-                cursor.execute("""
-                    SELECT * FROM ceo_reviews
-                    WHERE status = 'pending'
-                    ORDER BY created_at ASC
-                """)
+        try:
+            with TimeoutHandler(timeout):
+                with self._get_connection() as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
 
-                results = [dict(row) for row in cursor.fetchall()]
+                    cursor.execute("""
+                        SELECT * FROM ceo_reviews
+                        WHERE status = 'pending'
+                        ORDER BY created_at ASC
+                    """)
 
-        self._log_debug(f"Found {len(results)} pending CEO reviews")
-        return results
+                    results = [dict(row) for row in cursor.fetchall()]
+
+            self._log_debug(f"Found {len(results)} pending CEO reviews")
+            return results
+
+        except TimeoutError as e:
+            status = 'timeout'
+            error_msg = str(e)
+            error_code = 'QS003'
+            raise
+        except (DatabaseError, QuerySystemError) as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = getattr(e, 'error_code', 'QS000')
+            raise
+        except Exception as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = 'QS000'
+            raise
+        finally:
+            # Log the query (non-blocking)
+            duration_ms = self._get_current_time_ms() - start_time
+            ceo_reviews_count = len(results) if results else 0
+
+            self._log_query(
+                query_type='get_pending_ceo_reviews',
+                results_returned=ceo_reviews_count,
+                duration_ms=duration_ms,
+                status=status,
+                error_message=error_msg,
+                error_code=error_code,
+                ceo_reviews_count=ceo_reviews_count,
+                query_summary="Pending CEO reviews query"
+            )
 
     def get_violations(self, days: int = 7, acknowledged: Optional[bool] = None,
                       timeout: int = None) -> List[Dict[str, Any]]:
@@ -992,111 +1268,171 @@ class QuerySystem:
             ValidationError: If inputs are invalid
             TimeoutError: If query times out
         """
-        # Validate inputs
-        task = self._validate_query(task)
-        if domain:
-            domain = self._validate_domain(domain)
-        if tags:
-            tags = self._validate_tags(tags)
-        if max_tokens > self.MAX_TOKENS:
-            max_tokens = self.MAX_TOKENS
-        timeout = timeout or self.DEFAULT_TIMEOUT * 2  # Context building may take longer
+        start_time = self._get_current_time_ms()
+        error_msg = None
+        error_code = None
+        status = 'success'
+        result = None
 
-        self._log_debug(f"Building context (domain={domain}, tags={tags}, max_tokens={max_tokens})")
+        # Track counts for logging
+        golden_rules_returned = 0
+        heuristics_count = 0
+        learnings_count = 0
+        experiments_count = 0
+        ceo_reviews_count = 0
 
-        with TimeoutHandler(timeout):
-            context_parts = []
-            approx_tokens = 0
-            max_chars = max_tokens * 4  # Rough approximation
-
-            # Tier 1: Golden Rules (always loaded)
-            golden_rules = self.get_golden_rules()
-            context_parts.append("# TIER 1: Golden Rules\n")
-            context_parts.append(golden_rules)
-            context_parts.append("\n")
-            approx_tokens += len(golden_rules) // 4
-
-            # Tier 2: Query-matched content
-            context_parts.append("# TIER 2: Relevant Knowledge\n\n")
-
+        try:
+            # Validate inputs
+            task = self._validate_query(task)
             if domain:
-                context_parts.append(f"## Domain: {domain}\n\n")
-                domain_data = self.query_by_domain(domain, limit=5, timeout=timeout)
+                domain = self._validate_domain(domain)
+            if tags:
+                tags = self._validate_tags(tags)
+            if max_tokens > self.MAX_TOKENS:
+                max_tokens = self.MAX_TOKENS
+            timeout = timeout or self.DEFAULT_TIMEOUT * 2  # Context building may take longer
 
-                if domain_data['heuristics']:
-                    context_parts.append("### Heuristics:\n")
-                    for h in domain_data['heuristics']:
-                        entry = f"- **{h['rule']}** (confidence: {h['confidence']:.2f}, validated: {h['times_validated']}x)\n"
-                        entry += f"  {h['explanation']}\n\n"
-                        context_parts.append(entry)
-                        approx_tokens += len(entry) // 4
+            self._log_debug(f"Building context (domain={domain}, tags={tags}, max_tokens={max_tokens})")
+            with TimeoutHandler(timeout):
+                context_parts = []
+                approx_tokens = 0
+                max_chars = max_tokens * 4  # Rough approximation
 
-                if domain_data['learnings']:
-                    context_parts.append("### Recent Learnings:\n")
-                    for l in domain_data['learnings']:
-                        entry = f"- **{l['title']}** ({l['type']})\n"
+                # Tier 1: Golden Rules (always loaded)
+                golden_rules = self.get_golden_rules()
+                context_parts.append("# TIER 1: Golden Rules\n")
+                context_parts.append(golden_rules)
+                context_parts.append("\n")
+                approx_tokens += len(golden_rules) // 4
+                golden_rules_returned = 1  # Flag that golden rules were included
+
+                # Tier 2: Query-matched content
+                context_parts.append("# TIER 2: Relevant Knowledge\n\n")
+
+                if domain:
+                    context_parts.append(f"## Domain: {domain}\n\n")
+                    domain_data = self.query_by_domain(domain, limit=5, timeout=timeout)
+
+                    if domain_data['heuristics']:
+                        context_parts.append("### Heuristics:\n")
+                        for h in domain_data['heuristics']:
+                            entry = f"- **{h['rule']}** (confidence: {h['confidence']:.2f}, validated: {h['times_validated']}x)\n"
+                            entry += f"  {h['explanation']}\n\n"
+                            context_parts.append(entry)
+                            approx_tokens += len(entry) // 4
+                        heuristics_count += len(domain_data['heuristics'])
+
+                    if domain_data['learnings']:
+                        context_parts.append("### Recent Learnings:\n")
+                        for l in domain_data['learnings']:
+                            entry = f"- **{l['title']}** ({l['type']})\n"
+                            if l['summary']:
+                                entry += f"  {l['summary']}\n"
+                            entry += f"  Tags: {l['tags']}\n\n"
+                            context_parts.append(entry)
+                            approx_tokens += len(entry) // 4
+                        learnings_count += len(domain_data['learnings'])
+
+                if tags:
+                    context_parts.append(f"## Tag Matches: {', '.join(tags)}\n\n")
+                    tag_results = self.query_by_tags(tags, limit=5, timeout=timeout)
+
+                    for l in tag_results:
+                        entry = f"- **{l['title']}** ({l['type']}, domain: {l['domain']})\n"
                         if l['summary']:
                             entry += f"  {l['summary']}\n"
                         entry += f"  Tags: {l['tags']}\n\n"
                         context_parts.append(entry)
                         approx_tokens += len(entry) // 4
+                    learnings_count += len(tag_results)
 
-            if tags:
-                context_parts.append(f"## Tag Matches: {', '.join(tags)}\n\n")
-                tag_results = self.query_by_tags(tags, limit=5, timeout=timeout)
+                # Tier 3: Recent context if tokens remain
+                remaining_tokens = max_tokens - approx_tokens
+                if remaining_tokens > 500:
+                    context_parts.append("# TIER 3: Recent Context\n\n")
+                    recent = self.query_recent(limit=3, timeout=timeout)
 
-                for l in tag_results:
-                    entry = f"- **{l['title']}** ({l['type']}, domain: {l['domain']})\n"
-                    if l['summary']:
-                        entry += f"  {l['summary']}\n"
-                    entry += f"  Tags: {l['tags']}\n\n"
-                    context_parts.append(entry)
-                    approx_tokens += len(entry) // 4
+                    for l in recent:
+                        entry = f"- **{l['title']}** ({l['type']}, {l['created_at']})\n"
+                        if l['summary']:
+                            entry += f"  {l['summary']}\n\n"
+                        context_parts.append(entry)
+                        approx_tokens += len(entry) // 4
 
-            # Tier 3: Recent context if tokens remain
-            remaining_tokens = max_tokens - approx_tokens
-            if remaining_tokens > 500:
-                context_parts.append("# TIER 3: Recent Context\n\n")
-                recent = self.query_recent(limit=3, timeout=timeout)
+                        if approx_tokens >= max_tokens:
+                            break
+                    learnings_count += len(recent)
 
-                for l in recent:
-                    entry = f"- **{l['title']}** ({l['type']}, {l['created_at']})\n"
-                    if l['summary']:
-                        entry += f"  {l['summary']}\n\n"
-                    context_parts.append(entry)
-                    approx_tokens += len(entry) // 4
+                # Add active experiments
+                experiments = self.get_active_experiments(timeout=timeout)
+                if experiments:
+                    context_parts.append("\n# Active Experiments\n\n")
+                    for exp in experiments:
+                        entry = f"- **{exp['name']}** ({exp['cycles_run']} cycles)\n"
+                        if exp['hypothesis']:
+                            entry += f"  Hypothesis: {exp['hypothesis']}\n\n"
+                        context_parts.append(entry)
+                    experiments_count = len(experiments)
 
-                    if approx_tokens >= max_tokens:
-                        break
+                # Add pending CEO reviews
+                ceo_reviews = self.get_pending_ceo_reviews(timeout=timeout)
+                if ceo_reviews:
+                    context_parts.append("\n# Pending CEO Reviews\n\n")
+                    for review in ceo_reviews:
+                        entry = f"- **{review['title']}**\n"
+                        if review['context']:
+                            entry += f"  Context: {review['context']}\n"
+                        if review['recommendation']:
+                            entry += f"  Recommendation: {review['recommendation']}\n\n"
+                        context_parts.append(entry)
+                    ceo_reviews_count = len(ceo_reviews)
 
-            # Add active experiments
-            experiments = self.get_active_experiments(timeout=timeout)
-            if experiments:
-                context_parts.append("\n# Active Experiments\n\n")
-                for exp in experiments:
-                    entry = f"- **{exp['name']}** ({exp['cycles_run']} cycles)\n"
-                    if exp['hypothesis']:
-                        entry += f"  Hypothesis: {exp['hypothesis']}\n\n"
-                    context_parts.append(entry)
+                # Task context
+                context_parts.insert(0, f"# Task Context\n\n{task}\n\n---\n\n")
 
-            # Add pending CEO reviews
-            ceo_reviews = self.get_pending_ceo_reviews(timeout=timeout)
-            if ceo_reviews:
-                context_parts.append("\n# Pending CEO Reviews\n\n")
-                for review in ceo_reviews:
-                    entry = f"- **{review['title']}**\n"
-                    if review['context']:
-                        entry += f"  Context: {review['context']}\n"
-                    if review['recommendation']:
-                        entry += f"  Recommendation: {review['recommendation']}\n\n"
-                    context_parts.append(entry)
+            result = "".join(context_parts)
+            self._log_debug(f"Built context with ~{len(result)//4} tokens")
+            return result
 
-            # Task context
-            context_parts.insert(0, f"# Task Context\n\n{task}\n\n---\n\n")
+        except TimeoutError as e:
+            status = 'timeout'
+            error_msg = str(e)
+            error_code = 'QS003'
+            raise
+        except (ValidationError, DatabaseError, QuerySystemError) as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = getattr(e, 'error_code', 'QS000')
+            raise
+        except Exception as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = 'QS000'
+            raise
+        finally:
+            # Log the query (non-blocking)
+            duration_ms = self._get_current_time_ms() - start_time
+            tokens_approx = len(result) // 4 if result else 0
+            total_results = heuristics_count + learnings_count + experiments_count + ceo_reviews_count
 
-        result = "".join(context_parts)
-        self._log_debug(f"Built context with ~{len(result)//4} tokens")
-        return result
+            self._log_query(
+                query_type='build_context',
+                domain=domain,
+                tags=','.join(tags) if tags else None,
+                max_tokens_requested=max_tokens,
+                results_returned=total_results,
+                tokens_approximated=tokens_approx,
+                duration_ms=duration_ms,
+                status=status,
+                error_message=error_msg,
+                error_code=error_code,
+                golden_rules_returned=golden_rules_returned,
+                heuristics_count=heuristics_count,
+                learnings_count=learnings_count,
+                experiments_count=experiments_count,
+                ceo_reviews_count=ceo_reviews_count,
+                query_summary=f"Context build for task: {task[:50]}..."
+            )
 
     def get_statistics(self, timeout: int = None) -> Dict[str, Any]:
         """

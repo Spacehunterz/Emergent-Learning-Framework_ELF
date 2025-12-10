@@ -1,4 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
+import { ThemeProvider } from './context/ThemeContext'
+import { SettingsPanel } from './components/SettingsPanel'
+import { ParticleBackground } from './components/ParticleBackground'
 import { useWebSocket } from './hooks/useWebSocket'
 import { useAPI } from './hooks/useAPI'
 import Header from './components/Header'
@@ -20,10 +23,17 @@ interface Stats {
   total_learnings: number
   failures: number
   successes: number
+  successful_runs: number
+  failed_runs: number
   avg_confidence: number
   total_validations: number
   total_violations: number
   metrics_last_hour: number
+  runs_today: number
+  // Query stats
+  queries_today: number
+  total_queries: number
+  avg_query_duration_ms: number
 }
 
 interface Heuristic {
@@ -80,11 +90,28 @@ interface TimelineData {
   failures: { date: string; failures: number }[]
 }
 
+// Raw event from API (may have different field names)
+interface RawEvent {
+  id?: number
+  timestamp: string
+  event_type?: string
+  type?: string  // API uses 'type' instead of 'event_type'
+  description?: string
+  message?: string  // API uses 'message' instead of 'description'
+  metadata?: Record<string, any>
+  tags?: string  // API uses 'tags'
+  context?: string
+  file_path?: string
+  line_number?: number
+  domain?: string
+}
+
 function App() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [heuristics, setHeuristics] = useState<Heuristic[]>([])
   const [hotspots, setHotspots] = useState<Hotspot[]>([])
   const [runs, setRuns] = useState<Run[]>([])
+  const [events, setEvents] = useState<RawEvent[]>([])
   const [timeline, setTimeline] = useState<TimelineData | null>(null)
   const [anomalies, setAnomalies] = useState<Anomaly[]>([])
   const [activeTab, setActiveTab] = useState<'overview' | 'heuristics' | 'runs' | 'timeline' | 'query'>('overview')
@@ -113,10 +140,8 @@ function App() {
     }
   }, [])
 
-  const { connectionStatus } = useWebSocket(
-    'ws://localhost:8000/ws',
-    handleMessage
-  )
+  // Use relative path - hook handles URL building, Vite proxies in dev
+  const { connectionStatus } = useWebSocket('/ws', handleMessage)
 
   useEffect(() => {
     setIsConnected(connectionStatus === 'connected')
@@ -144,13 +169,14 @@ function App() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [statsData, heuristicsData, hotspotsData, runsData, timelineData, anomaliesData] = await Promise.all([
+        const [statsData, heuristicsData, hotspotsData, runsData, timelineData, anomaliesData, eventsData] = await Promise.all([
           api.get('/api/stats').catch(() => null),
           api.get('/api/heuristics').catch(() => []),
           api.get('/api/hotspots').catch(() => []),
           api.get('/api/runs?limit=100').catch(() => []),
           api.get('/api/timeline').catch(() => null),
           api.get('/api/anomalies').catch(() => []),
+          api.get('/api/events?limit=100').catch(() => []),
         ])
         if (statsData) setStats(statsData)
         setHeuristics(heuristicsData || [])
@@ -158,11 +184,30 @@ function App() {
         setRuns(runsData || [])
         if (timelineData) setTimeline(timelineData)
         setAnomalies(anomaliesData || [])
+        setEvents(eventsData || [])
       } catch (err) {
         console.error('Failed to load initial data:', err)
       }
     }
     loadData()
+
+    // Auto-refresh stats and runs every 10 seconds
+    const interval = setInterval(() => {
+      // Refresh stats
+      api.get('/api/stats').then(data => {
+        if (data) setStats(data)
+      }).catch(() => {})
+      // Refresh runs
+      api.get('/api/runs?limit=100').then(data => {
+        if (data) setRuns(data)
+      }).catch(() => {})
+      // Refresh events
+      api.get('/api/events?limit=100').then(data => {
+        if (data) setEvents(data)
+      }).catch(() => {})
+    }, 10000)
+
+    return () => clearInterval(interval)
   }, [])
 
   // Action handlers
@@ -172,6 +217,8 @@ function App() {
       setHeuristics(prev => prev.map(h =>
         h.id === id ? { ...h, is_golden: true } : h
       ))
+      // Reload stats to update golden rules count
+      loadStats()
     } catch (err) {
       console.error('Failed to promote heuristic:', err)
     }
@@ -183,6 +230,8 @@ function App() {
       setHeuristics(prev => prev.map(h =>
         h.id === id ? { ...h, is_golden: false } : h
       ))
+      // Reload stats to update golden rules count
+      loadStats()
     } catch (err) {
       console.error('Failed to demote heuristic:', err)
     }
@@ -208,19 +257,24 @@ function App() {
   }
 
   // Convert stats to expected format for StatsBar
+  // FIX: Use successful_runs/failed_runs from backend (actual workflow runs), not successes/failures (learnings)
   const statsForBar = stats ? {
     total_runs: stats.total_runs,
-    successful_runs: stats.successes,
-    failed_runs: stats.failures,
-    success_rate: stats.total_runs > 0 ? stats.successes / stats.total_runs : 0,
+    successful_runs: stats.successful_runs,  // FIXED: was stats.successes (learning count)
+    failed_runs: stats.failed_runs,          // FIXED: was stats.failures (learning count)
+    success_rate: stats.total_runs > 0 ? stats.successful_runs / stats.total_runs : 0,  // FIXED: use run counts
     total_heuristics: stats.total_heuristics,
     golden_rules: stats.golden_rules,
     total_learnings: stats.total_learnings,
     hotspot_count: hotspots.length,
     avg_confidence: stats.avg_confidence,
     total_validations: stats.total_validations,
-    runs_today: stats.metrics_last_hour,
+    runs_today: stats.runs_today || 0,       // FIXED: use runs_today from backend
     active_domains: new Set(heuristics.map(h => h.domain)).size,
+    // Query stats
+    queries_today: stats.queries_today || 0,
+    total_queries: stats.total_queries || 0,
+    avg_query_duration_ms: stats.avg_query_duration_ms || 0,
   } : null
 
   // Convert heuristics to expected format (normalize is_golden)
@@ -230,7 +284,11 @@ function App() {
   }))
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <ThemeProvider>
+    <div className="min-h-screen relative overflow-hidden transition-colors duration-500" style={{ backgroundColor: "var(--theme-bg-primary)" }}>
+        <ParticleBackground />
+        <SettingsPanel />
+        <div className="relative z-10">
       <Header
         isConnected={isConnected}
         activeTab={activeTab}
@@ -311,7 +369,16 @@ function App() {
 
           {activeTab === 'timeline' && (
             <TimelineView
-              events={[]}
+              events={events.map((e, idx) => ({
+                id: idx,
+                timestamp: e.timestamp,
+                event_type: e.event_type || e.type || 'unknown',
+                description: e.description || e.message || '',
+                metadata: e.metadata || (e.tags ? { tags: e.tags } : {}),
+                file_path: e.file_path,
+                line_number: e.line_number,
+                domain: e.domain,
+              }))}
               heuristics={normalizedHeuristics}
               onEventClick={() => {}}
             />
@@ -322,7 +389,9 @@ function App() {
           )}
         </div>
       </main>
-    </div>
+        </div>
+      </div>
+    </ThemeProvider>
   )
 }
 

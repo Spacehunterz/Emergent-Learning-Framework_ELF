@@ -11,6 +11,9 @@ export interface Stats {
   total_validations: number
   runs_today: number
   active_domains: number
+  queries_today: number
+  total_queries: number
+  avg_query_duration_ms: number
 }
 
 export interface Heuristic {

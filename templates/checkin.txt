@@ -1,0 +1,15 @@
+```
+          ┌┴┐              ✅  CHECK-IN COMPLETE  ✅
+    ┌─────┴─┴─────┐
+    │ 🟦 🟦 🟦 🟦 │       Golden Rules:
+    │             │         1. Query Before Acting
+    │ 🟦 🟦 🟦 🟦 │         2. Document Failures Immediately
+    │             │         3. Extract Heuristics, Not Just Outcomes
+    │ 🟦 🟦 🟦 🟦 │         4. Break It Before Shipping It
+    │             │         5. Escalate Uncertainty
+    │ 🟦 🟦 🟦 🟦 │         6. Record Learnings Before Ending Session
+    │             │         7. Obey Direct Commands Immediately
+    │ 🟦 🟦 🟦 🟦 │         8. Log Before Summary
+    │    ┌───┐    │
+    └────┴───┴────┘
+```
