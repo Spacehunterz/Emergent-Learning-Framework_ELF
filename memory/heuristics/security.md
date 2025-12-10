@@ -14,3 +14,13 @@ Domain parameter path traversal attack demonstrated that any user input used in 
 
 ---
 
+## H-117: Bind local dev servers to 127.0.0.1, not 0.0.0.0
+
+**Confidence**: 0.9
+**Source**: success
+**Created**: 2025-12-10
+
+0.0.0.0 exposes your service to the entire network. On public WiFi, anyone can scan and access your API. Always use 127.0.0.1 for local development tools.
+
+---
+
