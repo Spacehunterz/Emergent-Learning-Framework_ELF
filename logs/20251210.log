@@ -1,0 +1,36 @@
+[2025-12-10 14:26:26] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-10 14:26:26] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-10 14:26:26] [INFO] [record-heuristic] Script started
+[2025-12-10 14:26:26] [INFO] [record-heuristic] No terminal attached and no arguments provided - showing usage
+[2025-12-10 14:26:35] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-10 14:26:35] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-10 14:26:35] [INFO] [record-heuristic] Script started
+[2025-12-10 14:26:35] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-10 14:26:36] [INFO] [record-heuristic] Recording heuristic: Bind local dev servers to 127.0.0.1, not 0.0.0.0 (domain: security, confidence: 0.9)
+[2025-12-10 14:26:36] [INFO] [record-heuristic] Database record created (ID: 117)
+[2025-12-10 14:26:36] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/security.md
+[2025-12-10 14:26:36] [INFO] [record-heuristic] Git commit created
+[2025-12-10 14:26:36] [INFO] [record-heuristic] Heuristic recorded successfully: Bind local dev servers to 127.0.0.1, not 0.0.0.0
+[2025-12-10 14:26:43] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-10 14:26:43] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-10 14:26:43] [INFO] [record-heuristic] Script started
+[2025-12-10 14:26:43] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-10 14:26:43] [INFO] [record-heuristic] Recording heuristic: Run security audits with parallel agents before pushing public code (domain: security, confidence: 0.85)
+[2025-12-10 14:26:43] [INFO] [record-heuristic] Database record created (ID: 118)
+[2025-12-10 14:26:43] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/security.md
+[2025-12-10 14:26:44] [INFO] [record-heuristic] Git commit created
+[2025-12-10 14:26:44] [INFO] [record-heuristic] Heuristic recorded successfully: Run security audits with parallel agents before pushing public code
+[2025-12-10 18:05:29] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-10 18:05:29] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-10 18:05:29] [INFO] [record-heuristic] Script started
+[2025-12-10 18:05:29] [INFO] [record-heuristic] No terminal attached and no arguments provided - showing usage
+[2025-12-10 18:05:37] [INFO] [record-heuristic] Starting pre-flight checks
+[2025-12-10 18:05:37] [INFO] [record-heuristic] Pre-flight checks passed
+[2025-12-10 18:05:37] [INFO] [record-heuristic] Script started
+[2025-12-10 18:05:37] [INFO] [record-heuristic] Running in non-interactive mode
+[2025-12-10 18:05:38] [INFO] [record-heuristic] Recording heuristic: Verify process termination by checking actual state, not command exit codes (domain: process-management, confidence: 0.8)
+[2025-12-10 18:05:38] [INFO] [record-heuristic] Database record created (ID: 119)
+[2025-12-10 18:05:38] [INFO] [record-heuristic] Created new domain file: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/process-management.md
+[2025-12-10 18:05:38] [INFO] [record-heuristic] Appended heuristic to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/process-management.md
+[2025-12-10 18:05:38] [INFO] [record-heuristic] Git commit created
+[2025-12-10 18:05:38] [INFO] [record-heuristic] Heuristic recorded successfully: Verify process termination by checking actual state, not command exit codes
