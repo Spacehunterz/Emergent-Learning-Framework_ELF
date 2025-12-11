@@ -33,20 +33,47 @@ if tool_name in ('Edit', 'Write'):
 
 ### 2. Pattern Detection
 
-The system checks for risky patterns in **newly added lines only** (not existing code):
+The system checks for risky patterns in **newly added lines only** (not existing code).
 
-#### Code Risks
-- `eval()` - potential code injection
-- `exec()` - potential code injection
+Patterns are defined in `security_patterns.py` (not post_tool_learning.py).
+
+#### Code Risks (13 patterns)
+- `eval()` / `exec()` - code injection
 - `shell=True` in subprocess - command injection risk
-- Hardcoded passwords
-- Hardcoded API keys
+- Hardcoded passwords (3 formats: assignment, JSON, string literal)
+- Hardcoded API keys, secrets, tokens, credentials
+- Bearer tokens
+- Private key assignments
 - SQL injection patterns (string concatenation in queries)
 
-#### File Operation Risks
+#### File Operation Risks (3 patterns)
 - `rm -rf /` - dangerous recursive delete
 - `chmod 777` - overly permissive permissions
 - Writing to `/etc/` - system config modification
+
+#### Deserialization Risks (3 patterns)
+- `pickle.load/loads` - insecure deserialization
+- `yaml.load` without SafeLoader - code execution risk
+- `marshal.load/loads` - insecure deserialization
+
+#### Cryptography Risks (3 patterns)
+- `hashlib.md5()` - cryptographically weak
+- `hashlib.sha1()` - cryptographically weak for passwords
+- `random` module - not cryptographically secure (use `secrets`)
+
+#### Command Injection Risks (2 patterns)
+- `os.system()` - prefer subprocess with shell=False
+- `os.popen()` - command injection risk
+
+#### Path Traversal Risks (2 patterns)
+- `../../` or `..\..` - directory traversal
+- `open()` with user input concatenation
+
+#### Network Risks (2 patterns)
+- `verify=False` - SSL verification disabled
+- `ssl._create_unverified_context` - insecure SSL
+
+**Total: 28 patterns across 7 categories**
 
 ### 3. Warning Levels
 
@@ -102,7 +129,7 @@ This allows:
 
 ## Adding New Patterns
 
-Edit `RISKY_PATTERNS` in `post_tool_learning.py`:
+Edit `RISKY_PATTERNS` in `security_patterns.py`:
 
 ```python
 RISKY_PATTERNS = {
@@ -129,19 +156,34 @@ RISKY_PATTERNS = {
 
 ## Testing
 
-Run the test suite:
+Run all test suites:
 
 ```bash
 cd ~/.claude/emergent-learning/hooks/learning-loop
+
+# Core advisory tests (8 tests)
 python test_advisory.py
+
+# Comment filtering tests (12 tests)
+python test_comment_filter.py
+
+# Secret detection tests (20 tests)
+python test_enhanced_patterns.py
+
+# New category tests (41 tests)
+python test_new_categories.py
 ```
+
+**Total: 81 tests across 4 test files**
 
 Tests verify:
 - Pattern detection works correctly
 - Only new lines are checked (not existing code)
 - Safe code doesn't trigger false positives
+- Comment lines are filtered out (no false positives)
 - Multiple warnings trigger escalation recommendation
-- All defined patterns can be matched
+- All 28 patterns across 7 categories are detected
+- Safe alternatives (yaml.safe_load, hashlib.sha256, etc.) don't trigger
 
 ## Key Design Decisions
 

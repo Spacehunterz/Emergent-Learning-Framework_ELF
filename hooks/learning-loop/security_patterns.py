@@ -43,7 +43,7 @@ RISKY_PATTERNS = {
         (r'os\.popen\s*\(', 'os.popen - potential command injection'),
     ],
     'path_traversal': [
-        (r'\.\./\.\./\.\.|\.\.[\\/]\.\.[\\/]', 'Path traversal pattern (../) detected'),
+        (r'\.\.[/\\]\.\.[/\\]', 'Path traversal pattern (../ or ..\\) detected'),
         (r'open\s*\([^)]*\+[^)]*user', 'File open with user input concatenation - validate path'),
     ],
     'network': [
