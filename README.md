@@ -22,55 +22,55 @@ Claude Code learns from your failures and successes, building institutional know
 ```
 You: check in
 
-Claude: [Queries the building, returns golden rules, relevant heuristics, recent context]
+Claude: [Queries building, starts dashboard, returns golden rules + heuristics]
 ```
 
 **What "check in" does:**
-- **First time ever:** Installs hooks automatically, initializes the database
-- **Start of session:** Loads institutional knowledge so Claude doesn't repeat past mistakes  
+- **First time ever:** Installs hooks, initializes database, starts dashboard
+- **Start of session:** Loads knowledge, starts dashboard at http://localhost:3001 (Ctrl+click to open)
 - **When stuck:** Searches for relevant patterns that might help
-- **Before closing:** Records what happened so next session benefits
+- **Before closing:** Ensures learnings are captured (CYA - cover your ass)
 
 **When to check in:**
 | Moment | Why |
 |--------|-----|
-| Start of every session | Load context, prevent repeating mistakes |
+| Start of every session | Load context, start dashboard, prevent repeating mistakes |
 | When you hit a problem | See if building knows about this issue |
-| Before closing session | Ensure learnings are captured (CYA) |
+| Before closing session | Ensure learnings are captured |
 
 ## Core Features
 
 | Feature | What It Does |
 |---------|--------------|
 | **Persistent Learning** | Failures and successes recorded to SQLite, survive across sessions |
-| **Heuristics** | Patterns gain confidence through validation (0.0 → 1.0) |
+| **Heuristics** | Patterns gain confidence through validation (0.0 -> 1.0) |
 | **Golden Rules** | High-confidence heuristics promoted to constitutional principles |
 | **Pheromone Trails** | Files touched by tasks tracked for hotspot analysis |
 | **Coordinated Swarms** | Multi-agent workflows with specialized personas |
-| **Local Dashboard** | Visual monitoring without consuming API tokens |
+| **Local Dashboard** | Visual monitoring at http://localhost:3001 (no API tokens used) |
 
 ![Dashboard](docs/images/cosmic-dashboard-heuristics.png)
 
 ## How It Works
 
 ```
-┌─────────────────────────────────────────────────┐
-│              The Learning Loop                  │
-├─────────────────────────────────────────────────┤
-│  QUERY   →  Check building for knowledge        │
-│  APPLY   →  Use heuristics during task          │
-│  RECORD  →  Capture outcome (success/failure)   │
-│  PERSIST →  Update confidence scores            │
-│                    ↓                            │
-│         (cycle repeats, patterns strengthen)    │
-└─────────────────────────────────────────────────┘
++---------------------------------------------------+
+|              The Learning Loop                    |
++---------------------------------------------------+
+|  QUERY   ->  Check building for knowledge         |
+|  APPLY   ->  Use heuristics during task           |
+|  RECORD  ->  Capture outcome (success/failure)    |
+|  PERSIST ->  Update confidence scores             |
+|                    |                              |
+|         (cycle repeats, patterns strengthen)      |
++---------------------------------------------------+
 ```
 
 ## Key Phrases
 
 | Say This | What Happens |
 |----------|--------------|
-| `check in` | Query building, show golden rules + heuristics |
+| `check in` | Start dashboard, query building, show golden rules + heuristics |
 | `query the building` | Same as check in |
 | `what does the building know about X` | Search for topic X |
 | `record this failure: [lesson]` | Create failure log |
@@ -79,10 +79,10 @@ Claude: [Queries the building, returns golden rules, relevant heuristics, recent
 ## Quick Commands
 
 ```bash
-# Check what's been learned
+# Check what has been learned
 python ~/.claude/emergent-learning/query/query.py --stats
 
-# Start dashboard
+# Start dashboard manually (if needed)
 cd ~/.claude/emergent-learning/dashboard-app && ./run-dashboard.sh
 
 # Multi-agent swarm (Pro/Max plans)
@@ -100,17 +100,17 @@ cd ~/.claude/emergent-learning/dashboard-app && ./run-dashboard.sh
 
 ## Documentation
 
-Full documentation in the [Wiki](../../wiki):
+Full documentation in the [Wiki](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/wiki):
 
-- [Installation Guide](../../wiki/Installation) - Prerequisites, options, troubleshooting
-- [Configuration](../../wiki/Configuration) - CLAUDE.md, settings.json, hooks
-- [Dashboard Guide](../../wiki/Dashboard) - Tabs, stats, themes
-- [Swarm Guide](../../wiki/Swarm) - Multi-agent coordination, blackboard pattern
-- [CLI Reference](../../wiki/CLI-Reference) - All query commands
-- [Golden Rules](../../wiki/Golden-Rules) - How to customize principles
-- [Migration Guide](../../wiki/Migration) - Upgrading, team setup
-- [Architecture](../../wiki/Architecture) - Database schema, hooks system
-- [Token Costs](../../wiki/Token-Costs) - Usage breakdown, optimization
+- [Installation](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/wiki/Installation) - Prerequisites, options, troubleshooting
+- [Configuration](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/wiki/Configuration) - CLAUDE.md, settings.json, hooks
+- [Dashboard](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/wiki/Dashboard) - Tabs, stats, themes
+- [Swarm](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/wiki/Swarm) - Multi-agent coordination, blackboard pattern
+- [CLI Reference](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/wiki/CLI-Reference) - All query commands
+- [Golden Rules](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/wiki/Golden-Rules) - How to customize principles
+- [Migration](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/wiki/Migration) - Upgrading, team setup
+- [Architecture](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/wiki/Architecture) - Database schema, hooks system
+- [Token Costs](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/wiki/Token-Costs) - Usage breakdown, optimization
 
 ## Plan Compatibility
 
@@ -124,7 +124,7 @@ Full documentation in the [Wiki](../../wiki):
 
 - [Claude Code Docs](https://docs.anthropic.com/en/docs/claude-code)
 - [Hooks System](https://docs.anthropic.com/en/docs/claude-code/hooks)
-- [Issues & Support](../../issues)
+- [Issues & Support](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/issues)
 
 ## License
 
