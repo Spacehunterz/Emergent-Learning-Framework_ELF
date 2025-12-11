@@ -394,6 +394,57 @@ def main():
     # Determine outcome
     outcome, reason = determine_outcome(tool_output)
 
+    # Record to conductor for dashboard visibility
+    try:
+        sys.path.insert(0, str(Path.home() / '.claude' / 'emergent-learning' / 'conductor'))
+        from conductor import Conductor, Node
+
+        conductor = Conductor(
+            base_path=str(Path.home() / '.claude' / 'emergent-learning'),
+            project_root=str(Path.home() / '.claude' / 'emergent-learning')
+        )
+
+        # Create a workflow run for this task
+        description = tool_input.get('description', 'Unknown task')
+        run_id = conductor.start_run(
+            workflow_name=f"task-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
+            input_data={
+                'description': description,
+                'prompt': tool_input.get('prompt', '')[:500]  # Truncate
+            }
+        )
+
+        # Record the execution
+        if run_id:
+            # Create a node record
+            node = Node(
+                id=f"task-{datetime.now().timestamp()}",
+                name=description[:100],
+                node_type='single',
+                prompt_template=tool_input.get('prompt', '')[:500],
+                config={'model': 'claude'}
+            )
+            exec_id = conductor.record_node_start(run_id, node, tool_input.get('prompt', ''))
+
+            # Record completion or failure
+            if outcome == 'success':
+                conductor.record_node_completion(
+                    exec_id=exec_id,
+                    result_text=str(tool_output.get('content', '') if isinstance(tool_output, dict) else tool_output)[:1000],
+                    result_dict={'outcome': outcome, 'reason': reason}
+                )
+                conductor.update_run_status(run_id, 'completed', output={'outcome': outcome})
+            else:
+                conductor.record_node_failure(
+                    exec_id=exec_id,
+                    error_message=reason,
+                    error_type='task_failure' if outcome == 'failure' else 'unknown'
+                )
+                conductor.update_run_status(run_id, 'failed', error_message=reason)
+    except Exception as e:
+        # Don't fail the hook if conductor fails
+        sys.stderr.write(f"Conductor integration error (non-fatal): {e}\n")
+
     # Lay trails for files mentioned in output
     try:
         output_content = ""

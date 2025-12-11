@@ -1,5 +1,6 @@
 import { Activity, Brain, Clock, Search, Workflow, Inbox, ChevronDown, ExternalLink, X, FileText } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import ReactMarkdown from 'react-markdown'
 
 interface CeoItem {
@@ -95,6 +96,7 @@ export default function Header({ isConnected, activeTab, onTabChange }: HeaderPr
   }
 
   return (
+    <>
     <header className="glass-panel border-b border-white/5 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
@@ -214,9 +216,11 @@ export default function Header({ isConnected, activeTab, onTabChange }: HeaderPr
         </div>
       </div>
 
-      {/* CEO Item Detail Modal */}
-      {selectedItem && (
-        <div className="fixed inset-0 bg-black/80 flex items-start justify-center z-[100] pt-16 px-4 pb-4 overflow-y-auto" onClick={closeModal}>
+    </header>
+
+      {/* CEO Item Detail Modal - Using Portal to render at body level */}
+      {selectedItem && createPortal(
+        <div className="fixed inset-0 bg-black/80 flex items-start justify-center pt-16 px-4 pb-4 overflow-y-auto" style={{ zIndex: 9999 }} onClick={closeModal}>
           <div
             className="rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden my-auto"
             style={{ background: '#0f172a', border: '1px solid #334155' }}
@@ -257,8 +261,9 @@ export default function Header({ isConnected, activeTab, onTabChange }: HeaderPr
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-    </header>
+    </>
   )
 }

@@ -11,27 +11,44 @@ DB_PATH = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
 def extract_file_paths(content):
     """Extract file paths mentioned in task output."""
     file_paths = set()
-    
-    # Simple patterns that work
+
+    # Patterns for various file path formats
     patterns = [
-        r'(?:created|modified|edited|wrote|updated|read)\s+(\S+\.\w{1,10})',
-        r'File:\s*(\S+\.\w{1,10})',
-        r'(src/[^\s]+\.\w{1,10})',
-        r'(lib/[^\s]+\.\w{1,10})',
-        r'(app/[^\s]+\.\w{1,10})',
-        r'(components/[^\s]+\.\w{1,10})',
+        # Action-based patterns
+        r'(?:created|modified|edited|wrote|updated|read|reading|writing|editing)\s+[`"\']?([^\s`"\']+\.\w{1,10})[`"\']?',
+        # Explicit file references
+        r'File:\s*[`"\']?([^\s`"\']+\.\w{1,10})[`"\']?',
+        r'file_path["\']?\s*[:=]\s*[`"\']?([^\s`"\']+\.\w{1,10})[`"\']?',
+        # Unix-style relative paths
+        r'(src/[^\s`"\']+\.\w{1,10})',
+        r'(lib/[^\s`"\']+\.\w{1,10})',
+        r'(app/[^\s`"\']+\.\w{1,10})',
+        r'(components/[^\s`"\']+\.\w{1,10})',
+        r'(dashboard-app/[^\s`"\']+\.\w{1,10})',
+        r'(hooks/[^\s`"\']+\.\w{1,10})',
+        r'(memory/[^\s`"\']+\.\w{1,10})',
+        r'(frontend/[^\s`"\']+\.\w{1,10})',
+        r'(backend/[^\s`"\']+\.\w{1,10})',
+        # Windows absolute paths (normalize to relative)
+        r'[A-Za-z]:\\[^\s`"\']+\\([^\s`"\'\\]+\.\w{1,10})',
+        # Unix absolute paths (normalize to relative)
+        r'/[^\s`"\']+/([^\s`"\'/]+\.\w{1,10})',
+        # Backtick-quoted paths
+        r'`([^\s`]+\.\w{1,10})`',
     ]
-    
+
     for pattern in patterns:
         try:
             matches = re.findall(pattern, content, re.IGNORECASE)
             for match in matches:
                 path = match.strip('`"\'')
-                if len(path) > 5 and not path.startswith('http'):
+                # Clean up Windows paths
+                path = path.replace('\\', '/')
+                if len(path) > 3 and not path.startswith('http'):
                     file_paths.add(path)
         except Exception:
             pass
-    
+
     return list(file_paths)
 
 
