@@ -608,6 +608,9 @@ These happen without any action from you:
 - **Post-task recording:** After Task completion, outcome is logged with metadata
 - **Confidence updates:** Heuristics gain/lose confidence based on task success/failure
 - **Pattern detection:** System identifies which heuristics were present during successes/failures
+- **Trail laying:** Files touched by tasks are tracked as "trails" for hotspot analysis
+
+**Auto-Install:** Hooks are automatically installed on first use. When you run `query.py --context` for the first time, it copies hook files from the repo to `~/.claude/hooks/learning-loop/`. Existing hook files are never overwritten, so your customizations are safe.
 
 **You just use Claude Code normally. The framework watches and learns.**
 
