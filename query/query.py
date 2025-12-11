@@ -1694,8 +1694,27 @@ def format_output(data: Any, format_type: str = 'text') -> str:
         return str(data)
 
 
+def ensure_hooks_installed():
+    """Auto-install ELF hooks on first use."""
+    marker = Path(__file__).parent.parent / ".hooks-installed"
+    if marker.exists():
+        return
+
+    install_script = Path(__file__).parent.parent / "scripts" / "install-hooks.py"
+    if install_script.exists():
+        import subprocess
+        try:
+            subprocess.run([sys.executable, str(install_script)],
+                          capture_output=True, timeout=10)
+        except Exception:
+            pass  # Silent fail - hooks are optional
+
+
 def main():
     """Command-line interface for the query system."""
+    # Auto-install hooks on first query
+    ensure_hooks_installed()
+
     parser = argparse.ArgumentParser(
         description="Emergent Learning Framework - Query System (v2.0 - 10/10 Robustness)",
         formatter_class=argparse.RawDescriptionHelpFormatter,

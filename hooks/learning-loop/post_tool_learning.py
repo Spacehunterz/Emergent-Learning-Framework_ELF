@@ -8,6 +8,7 @@ This hook completes the learning loop by:
 3. Auto-recording failures when they happen
 4. Incrementing validation counts on successful tasks
 5. Flagging heuristics that may have led to failures
+6. Laying trails for hotspot tracking
 
 The key insight: If we showed heuristics before a task and the task succeeded,
 those heuristics were useful. If the task failed, maybe they weren't.
@@ -21,6 +22,13 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
+
+# Import trail helper
+try:
+    from trail_helper import extract_file_paths, lay_trails
+except ImportError:
+    def extract_file_paths(content): return []
+    def lay_trails(*args, **kwargs): pass
 
 # Paths - using Path.home() for portability
 EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
@@ -385,6 +393,21 @@ def main():
 
     # Determine outcome
     outcome, reason = determine_outcome(tool_output)
+
+    # Lay trails for files mentioned in output
+    try:
+        output_content = ""
+        if isinstance(tool_output, dict):
+            output_content = str(tool_output.get("content", ""))
+        elif isinstance(tool_output, str):
+            output_content = tool_output
+        file_paths = extract_file_paths(output_content)
+        if file_paths:
+            description = tool_input.get("description", "")
+            agent_type = tool_input.get("subagent_type", "unknown")
+            lay_trails(file_paths, outcome, agent_id=agent_type, description=description)
+    except Exception:
+        pass
 
     # Validate heuristics based on outcome
     if heuristics_consulted:
