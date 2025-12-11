@@ -12,6 +12,7 @@ import TimelineView from './components/TimelineView'
 import RunsPanel from './components/RunsPanel'
 import QueryInterface from './components/QueryInterface'
 import AnomalyPanel from './components/AnomalyPanel'
+import { CommandPalette } from './components/CommandPalette'
 
 // Simplified types matching API responses
 interface Stats {
@@ -117,15 +118,14 @@ function App() {
   const [activeTab, setActiveTab] = useState<'overview' | 'heuristics' | 'runs' | 'timeline' | 'query'>('overview')
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
 
   const api = useAPI()
 
   // Handle WebSocket messages
   const handleMessage = useCallback((data: any) => {
-    console.log('WebSocket message:', data.type)
     switch (data.type) {
       case 'connected':
-        console.log('WebSocket connected:', data.message)
         break
       case 'metrics':
       case 'trails':
@@ -133,19 +133,36 @@ function App() {
         // Trigger a refresh of relevant data
         loadStats()
         break
+      case 'heuristics':
       case 'heuristic_promoted':
         // Refresh heuristics
         loadHeuristics()
+        break
+      case 'learnings':
+        // Learnings changed, refresh stats
+        loadStats()
         break
     }
   }, [])
 
   // Use relative path - hook handles URL building, Vite proxies in dev
-  const { connectionStatus } = useWebSocket('ws://localhost:8888/ws', handleMessage)
+  const { connectionStatus } = useWebSocket('/ws', handleMessage)
 
   useEffect(() => {
     setIsConnected(connectionStatus === 'connected')
   }, [connectionStatus])
+
+  // Command Palette keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setCommandPaletteOpen(true)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const loadStats = async () => {
     try {
@@ -305,11 +322,27 @@ function App() {
     is_golden: Boolean(h.is_golden)
   }))
 
+  // Command palette commands
+  const commands = [
+    { id: 'overview', label: 'Go to Overview', category: 'Navigation', action: () => setActiveTab('overview') },
+    { id: 'heuristics', label: 'View Heuristics', category: 'Navigation', action: () => setActiveTab('heuristics') },
+    { id: 'runs', label: 'View Runs', category: 'Navigation', action: () => setActiveTab('runs') },
+    { id: 'timeline', label: 'View Timeline', category: 'Navigation', action: () => setActiveTab('timeline') },
+    { id: 'query', label: 'Query the Building', shortcut: '⌘Q', category: 'Actions', action: () => setActiveTab('query') },
+    { id: 'refresh', label: 'Refresh Data', shortcut: '⌘R', category: 'Actions', action: () => { loadStats(); loadHeuristics() } },
+    { id: 'clearDomain', label: 'Clear Domain Filter', category: 'Actions', action: () => setSelectedDomain(null) },
+  ]
+
   return (
     <ThemeProvider>
     <div className="min-h-screen relative overflow-hidden transition-colors duration-500" style={{ backgroundColor: "var(--theme-bg-primary)" }}>
         <ParticleBackground />
         <SettingsPanel />
+        <CommandPalette
+          isOpen={commandPaletteOpen}
+          onClose={() => setCommandPaletteOpen(false)}
+          commands={commands}
+        />
         <div className="relative z-10">
       <Header
         isConnected={isConnected}

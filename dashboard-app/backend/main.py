@@ -184,11 +184,17 @@ class ConnectionManager:
         self.active_connections.remove(websocket)
 
     async def broadcast(self, message: dict):
+        dead_connections = []
         for connection in self.active_connections:
             try:
                 await connection.send_json(message)
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to broadcast to client: {e}")
+                dead_connections.append(connection)
+
+        # Remove dead connections
+        for conn in dead_connections:
+            self.active_connections.remove(conn)
 
     async def broadcast_update(self, update_type: str, data: dict):
         await self.broadcast({
@@ -210,6 +216,8 @@ async def monitor_changes():
     last_metrics_count = 0
     last_trail_count = 0
     last_run_count = 0
+    last_heuristics_count = 0
+    last_learnings_count = 0
 
     while True:
         try:
@@ -225,6 +233,12 @@ async def monitor_changes():
 
                 cursor.execute("SELECT COUNT(*) FROM workflow_runs")
                 run_count = cursor.fetchone()[0]
+
+                cursor.execute("SELECT COUNT(*) FROM heuristics")
+                heuristics_count = cursor.fetchone()[0]
+
+                cursor.execute("SELECT COUNT(*) FROM learnings")
+                learnings_count = cursor.fetchone()[0]
 
                 # Broadcast if changes detected
                 if metrics_count > last_metrics_count:
@@ -260,6 +274,28 @@ async def monitor_changes():
                     recent = dict_from_row(cursor.fetchone())
                     await manager.broadcast_update("runs", {"latest": recent})
                     last_run_count = run_count
+
+                if heuristics_count > last_heuristics_count:
+                    cursor.execute("""
+                        SELECT id, domain, rule, confidence, is_golden, updated_at
+                        FROM heuristics
+                        ORDER BY updated_at DESC
+                        LIMIT 5
+                    """)
+                    recent = [dict_from_row(r) for r in cursor.fetchall()]
+                    await manager.broadcast_update("heuristics", {"recent": recent})
+                    last_heuristics_count = heuristics_count
+
+                if learnings_count > last_learnings_count:
+                    cursor.execute("""
+                        SELECT id, type, title, summary, domain, created_at
+                        FROM learnings
+                        ORDER BY created_at DESC
+                        LIMIT 5
+                    """)
+                    recent = [dict_from_row(r) for r in cursor.fetchall()]
+                    await manager.broadcast_update("learnings", {"recent": recent})
+                    last_learnings_count = learnings_count
 
         except Exception as e:
             logger.error(f"Monitor error: {e}", exc_info=True)

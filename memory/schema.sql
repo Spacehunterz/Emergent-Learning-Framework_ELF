@@ -71,6 +71,32 @@ CREATE TABLE IF NOT EXISTS ceo_reviews (
     decided_at DATETIME
 );
 
+-- Building Queries: Track queries to the building
+CREATE TABLE IF NOT EXISTS building_queries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    query_type TEXT,                       -- Type of query (e.g., 'build_context', 'query_by_domain')
+    session_id TEXT,                       -- Session identifier
+    agent_id TEXT,                         -- Agent identifier
+    domain TEXT,                           -- Domain queried (if applicable)
+    tags TEXT,                             -- Tags queried (comma-separated)
+    limit_requested INTEGER,               -- Limit parameter used
+    max_tokens_requested INTEGER,          -- Max tokens parameter used
+    results_returned INTEGER,              -- Number of results returned
+    tokens_approximated INTEGER,           -- Approximate token count
+    duration_ms INTEGER,                   -- Query duration in milliseconds
+    status TEXT,                           -- Query status ('success', 'error', 'timeout')
+    error_message TEXT,                    -- Error message if status is 'error'
+    error_code TEXT,                       -- Error code if status is 'error'
+    golden_rules_returned INTEGER,        -- Number of golden rules returned
+    heuristics_count INTEGER,              -- Number of heuristics returned
+    learnings_count INTEGER,               -- Number of learnings returned
+    experiments_count INTEGER,             -- Number of experiments returned
+    ceo_reviews_count INTEGER,             -- Number of CEO reviews returned
+    query_summary TEXT,                    -- Brief summary of the query
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME
+);
+
 -- Create indexes for fast queries
 CREATE INDEX IF NOT EXISTS idx_learnings_type ON learnings(type);
 CREATE INDEX IF NOT EXISTS idx_learnings_domain ON learnings(domain);
@@ -79,3 +105,7 @@ CREATE INDEX IF NOT EXISTS idx_heuristics_domain ON heuristics(domain);
 CREATE INDEX IF NOT EXISTS idx_heuristics_confidence ON heuristics(confidence);
 CREATE INDEX IF NOT EXISTS idx_experiments_status ON experiments(status);
 CREATE INDEX IF NOT EXISTS idx_ceo_reviews_status ON ceo_reviews(status);
+CREATE INDEX IF NOT EXISTS idx_building_queries_created_at ON building_queries(created_at);
+CREATE INDEX IF NOT EXISTS idx_building_queries_query_type ON building_queries(query_type);
+CREATE INDEX IF NOT EXISTS idx_building_queries_status ON building_queries(status);
+CREATE INDEX IF NOT EXISTS idx_building_queries_domain ON building_queries(domain);
