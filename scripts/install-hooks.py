@@ -27,22 +27,30 @@ MARKER_FILE = ELF_DIR / ".hooks-installed"
 
 
 def install_hooks():
-    """Copy hook files to Claude hooks directory."""
+    """Copy hook files to Claude hooks directory (only if not already present)."""
     if not SOURCE_HOOKS.exists():
         print(f"Source hooks not found: {SOURCE_HOOKS}")
         return False
-    
+
     # Create target directory
     TARGET_HOOKS.mkdir(parents=True, exist_ok=True)
-    
-    # Copy hook files
+
+    # Copy hook files - BUT don't overwrite existing files
     files_copied = []
+    files_skipped = []
     for src_file in SOURCE_HOOKS.glob("*.py"):
         dst_file = TARGET_HOOKS / src_file.name
-        shutil.copy2(src_file, dst_file)
-        files_copied.append(src_file.name)
-    
-    print(f"Copied {len(files_copied)} hook files: {', '.join(files_copied)}")
+        if dst_file.exists():
+            # Don't overwrite - user may have customized
+            files_skipped.append(src_file.name)
+        else:
+            shutil.copy2(src_file, dst_file)
+            files_copied.append(src_file.name)
+
+    if files_copied:
+        print(f"Copied {len(files_copied)} hook files: {', '.join(files_copied)}")
+    if files_skipped:
+        print(f"Skipped {len(files_skipped)} existing files: {', '.join(files_skipped)}")
     return True
 
 
