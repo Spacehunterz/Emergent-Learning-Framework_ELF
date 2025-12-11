@@ -141,7 +141,7 @@ function App() {
   }, [])
 
   // Use relative path - hook handles URL building, Vite proxies in dev
-  const { connectionStatus } = useWebSocket('/ws', handleMessage)
+  const { connectionStatus } = useWebSocket('ws://localhost:8888/ws', handleMessage)
 
   useEffect(() => {
     setIsConnected(connectionStatus === 'connected')

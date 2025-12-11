@@ -833,6 +833,74 @@ async def get_queries(
         return [dict_from_row(r) for r in cursor.fetchall()]
 
 
+@app.get("/api/ceo-inbox")
+async def get_ceo_inbox():
+    """Get CEO inbox items (pending decisions)."""
+    import re
+
+    ceo_inbox_path = EMERGENT_LEARNING_PATH / "ceo-inbox"
+    items = []
+
+    if not ceo_inbox_path.exists():
+        return items
+
+    for file_path in ceo_inbox_path.glob("*.md"):
+        if file_path.name == "TEMPLATE.md":
+            continue
+
+        try:
+            content = file_path.read_text(encoding='utf-8')
+
+            # Parse frontmatter-style metadata from content
+            title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
+            priority_match = re.search(r'\*\*Priority:\*\*\s*(\w+)', content)
+            status_match = re.search(r'\*\*Status:\*\*\s*(\w+)', content)
+            date_match = re.search(r'\*\*Date:\*\*\s*([\d-]+)', content)
+
+            # Get first paragraph after title as summary
+            summary_match = re.search(r'^##\s+Context\s*\n+(.+?)(?=\n\n|\n##)', content, re.MULTILINE | re.DOTALL)
+            summary = summary_match.group(1).strip()[:200] if summary_match else ""
+
+            items.append({
+                "filename": file_path.name,
+                "title": title_match.group(1) if title_match else file_path.stem,
+                "priority": priority_match.group(1) if priority_match else "Medium",
+                "status": status_match.group(1) if status_match else "Pending",
+                "date": date_match.group(1) if date_match else None,
+                "summary": summary,
+                "path": str(file_path)
+            })
+        except Exception as e:
+            logger.error(f"Error reading CEO inbox item {file_path}: {e}")
+            continue
+
+    # Sort by priority (Critical > High > Medium > Low) then by date
+    priority_order = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
+    items.sort(key=lambda x: (priority_order.get(x["priority"], 2), x["date"] or ""))
+
+    return items
+
+
+@app.get("/api/ceo-inbox/{filename}")
+async def get_ceo_inbox_item(filename: str):
+    """Get full content of a CEO inbox item."""
+    # Security: validate filename
+    if not re.match(r'^[\w\-]+\.md$', filename):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    file_path = EMERGENT_LEARNING_PATH / "ceo-inbox" / filename
+
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    try:
+        content = file_path.read_text(encoding='utf-8')
+        return {"filename": filename, "content": content}
+    except Exception as e:
+        logger.error(f"Error reading CEO inbox item {filename}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to read item")
+
+
 @app.get("/api/domains")
 async def get_domains():
     """Get all domains with counts."""
