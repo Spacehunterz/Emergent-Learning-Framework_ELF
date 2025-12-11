@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import * as d3 from 'd3'
-import { Target, Filter, ExternalLink } from 'lucide-react'
+import { Target, Filter, X } from 'lucide-react'
 
 // API returns this format from /api/hotspots
 interface ApiHotspot {
@@ -36,6 +36,7 @@ export default function HotspotTreemap({ hotspots, onSelect, selectedDomain, onD
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [tooltip, setTooltip] = useState<{ x: number; y: number; data: ApiHotspot | null }>({ x: 0, y: 0, data: null })
+  const [selectedHotspot, setSelectedHotspot] = useState<ApiHotspot | null>(null)
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 })
 
   // Safely get unique scents as "domains"
@@ -155,10 +156,11 @@ export default function HotspotTreemap({ hotspots, onSelect, selectedDomain, onD
       .enter()
       .append('g')
       .attr('transform', d => `translate(${d.x0},${d.y0})`)
-      .style('cursor', 'pointer')
+      .style('cursor', 'url("/ufo-cursor.svg") 16 16, pointer')
       .on('click', (_, d) => {
-        if (d.data.path) {
-          onSelect(d.data.path)
+        const hotspot = filteredHotspots.find(h => h.location === d.data.path)
+        if (hotspot) {
+          setSelectedHotspot(selectedHotspot?.location === hotspot.location ? null : hotspot)
         }
       })
       .on('mouseenter', (event, d) => {
@@ -308,10 +310,62 @@ export default function HotspotTreemap({ hotspots, onSelect, selectedDomain, onD
                 <span className="text-white ml-1">{tooltip.data.scents?.join(', ') || 'none'}</span>
               </div>
             </div>
-            <div className="mt-2 text-xs text-sky-400 flex items-center">
-              <ExternalLink className="w-3 h-3 mr-1" />
-              Click to open in editor
+            <div className="mt-2 text-xs text-sky-400">
+              Click for details
             </div>
+          </div>
+        )}
+
+        {/* Selected hotspot detail panel */}
+        {selectedHotspot && (
+          <div className="mt-4 bg-slate-900 border border-slate-700 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-white font-medium">{selectedHotspot.location}</h4>
+              <button 
+                onClick={() => setSelectedHotspot(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-slate-400">Trail Count:</span>
+                <span className="text-white ml-2">{selectedHotspot.trail_count}</span>
+              </div>
+              <div>
+                <span className="text-slate-400">Total Strength:</span>
+                <span className="text-white ml-2">{selectedHotspot.total_strength?.toFixed(2)}</span>
+              </div>
+              <div>
+                <span className="text-slate-400">Agents:</span>
+                <span className="text-white ml-2">{selectedHotspot.agents?.join(', ') || 'none'}</span>
+              </div>
+              <div>
+                <span className="text-slate-400">Scents:</span>
+                <span className="text-white ml-2">{selectedHotspot.scents?.join(', ') || 'none'}</span>
+              </div>
+              <div>
+                <span className="text-slate-400">First Activity:</span>
+                <span className="text-white ml-2">{new Date(selectedHotspot.first_activity).toLocaleString()}</span>
+              </div>
+              <div>
+                <span className="text-slate-400">Last Activity:</span>
+                <span className="text-white ml-2">{new Date(selectedHotspot.last_activity).toLocaleString()}</span>
+              </div>
+            </div>
+            {selectedHotspot.related_heuristics?.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-slate-700">
+                <span className="text-slate-400 text-sm">Related Heuristics:</span>
+                <div className="mt-1 space-y-1">
+                  {selectedHotspot.related_heuristics.map((h, i) => (
+                    <div key={i} className="text-xs text-slate-300 bg-slate-800 rounded px-2 py-1">
+                      {typeof h === 'object' ? (h.rule || JSON.stringify(h)) : String(h)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

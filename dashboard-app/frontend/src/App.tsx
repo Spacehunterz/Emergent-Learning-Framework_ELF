@@ -342,9 +342,9 @@ function App() {
                   onDismiss={(index) => setAnomalies(prev => prev.filter((_, i) => i !== index))}
                 />
                 <div className="bg-slate-800 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-white mb-3">Golden Rules</h3>
-                  <div className="space-y-2">
-                    {normalizedHeuristics.filter(h => h.is_golden).slice(0, 5).map(h => (
+                  <h3 className="text-lg font-semibold text-amber-400 mb-3">Golden Rules</h3>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {normalizedHeuristics.filter(h => h.is_golden).map(h => (
                       <div key={h.id} className="text-sm text-slate-300 p-2 bg-slate-700/50 rounded">
                         {h.rule}
                       </div>
