@@ -1349,7 +1349,7 @@ class QuerySystem:
 
                 # Tier 1: Golden Rules (always loaded)
                 golden_rules = self.get_golden_rules()
-                context_parts.append("# TIER 1: Golden Rules\n")
+                context_parts.append("# TIER 1: [93mGolden Rules[0m\n")
                 context_parts.append(golden_rules)
                 context_parts.append("\n")
                 approx_tokens += len(golden_rules) // 4
@@ -1436,8 +1436,9 @@ class QuerySystem:
                         context_parts.append(entry)
                     ceo_reviews_count = len(ceo_reviews)
 
-                # Task context
-                context_parts.insert(0, f"# Task Context\n\n{task}\n\n---\n\n")
+                # Task context with building header
+                building_header = "🏢 [94mBuilding Status[0m\n━━━━━━━━━━━━━━━━━━\n\n"
+                context_parts.insert(0, f"{building_header}# Task Context\n\n{task}\n\n---\n\n")
 
             result = "".join(context_parts)
             self._log_debug(f"Built context with ~{len(result)//4} tokens")
