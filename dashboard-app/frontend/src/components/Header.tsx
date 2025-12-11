@@ -1,4 +1,4 @@
-import { Activity, Brain, Clock, Search, Workflow, Inbox, ChevronDown, ExternalLink, X, FileText, TrendingUp, Network } from 'lucide-react'
+import { Activity, Brain, Clock, Search, Workflow, Inbox, ChevronDown, X, FileText, TrendingUp, Network } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import ReactMarkdown from 'react-markdown'

@@ -161,7 +161,7 @@ export default function KnowledgeGraph({ onNodeClick }: KnowledgeGraphProps) {
       .on('dblclick.zoom', null) // Disable double-click zoom
 
     // Apply current transform (preserves zoom state across re-renders)
-    g.attr('transform', currentTransformRef.current)
+    g.attr('transform', currentTransformRef.current.toString())
 
     // Create arrow markers for edges
     svg.append('defs').selectAll('marker')
@@ -218,7 +218,7 @@ export default function KnowledgeGraph({ onNodeClick }: KnowledgeGraphProps) {
 
     // Create nodes
     const nodes = g.append('g')
-      .selectAll('g')
+      .selectAll<SVGGElement, GraphNode>('g')
       .data(filteredNodes)
       .join('g')
       .attr('cursor', 'pointer')
@@ -261,7 +261,7 @@ export default function KnowledgeGraph({ onNodeClick }: KnowledgeGraphProps) {
       .attr('class', 'golden-glow')
 
     // Add node labels (only show for golden rules or on hover)
-    const labels = nodes.append('text')
+    nodes.append('text')
       .attr('dx', 12)
       .attr('dy', 4)
       .attr('font-size', '11px')
@@ -309,7 +309,7 @@ export default function KnowledgeGraph({ onNodeClick }: KnowledgeGraphProps) {
         nodes.attr('opacity', 1)
         links.attr('opacity', e => e.type === 'same_domain' ? 0.6 : 0.3)
       })
-      .on('click', (event, d) => {
+      .on('click', (_, d) => {
         setSelectedNode(d)
         onNodeClick?.(d)
       })

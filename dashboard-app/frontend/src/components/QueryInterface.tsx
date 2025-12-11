@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAPI } from '../hooks/useAPI'
-import { Search, Send, Sparkles, Clock, ArrowRight, Brain, Target, AlertTriangle, Lightbulb } from 'lucide-react'
+import { Search, Send, Sparkles, Clock, Brain, Target, AlertTriangle, Lightbulb } from 'lucide-react'
 
 interface QueryResult {
   query: string

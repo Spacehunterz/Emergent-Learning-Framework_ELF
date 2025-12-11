@@ -9,6 +9,7 @@ This hook completes the learning loop by:
 4. Incrementing validation counts on successful tasks
 5. Flagging heuristics that may have led to failures
 6. Laying trails for hotspot tracking
+7. Advisory verification of risky patterns (warns but never blocks)
 
 The key insight: If we showed heuristics before a task and the task succeeded,
 those heuristics were useful. If the task failed, maybe they weren't.
@@ -34,6 +35,93 @@ except ImportError:
 EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
 DB_PATH = EMERGENT_LEARNING_PATH / "memory" / "index.db"
 STATE_FILE = Path.home() / ".claude" / "hooks" / "learning-loop" / "session-state.json"
+
+# Import security patterns
+try:
+    from security_patterns import RISKY_PATTERNS
+except ImportError:
+    # Fallback to basic patterns if import fails
+    RISKY_PATTERNS = {
+        'code': [
+            (r'eval\s*\(', 'eval() detected - potential code injection risk'),
+            (r'exec\s*\(', 'exec() detected - potential code injection risk'),
+        ],
+        'file_operations': []
+    }
+
+
+class AdvisoryVerifier:
+    """
+    Post-action verification that warns but NEVER blocks.
+    Philosophy: Advisory only, human decides.
+    """
+
+    def __init__(self):
+        self.warnings = []
+
+    def analyze_edit(self, file_path: str, old_content: str,
+                     new_content: str) -> Dict:
+        """Analyze a file edit for risky patterns."""
+        warnings = []
+
+        # Only check what was ADDED (not existing code)
+        added_lines = self._get_added_lines(old_content, new_content)
+
+        for line in added_lines:
+            for category, patterns in RISKY_PATTERNS.items():
+                for pattern, message in patterns:
+                    if re.search(pattern, line, re.IGNORECASE):
+                        warnings.append({
+                            'category': category,
+                            'message': message,
+                            'line_preview': line[:80] + '...' if len(line) > 80 else line
+                        })
+
+        return {
+            'has_warnings': len(warnings) > 0,
+            'warnings': warnings,
+            'recommendation': self._get_recommendation(warnings)
+        }
+
+    def _is_comment_line(self, line: str) -> bool:
+        """Check if a line is entirely a comment (not code with comment).
+
+        Returns True for:
+        - Python comments: starts with #
+        - JS/C/Go single-line comments: starts with //
+        - C-style multi-line comment start: starts with /*
+        - Multi-line comment bodies: starts with *
+        - Docstrings: starts with triple quotes
+
+        Returns False for:
+        - Mixed lines like: x = eval(y)  # comment
+        - Code before comment: foo()  // comment
+        """
+        stripped = line.strip()
+        if not stripped:
+            return False
+
+        # Check for pure comment lines (line starts with comment marker)
+        triple_quote = chr(34) * 3
+        single_triple = chr(39) * 3
+        comment_markers = ['#', '//', '/*', '*', triple_quote, single_triple]
+        return any(stripped.startswith(marker) for marker in comment_markers)
+
+    def _get_added_lines(self, old: str, new: str) -> List[str]:
+        """Get lines that were added (simple diff), excluding pure comment lines."""
+        old_lines = set(old.split('\n')) if old else set()
+        new_lines = new.split('\n') if new else []
+        added_lines = [line for line in new_lines if line not in old_lines]
+
+        # Filter out pure comment lines to avoid false positives
+        return [line for line in added_lines if not self._is_comment_line(line)]
+
+    def _get_recommendation(self, warnings: List[Dict]) -> str:
+        if not warnings:
+            return "No concerns detected."
+        if len(warnings) >= 3:
+            return "[!] Multiple concerns - consider CEO escalation"
+        return "[!] Review flagged items before proceeding"
 
 
 def get_hook_input() -> dict:
@@ -347,6 +435,47 @@ def auto_record_failure(tool_input: dict, tool_output: dict, outcome_reason: str
         conn.close()
 
 
+def log_advisory_warning(file_path: str, advisory_result: Dict):
+    """Log advisory warnings to the building (non-blocking)."""
+    conn = get_db_connection()
+    if not conn:
+        return
+
+    try:
+        cursor = conn.cursor()
+
+        # Log each warning
+        for warning in advisory_result.get('warnings', []):
+            cursor.execute("""
+                INSERT INTO metrics (metric_type, metric_name, metric_value, tags, context)
+                VALUES ('advisory_warning', ?, 1, ?, ?)
+            """, (
+                warning['category'],
+                f"file:{file_path}",
+                warning['message']
+            ))
+
+            # Write to stderr for visibility
+            sys.stderr.write(
+                f"[ADVISORY] {warning['category']}: {warning['message']}\n"
+                f"           Line: {warning['line_preview']}\n"
+            )
+
+        # If multiple warnings, log the escalation recommendation
+        if len(advisory_result.get('warnings', [])) >= 3:
+            sys.stderr.write(
+                f"\n[ADVISORY] {advisory_result['recommendation']}\n"
+                f"           File: {file_path}\n\n"
+            )
+
+        conn.commit()
+
+    except Exception as e:
+        sys.stderr.write(f"Warning: Failed to log advisory warning: {e}\n")
+    finally:
+        conn.close()
+
+
 def extract_and_record_learnings(tool_output: dict, domains: List[str]):
     """Extract learnings from successful task output and record them."""
     conn = get_db_connection()
@@ -423,7 +552,44 @@ def main():
         output_result({})
         return
 
-    # Only process Task tool (subagent completions)
+    # Advisory verification for Edit/Write tools
+    if tool_name in ('Edit', 'Write'):
+        verifier = AdvisoryVerifier()
+        file_path = tool_input.get('file_path', '')
+
+        # Get old and new content for comparison
+        old_content = ""
+        new_content = ""
+
+        if tool_name == 'Edit':
+            # For Edit: old_string is the old content, new_string is the new content
+            # But we need full file context - check if tool_output contains it
+            old_content = tool_output.get('old_content', tool_input.get('old_string', ''))
+            new_content = tool_input.get('new_string', '')
+        elif tool_name == 'Write':
+            # For Write: content is the new content, old content might be in output
+            old_content = tool_output.get('old_content', '')
+            new_content = tool_input.get('content', '')
+
+        # Run analysis
+        result = verifier.analyze_edit(
+            file_path=file_path,
+            old_content=old_content,
+            new_content=new_content
+        )
+
+        # Log warnings if any (non-blocking)
+        if result['has_warnings']:
+            log_advisory_warning(file_path, result)
+
+        # Always approve, just attach advisory info
+        output_result({
+            "decision": "approve",
+            "advisory": result if result['has_warnings'] else None
+        })
+        return
+
+    # Only process Task tool (subagent completions) for learning loop
     if tool_name != "Task":
         output_result({})
         return

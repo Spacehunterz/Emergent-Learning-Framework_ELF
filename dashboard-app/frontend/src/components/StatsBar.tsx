@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { TrendingUp, CheckCircle, XCircle, Brain, Star, Target, Zap, BarChart3, X, ChevronRight, Loader2, ArrowLeft, AlertCircle, RefreshCw, MessageSquare } from 'lucide-react'
+import { TrendingUp, CheckCircle, XCircle, Brain, Star, Target, BarChart3, X, ChevronRight, Loader2, ArrowLeft, AlertCircle, RefreshCw, MessageSquare } from 'lucide-react'
 import { Stats } from '../types'
 import { useAPI } from '../hooks/useAPI'
 

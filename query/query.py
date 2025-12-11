@@ -1216,6 +1216,103 @@ class QuerySystem:
         self._log_debug(f"Found {len(results)} violations")
         return results
 
+    def _calculate_relevance_score(self, learning: Dict, task: str,
+                                    domain: str = None) -> float:
+        """
+        Calculate relevance score with decay factors:
+        - Recency: 7-day half-life decay
+        - Domain match: Exact = 1.0 boost
+        - Validation count: More validated = higher weight
+
+        Args:
+            learning: Learning dictionary with created_at, domain, times_validated
+            task: Task description (unused currently, for future keyword matching)
+            domain: Optional domain filter
+
+        Returns:
+            Relevance score between 0.25 and 1.0
+        """
+        score = 0.5  # Base score
+
+        # Recency decay (half-life: 7 days)
+        created_at = learning.get('created_at')
+        if created_at:
+            try:
+                if isinstance(created_at, str):
+                    # Handle both ISO format and SQLite datetime format
+                    created_at = created_at.replace('Z', '+00:00')
+                    if 'T' in created_at:
+                        created_at = datetime.fromisoformat(created_at)
+                    else:
+                        # SQLite datetime format: YYYY-MM-DD HH:MM:SS
+                        created_at = datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S')
+
+                age_days = (datetime.now() - created_at).days
+                recency_factor = 0.5 ** (age_days / 7)  # Half-life of 7 days
+                score *= (0.5 + 0.5 * recency_factor)  # Never go below 0.25
+            except (ValueError, TypeError) as e:
+                self._log_debug(f"Failed to parse date {created_at}: {e}")
+
+        # Domain match boost
+        if domain and learning.get('domain') == domain:
+            score *= 1.5
+
+        # Validation boost (for heuristics)
+        times_validated = learning.get('times_validated', 0)
+        if times_validated > 10:
+            score *= 1.4
+        elif times_validated > 5:
+            score *= 1.2
+
+        return min(score, 1.0)
+
+    def find_similar_failures(self, task_description: str,
+                              threshold: float = 0.3,
+                              limit: int = 5) -> List[Dict]:
+        """
+        Find failures with similar keywords to current task.
+        Returns failures with similarity score >= threshold.
+
+        Args:
+            task_description: Description of the current task
+            threshold: Minimum similarity score (0.0 to 1.0)
+            limit: Maximum number of results to return
+
+        Returns:
+            List of similar failures with similarity scores and matched keywords
+        """
+        # Extract keywords from task (simple: split on whitespace, filter short words)
+        task_words = set(w.lower() for w in re.split(r'\W+', task_description) if len(w) > 3)
+
+        if not task_words:
+            return []
+
+        # Get recent failures
+        failures = self.query_recent(type_filter='failure', limit=50, days=30)
+
+        similar = []
+        for failure in failures:
+            # Extract keywords from failure
+            failure_text = (failure.get('title', '') + ' ' +
+                           (failure.get('summary') or '')).lower()
+            failure_words = set(w for w in re.split(r'\W+', failure_text) if len(w) > 3)
+
+            # Calculate Jaccard-like similarity
+            if not failure_words:
+                continue
+            intersection = len(task_words & failure_words)
+            union = len(task_words | failure_words)
+            similarity = intersection / union if union > 0 else 0
+
+            if similarity >= threshold:
+                similar.append({
+                    **failure,
+                    'similarity': round(similarity, 2),
+                    'matched_keywords': list(task_words & failure_words)[:5]
+                })
+
+        return sorted(similar, key=lambda x: x['similarity'], reverse=True)[:limit]
+
     def get_violation_summary(self, days: int = 7, timeout: int = None) -> Dict[str, Any]:
         """
         Get summary statistics of Golden Rule violations.
@@ -1355,6 +1452,19 @@ class QuerySystem:
                 approx_tokens += len(golden_rules) // 4
                 golden_rules_returned = 1  # Flag that golden rules were included
 
+                # Check for similar failures (early warning system)
+                similar_failures = self.find_similar_failures(task)
+                if similar_failures:
+                    context_parts.append("\n## ⚠️ Similar Failures Detected\n\n")
+                    for sf in similar_failures[:3]:  # Top 3 most similar
+                        context_parts.append(f"- **[{sf['similarity']*100:.0f}% match] {sf['title']}**\n")
+                        if sf.get('matched_keywords'):
+                            context_parts.append(f"  Keywords: {', '.join(sf['matched_keywords'])}\n")
+                        if sf.get('summary'):
+                            summary = sf['summary'][:100] + '...' if len(sf['summary']) > 100 else sf['summary']
+                            context_parts.append(f"  Lesson: {summary}\n")
+                        context_parts.append("\n")
+
                 # Tier 2: Query-matched content
                 context_parts.append("# TIER 2: Relevant Knowledge\n\n")
 
@@ -1364,7 +1474,14 @@ class QuerySystem:
 
                     if domain_data['heuristics']:
                         context_parts.append("### Heuristics:\n")
+                        # Apply relevance scoring to heuristics
+                        heuristics_with_scores = []
                         for h in domain_data['heuristics']:
+                            h['_relevance'] = self._calculate_relevance_score(h, task, domain)
+                            heuristics_with_scores.append(h)
+                        heuristics_with_scores.sort(key=lambda x: x.get('_relevance', 0), reverse=True)
+
+                        for h in heuristics_with_scores:
                             entry = f"- **{h['rule']}** (confidence: {h['confidence']:.2f}, validated: {h['times_validated']}x)\n"
                             entry += f"  {h['explanation']}\n\n"
                             context_parts.append(entry)
@@ -1373,7 +1490,14 @@ class QuerySystem:
 
                     if domain_data['learnings']:
                         context_parts.append("### Recent Learnings:\n")
+                        # Apply relevance scoring to learnings
+                        learnings_with_scores = []
                         for l in domain_data['learnings']:
+                            l['_relevance'] = self._calculate_relevance_score(l, task, domain)
+                            learnings_with_scores.append(l)
+                        learnings_with_scores.sort(key=lambda x: x.get('_relevance', 0), reverse=True)
+
+                        for l in learnings_with_scores:
                             entry = f"- **{l['title']}** ({l['type']})\n"
                             if l['summary']:
                                 entry += f"  {l['summary']}\n"
@@ -1386,7 +1510,14 @@ class QuerySystem:
                     context_parts.append(f"## Tag Matches: {', '.join(tags)}\n\n")
                     tag_results = self.query_by_tags(tags, limit=5, timeout=timeout)
 
+                    # Apply relevance scoring to tag results
+                    tag_results_with_scores = []
                     for l in tag_results:
+                        l['_relevance'] = self._calculate_relevance_score(l, task, domain)
+                        tag_results_with_scores.append(l)
+                    tag_results_with_scores.sort(key=lambda x: x.get('_relevance', 0), reverse=True)
+
+                    for l in tag_results_with_scores:
                         entry = f"- **{l['title']}** ({l['type']}, domain: {l['domain']})\n"
                         if l['summary']:
                             entry += f"  {l['summary']}\n"

@@ -17,6 +17,7 @@ import KnowledgeGraph from './components/KnowledgeGraph'
 import { CommandPalette } from './components/CommandPalette'
 import { NotificationPanel } from './components/NotificationPanel'
 import { LearningVelocity } from './components/LearningVelocity'
+import { TimelineEvent } from './types'
 
 // Simplified types matching API responses
 interface Stats {
@@ -117,7 +118,7 @@ function App() {
   const [hotspots, setHotspots] = useState<Hotspot[]>([])
   const [runs, setRuns] = useState<Run[]>([])
   const [events, setEvents] = useState<RawEvent[]>([])
-  const [timeline, setTimeline] = useState<TimelineData | null>(null)
+  const [_timeline, setTimeline] = useState<TimelineData | null>(null)
   const [anomalies, setAnomalies] = useState<Anomaly[]>([])
   const [activeTab, setActiveTab] = useState<'overview' | 'heuristics' | 'runs' | 'timeline' | 'query' | 'analytics' | 'graph'>('overview')
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
@@ -489,7 +490,7 @@ function App() {
               events={events.map((e, idx) => ({
                 id: idx,
                 timestamp: e.timestamp,
-                event_type: e.event_type || e.type || 'unknown',
+                event_type: (e.event_type || e.type || 'task_start') as TimelineEvent['event_type'],
                 description: e.description || e.message || '',
                 metadata: e.metadata || (e.tags ? { tags: e.tags } : {}),
                 file_path: e.file_path,

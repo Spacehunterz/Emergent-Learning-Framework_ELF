@@ -62,7 +62,7 @@ export function LearningVelocity({ days = 30 }: LearningVelocityProps) {
     chartData: any[],
     valueKey: string,
     color: string,
-    label: string
+    _label: string
   ) => {
     const container = document.getElementById(elementId)
     if (!container || !chartData || chartData.length === 0) return
@@ -86,7 +86,7 @@ export function LearningVelocity({ days = 30 }: LearningVelocityProps) {
     const data = chartData.map(d => ({
       date: parseDate(d.date),
       value: d[valueKey]
-    })).filter(d => d.date !== null)
+    })).filter((d): d is { date: Date; value: number } => d.date !== null)
 
     if (data.length === 0) return
 
@@ -178,7 +178,7 @@ export function LearningVelocity({ days = 30 }: LearningVelocityProps) {
       date: parseDate(d.date),
       successes: d.successes || 0,
       failures: d.failures || 0
-    })).filter(d => d.date !== null)
+    })).filter((d): d is { date: Date; successes: number; failures: number } => d.date !== null)
 
     if (data.length === 0) return
 
@@ -222,7 +222,7 @@ export function LearningVelocity({ days = 30 }: LearningVelocityProps) {
     // Axes
     svg.append('g')
       .attr('transform', `translate(0,${height})`)
-      .call(d3.axisBottom(x).tickFormat((d, i) => {
+      .call(d3.axisBottom(x).tickFormat((_, i) => {
         const date = data[i]?.date
         if (!date) return ''
         return d3.timeFormat('%m/%d')(date)

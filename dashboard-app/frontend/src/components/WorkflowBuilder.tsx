@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import * as d3 from 'd3'
 import { Workflow, WorkflowNode, WorkflowEdge } from '../types'
-import { Plus, Play, Save, Trash2, Settings, Zap, GitBranch, Bell, Filter, X } from 'lucide-react'
-import { useAPI } from '../hooks/useAPI'
+import { Plus, Play, Save, Trash2, Zap, GitBranch, Bell, Filter } from 'lucide-react'
 
 const nodeTypes = {
   trigger: { icon: Zap, color: 'bg-sky-500', label: 'Trigger' },
@@ -33,13 +32,15 @@ interface WorkflowBuilderProps {
   onRun: (id: string) => void
 }
 
-export default function WorkflowBuilder({ workflows, onSave, onDelete, onRun }: WorkflowBuilderProps) {
+export default function WorkflowBuilder({ workflows, onSave, onRun }: WorkflowBuilderProps) {
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null)
   const [nodes, setNodes] = useState<WorkflowNode[]>([])
   const [edges, setEdges] = useState<WorkflowEdge[]>([])
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null)
   const [isAddingNode, setIsAddingNode] = useState(false)
   const [addingNodeType, setAddingNodeType] = useState<string | null>(null)
+  void isAddingNode // Will be used for add node UI
+  void addingNodeType // Will be used for add node UI
   const [isDirty, setIsDirty] = useState(false)
   const canvasRef = useRef<SVGSVGElement>(null)
 
@@ -101,10 +102,13 @@ export default function WorkflowBuilder({ workflows, onSave, onDelete, onRun }: 
     setIsDirty(true)
   }
 
+  // Node drag handler - currently unused, will be used when drag-and-drop is implemented
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleNodeDrag = (id: string, x: number, y: number) => {
     setNodes(nodes.map(n => n.id === id ? { ...n, position: { x, y } } : n))
     setIsDirty(true)
   }
+  void handleNodeDrag // Mark as intentionally unused for now
 
   const handleSave = () => {
     if (!selectedWorkflow) return

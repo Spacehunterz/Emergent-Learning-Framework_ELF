@@ -6,6 +6,7 @@
  */
 
 import { useNotifications } from '../hooks/useNotifications'
+import { NotificationPanel } from './NotificationPanel'
 
 // ============================================================================
 // EXAMPLE 1: Basic Usage
@@ -93,7 +94,14 @@ export function WebSocketExample() {
     }
   }
 
-  return <div>WebSocket handler example</div>
+  return (
+    <div>
+      <p>WebSocket handler example</p>
+      <button onClick={() => handleWebSocketMessage({ type: 'heuristics', rule: 'Test rule' })}>
+        Test Handler
+      </button>
+    </div>
+  )
 }
 
 // ============================================================================
@@ -376,13 +384,13 @@ export function CompleteAppExample() {
       {/* handleMessage callback uses notifications */}
 
       {/* 3. Render the panel */}
-      {/* <NotificationPanel
+      <NotificationPanel
         notifications={notifications.notifications}
         onDismiss={notifications.removeNotification}
         onClearAll={notifications.clearAll}
         soundEnabled={notifications.soundEnabled}
         onToggleSound={notifications.toggleSound}
-      /> */}
+      />
 
       <div className="p-4">
         <h2>Complete Integration Example</h2>

@@ -145,7 +145,7 @@ export default function RunsPanel({ runs, onRetry, onOpenInEditor }: RunsPanelPr
             <div
               key={run.id}
               className={`bg-slate-700/50 rounded-lg border transition-all
-                ${run.status === 'failure' || run.status === 'failed' ? 'border-red-500/30' : 'border-transparent'}
+                ${run.status === 'failure' ? 'border-red-500/30' : 'border-transparent'}
                 ${isExpanded ? 'ring-2 ring-sky-500/50' : ''}`}
             >
               {/* Main row */}
@@ -256,7 +256,7 @@ export default function RunsPanel({ runs, onRetry, onOpenInEditor }: RunsPanelPr
                         <FileText className="w-4 h-4" />
                         <span>{loadingDiff === run.id ? 'Loading...' : 'View Changes'}</span>
                       </button>
-                      {(run.status === 'failure' || run.status === 'failed') && (
+                      {run.status === 'failure' && (
                         <button
                           onClick={(e) => { e.stopPropagation(); onRetry(run.id) }}
                           className="flex items-center space-x-1 px-3 py-1.5 bg-sky-500/20 text-sky-400 rounded-lg text-sm hover:bg-sky-500/30 transition"

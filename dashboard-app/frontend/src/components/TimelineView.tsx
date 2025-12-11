@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { TimelineEvent, Heuristic } from '../types'
-import { Clock, Play, Pause, SkipBack, SkipForward, CheckCircle, XCircle, Brain, Star, AlertTriangle, FileText, Zap } from 'lucide-react'
-import { format, formatDistanceToNow } from 'date-fns'
+import { Clock, Play, Pause, SkipBack, SkipForward, CheckCircle, XCircle, Brain, Star, AlertTriangle, FileText } from 'lucide-react'
+import { format } from 'date-fns'
 
 interface TimelineViewProps {
   events: TimelineEvent[]
@@ -127,20 +127,17 @@ export default function TimelineView({ events, heuristics, onEventClick }: Timel
 
       {/* Event type legend */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
-        {Object.entries(eventConfig).map(([type, config]) => {
-          const Icon = config.icon
-          return (
-            <button
-              key={type}
-              onClick={() => setFilterType(filterType === type ? null : type)}
-              className={`flex items-center space-x-1.5 px-2 py-1 rounded-full text-xs transition
-                ${filterType === type ? 'bg-white/10 ring-1 ring-white/20' : 'hover:bg-white/5'}`}
-            >
-              <div className={`w-2 h-2 rounded-full ${config.color}`} />
-              <span className="text-slate-300">{config.label}</span>
-            </button>
-          )
-        })}
+        {Object.entries(eventConfig).map(([type, config]) => (
+          <button
+            key={type}
+            onClick={() => setFilterType(filterType === type ? null : type)}
+            className={`flex items-center space-x-1.5 px-2 py-1 rounded-full text-xs transition
+              ${filterType === type ? 'bg-white/10 ring-1 ring-white/20' : 'hover:bg-white/5'}`}
+          >
+            <div className={`w-2 h-2 rounded-full ${config.color}`} />
+            <span className="text-slate-300">{config.label}</span>
+          </button>
+        ))}
       </div>
 
       {/* Timeline */}
@@ -152,7 +149,7 @@ export default function TimelineView({ events, heuristics, onEventClick }: Timel
             </div>
 
             <div className="relative ml-4 border-l-2 border-slate-700">
-              {groupedEvents[date].map((event, idx) => {
+              {groupedEvents[date].map((event) => {
                 const Icon = getEventIcon(event.event_type)
                 const color = getEventColor(event.event_type)
                 const config = eventConfig[event.event_type as keyof typeof eventConfig]

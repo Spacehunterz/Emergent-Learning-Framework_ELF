@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import * as d3 from 'd3'
 import { Target, Filter, X } from 'lucide-react'
 
@@ -32,7 +32,7 @@ interface TreemapData {
   children?: TreemapData[]
 }
 
-export default function HotspotTreemap({ hotspots, onSelect, selectedDomain, onDomainFilter }: HotspotTreemapProps) {
+export default function HotspotTreemap({ hotspots, selectedDomain, onDomainFilter }: HotspotTreemapProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const tooltipRef = useRef<{ x: number; y: number; data: ApiHotspot | null }>({ x: 0, y: 0, data: null })

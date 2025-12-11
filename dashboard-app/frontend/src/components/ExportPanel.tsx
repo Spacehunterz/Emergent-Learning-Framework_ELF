@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAPI } from '../hooks/useAPI'
-import { Download, FileJson, FileText, Table, Send, Github, MessageSquare, Check, Loader2 } from 'lucide-react'
+import { Download, FileJson, FileText, Table, Github, MessageSquare, Check, Loader2 } from 'lucide-react'
 
 interface ExportPanelProps {
   onClose: () => void
