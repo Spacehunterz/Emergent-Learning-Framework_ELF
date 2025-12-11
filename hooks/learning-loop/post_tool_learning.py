@@ -116,17 +116,25 @@ def determine_outcome(tool_output: dict) -> Tuple[str, str]:
         (r'\[BLOCKER\]', "Blocker encountered"),
         (r'(?i)\btraceback\b', "Exception traceback"),
         (r'(?i)\bpermission denied\b', "Permission denied"),
-        (r'(?i)\btimeout\b', "Timeout occurred"),
+        (r'(?i)\btimed?\s+out\b', "Timeout occurred"),  # Match "timeout" or "timed out"
         (r'(?i)^.*\bnot found\s*$', "Resource not found"),  # Only at end of line
     ]
 
     # Patterns to exclude false positives
+    # These indicate discussion of errors/failures, not actual errors
     false_positive_patterns = [
         r'(?i)was not found to be',
         r'(?i)\berror handling\b',
         r'(?i)\bno errors?\b',
         r'(?i)\bwithout errors?\b',
         r'(?i)\berror.?free\b',
+        r'(?i)\b(fixed|resolved|corrected|repaired)\b.*\b(error|failure|bug|issue|exception)',  # "fixed the error"
+        r'(?i)\b(error|failure|bug|issue|exception)\b.*(fixed|resolved|corrected|repaired)',   # "error was fixed"
+        r'(?i)\binvestigated.*\b(failed|error|failure)',  # "investigated the failure"
+        r'(?i)\banalyzed.*\b(error|failure|failed)',      # "analyzed the error"
+        r'(?i)\bhandl(e|es|ed|ing).*\b(error|failure|exception)',  # "handles errors"
+        r'(?i)\b(error|failure|exception)\s+handl',  # "exception handling"
+        r'(?i)resolved.*\b(error|failure|exception)',  # "resolved the exception"
     ]
 
     for pattern, reason in failure_patterns:
@@ -144,23 +152,57 @@ def determine_outcome(tool_output: dict) -> Tuple[str, str]:
             if not is_false_positive:
                 return "failure", reason
 
-    # Strong success indicators
-    success_patterns = [
-        (r'successfully completed', "Successfully completed"),
-        (r'task complete', "Task completed"),
-        (r'done\.', "Done"),
-        (r'finished', "Finished"),
-        (r'all tests pass', "Tests passed"),
+    # Strong success indicators - explicit completion phrases
+    explicit_success_patterns = [
+        (r'\bsuccessfully\s+\w+', "Successfully completed action"),
+        (r'\btask\s+complete', "Task completed"),
+        (r'\b(work|task) is (done|finished|complete)', "Work is done"),
+        (r'\ball tests pass', "Tests passed"),
         (r'\[success\]', "Success marker found"),
-        (r'## FINDINGS', "Findings reported (likely success)"),
+        (r'## FINDINGS', "Findings reported"),
+        (r'\bcompleted\s+successfully', "Completed successfully"),
     ]
 
-    for pattern, reason in success_patterns:
+    for pattern, reason in explicit_success_patterns:
+        if re.search(pattern, content_lower):
+            return "success", reason
+
+    # Action verbs that indicate work was done (past tense)
+    # These are strong indicators that a task was completed
+    action_verb_patterns = [
+        (r'\b(created|generated|built|made)\b\s+\w+', "Created something"),
+        (r'\b(fixed|resolved|corrected|repaired)\b\s+\w+', "Fixed something"),
+        (r'\b(updated|modified|changed|revised)\b\s+\w+', "Updated something"),
+        (r'\b(implemented|added|introduced)\b\s+\w+', "Implemented something"),
+        (r'\b(analyzed|examined|reviewed|investigated)\b\s+\w+', "Analyzed something"),
+        (r'\b(identified|found|discovered|located)\b\s+\w+', "Identified something"),
+        (r'\b(removed|deleted|cleaned)\b\s+\w+', "Removed something"),
+        (r'\b(refactored|reorganized|restructured)\b\s+\w+', "Refactored something"),
+        (r'\b(tested|validated|verified)\b\s+\w+', "Tested something"),
+        (r'\b(deployed|released|published)\b\s+\w+', "Deployed something"),
+    ]
+
+    for pattern, reason in action_verb_patterns:
+        if re.search(pattern, content_lower):
+            return "success", reason
+
+    # Reporting patterns - agent is presenting findings/results
+    reporting_patterns = [
+        (r'\bhere (is|are) (the |my )?(\w+\s+)?(findings|results|analysis|summary)', "Presented findings"),
+        (r'\bi (have |\'ve )?(completed|finished|done)', "Agent reported completion"),
+        (r'\bthe (task|work|analysis|fix|implementation) is (complete|done|finished)', "Work is complete"),
+        (r'^\s*(finished|completed|done)\s+\w+', "Started with completion verb"),  # "Finished the X", "Completed the Y"
+        (r'\b(summary|conclusion):', "Provided summary"),
+        (r'\brecommend(ations|s)?:', "Provided recommendations"),
+    ]
+
+    for pattern, reason in reporting_patterns:
         if re.search(pattern, content_lower):
             return "success", reason
 
     # If we got substantial output without errors, probably success
-    if len(content) > 100:
+    # Lowered threshold from 100 to 50 chars since short completions are valid
+    if len(content) > 50:
         return "success", "Substantial output without errors"
 
     return "unknown", "Could not determine outcome"
@@ -447,18 +489,30 @@ def main():
 
     # Lay trails for files mentioned in output
     try:
+        sys.stderr.write("[TRAIL_DEBUG] Starting trail extraction from tool output\n")
         output_content = ""
         if isinstance(tool_output, dict):
             output_content = str(tool_output.get("content", ""))
         elif isinstance(tool_output, str):
             output_content = tool_output
+
+        sys.stderr.write(f"[TRAIL_DEBUG] Output content length: {len(output_content)}\n")
+
         file_paths = extract_file_paths(output_content)
+        sys.stderr.write(f"[TRAIL_DEBUG] Extracted {len(file_paths)} file paths: {file_paths}\n")
+
         if file_paths:
             description = tool_input.get("description", "")
             agent_type = tool_input.get("subagent_type", "unknown")
-            lay_trails(file_paths, outcome, agent_id=agent_type, description=description)
-    except Exception:
-        pass
+            sys.stderr.write(f"[TRAIL_DEBUG] Calling lay_trails with agent_type={agent_type}, description={description[:50]}\n")
+            trails_count = lay_trails(file_paths, outcome, agent_id=agent_type, description=description)
+            sys.stderr.write(f"[TRAIL_DEBUG] lay_trails returned: {trails_count}\n")
+        else:
+            sys.stderr.write("[TRAIL_DEBUG] No file paths extracted, skipping trail laying\n")
+    except Exception as e:
+        sys.stderr.write(f"[TRAIL_ERROR] Exception in trail laying section: {type(e).__name__}: {e}\n")
+        import traceback
+        sys.stderr.write(f"[TRAIL_ERROR] Traceback: {traceback.format_exc()}\n")
 
     # Validate heuristics based on outcome
     if heuristics_consulted:

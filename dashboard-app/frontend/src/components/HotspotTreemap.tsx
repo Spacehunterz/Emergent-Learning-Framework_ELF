@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import * as d3 from 'd3'
 import { Target, Filter, X } from 'lucide-react'
 
@@ -35,9 +35,11 @@ interface TreemapData {
 export default function HotspotTreemap({ hotspots, onSelect, selectedDomain, onDomainFilter }: HotspotTreemapProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; data: ApiHotspot | null }>({ x: 0, y: 0, data: null })
-  const [selectedHotspot, setSelectedHotspot] = useState<ApiHotspot | null>(null)
+  const tooltipRef = useRef<{ x: number; y: number; data: ApiHotspot | null }>({ x: 0, y: 0, data: null })
+  const [tooltipState, setTooltipState] = useState<{ x: number; y: number; data: ApiHotspot | null }>({ x: 0, y: 0, data: null })
+  const [expandedHotspot, setExpandedHotspot] = useState<string | null>(null)
   const [dimensions, setDimensions] = useState({ width: 800, height: 500 })
+  const isDrawingRef = useRef(false)
 
   // Safely get unique scents as "domains"
   const domains = useMemo(() => {
@@ -160,22 +162,33 @@ export default function HotspotTreemap({ hotspots, onSelect, selectedDomain, onD
       .on('click', (_, d) => {
         const hotspot = filteredHotspots.find(h => h.location === d.data.path)
         if (hotspot) {
-          setSelectedHotspot(selectedHotspot?.location === hotspot.location ? null : hotspot)
+          // Toggle: close if same, open new one otherwise
+          setExpandedHotspot(prev => prev === hotspot.location ? null : hotspot.location)
         }
       })
       .on('mouseenter', (event, d) => {
+        if (isDrawingRef.current) return
         const hotspot = filteredHotspots.find(h => h.location === d.data.path)
         if (hotspot) {
           const rect = svgRef.current!.getBoundingClientRect()
-          setTooltip({
+          tooltipRef.current = {
             x: event.clientX - rect.left,
             y: event.clientY - rect.top,
             data: hotspot
-          })
+          }
+          setTooltipState(tooltipRef.current)
         }
       })
+      .on('mousemove', (event) => {
+        if (isDrawingRef.current || !tooltipRef.current.data) return
+        const rect = svgRef.current!.getBoundingClientRect()
+        tooltipRef.current.x = event.clientX - rect.left
+        tooltipRef.current.y = event.clientY - rect.top
+        setTooltipState({ ...tooltipRef.current })
+      })
       .on('mouseleave', () => {
-        setTooltip({ x: 0, y: 0, data: null })
+        tooltipRef.current = { x: 0, y: 0, data: null }
+        setTooltipState({ x: 0, y: 0, data: null })
       })
 
     // Background rect
@@ -219,7 +232,13 @@ export default function HotspotTreemap({ hotspots, onSelect, selectedDomain, onD
       .attr('font-size', '10px')
       .text(d => `${d.value} hits`)
 
-  }, [filteredHotspots, dimensions, onSelect])
+  }, [filteredHotspots, dimensions])
+
+  // Get expanded hotspot data
+  const expandedHotspotData = useMemo(() => {
+    if (!expandedHotspot) return null
+    return filteredHotspots.find(h => h.location === expandedHotspot) || null
+  }, [filteredHotspots, expandedHotspot])
 
   return (
     <div ref={containerRef} className="bg-slate-800 rounded-lg p-4">
@@ -282,90 +301,92 @@ export default function HotspotTreemap({ hotspots, onSelect, selectedDomain, onD
         )}
 
         {/* Tooltip */}
-        {tooltip.data && (
+        {tooltipState.data && (
           <div
             className="absolute z-10 bg-slate-900 border border-slate-700 rounded-lg p-3 shadow-xl pointer-events-none"
             style={{
-              left: tooltip.x + 10,
-              top: tooltip.y + 10,
+              left: Math.min(tooltipState.x + 10, dimensions.width - 200),
+              top: tooltipState.y + 10,
               maxWidth: 300,
             }}
           >
-            <div className="font-medium text-white mb-1">{tooltip.data.location}</div>
+            <div className="font-medium text-white mb-1">{tooltipState.data.location}</div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
                 <span className="text-slate-400">Trails:</span>
-                <span className="text-white ml-1">{tooltip.data.trail_count}</span>
+                <span className="text-white ml-1">{tooltipState.data.trail_count}</span>
               </div>
               <div>
                 <span className="text-slate-400">Strength:</span>
-                <span className="text-white ml-1">{tooltip.data.total_strength?.toFixed(1)}</span>
+                <span className="text-white ml-1">{tooltipState.data.total_strength?.toFixed(1)}</span>
               </div>
               <div>
                 <span className="text-slate-400">Agents:</span>
-                <span className="text-white ml-1">{tooltip.data.agent_count}</span>
+                <span className="text-white ml-1">{tooltipState.data.agent_count}</span>
               </div>
               <div>
                 <span className="text-slate-400">Scents:</span>
-                <span className="text-white ml-1">{tooltip.data.scents?.join(', ') || 'none'}</span>
+                <span className="text-white ml-1">{tooltipState.data.scents?.join(', ') || 'none'}</span>
               </div>
             </div>
             <div className="mt-2 text-xs text-sky-400">
-              Click for details
+              Click to expand details
             </div>
           </div>
         )}
 
-        {/* Selected hotspot detail panel */}
-        {selectedHotspot && (
-          <div className="mt-4 bg-slate-900 border border-slate-700 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-white font-medium">{selectedHotspot.location}</h4>
-              <button 
-                onClick={() => setSelectedHotspot(null)}
-                className="text-slate-400 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-slate-400">Trail Count:</span>
-                <span className="text-white ml-2">{selectedHotspot.trail_count}</span>
+        {/* Expanded hotspot detail panel */}
+        {expandedHotspotData && (
+          <div className="mt-4">
+            <div className="bg-slate-900 border border-slate-700 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-white font-medium">{expandedHotspotData.location}</h4>
+                <button
+                  onClick={() => setExpandedHotspot(null)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <div>
-                <span className="text-slate-400">Total Strength:</span>
-                <span className="text-white ml-2">{selectedHotspot.total_strength?.toFixed(2)}</span>
-              </div>
-              <div>
-                <span className="text-slate-400">Agents:</span>
-                <span className="text-white ml-2">{selectedHotspot.agents?.join(', ') || 'none'}</span>
-              </div>
-              <div>
-                <span className="text-slate-400">Scents:</span>
-                <span className="text-white ml-2">{selectedHotspot.scents?.join(', ') || 'none'}</span>
-              </div>
-              <div>
-                <span className="text-slate-400">First Activity:</span>
-                <span className="text-white ml-2">{new Date(selectedHotspot.first_activity).toLocaleString()}</span>
-              </div>
-              <div>
-                <span className="text-slate-400">Last Activity:</span>
-                <span className="text-white ml-2">{new Date(selectedHotspot.last_activity).toLocaleString()}</span>
-              </div>
-            </div>
-            {selectedHotspot.related_heuristics?.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-slate-700">
-                <span className="text-slate-400 text-sm">Related Heuristics:</span>
-                <div className="mt-1 space-y-1">
-                  {selectedHotspot.related_heuristics.map((h, i) => (
-                    <div key={i} className="text-xs text-slate-300 bg-slate-800 rounded px-2 py-1">
-                      {typeof h === 'object' ? (h.rule || JSON.stringify(h)) : String(h)}
-                    </div>
-                  ))}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-slate-400">Trail Count:</span>
+                  <span className="text-white ml-2">{expandedHotspotData.trail_count}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">Total Strength:</span>
+                  <span className="text-white ml-2">{expandedHotspotData.total_strength?.toFixed(2)}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">Agents:</span>
+                  <span className="text-white ml-2">{expandedHotspotData.agents?.join(', ') || 'none'}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">Scents:</span>
+                  <span className="text-white ml-2">{expandedHotspotData.scents?.join(', ') || 'none'}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">First Activity:</span>
+                  <span className="text-white ml-2">{new Date(expandedHotspotData.first_activity).toLocaleString()}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">Last Activity:</span>
+                  <span className="text-white ml-2">{new Date(expandedHotspotData.last_activity).toLocaleString()}</span>
                 </div>
               </div>
-            )}
+              {expandedHotspotData.related_heuristics?.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-slate-700">
+                  <span className="text-slate-400 text-sm">Related Heuristics:</span>
+                  <div className="mt-1 space-y-1">
+                    {expandedHotspotData.related_heuristics.map((h, i) => (
+                      <div key={i} className="text-xs text-slate-300 bg-slate-800 rounded px-2 py-1">
+                        {typeof h === 'object' ? (h.rule || JSON.stringify(h)) : String(h)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

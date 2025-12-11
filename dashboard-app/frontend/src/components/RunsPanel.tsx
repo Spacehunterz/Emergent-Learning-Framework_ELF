@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Run } from '../types'
-import { Workflow, CheckCircle, XCircle, Clock, RefreshCw, ExternalLink, ChevronDown, Filter, Search } from 'lucide-react'
+import { Workflow, CheckCircle, XCircle, Clock, RefreshCw, ExternalLink, ChevronDown, Filter, Search, FileText } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
+import DiffViewer, { FileDiff } from './DiffViewer'
 
 interface RunsPanelProps {
   runs: Run[]
@@ -15,6 +16,9 @@ export default function RunsPanel({ runs, onRetry, onOpenInEditor }: RunsPanelPr
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [diffViewerOpen, setDiffViewerOpen] = useState(false)
+  const [selectedRunDiffs, setSelectedRunDiffs] = useState<{ runId: string; diffs: FileDiff[] } | null>(null)
+  const [loadingDiff, setLoadingDiff] = useState<string | null>(null)
 
   // Filter runs
   const filteredRuns = runs.filter(run => {
@@ -61,7 +65,37 @@ export default function RunsPanel({ runs, onRetry, onOpenInEditor }: RunsPanelPr
     return `${(ms / 60000).toFixed(1)}m`
   }
 
+  const handleViewChanges = async (runId: string) => {
+    setLoadingDiff(runId)
+    try {
+      // Fetch diffs from backend
+      const response = await fetch(`http://localhost:8888/api/runs/${runId}/diff`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch diffs')
+      }
+      const data = await response.json()
+      setSelectedRunDiffs({ runId, diffs: data.diffs })
+      setDiffViewerOpen(true)
+    } catch (err) {
+      console.error('Failed to load diffs:', err)
+    } finally {
+      setLoadingDiff(null)
+    }
+  }
+
   return (
+    <>
+      {/* Diff Viewer Modal */}
+      {diffViewerOpen && selectedRunDiffs && (
+        <DiffViewer
+          runId={selectedRunDiffs.runId}
+          diffs={selectedRunDiffs.diffs}
+          onClose={() => {
+            setDiffViewerOpen(false)
+            setSelectedRunDiffs(null)
+          }}
+        />
+      )}
     <div className="bg-slate-800 rounded-lg p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -214,6 +248,14 @@ export default function RunsPanel({ runs, onRetry, onOpenInEditor }: RunsPanelPr
 
                     {/* Actions */}
                     <div className="flex items-center space-x-2 pt-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleViewChanges(run.id) }}
+                        disabled={loadingDiff === run.id}
+                        className="flex items-center space-x-1 px-3 py-1.5 bg-violet-500/20 text-violet-400 rounded-lg text-sm hover:bg-violet-500/30 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>{loadingDiff === run.id ? 'Loading...' : 'View Changes'}</span>
+                      </button>
                       {(run.status === 'failure' || run.status === 'failed') && (
                         <button
                           onClick={(e) => { e.stopPropagation(); onRetry(run.id) }}
@@ -238,5 +280,6 @@ export default function RunsPanel({ runs, onRetry, onOpenInEditor }: RunsPanelPr
         )}
       </div>
     </div>
+    </>
   )
 }

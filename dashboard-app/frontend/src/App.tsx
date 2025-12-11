@@ -4,6 +4,7 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { ParticleBackground } from './components/ParticleBackground'
 import { useWebSocket } from './hooks/useWebSocket'
 import { useAPI } from './hooks/useAPI'
+import { useNotifications } from './hooks/useNotifications'
 import Header from './components/Header'
 import StatsBar from './components/StatsBar'
 import HotspotTreemap from './components/HotspotTreemap'
@@ -12,7 +13,10 @@ import TimelineView from './components/TimelineView'
 import RunsPanel from './components/RunsPanel'
 import QueryInterface from './components/QueryInterface'
 import AnomalyPanel from './components/AnomalyPanel'
+import KnowledgeGraph from './components/KnowledgeGraph'
 import { CommandPalette } from './components/CommandPalette'
+import { NotificationPanel } from './components/NotificationPanel'
+import { LearningVelocity } from './components/LearningVelocity'
 
 // Simplified types matching API responses
 interface Stats {
@@ -115,12 +119,13 @@ function App() {
   const [events, setEvents] = useState<RawEvent[]>([])
   const [timeline, setTimeline] = useState<TimelineData | null>(null)
   const [anomalies, setAnomalies] = useState<Anomaly[]>([])
-  const [activeTab, setActiveTab] = useState<'overview' | 'heuristics' | 'runs' | 'timeline' | 'query'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'heuristics' | 'runs' | 'timeline' | 'query' | 'analytics' | 'graph'>('overview')
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
 
   const api = useAPI()
+  const notifications = useNotifications()
 
   // Handle WebSocket messages
   const handleMessage = useCallback((data: any) => {
@@ -129,21 +134,56 @@ function App() {
         break
       case 'metrics':
       case 'trails':
-      case 'runs':
         // Trigger a refresh of relevant data
         loadStats()
         break
+      case 'runs':
+        // Refresh stats
+        loadStats()
+        // Notify about run status
+        if (data.status === 'completed') {
+          notifications.success(
+            'Workflow Run Completed',
+            `${data.workflow_name || 'Workflow'} finished successfully`
+          )
+        } else if (data.status === 'failed') {
+          notifications.error(
+            'Workflow Run Failed',
+            `${data.workflow_name || 'Workflow'} encountered an error`
+          )
+        }
+        break
       case 'heuristics':
+        // Refresh heuristics
+        loadHeuristics()
+        // Notify about new heuristic
+        notifications.info(
+          'New Heuristic Created',
+          data.rule || 'A new heuristic has been added to the system'
+        )
+        break
       case 'heuristic_promoted':
         // Refresh heuristics
         loadHeuristics()
+        // Notify about promotion to golden rule
+        notifications.success(
+          'Heuristic Promoted to Golden Rule',
+          data.rule || 'A heuristic has been promoted to a golden rule'
+        )
         break
       case 'learnings':
         // Learnings changed, refresh stats
         loadStats()
         break
+      case 'ceo_inbox':
+        // New CEO inbox item
+        notifications.warning(
+          'New CEO Decision Required',
+          data.message || 'A new item has been added to the CEO inbox'
+        )
+        break
     }
-  }, [])
+  }, [notifications])
 
   // Use relative path - hook handles URL building, Vite proxies in dev
   const { connectionStatus } = useWebSocket('/ws', handleMessage)
@@ -326,11 +366,15 @@ function App() {
   const commands = [
     { id: 'overview', label: 'Go to Overview', category: 'Navigation', action: () => setActiveTab('overview') },
     { id: 'heuristics', label: 'View Heuristics', category: 'Navigation', action: () => setActiveTab('heuristics') },
+    { id: 'graph', label: 'View Knowledge Graph', category: 'Navigation', action: () => setActiveTab('graph') },
     { id: 'runs', label: 'View Runs', category: 'Navigation', action: () => setActiveTab('runs') },
     { id: 'timeline', label: 'View Timeline', category: 'Navigation', action: () => setActiveTab('timeline') },
+    { id: 'analytics', label: 'View Learning Analytics', category: 'Navigation', action: () => setActiveTab('analytics') },
     { id: 'query', label: 'Query the Building', shortcut: '⌘Q', category: 'Actions', action: () => setActiveTab('query') },
     { id: 'refresh', label: 'Refresh Data', shortcut: '⌘R', category: 'Actions', action: () => { loadStats(); loadHeuristics() } },
     { id: 'clearDomain', label: 'Clear Domain Filter', category: 'Actions', action: () => setSelectedDomain(null) },
+    { id: 'toggleNotificationSound', label: notifications.soundEnabled ? 'Mute Notifications' : 'Unmute Notifications', category: 'Settings', action: notifications.toggleSound },
+    { id: 'clearNotifications', label: 'Clear All Notifications', category: 'Actions', action: notifications.clearAll },
   ]
 
   return (
@@ -342,6 +386,13 @@ function App() {
           isOpen={commandPaletteOpen}
           onClose={() => setCommandPaletteOpen(false)}
           commands={commands}
+        />
+        <NotificationPanel
+          notifications={notifications.notifications}
+          onDismiss={notifications.removeNotification}
+          onClearAll={notifications.clearAll}
+          soundEnabled={notifications.soundEnabled}
+          onToggleSound={notifications.toggleSound}
         />
         <div className="relative z-10">
       <Header
@@ -403,6 +454,15 @@ function App() {
             />
           )}
 
+          {activeTab === 'graph' && (
+            <KnowledgeGraph
+              onNodeClick={(node) => {
+                // Optionally switch to heuristics tab and filter by domain
+                setSelectedDomain(node.domain)
+              }}
+            />
+          )}
+
           {activeTab === 'runs' && (
             <RunsPanel
               runs={runs.map(r => ({
@@ -443,6 +503,10 @@ function App() {
 
           {activeTab === 'query' && (
             <QueryInterface />
+          )}
+
+          {activeTab === 'analytics' && (
+            <LearningVelocity days={30} />
           )}
         </div>
       </main>
