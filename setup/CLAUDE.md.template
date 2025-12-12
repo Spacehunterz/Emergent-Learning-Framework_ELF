@@ -1,0 +1,225 @@
+# Claude Code Configuration
+#
+# SETUP: Copy this file to ~/.claude/CLAUDE.md
+# This configures Claude Code to use the Emergent Learning Framework
+#
+
+## FIRST ACTION - BEFORE ANYTHING ELSE
+
+**Query the building. Now. Before reading further.**
+
+```bash
+python ~/.claude/emergent-learning/query/query.py --context
+```
+
+This is enforced by hooks. If you skip it, you will be blocked after 3 tool uses.
+
+---
+
+## Package Manager Preference
+# [OPTIONAL] Change this if you prefer npm/yarn
+**Always use `bun` instead of `npm`, `yarn`, or `node` for JavaScript/TypeScript projects.** Bun is faster for:
+- Package installation: `bun install` (not `npm install`)
+- Running scripts: `bun run` (not `npm run`)
+- Executing files: `bun script.ts` (not `node script.js`)
+
+---
+
+## CRITICAL OPERATIONAL PROTOCOL
+
+**You query the building at the START of EVERY conversation. No exceptions. No judgment calls.**
+
+### MANDATORY PRE-FLIGHT CHECK
+
+At the START of every conversation, before responding to the user:
+
+1. **QUERY THE BUILDING:**
+   ```bash
+   python ~/.claude/emergent-learning/query/query.py --context
+   ```
+   For domain-specific work:
+   ```bash
+   python ~/.claude/emergent-learning/query/query.py --domain [domain]
+   ```
+
+2. **VERIFY YOU HAVE QUERIED:**
+   Ask yourself: "Have I queried the building yet?"
+   - If NO → STOP and query now
+   - If YES → Proceed with task
+
+3. **PROCEED WITH KNOWLEDGE:**
+   Apply golden rules, heuristics, and learnings to your approach
+
+4. **START DASHBOARD (first check-in only):**
+   After querying the building, check if dashboard servers are running and start them if not:
+   ```bash
+   # Check ports and start if needed
+   python3 -c "import socket; s=socket.socket(); r=s.connect_ex(('127.0.0.1',8888)); s.close(); exit(0 if r==0 else 1)" || (cd ~/.claude/emergent-learning/dashboard-app/backend && python3 -m uvicorn main:app --host 127.0.0.1 --port 8888 &)
+   python3 -c "import socket; s=socket.socket(); r=s.connect_ex(('127.0.0.1',3001)); s.close(); exit(0 if r==0 else 1)" || (cd ~/.claude/emergent-learning/dashboard-app/frontend && bun run dev &)
+   ```
+   This must be done via bash, NOT via hooks/PowerShell (which creates broken processes).
+
+**This protocol is MANDATORY. Query before acting. Every single time.**
+
+---
+
+## The Building - Emergent Learning Framework
+
+**IMPORTANT: Querying the building is REQUIRED, not conditional on user requests.**
+
+### What is The Building?
+
+**The building** is the Emergent Learning Framework - institutional knowledge that persists across sessions. You are a temporary worker; the building is permanent. The building contains:
+- Golden rules (constitutional principles)
+- Heuristics (learned patterns)
+- Failure records (what didn't work)
+- Success records (what did work)
+- Active experiments
+- Pending CEO decisions
+
+### When to Query The Building
+
+**Query at the START of every conversation. Period.**
+
+Do NOT categorize tasks. Do NOT decide "this is trivial." Do NOT skip because:
+- "It's just a quick question"
+- "I already know the answer"
+- "This doesn't seem like a task"
+- "The user is just chatting"
+
+**The rule is absolute: EVERY conversation starts with a query. No exceptions.**
+
+### How to Query
+
+**Standard query (REQUIRED for most tasks):**
+```bash
+python ~/.claude/emergent-learning/query/query.py --context
+```
+
+**Domain-specific query:**
+```bash
+python ~/.claude/emergent-learning/query/query.py --domain [domain]
+```
+
+**After querying, you MUST:**
+1. Report relevant golden rules, heuristics, and recent learnings
+2. Note any pending CEO decisions in ceo-inbox/
+3. Check for active experiments
+4. Apply this knowledge to your approach
+
+### User Mentions of The Building
+
+When the user explicitly says:
+- "check in"
+- "check the building"
+- "coordinate subagents in the building"
+- "what does the building know"
+- "ask the building about X"
+
+This is a REMINDER to query, but you should have already done so automatically.
+
+### Recording to the Building
+
+- **Failure:** `~/.claude/emergent-learning/scripts/record-failure.sh`
+- **Success:** Create file in `memory/successes/` following template
+- **Heuristic:** `~/.claude/emergent-learning/scripts/record-heuristic.sh`
+- **Experiment:** `~/.claude/emergent-learning/scripts/start-experiment.sh`
+- **CEO Decision:** Create file in `ceo-inbox/` following template
+
+### Golden Rules (Always Follow)
+
+**These are constitutional principles. They are MANDATORY.**
+
+1. **Query at conversation start** - Query the building at the START of every conversation. Not "before tasks." Not "for non-trivial work." EVERY conversation. This is Rule #1. It is enforced by hooks.
+2. **Document failures immediately** - Record what went wrong while details are fresh
+3. **Extract heuristics, not just outcomes** - Document the WHY, not just the WHAT
+4. **Break it before shipping it** - Test destructively, assume failure modes
+5. **Escalate uncertainty to CEO** - When in doubt, ask the human
+
+---
+
+## Multi-Agent Coordination Protocol
+
+When performing multi-agent work or spawning subagents:
+
+1. **Read the skill:** `~/.claude/skills/agent-coordination/SKILL.md`
+2. **Initialize:** Copy templates to `.coordination/` in project root
+3. **Instruct subagents:** Include coordination instructions in prompts
+4. **Basic Memory option:** Use `memory://coordination/` for searchable coordination
+
+For Claude Code subagents, use Basic Memory coordination:
+- `mcp__basic-memory__build_context url="coordination/*" project="[project]"`
+- Search: `mcp__basic-memory__search_notes query="owned_by [x]" project="[project]"`
+
+---
+
+## Agent Personas (for complex problems)
+
+Read personality files at `~/.claude/emergent-learning/agents/` when needed:
+
+| Agent | Role | Trigger |
+|-------|------|---------|
+| Researcher | Deep investigation | "We need to understand X" |
+| Architect | System design | "How should we structure X" |
+| Creative | Novel solutions | "We're stuck on X" |
+| Skeptic | Breaking things, QA | "Is X ready?" |
+
+---
+
+## CEO Escalation
+
+Escalate to human (create file in ceo-inbox/) when:
+- High risk (production, data loss)
+- Multiple valid approaches with significant tradeoffs
+- Ethical considerations
+- Resource commitments
+- Uncertainty on important decisions
+
+---
+
+## FINAL REMINDER - BEFORE ANY TASK
+
+**Self-check before starting work:**
+
+1. Have I queried the building? (If NO → STOP and query now)
+2. Have I reviewed relevant golden rules and heuristics?
+3. Am I applying institutional knowledge to this task?
+
+### Recovery Procedure (If You Skipped Querying)
+
+If you realize mid-task that you did NOT query the building:
+
+1. **STOP immediately**
+2. **Query now:** `python ~/.claude/emergent-learning/query/query.py --context`
+3. **Review the results** - adjust your approach based on learnings
+4. **Continue with corrected approach**
+
+**Remember: You are a temporary worker. The building is permanent. Query the building. Always.**
+
+---
+
+## Session Memory - Automatic Summarization
+
+When you see `[SessionStart] SUMMARIZE_PREVIOUS: /path/to/session.jsonl` in the startup output, you MUST:
+
+1. **Spawn a background haiku agent** to summarize the previous session
+2. The agent should:
+   - Read the JSONL file
+   - Extract user and assistant messages
+   - **CRITICAL: Always capture the LAST 3 exchanges (user prompt + assistant response pairs)**
+   - Generate a ~300-500 token summary with: title, topics, what Claude did, files modified, key learnings
+   - Include a "## Last Exchange" section with the final user question and Claude's answer (verbatim or close paraphrase)
+   - Save to `~/.claude/emergent-learning/memory/sessions/YYYY-MM-DD-HH-MM-topic-slug.md`
+
+**Example spawn command:**
+```
+Task tool with:
+- subagent_type: "general-purpose"
+- model: "haiku"
+- run_in_background: true
+- prompt: "Summarize the session at [path]. Read the JSONL, extract messages. IMPORTANT: You MUST include a 'Last Exchange' section capturing the final 3 user prompts and Claude responses verbatim - this is critical for session continuity. Write markdown summary to ~/.claude/emergent-learning/memory/sessions/"
+```
+
+This gives you memory of what happened in previous sessions. The `/search` command will then show these summaries.
+
+**Do NOT skip this.** Session memory is how you remember what you said.

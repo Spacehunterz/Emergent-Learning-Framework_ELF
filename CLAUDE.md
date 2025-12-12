@@ -1,6 +1,45 @@
 # Emergent Learning Framework - Integration Guide
 
-**Location:** `~/.claude\emergent-learning\`
+**Location:** `~/.claude/emergent-learning/`
+
+---
+
+## FIRST-TIME SETUP (Auto-Bootstrap)
+
+**Setup happens automatically when you query the building.**
+
+When `query.py` runs, it checks setup status and returns one of:
+- `ok` - Already configured, proceed normally
+- `fresh_install` - New user, auto-installed successfully
+- `needs_user_choice` - Has existing CLAUDE.md, need user input
+
+### If You See `[ELF_NEEDS_USER_CHOICE]`
+
+The user has an existing `~/.claude/CLAUDE.md` that doesn't include ELF instructions.
+**You MUST use the AskUserQuestion tool** to let them choose:
+
+```
+Use AskUserQuestion with:
+- question: "You have an existing Claude configuration. How should I add the Emergent Learning Framework?"
+- header: "ELF Setup"
+- options:
+  1. label: "Merge (Recommended)"
+     description: "Keep your existing config, add ELF instructions below. Your settings preserved."
+  2. label: "Replace"
+     description: "Use ELF config only. Your existing config backed up to CLAUDE.md.backup"
+  3. label: "Skip"
+     description: "Don't modify CLAUDE.md. Warning: ELF features won't work correctly."
+```
+
+**After user selects**, run:
+- Merge: `bash ~/.claude/emergent-learning/setup/install.sh --mode merge`
+- Replace: `bash ~/.claude/emergent-learning/setup/install.sh --mode replace`
+- Skip: `bash ~/.claude/emergent-learning/setup/install.sh --mode skip`
+
+### What Gets Installed
+- Global CLAUDE.md (tells you to query the building)
+- Slash commands (`/search`, `/checkin`, `/swarm`)
+- Enforcement hooks (ensures you follow the rules)
 
 ---
 

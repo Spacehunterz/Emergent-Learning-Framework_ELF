@@ -19,3 +19,4 @@ wiki-repo/
 *.db
 *.db-journal
 *.db.backup*
+.claude/
