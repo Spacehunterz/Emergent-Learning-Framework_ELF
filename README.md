@@ -49,9 +49,17 @@ Claude: [Queries building, starts dashboard, returns golden rules + heuristics]
 | **Coordinated Swarms** | Multi-agent workflows with specialized personas |
 | **Local Dashboard** | Visual monitoring at http://localhost:3001 (no API tokens used) |
 
+### Hotspots
 ![Hotspots](assets/Hotspots.png)
+Treemap of file activity - see which files get touched most and spot anomalies at a glance.
+
+### Graph
 ![Graph](assets/graph.png)
+Interactive knowledge graph showing how heuristics connect across domains.
+
+### Analytics
 ![Analytics](assets/analytics.png)
+Track learning velocity, success rates, and confidence trends over time.
 
 ## How It Works
 
