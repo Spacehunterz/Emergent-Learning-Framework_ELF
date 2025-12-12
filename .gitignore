@@ -4,14 +4,18 @@
 # System files
 desktop.ini
 __pycache__/
+*.pyc
 
-# Private data - DO NOT PUSH TO PUBLIC REPO
-failure-analysis/
-memory/heuristics/
-memory/learnings/
-memory/metrics/
-memory/successes/
-memory/index.db
+# Private user data - NEVER push to public repo
+memory/
 ceo-inbox/
 logs/
+failure-analysis/
+
+# Wiki clone
 wiki-repo/
+
+# Database files
+*.db
+*.db-journal
+*.db.backup*
