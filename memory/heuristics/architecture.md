@@ -22,3 +22,13 @@ When multiple files define the same schema (ORM, raw SQL, migration scripts), th
 
 ---
 
+## H-121: If the task requires judgment, use an agent not a state machine. State machines are for routing, not reasoning. If you're writing 'if keyword in text', you've already failed.
+
+**Confidence**: 0.9
+**Source**: failure
+**Created**: 2025-12-11
+
+Built 600 lines of keyword-matching Python when 50 lines of Task agent spawning would do. Wasted 100k tokens.
+
+---
+
