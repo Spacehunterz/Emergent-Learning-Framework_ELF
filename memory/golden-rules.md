@@ -84,3 +84,13 @@ These are proven principles with high confidence. They are ALWAYS loaded into co
 **Why:** Summaries signal "I'm done" to the user. If logging happens after, it requires user to remind you. Logging is part of completing the work, not a separate afterthought.
 **Promoted:** 2025-12-01 (from repeated user feedback about wrong order)
 **Validations:** 1
+
+---
+
+## 9. useEffect Callback Dependencies Cause Loops
+> useEffect with callback deps causes reconnect loops - use refs for callbacks, empty deps for mount-only effects
+
+**Why:** React useEffect re-runs when dependencies change. Callbacks like onMessage are new references each render, causing effect to re-run and reconnect WebSocket. Fix: store callback in useRef, update ref in separate effect, use empty [] deps for connection effect.
+**Promoted:** 2025-12-11 (WebSocket reconnect loop debugging)
+**Validations:** 1 (painful debugging session)
+
