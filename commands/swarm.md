@@ -5,16 +5,26 @@ Spawn and manage coordinated agents using the blackboard pattern.
 ## Usage
 
 ```
-/swarm [task]    # Execute task (or continue/iterate if no task given)
-/swarm show      # View full state (agents + findings + tasks + questions)
+/swarm [task]    # Execute task with automatic watcher
+/swarm show      # View full state
 /swarm reset     # Clear blackboard
 /swarm stop      # Disable coordination
 ```
 
+## Watcher (Automatic)
+
+**Every swarm automatically starts a Haiku watcher** that monitors for stuck/failed agents.
+
+- **Watcher (Haiku)**: Monitors coordination state every 30-60s, detects problems
+- **Handler (Opus)**: Decides what to do when problems found
+
+No flags needed. Watcher is always on.
+
 ## Examples
 
 ```
-/swarm investigate the authentication system end-to-end
+/swarm investigate the authentication system
+/swarm implement feature X
 /swarm show
 /swarm reset
 ```
@@ -34,14 +44,25 @@ Spawn and manage coordinated agents using the blackboard pattern.
    python ~/.claude/plugins/agent-coordination/utils/blackboard.py reset
    ```
 
-2. **Analyze & decompose** the task into parallel subtasks
+2. **Start watcher agent** (runs in background):
+   ```
+   Task tool call:
+   - description: "[WATCHER] Monitor swarm"
+   - prompt: "Monitor ~/.claude/emergent-learning/.coordination/ for stuck agents..."
+   - subagent_type: "general-purpose"
+   - model: "haiku"
+   - run_in_background: true
+   ```
 
-3. **Show plan**:
+3. **Analyze & decompose** the task into parallel subtasks
+
+4. **Show plan**:
    ```
    ## Swarm Plan
 
    **Task:** [task]
    **Agents:** [count]
+   **Watcher:** haiku (automatic)
 
    | # | Subtask | Scope |
    |---|---------|-------|
@@ -51,7 +72,7 @@ Spawn and manage coordinated agents using the blackboard pattern.
    Proceed? [Y/n]
    ```
 
-4. **Spawn agents** using Task tool with `[SWARM]` marker:
+5. **Spawn agents** using Task tool with `[SWARM]` marker:
 
    **IMPORTANT:** Always include `[SWARM]` in the description so hooks inject coordination:
    ```
@@ -67,9 +88,24 @@ Spawn and manage coordinated agents using the blackboard pattern.
    - Inject context about other agents
    - Add coordination instructions
 
-5. **Iterate** on follow-up tasks from queue (max 5 iterations)
+6. **Iterate** on follow-up tasks from queue (max 5 iterations)
 
-6. **Synthesize** all findings into summary
+7. **Synthesize** all findings into summary
+
+### Watcher Behavior
+
+The Haiku watcher runs in background and:
+- Checks coordination state every 30-60 seconds
+- Detects stuck agents (no heartbeat > 120s)
+- Detects errors in agent outputs
+- If problem found: spawns Opus handler to decide action
+
+**Handler actions (Opus decides):**
+- RESTART: Reset stuck agent
+- REASSIGN: Put task back in queue
+- SYNTHESIZE: Collect partial outputs
+- ABORT: Stop work on task
+- ESCALATE_TO_HUMAN: Write to ceo-inbox/
 
 ### `/swarm show` (View State)
 
@@ -84,6 +120,8 @@ Output format:
 ## Swarm Status
 
 **Agents:** 3 (2 completed, 1 active)
+**Watcher:** haiku (running)
+
 - agent-a1b2: Investigate auth [completed]
 - agent-c3d4: Write tests [active]
 - agent-e5f6: Update docs [completed]

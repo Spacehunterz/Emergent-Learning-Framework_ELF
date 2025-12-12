@@ -1,6 +1,0 @@
-[2025-12-01 18:02:36] =========================================
-[2025-12-01 18:02:36] Emergent Learning Framework - Self-Test
-[2025-12-01 18:02:36] Started: Mon, Dec  1, 2025  6:02:36 PM
-[2025-12-01 18:02:36] =========================================
-[2025-12-01 18:02:36] === Test 1: Directory Structure ===
-[0;32m✓ PASS[0m: Directory exists: /c/Users/Evede/.claude/emergent-learning/memory

@@ -1,2 +1,0 @@
-{"domain": "swarm-coordination", "heuristic": "file-ownership-prevents-conflicts", "confidence": 0.8}
-{"domain": "swarm-coordination", "heuristic": "phased-execution-for-dependencies", "confidence": 0.8}

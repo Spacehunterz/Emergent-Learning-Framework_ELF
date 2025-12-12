@@ -1,3 +1,16 @@
+# Coordination state (runtime)
 .coordination/
+
+# System files
 desktop.ini
 __pycache__/
+
+# Private data - DO NOT PUSH TO PUBLIC REPO
+failure-analysis/
+memory/heuristics/
+memory/learnings/
+memory/metrics/
+memory/successes/
+memory/index.db
+ceo-inbox/
+logs/
