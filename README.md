@@ -52,16 +52,20 @@ Claude: [Queries building, starts dashboard, returns golden rules + heuristics]
 ### Dashboard Views
 
 **Overview** - Hotspot treemap showing file activity, anomalies, and golden rules at a glance
-![Overview](docs/images/cosmic-dashboard-overview.png)
+
+![Overview](https://raw.githubusercontent.com/Spacehunterz/Emergent-Learning-Framework_ELF/main/docs/images/cosmic-dashboard-overview.png)
 
 **Heuristics** - Browse and manage learned patterns with confidence scores
-![Heuristics](docs/images/cosmic-dashboard-heuristics.png)
+
+![Heuristics](https://raw.githubusercontent.com/Spacehunterz/Emergent-Learning-Framework_ELF/main/docs/images/cosmic-dashboard-heuristics.png)
 
 **Knowledge Graph** - Interactive visualization of heuristic relationships across domains
-![Graph](docs/images/cosmic-dashboard-graph.png)
+
+![Graph](https://raw.githubusercontent.com/Spacehunterz/Emergent-Learning-Framework_ELF/main/docs/images/cosmic-dashboard-graph.png)
 
 **Analytics** - Track learning velocity, success rates, and confidence trends over time
-![Analytics](docs/images/cosmic-dashboard-analytics.png)
+
+![Analytics](https://raw.githubusercontent.com/Spacehunterz/Emergent-Learning-Framework_ELF/main/docs/images/cosmic-dashboard-analytics.png)
 
 ## How It Works
 
