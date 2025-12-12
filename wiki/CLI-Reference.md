@@ -25,6 +25,22 @@ python ~/.claude/emergent-learning/query/query.py --validate
 python ~/.claude/emergent-learning/query/query.py --export > backup.json
 ```
 
+## Session Search
+
+Search your session history with natural language using the `/search` slash command:
+
+```
+/search what was my last prompt?
+/search what was I working on yesterday?
+/search find prompts about git
+/search when did I last check in?
+/search show me recent conversations
+```
+
+Type `/search` followed by any question in plain English. Claude will search your session logs and answer based on your conversation history.
+
+**Token Usage:** ~500 tokens for quick lookups, scales with how much history you request.
+
 ## Recording Scripts
 
 ```bash

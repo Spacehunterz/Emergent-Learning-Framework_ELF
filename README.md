@@ -65,17 +65,16 @@ Track learning velocity, success rates, and confidence trends over time.
 
 ### Cross-Session Continuity
 
-Ever close a session and forget what you were working on? Just ask.
+Ever close a session and forget what you were working on? Use `/search` with natural language:
 
 ```
-You: what did I ask last session?
-Claude: [retrieves your previous prompts instantly]
-
-You: search for that auth bug we fixed last week
-Claude: [finds relevant session history]
+/search what was my last prompt?
+/search what was I working on yesterday?
+/search find prompts about git
+/search when did I last check in?
 ```
 
-No commands to memorize. No manual searching. Just ask in plain English and pick up where you left off.
+Just type `/search` followed by your question in plain English. Pick up where you left off instantly.
 
 **Token Usage:** ~500 tokens for quick lookups, scales with how much history you request.
 
@@ -117,6 +116,7 @@ Runs automatically - no user interaction required. See [watcher/README.md](watch
 | `what does the building know about X` | Search for topic X |
 | `record this failure: [lesson]` | Create failure log |
 | `record this success: [pattern]` | Document what worked |
+| `/search [question]` | Search session history with natural language |
 
 ## Quick Commands
 
