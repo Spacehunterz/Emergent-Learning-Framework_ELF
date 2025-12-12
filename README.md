@@ -25,8 +25,13 @@ You: check in
 Claude: [Queries building, starts dashboard, returns golden rules + heuristics]
 ```
 
+**Auto-Setup on First Check-In:**
+- **New user:** Everything installs automatically - config, commands, hooks
+- **Existing CLAUDE.md:** Selection boxes to choose merge/replace/skip
+- **Already configured:** Proceeds normally
+
 **What "check in" does:**
-- **First time ever:** Installs hooks, initializes database, starts dashboard
+- **First time ever:** Auto-installs config, hooks, /search, /checkin, /swarm commands
 - **Start of session:** Loads knowledge, starts dashboard at http://localhost:3001 (Ctrl+click to open)
 - **When stuck:** Searches for relevant patterns that might help
 - **Before closing:** Ensures learnings are captured (CYA - cover your ass)
