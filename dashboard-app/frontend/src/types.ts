@@ -135,3 +135,31 @@ export interface Domain {
   avg_confidence: number
   recent_activity: number
 }
+
+export interface Session {
+  session_id: string
+  project: string
+  project_path: string
+  first_timestamp: string
+  last_timestamp: string
+  prompt_count: number
+  first_prompt_preview: string
+  git_branch: string
+  is_agent: boolean
+  file_path: string
+  file_size: number
+}
+
+export interface SessionMessage {
+  uuid: string
+  type: 'user' | 'assistant'
+  timestamp: string
+  content: string
+  is_command: boolean
+  command_name?: string
+  tool_use?: Array<{name: string, input: any}>
+}
+
+export interface SessionDetail extends Session {
+  messages: SessionMessage[]
+}

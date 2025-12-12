@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import List, Dict, Optional, Any
 from contextlib import contextmanager
 from collections import defaultdict
+from dataclasses import asdict
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,6 +33,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
+
+# Import session indexing
+from session_index import SessionIndex
 
 # Paths
 EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
@@ -206,6 +210,9 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+# Initialize session index
+session_index = SessionIndex()
+
 
 # ==============================================================================
 # Background Task: Monitor for Changes
@@ -218,6 +225,7 @@ async def monitor_changes():
     last_run_count = 0
     last_heuristics_count = 0
     last_learnings_count = 0
+    last_session_scan = None
 
     while True:
         try:
@@ -297,6 +305,16 @@ async def monitor_changes():
                     await manager.broadcast_update("learnings", {"recent": recent})
                     last_learnings_count = learnings_count
 
+            # Rescan session index every 5 minutes
+            current_time = datetime.now()
+            if last_session_scan is None or (current_time - last_session_scan).total_seconds() > 300:
+                try:
+                    session_count = session_index.scan()
+                    logger.info(f"Session index refreshed: {session_count} sessions")
+                    last_session_scan = current_time
+                except Exception as e:
+                    logger.error(f"Session index scan error: {e}", exc_info=True)
+
         except Exception as e:
             logger.error(f"Monitor error: {e}", exc_info=True)
 
@@ -305,6 +323,14 @@ async def monitor_changes():
 
 @app.on_event("startup")
 async def startup_event():
+    # Initial session index scan
+    try:
+        session_count = session_index.scan()
+        logger.info(f"Initial session index scan: {session_count} sessions")
+    except Exception as e:
+        logger.error(f"Failed to scan session index on startup: {e}", exc_info=True)
+
+    # Start background monitoring
     asyncio.create_task(monitor_changes())
 
 
@@ -1654,6 +1680,155 @@ async def natural_language_query(request: QueryRequest):
         results["summary"] = f"Found {h_count} heuristics, {l_count} learnings, and {hs_count} hot spots matching '{request.query}'"
 
     return results
+
+
+# ==============================================================================
+# REST API: Session History
+# ==============================================================================
+
+@app.get("/api/sessions/stats")
+async def get_session_stats():
+    """
+    Get session statistics.
+
+    Returns:
+        {
+            "total_sessions": int,
+            "agent_sessions": int,
+            "user_sessions": int,
+            "total_prompts": int,
+            "last_scan": "timestamp",
+            "projects_count": int
+        }
+    """
+    try:
+        stats = session_index.get_stats()
+        return stats
+
+    except Exception as e:
+        logger.error(f"Error getting session stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to get session stats")
+
+
+@app.get("/api/sessions")
+async def get_sessions(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    days: Optional[int] = Query(None, ge=1),
+    project: Optional[str] = None,
+    search: Optional[str] = None,
+    include_agent: bool = False
+):
+    """
+    Get list of sessions with metadata.
+
+    Query Parameters:
+        offset: Number of sessions to skip (pagination)
+        limit: Maximum sessions to return (default 50, max 200)
+        days: Filter to sessions from last N days
+        project: Filter by project name
+        search: Search in first prompt preview
+        include_agent: Include agent sessions (default: False)
+
+    Returns:
+        {
+            "sessions": [...],
+            "total": int,
+            "offset": int,
+            "limit": int
+        }
+    """
+    try:
+        sessions, total = session_index.list_sessions(
+            offset=offset,
+            limit=limit,
+            days=days,
+            project=project,
+            search=search,
+            include_agent=include_agent
+        )
+
+        return {
+            "sessions": [asdict(s) for s in sessions],
+            "total": total,
+            "offset": offset,
+            "limit": limit
+        }
+
+    except Exception as e:
+        logger.error(f"Error listing sessions: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to list sessions")
+
+
+@app.get("/api/sessions/{session_id}")
+async def get_session(session_id: str):
+    """
+    Get full session content with all messages.
+
+    Args:
+        session_id: Session UUID
+
+    Returns:
+        {
+            "session_id": "...",
+            "project": "...",
+            "project_path": "...",
+            "first_timestamp": "...",
+            "last_timestamp": "...",
+            "prompt_count": int,
+            "git_branch": "...",
+            "is_agent": bool,
+            "messages": [
+                {
+                    "uuid": "...",
+                    "type": "user" | "assistant",
+                    "timestamp": "...",
+                    "content": "...",
+                    "is_command": bool,
+                    "tool_use": [...],
+                    "thinking": "..."
+                },
+                ...
+            ]
+        }
+    """
+    try:
+        session = session_index.load_full_session(session_id)
+
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        return session
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error loading session {session_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to load session")
+
+
+@app.get("/api/projects")
+async def get_session_projects():
+    """
+    Get list of unique projects with session counts.
+
+    Returns:
+        [
+            {
+                "name": "project-name",
+                "session_count": int,
+                "last_activity": "timestamp"
+            },
+            ...
+        ]
+    """
+    try:
+        projects = session_index.get_projects()
+        return projects
+
+    except Exception as e:
+        logger.error(f"Error getting projects: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to get projects")
 
 
 # ==============================================================================

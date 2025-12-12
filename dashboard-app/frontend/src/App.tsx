@@ -17,6 +17,7 @@ import KnowledgeGraph from './components/KnowledgeGraph'
 import { CommandPalette } from './components/CommandPalette'
 import { NotificationPanel } from './components/NotificationPanel'
 import { LearningVelocity } from './components/LearningVelocity'
+import SessionHistoryPanel from './components/SessionHistoryPanel'
 import { TimelineEvent } from './types'
 
 // Simplified types matching API responses
@@ -120,7 +121,7 @@ function App() {
   const [events, setEvents] = useState<RawEvent[]>([])
   const [_timeline, setTimeline] = useState<TimelineData | null>(null)
   const [anomalies, setAnomalies] = useState<Anomaly[]>([])
-  const [activeTab, setActiveTab] = useState<'overview' | 'heuristics' | 'runs' | 'timeline' | 'query' | 'analytics' | 'graph'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'heuristics' | 'runs' | 'timeline' | 'query' | 'analytics' | 'graph' | 'sessions'>('overview')
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
@@ -484,6 +485,8 @@ function App() {
               onOpenInEditor={handleOpenInEditor}
             />
           )}
+
+          {activeTab === 'sessions' && <SessionHistoryPanel />}
 
           {activeTab === 'timeline' && (
             <TimelineView
