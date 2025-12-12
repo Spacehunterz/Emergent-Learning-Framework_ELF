@@ -20,3 +20,4 @@ wiki-repo/
 *.db-journal
 *.db.backup*
 .claude/
+desktop.ini
