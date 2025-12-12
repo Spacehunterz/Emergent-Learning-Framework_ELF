@@ -49,6 +49,7 @@ Claude: [Queries building, starts dashboard, returns golden rules + heuristics]
 | **Coordinated Swarms** | Multi-agent workflows with specialized personas |
 | **Local Dashboard** | Visual monitoring at http://localhost:3001 (no API tokens used) |
 | **Cross-Session Continuity** | Pick up where you left off - search what you asked in previous sessions. Lightweight retrieval (~500 tokens), or ~20k for heavy users reviewing full day |
+| **Async Watcher** | Background Haiku monitors your work, escalates to Opus only when needed. 95% cheaper than constant Opus monitoring |
 
 ### Hotspots
 ![Hotspots](assets/Hotspots.png)
@@ -77,6 +78,20 @@ Claude: [finds relevant session history]
 No commands to memorize. No manual searching. Just ask in plain English and pick up where you left off.
 
 **Token Usage:** ~500 tokens for quick lookups, scales with how much history you request.
+
+### Async Watcher
+
+A background Haiku agent monitors coordination state every 30 seconds. When it detects something that needs attention, it escalates to Opus automatically.
+
+```
+┌─────────────────┐     exit 1      ┌─────────────────┐
+│  Haiku (Tier 1) │ ──────────────► │  Opus (Tier 2)  │
+│  Fast checks    │   "need help"   │  Deep analysis  │
+│  ~$0.001/check  │                 │  ~$0.10/call    │
+└─────────────────┘                 └─────────────────┘
+```
+
+Runs automatically - no user interaction required. See [watcher/README.md](watcher/README.md) for configuration and details.
 
 ## How It Works
 
