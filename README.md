@@ -62,6 +62,47 @@ Interactive knowledge graph showing how heuristics connect across domains.
 ![Analytics](assets/analytics.png)
 Track learning velocity, success rates, and confidence trends over time.
 
+### Cross-Session Continuity
+
+Ever close a session and forget what you were working on? This solves that.
+
+**The Problem:** Claude Code sessions are ephemeral. Close the terminal, lose the context. You start fresh every time, re-explaining what you were doing.
+
+**The Solution:** Session history is now searchable. Pick up exactly where you left off.
+
+```bash
+# What did I ask last session?
+python ~/.claude/emergent-learning/sessions/get_last_prompts.py
+
+# Last 10 prompts across sessions
+python ~/.claude/emergent-learning/sessions/get_last_prompts.py --all-sessions --limit 10
+
+# Search session logs for specific work
+python ~/.claude/emergent-learning/sessions/search.py "auth bug we fixed"
+python ~/.claude/emergent-learning/sessions/search.py "what failed yesterday" --days 1
+```
+
+**Example Output:**
+```
+==================================================
+  LAST 5 USER PROMPTS
+==================================================
+
+[1] 2025-12-12 06:36:01
+    check in
+
+[2] 2025-12-12 06:39:24
+    we have better memory now right?
+
+[3] 2025-12-12 06:41:26
+    no we added a way to not lose any progress even if session closes
+```
+
+**Token Usage:**
+- Quick lookup (last 5 prompts): ~500 tokens
+- Full day review for heavy users: ~20k tokens
+- You control how much to retrieve with `--limit`
+
 ## How It Works
 
 ```
