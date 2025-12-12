@@ -325,12 +325,19 @@ async def websocket_endpoint(websocket: WebSocket):
 
         while True:
             # Keep connection alive, handle any incoming messages
-            data = await websocket.receive_text()
-            # Could handle commands from frontend here
-            if data == "ping":
-                await websocket.send_json({"type": "pong"})
+            try:
+                data = await websocket.receive_text()
+                if data == "ping":
+                    await websocket.send_json({"type": "pong"})
+            except Exception as e:
+                logger.warning(f"WebSocket receive error: {e}")
+                break
 
     except WebSocketDisconnect:
+        logger.info("Client disconnected")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+    finally:
         manager.disconnect(websocket)
 
 

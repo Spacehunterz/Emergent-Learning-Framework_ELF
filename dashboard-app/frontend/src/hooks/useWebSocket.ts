@@ -4,11 +4,9 @@ type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error'
 
 // Build WebSocket URL - handles relative paths and protocol
 function buildWsUrl(path: string): string {
-  // If already a full URL, use as-is
   if (path.startsWith('ws://') || path.startsWith('wss://')) {
     return path
   }
-  // Build from current location
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const host = window.location.host
   const wsPath = path.startsWith('/') ? path : `/${path}`
@@ -19,10 +17,16 @@ export function useWebSocket(url: string, onMessage: (data: any) => void) {
   const ws = useRef<WebSocket | null>(null)
   const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mountedRef = useRef(true)
+  const onMessageRef = useRef(onMessage)
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected')
   const reconnectAttempts = useRef(0)
   const maxReconnectAttempts = 10
   const baseReconnectDelay = 1000
+
+  // Keep onMessage ref updated without triggering reconnects
+  useEffect(() => {
+    onMessageRef.current = onMessage
+  }, [onMessage])
 
   const connect = useCallback(() => {
     if (!mountedRef.current) return
@@ -39,14 +43,13 @@ export function useWebSocket(url: string, onMessage: (data: any) => void) {
         if (!mountedRef.current) return
         setConnectionStatus('connected')
         reconnectAttempts.current = 0
-        console.log('WebSocket connected')
       }
 
       ws.current.onmessage = (event) => {
         if (!mountedRef.current) return
         try {
           const data = JSON.parse(event.data)
-          onMessage(data)
+          onMessageRef.current(data)
         } catch (err) {
           console.error('Failed to parse WebSocket message:', err)
         }
@@ -55,11 +58,6 @@ export function useWebSocket(url: string, onMessage: (data: any) => void) {
       ws.current.onclose = (event) => {
         if (!mountedRef.current) return
         setConnectionStatus('disconnected')
-
-        // Only log unexpected disconnects
-        if (event.code !== 1000 && event.code !== 1001) {
-          console.log('WebSocket disconnected:', event.code)
-        }
 
         // Attempt to reconnect with exponential backoff
         if (reconnectAttempts.current < maxReconnectAttempts && mountedRef.current) {
@@ -71,7 +69,6 @@ export function useWebSocket(url: string, onMessage: (data: any) => void) {
 
       ws.current.onerror = () => {
         if (!mountedRef.current) return
-        // Don't set error state on first attempt - just let it reconnect
         if (reconnectAttempts.current > 0) {
           setConnectionStatus('error')
         }
@@ -81,7 +78,7 @@ export function useWebSocket(url: string, onMessage: (data: any) => void) {
       setConnectionStatus('error')
       console.error('Failed to create WebSocket:', err)
     }
-  }, [url, onMessage])
+  }, [url]) // Only depend on url, not onMessage
 
   const disconnect = useCallback(() => {
     if (reconnectTimeout.current) {
@@ -101,10 +98,9 @@ export function useWebSocket(url: string, onMessage: (data: any) => void) {
     }
   }, [])
 
+  // Connect once on mount, disconnect on unmount
   useEffect(() => {
     mountedRef.current = true
-
-    // Small delay to let page settle before connecting
     const initTimeout = setTimeout(connect, 100)
 
     return () => {
@@ -112,7 +108,7 @@ export function useWebSocket(url: string, onMessage: (data: any) => void) {
       clearTimeout(initTimeout)
       disconnect()
     }
-  }, [connect, disconnect])
+  }, []) // Empty deps - only run once
 
   return { sendMessage, connectionStatus, reconnect: connect }
 }
