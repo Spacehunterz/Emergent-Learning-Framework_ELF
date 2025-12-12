@@ -49,10 +49,9 @@ Claude: [Queries building, starts dashboard, returns golden rules + heuristics]
 | **Coordinated Swarms** | Multi-agent workflows with specialized personas |
 | **Local Dashboard** | Visual monitoring at http://localhost:3001 (no API tokens used) |
 
-![Overview](docs/images/cosmic-dashboard-overview.png)
-![Heuristics](docs/images/cosmic-dashboard-heuristics.png)
-![Graph](docs/images/cosmic-dashboard-graph.png)
-![Analytics](docs/images/cosmic-dashboard-analytics.png)
+![Hotspots](assets/Hotspots.png)
+![Graph](assets/graph.png)
+![Analytics](assets/analytics.png)
 
 ## How It Works
 
