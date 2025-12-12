@@ -27,7 +27,7 @@ bash scripts/record-heuristic.sh
 
 **Actual Result**:
 ```
-Appended to: /c/Users/Evede/.claude/emergent-learning/memory/heuristics/tmpevil.md
+Appended to: /c~/.claude/emergent-learning/memory/heuristics/tmpevil.md
 ```
 
 **Verification**: SUCCESS

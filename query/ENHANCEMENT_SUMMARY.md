@@ -258,18 +258,18 @@ context = qs.build_context('debugging python imports', domain='python')
 ## Files Modified
 
 ### Primary Changes
-- **C:\Users\Evede\.claude\emergent-learning\query\query.py**
+- **~/.claude\emergent-learning\query\query.py**
   - Added `_calculate_relevance_score()` method (lines 1219-1267)
   - Added `find_similar_failures()` method (lines 1269-1314)
   - Enhanced `build_context()` method (lines 1455-1527)
 
 ### Test Files Added
-- **C:\Users\Evede\.claude\emergent-learning\query\test_enhancements.py**
+- **~/.claude\emergent-learning\query\test_enhancements.py**
   - Comprehensive test suite for new features
   - Mock data for database-independent testing
 
 ### Documentation Added
-- **C:\Users\Evede\.claude\emergent-learning\query\ENHANCEMENT_SUMMARY.md**
+- **~/.claude\emergent-learning\query\ENHANCEMENT_SUMMARY.md**
   - This file
 
 ---

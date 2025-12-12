@@ -63,4 +63,4 @@ else
 fi
 
 echo ""
-echo "For detailed report, see: C:/Users/Evede/Desktop/stress_test_report.md"
+echo "For detailed report, see: ~/Desktop/stress_test_report.md"

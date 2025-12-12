@@ -274,6 +274,6 @@ CREATE INDEX idx_learnings_tags_json ON learnings USING json_extract(tags_json, 
 ---
 
 ## File Locations
-- **Query Script:** `C:\Users\Evede\.claude\emergent-learning\query\query.py`
-- **Database:** `C:\Users\Evede\.claude\emergent-learning\memory\index.db`
-- **Golden Rules:** `C:\Users\Evede\.claude\emergent-learning\memory\golden-rules.md`
+- **Query Script:** `~/.claude\emergent-learning\query\query.py`
+- **Database:** `~/.claude\emergent-learning\memory\index.db`
+- **Golden Rules:** `~/.claude\emergent-learning\memory\golden-rules.md`

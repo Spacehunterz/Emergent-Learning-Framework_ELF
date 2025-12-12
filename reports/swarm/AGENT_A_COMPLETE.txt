@@ -88,9 +88,9 @@ DELIVERABLES
 ================================================================================
 
 Modified Files (3):
-  C:/Users/Evede/.claude/emergent-learning/scripts/record-failure.sh
-  C:/Users/Evede/.claude/emergent-learning/scripts/record-heuristic.sh
-  C:/Users/Evede/.claude/emergent-learning/query/query.py
+  C:~/.claude/emergent-learning/scripts/record-failure.sh
+  C:~/.claude/emergent-learning/scripts/record-heuristic.sh
+  C:~/.claude/emergent-learning/query/query.py
 
 Backups (3):
   record-failure.sh.backup

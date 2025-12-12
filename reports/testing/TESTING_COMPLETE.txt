@@ -289,7 +289,7 @@ Test Data:
   ✓ Multiple markdown files in memory/failures/
   ✓ Git commits (partial)
 
-Location: /c/Users/Evede/.claude/emergent-learning/
+Location: /c~/.claude/emergent-learning/
 
 ═══════════════════════════════════════════════════════════════════════════════
 HOW TO USE THESE RESULTS

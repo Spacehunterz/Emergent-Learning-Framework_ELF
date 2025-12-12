@@ -8,7 +8,7 @@
 
 ## Files Modified
 
-### 1. /c/Users/Evede/.claude/emergent-learning/scripts/record-failure.sh
+### 1. /c~/.claude/emergent-learning/scripts/record-failure.sh
 
 **Backup**: `record-failure.sh.pre-hardening` (11KB)
 
@@ -76,7 +76,7 @@ filename_title=$(echo "$title" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -c
 
 ---
 
-### 2. /c/Users/Evede/.claude/emergent-learning/scripts/record-heuristic.sh
+### 2. /c~/.claude/emergent-learning/scripts/record-heuristic.sh
 
 **Backup**: `record-heuristic.sh.pre-hardening` (8.6KB)
 
@@ -132,7 +132,7 @@ fi
 
 ---
 
-### 3. /c/Users/Evede/.claude/emergent-learning/query/query.py
+### 3. /c~/.claude/emergent-learning/query/query.py
 
 **Backup**: `query.py.pre-hardening` (22KB)
 

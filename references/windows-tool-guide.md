@@ -30,14 +30,14 @@ When in doubt, use Bash. It handles ALL path formats.
 ### 2. Python Tools Need `C:/` Paths
 Never use `~` or `/c/` with Read, Write, Edit, Grep, Glob.
 ```
-✅ C:/Users/Evede/Desktop/file.txt
+✅ ~/Desktop/file.txt
 ❌ ~/Desktop/file.txt
-❌ /c/Users/Evede/Desktop/file.txt
+❌ ~/Desktop/file.txt
 ```
 
 ### 3. Get Absolute Path First
 ```bash
-pwd -W  # Returns C:/Users/Evede/Desktop format
+pwd -W  # Returns ~/Desktop format
 ```
 
 ### 4. Quote Paths with Spaces

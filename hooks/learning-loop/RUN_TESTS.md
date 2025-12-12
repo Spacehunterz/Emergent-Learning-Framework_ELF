@@ -207,7 +207,7 @@ Add to `run_all_tests()` in test_integration_phase4.py
 
 All test files are in:
 ```
-C:\Users\Evede\.claude\emergent-learning\hooks\learning-loop\
+~/.claude\emergent-learning\hooks\learning-loop\
 ├── test_integration_phase4.py  (NEW - Phase 4)
 ├── test_advisory.py
 ├── test_comment_filter.py

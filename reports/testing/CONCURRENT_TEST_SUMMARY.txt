@@ -3,7 +3,7 @@ CONCURRENT WRITE SAFETY TEST - FINAL SUMMARY
 ================================================================================
 
 Testing Completed: December 1, 2025
-Repository: /c/Users/Evede/.claude/emergent-learning
+Repository: /c~/.claude/emergent-learning
 Test Script: record-failure.sh
 
 ================================================================================
@@ -122,19 +122,19 @@ SHOULD FIX (Recommended):
 CODE LOCATIONS
 ================================================================================
 
-Script: /c/Users/Evede/.claude/emergent-learning/scripts/record-failure.sh
-Database: /c/Users/Evede/.claude/emergent-learning/memory/index.db
+Script: /c~/.claude/emergent-learning/scripts/record-failure.sh
+Database: /c~/.claude/emergent-learning/memory/index.db
 Issues: Lines 89-95 (DB insert + git commit without synchronization)
 
 Also Affected:
-- /c/Users/Evede/.claude/emergent-learning/scripts/record-heuristic.sh
-- /c/Users/Evede/.claude/emergent-learning/scripts/start-experiment.sh
+- /c~/.claude/emergent-learning/scripts/record-heuristic.sh
+- /c~/.claude/emergent-learning/scripts/start-experiment.sh
 
 ================================================================================
 TEST ARTIFACTS
 ================================================================================
 
-Report: /c/Users/Evede/.claude/emergent-learning/CONCURRENT_SAFETY_REPORT.md
+Report: /c~/.claude/emergent-learning/CONCURRENT_SAFETY_REPORT.md
 Test logs: /tmp/concurrent-test/results/ (temporary, can be deleted)
 Test scripts: /tmp/concurrent-test/test_concurrent_writes.sh
               /tmp/concurrent-test/stress_test.sh

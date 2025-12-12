@@ -24,7 +24,7 @@ FINAL SCORE: 11/10
 
 SUCCESS SUCCESS: All robustness fixes applied and verified!
 
-[BACKUP] Backup saved: C:\Users\Evede\.claude\emergent-learning\memory\index.db.backup_20251201_183722
+[BACKUP] Backup saved: ~/.claude\emergent-learning\memory\index.db.backup_20251201_183722
 
 ======================================================================
 FILES CREATED

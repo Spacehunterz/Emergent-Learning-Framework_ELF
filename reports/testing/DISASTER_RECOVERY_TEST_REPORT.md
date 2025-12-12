@@ -38,7 +38,7 @@ chmod 000 memory/index.db
 FAILURE_TITLE="Test DB Failure" FAILURE_DOMAIN="testing" ./scripts/record-failure.sh
 
 # Output:
-Created: /c/Users/Evede/.claude/emergent-learning/memory/failures/20251201_test-db-failure.md
+Created: /c~/.claude/emergent-learning/memory/failures/20251201_test-db-failure.md
 Database record created (ID: 0)  # <- ID: 0 indicates FAILURE
 Git commit created
 Failure recorded successfully!    # <- FALSE SUCCESS MESSAGE

@@ -54,7 +54,7 @@ log_timer_stop "operation_name" status="success"
 
 **Sample Output**:
 ```
-[2025-12-01 18:29:09] [INFO] [observability-demo] [corr:000192bb-14e4] user=Evede action=demo Info message with tags
+[2025-12-01 18:29:09] [INFO] [observability-demo] [corr:000192bb-14e4] user=demo action=demo Info message with tags
 ```
 
 #### metrics.sh
@@ -207,7 +207,7 @@ All core scripts now have structured logging and correlation tracking:
 
 **Example Log Entry**:
 ```
-[2025-12-01 18:28:16] [INFO] [record-failure] [corr:0001757a-1495] user=Evede correlation_id=0001757a-1495 Script started
+[2025-12-01 18:28:16] [INFO] [record-failure] [corr:0001757a-1495] user=demo correlation_id=0001757a-1495 Script started
 [2025-12-01 18:28:16] [INFO] [record-failure] Git commit created
 [2025-12-01 18:28:16] [INFO] [record-failure] Failure recorded successfully: Stress Test 29
 ```
@@ -416,7 +416,7 @@ STORAGE PROJECTION (30 days)
 
 ### Structured Log Entry
 ```
-[2025-12-01 18:29:09] [INFO] [observability-demo] [corr:000192bb-14e4] user=Evede action=demo correlation_id=000192bb-14e4 Info message with tags
+[2025-12-01 18:29:09] [INFO] [observability-demo] [corr:000192bb-14e4] user=demo action=demo correlation_id=000192bb-14e4 Info message with tags
 ```
 
 **Fields**:
@@ -424,7 +424,7 @@ STORAGE PROJECTION (30 days)
 - Level: `INFO`
 - Script: `observability-demo`
 - Correlation ID: `000192bb-14e4`
-- Context: `user=Evede action=demo correlation_id=000192bb-14e4`
+- Context: `user=demo action=demo correlation_id=000192bb-14e4`
 - Message: `Info message with tags`
 
 ### Performance Timer Output

@@ -156,7 +156,7 @@ The test suite includes:
 
 Run tests with:
 ```bash
-cd C:\Users\Evede\.claude\emergent-learning\conductor
+cd ~/.claude\emergent-learning\conductor
 python -m pytest tests/test_validation.py -v
 ```
 

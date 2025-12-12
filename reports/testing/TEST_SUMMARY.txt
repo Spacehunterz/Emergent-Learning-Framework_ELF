@@ -2,7 +2,7 @@
 EMERGENT LEARNING FRAMEWORK - EDGE CASE TESTING SUMMARY
 ================================================================================
 Test Date: December 1, 2025, 20:15 UTC
-Database: C:\Users\Evede\.claude\emergent-learning\memory\index.db
+Database: ~/.claude\emergent-learning\memory\index.db
 Query System: query.py v2.0 (Robustness Score: 10/10)
 
 ================================================================================

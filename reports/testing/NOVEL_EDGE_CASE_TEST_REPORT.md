@@ -223,7 +223,7 @@ No stale lock detection/cleanup logic exists.
 #### Evidence
 ```bash
 $ ls -la memory/.git/index.lock
--rw-r--r-- 1 Evede 197611 6 Dec  1 20:12 index.lock
+-rw-r--r-- 1 user 197611 6 Dec  1 20:12 index.lock
 
 $ cat memory/.git/index.lock
 122682
@@ -582,7 +582,7 @@ The Emergent Learning Framework has good database fundamentals but **critical is
 
 ## Appendix: Test Evidence Files
 
-- Test script: `/c/Users/Evede/.claude/emergent-learning/test-edge-cases-simple.sh`
+- Test script: `/c~/.claude/emergent-learning/test-edge-cases-simple.sh`
 - Full output: See test run output above
 - Database state: `memory/index.db` (17 test records created)
 - Markdown files: `memory/failures/20251201_edgetest*.md`

@@ -163,7 +163,7 @@ assert results[0]['title'] == 'Orphaned Record'
 ```
 ✓ [MEDIUM] Orphaned Records: PASS
    Details: System returns orphaned records without crashing.
-   Record: C:\Users\Evede\AppData\Local\Temp\test_query_...\memory\nonexistent\fake.md
+   Record: C:\Users\<user>\AppData\Local\Temp\test_query_...\memory\nonexistent\fake.md
 ```
 
 ### Evidence

@@ -370,9 +370,9 @@ fi
 ## Testing Artifacts
 
 All fuzzing test artifacts saved to:
-- Test script: `/c/Users/Evede/.claude/emergent-learning/rapid-fuzzing-test.sh`
-- Results: `/c/Users/Evede/.claude/emergent-learning/RAPID_FUZZING_RESULTS.md`
-- This report: `/c/Users/Evede/.claude/emergent-learning/INPUT_VALIDATION_HARDENING.md`
+- Test script: `/c~/.claude/emergent-learning/rapid-fuzzing-test.sh`
+- Results: `/c~/.claude/emergent-learning/RAPID_FUZZING_RESULTS.md`
+- This report: `/c~/.claude/emergent-learning/INPUT_VALIDATION_HARDENING.md`
 
 Test database records created during fuzzing:
 - 18+ test records inserted

@@ -117,7 +117,7 @@ score('Task', {'prompt': 'Delete user credentials', 'description': 'security'}, 
 ### Blocker 1: Production Domain Underscored
 
 **Severity:** HIGH
-**File:** `/c/Users/Evede/.claude/emergent-learning/hooks/learning-loop/pre_tool_learning.py`
+**File:** `/c~/.claude/emergent-learning/hooks/learning-loop/pre_tool_learning.py`
 **Line:** 132
 
 **Issue:**
@@ -276,7 +276,7 @@ Prevent accumulation beyond meaningful distinction. Suggest:
 
 ## Files Involved
 
-**Main file:** `/c/Users/Evede/.claude/emergent-learning/hooks/learning-loop/pre_tool_learning.py`
+**Main file:** `/c~/.claude/emergent-learning/hooks/learning-loop/pre_tool_learning.py`
 **Affected class:** `ComplexityScorer` (lines 72-170)
 **Specific line:** 132 (domain weighting)
 

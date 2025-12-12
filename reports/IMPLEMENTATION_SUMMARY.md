@@ -19,7 +19,7 @@ Starting from Agent B's excellent 9/10 foundation, Agent B2 implemented the rema
 
 ### FIX 1: TOCTOU Symlink Race Protection (HIGH - CVSS 7.1)
 
-**File**: `C:\Users\Evede\.claude\emergent-learning\scripts\record-failure.sh`
+**File**: `~/.claude\emergent-learning\scripts\record-failure.sh`
 **Location**: Before line 303 (`cat > "$filepath"`)
 **Lines Added**: 62 lines (function definition + call)
 **Code**:
@@ -31,7 +31,7 @@ check_symlink_toctou() {
 check_symlink_toctou "$filepath"
 ```
 
-**File**: `C:\Users\Evede\.claude\emergent-learning\scripts\record-heuristic.sh`
+**File**: `~/.claude\emergent-learning\scripts\record-heuristic.sh`
 **Location**: Before line 368 (`cat >> "$domain_file"`)
 **Lines Added**: 62 lines (function definition + call)
 
@@ -45,7 +45,7 @@ grep -c "SECURITY FIX 1: TOCTOU" ~/.claude/emergent-learning/scripts/record-fail
 
 ### FIX 2: Hardlink Attack Prevention (MEDIUM - CVSS 5.4)
 
-**File**: `C:\Users\Evede\.claude\emergent-learning\scripts\record-failure.sh`
+**File**: `~/.claude\emergent-learning\scripts\record-failure.sh`
 **Location**: Before line 303 (after TOCTOU check)
 **Lines Added**: 28 lines (function definition + call)
 **Code**:
@@ -59,7 +59,7 @@ if ! check_hardlink_attack "$filepath"; then
 fi
 ```
 
-**File**: `C:\Users\Evede\.claude\emergent-learning\scripts\record-heuristic.sh`
+**File**: `~/.claude\emergent-learning\scripts\record-heuristic.sh`
 **Location**: Before line 368 (after TOCTOU check)
 **Lines Added**: 28 lines (function definition + call)
 
@@ -73,7 +73,7 @@ grep -c "SECURITY FIX 2: Hardlink" ~/.claude/emergent-learning/scripts/record-fa
 
 ### FIX 3: Umask Hardening (Restrictive Permissions)
 
-**File**: `C:\Users\Evede\.claude\emergent-learning\scripts\record-failure.sh`
+**File**: `~/.claude\emergent-learning\scripts\record-failure.sh`
 **Location**: Line 9 (after `set -e`)
 **Lines Added**: 3 lines
 **Code**:
@@ -83,7 +83,7 @@ grep -c "SECURITY FIX 2: Hardlink" ~/.claude/emergent-learning/scripts/record-fa
 umask 0077
 ```
 
-**File**: `C:\Users\Evede\.claude\emergent-learning\scripts\record-heuristic.sh`
+**File**: `~/.claude\emergent-learning\scripts\record-heuristic.sh`
 **Location**: Line 9 (after `set -e`)
 **Lines Added**: 3 lines
 
@@ -97,7 +97,7 @@ grep -c "umask 0077" ~/.claude/emergent-learning/scripts/record-failure.sh
 
 ### FIX 4: Complete Path Sanitization
 
-**File**: `C:\Users\Evede\.claude\emergent-learning\scripts\lib\security.sh`
+**File**: `~/.claude\emergent-learning\scripts\lib\security.sh`
 **Location**: Appended to end of file
 **Lines Added**: 90 lines
 **Functions Added**:
@@ -126,7 +126,7 @@ grep -c "sanitize_filename_complete" ~/.claude/emergent-learning/scripts/lib/sec
 
 ### FIX 5: Atomic Directory Creation
 
-**File**: `C:\Users\Evede\.claude\emergent-learning\scripts\lib\security.sh`
+**File**: `~/.claude\emergent-learning\scripts\lib\security.sh`
 **Location**: Appended to end of file
 **Lines Added**: 42 lines
 **Function Added**: `atomic_mkdir()`
@@ -175,19 +175,19 @@ All original files backed up before modification:
 ## Supporting Tools Created
 
 ### 1. Automated Patcher
-**File**: `C:\Users\Evede\.claude\emergent-learning\apply-perfect-security.sh`
+**File**: `~/.claude\emergent-learning\apply-perfect-security.sh`
 **Purpose**: Automates application of all 5 security fixes
 **Lines**: 300+
 **Status**: ✅ Successfully executed
 
 ### 2. Verification Test Suite
-**File**: `C:\Users\Evede\.claude\emergent-learning\test-perfect-security.sh`
+**File**: `~/.claude\emergent-learning\test-perfect-security.sh`
 **Purpose**: Verifies all security fixes are present
 **Tests**: 10 comprehensive checks
 **Result**: 10/10 PASS ✅
 
 ### 3. Attack Vector Simulator
-**File**: `C:\Users\Evede\.claude\emergent-learning\test-attack-vectors.sh`
+**File**: `~/.claude\emergent-learning\test-attack-vectors.sh`
 **Purpose**: Simulates real-world attacks
 **Scenarios**: 4 attack types
 **Result**: ALL BLOCKED ✅
@@ -197,7 +197,7 @@ All original files backed up before modification:
 ## Documentation Created
 
 ### 1. Complete Implementation Report
-**File**: `C:\Users\Evede\.claude\emergent-learning\tests\AGENT_B2_PERFECT_SECURITY_REPORT.md`
+**File**: `~/.claude\emergent-learning\tests\AGENT_B2_PERFECT_SECURITY_REPORT.md`
 **Size**: 50+ pages
 **Contents**:
 - Detailed fix descriptions
@@ -207,7 +207,7 @@ All original files backed up before modification:
 - Maintenance guidelines
 
 ### 2. Quick Verification Guide
-**File**: `C:\Users\Evede\.claude\emergent-learning\SECURITY_SCORE_10_VERIFICATION.md`
+**File**: `~/.claude\emergent-learning\SECURITY_SCORE_10_VERIFICATION.md`
 **Size**: 8 pages
 **Contents**:
 - Quick verification commands
@@ -216,7 +216,7 @@ All original files backed up before modification:
 - Maintenance quick reference
 
 ### 3. Implementation Summary
-**File**: `C:\Users\Evede\.claude\emergent-learning\IMPLEMENTATION_SUMMARY.md`
+**File**: `~/.claude\emergent-learning\IMPLEMENTATION_SUMMARY.md`
 **Contents**: This document
 
 ---

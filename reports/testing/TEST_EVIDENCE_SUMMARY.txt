@@ -138,11 +138,11 @@ CRITICAL FINDINGS
 
 FILES REQUIRING MODIFICATION
 =============================
-1. /c/Users/Evede/.claude/emergent-learning/scripts/record-failure.sh
+1. /c~/.claude/emergent-learning/scripts/record-failure.sh
    - Lines 196-198: Add filename sanitization
    - Lines 202-210: Add title display sanitization
 
-2. /c/Users/Evede/.claude/emergent-learning/scripts/record-heuristic.sh
+2. /c~/.claude/emergent-learning/scripts/record-heuristic.sh
    - Similar lines: Same fixes as record-failure.sh
 
 DELIVERABLES CREATED

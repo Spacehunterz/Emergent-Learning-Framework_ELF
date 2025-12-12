@@ -36,8 +36,8 @@ LOG_FILE="$LOGS_DIR/$(date +%Y%m%d).log"
 - All logs within single execution now consistently use the same date
 
 **Files Modified**:
-- `C:/Users/Evede/.claude/emergent-learning/scripts/record-failure.sh`
-- `C:/Users/Evede/.claude/emergent-learning/scripts/record-heuristic.sh`
+- `C:~/.claude/emergent-learning/scripts/record-failure.sh`
+- `C:~/.claude/emergent-learning/scripts/record-heuristic.sh`
 
 **Verification**:
 ```bash
@@ -235,7 +235,7 @@ TEST 6: Database timestamp consistency
 ## Files Modified
 
 ### Scripts Fixed
-1. **C:/Users/Evede/.claude/emergent-learning/scripts/record-failure.sh**
+1. **C:~/.claude/emergent-learning/scripts/record-failure.sh**
    - Added EXECUTION_DATE variable capture
    - Fixed LOG_FILE to use EXECUTION_DATE
    - Fixed date_prefix to use EXECUTION_DATE
@@ -243,14 +243,14 @@ TEST 6: Database timestamp consistency
    - Added validate_timestamp() function
    - Added timestamp validation in preflight_check()
 
-2. **C:/Users/Evede/.claude/emergent-learning/scripts/record-heuristic.sh**
+2. **C:~/.claude/emergent-learning/scripts/record-heuristic.sh**
    - Added EXECUTION_DATE variable capture
    - Fixed LOG_FILE to use EXECUTION_DATE
    - Fixed markdown date to use EXECUTION_DATE
    - Added validate_timestamp() function
    - Added timestamp validation in preflight_check()
 
-3. **C:/Users/Evede/.claude/emergent-learning/query/query.py**
+3. **C:~/.claude/emergent-learning/query/query.py**
    - Added timezone documentation (TIME-FIX-6)
    - Documented SQLite CURRENT_TIMESTAMP UTC behavior
 

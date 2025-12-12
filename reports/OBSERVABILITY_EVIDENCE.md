@@ -85,7 +85,7 @@ RESULTS:
 ```
 [2025-12-01 18:29:08] [DEBUG] [observability-demo] [corr:000192bb-14e4] operation=demo step=1 correlation_id=000192bb-14e4 Debug message with context
 
-[2025-12-01 18:29:09] [INFO] [observability-demo] [corr:000192bb-14e4] user=Evede action=demo correlation_id=000192bb-14e4 Info message with tags
+[2025-12-01 18:29:09] [INFO] [observability-demo] [corr:000192bb-14e4] user=demo action=demo correlation_id=000192bb-14e4 Info message with tags
 
 [2025-12-01 18:29:09] [WARN] [observability-demo] [corr:000192bb-14e4] severity=low correlation_id=000192bb-14e4 Warning message
 

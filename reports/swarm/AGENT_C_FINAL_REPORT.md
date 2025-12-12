@@ -484,7 +484,7 @@ All fuzzing tests passed. All hardening fixes applied and verified. Framework is
 
 ### Evidence Package
 All test scripts, results, and documentation saved to:
-`/c/Users/Evede/.claude/emergent-learning/`
+`/c~/.claude/emergent-learning/`
 
 ### Recommendation
 **APPROVE FOR PRODUCTION USE**

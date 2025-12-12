@@ -3,8 +3,8 @@
 **Status:** FIXED ✓
 **Date:** 2025-12-11
 **Files Modified:**
-- `C:\Users\Evede\.claude\emergent-learning\hooks\learning-loop\trail_helper.py`
-- `C:\Users\Evede\.claude\emergent-learning\hooks\learning-loop\post_tool_learning.py`
+- `~/.claude\emergent-learning\hooks\learning-loop\trail_helper.py`
+- `~/.claude\emergent-learning\hooks\learning-loop\post_tool_learning.py`
 
 ---
 

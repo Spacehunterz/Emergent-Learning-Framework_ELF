@@ -105,7 +105,7 @@ This is a **security tool** - the fix was implemented carefully:
 
 ## Files Modified
 
-- `C:/Users/Evede/.claude/emergent-learning/hooks/learning-loop/post_tool_learning.py`
+- `C:~/.claude/emergent-learning/hooks/learning-loop/post_tool_learning.py`
   - Added `_is_comment_line()` method (lines 86-108)
   - Updated `_get_added_lines()` method (lines 110-117)
 

@@ -2,8 +2,8 @@
 
 ## Files to Modify
 
-1. `/c/Users/Evede/.claude/emergent-learning/scripts/record-failure.sh`
-2. `/c/Users/Evede/.claude/emergent-learning/scripts/record-heuristic.sh`
+1. `/c~/.claude/emergent-learning/scripts/record-failure.sh`
+2. `/c~/.claude/emergent-learning/scripts/record-heuristic.sh`
 
 ---
 

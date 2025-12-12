@@ -48,7 +48,7 @@ Success Rate: 100%
 
 ### Database File Status
 ```
-Path: /c/Users/Evede/.claude/emergent-learning/memory/index.db
+Path: /c~/.claude/emergent-learning/memory/index.db
 Size: 208K
 Permissions: -rw-r--r--
 Status: Accessible ✓

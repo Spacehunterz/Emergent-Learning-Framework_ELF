@@ -1,6 +1,6 @@
 # Emergent Learning Framework - Integration Guide
 
-**Location:** `C:\Users\Evede\.claude\emergent-learning\`
+**Location:** `~/.claude\emergent-learning\`
 
 ---
 
@@ -42,21 +42,21 @@ TRY → BREAK → ANALYZE → LEARN → NEXT
 ### Step 1: Check for Relevant Patterns
 ```bash
 # Search for patterns related to your task
-find C:\Users\Evede\.claude\emergent-learning\patterns -name "*.md" -type f
+find ~/.claude\emergent-learning\patterns -name "*.md" -type f
 # Or use grep to search content
-grep -r "relevant-keyword" C:\Users\Evede\.claude\emergent-learning\patterns
+grep -r "relevant-keyword" ~/.claude\emergent-learning\patterns
 ```
 
 ### Step 2: Review Golden Rules
 ```bash
 # Check the golden rules - these are hard-won lessons
-cat C:\Users\Evede\.claude\emergent-learning\golden-rules\RULES.md
+cat ~/.claude\emergent-learning\golden-rules\RULES.md
 ```
 
 ### Step 3: Check Recent Failures
 ```bash
 # See what broke recently - learn from past mistakes
-ls -lt C:\Users\Evede\.claude\emergent-learning\failure-analysis | head -10
+ls -lt ~/.claude\emergent-learning\failure-analysis | head -10
 ```
 
 **If you find relevant context:** Read those files and apply their lessons to your current task.

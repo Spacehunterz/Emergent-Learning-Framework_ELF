@@ -429,13 +429,13 @@ All scripts passed bash syntax checks:
 ## File Listing
 
 ### New Files Created
-- `C:\Users\Evede\.claude\emergent-learning\scripts\lib\error-handling.sh` (600+ lines)
+- `~/.claude\emergent-learning\scripts\lib\error-handling.sh` (600+ lines)
 
 ### Modified Files
-- `C:\Users\Evede\.claude\emergent-learning\scripts\record-failure.sh` (318 lines)
-- `C:\Users\Evede\.claude\emergent-learning\scripts\record-heuristic.sh` (342 lines)
-- `C:\Users\Evede\.claude\emergent-learning\scripts\sync-db-markdown.sh` (557 lines)
-- `C:\Users\Evede\.claude\emergent-learning\scripts\start-experiment.sh` (340 lines)
+- `~/.claude\emergent-learning\scripts\record-failure.sh` (318 lines)
+- `~/.claude\emergent-learning\scripts\record-heuristic.sh` (342 lines)
+- `~/.claude\emergent-learning\scripts\sync-db-markdown.sh` (557 lines)
+- `~/.claude\emergent-learning\scripts\start-experiment.sh` (340 lines)
 
 ### Total Lines of Error Handling Code
 - Library: 600+ lines
