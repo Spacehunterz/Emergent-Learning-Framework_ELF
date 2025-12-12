@@ -48,6 +48,7 @@ Claude: [Queries building, starts dashboard, returns golden rules + heuristics]
 | **Pheromone Trails** | Files touched by tasks tracked for hotspot analysis |
 | **Coordinated Swarms** | Multi-agent workflows with specialized personas |
 | **Local Dashboard** | Visual monitoring at http://localhost:3001 (no API tokens used) |
+| **Cross-Session Continuity** | Pick up where you left off - search what you asked in previous sessions. Lightweight retrieval (~500 tokens), or ~20k for heavy users reviewing full day |
 
 ### Hotspots
 ![Hotspots](assets/Hotspots.png)
