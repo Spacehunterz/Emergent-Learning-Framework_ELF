@@ -48,6 +48,7 @@ Claude: [Queries building, starts dashboard, returns golden rules + heuristics]
 | **Pheromone Trails** | Files touched by tasks tracked for hotspot analysis |
 | **Coordinated Swarms** | Multi-agent workflows with specialized personas |
 | **Local Dashboard** | Visual monitoring at http://localhost:3001 (no API tokens used) |
+| **Session History** | Browse all Claude Code sessions in dashboard - search, filter by project/date, expand to see full conversations |
 | **Cross-Session Continuity** | Pick up where you left off - search what you asked in previous sessions. Lightweight retrieval (~500 tokens), or ~20k for heavy users reviewing full day |
 | **Async Watcher** | Background Haiku monitors your work, escalates to Opus only when needed. 95% cheaper than constant Opus monitoring |
 
@@ -77,6 +78,18 @@ Ever close a session and forget what you were working on? Use `/search` with nat
 Just type `/search` followed by your question in plain English. Pick up where you left off instantly.
 
 **Token Usage:** ~500 tokens for quick lookups, scales with how much history you request.
+
+### Session History (Dashboard)
+
+Browse your Claude Code session history visually in the dashboard's **Sessions** tab:
+
+- **Search** - Filter sessions by prompt text
+- **Project Filter** - Focus on specific projects
+- **Date Range** - Today, 7 days, 30 days, or all time
+- **Expandable Cards** - Click to see full conversation with user/assistant messages
+- **Tool Usage** - See what tools Claude used in each response
+
+No tokens consumed - reads directly from `~/.claude/projects/` JSONL files.
 
 ### Async Watcher
 
