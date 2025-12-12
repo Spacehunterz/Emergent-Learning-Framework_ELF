@@ -51,6 +51,9 @@ Claude: [Queries building, starts dashboard, returns golden rules + heuristics]
 
 ### Dashboard Views
 
+**Overview** - Hotspot treemap showing file activity, anomalies, and golden rules at a glance
+![Overview](docs/images/cosmic-dashboard-overview.png)
+
 **Heuristics** - Browse and manage learned patterns with confidence scores
 ![Heuristics](docs/images/cosmic-dashboard-heuristics.png)
 
