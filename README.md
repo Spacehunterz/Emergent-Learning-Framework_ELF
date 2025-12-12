@@ -49,23 +49,10 @@ Claude: [Queries building, starts dashboard, returns golden rules + heuristics]
 | **Coordinated Swarms** | Multi-agent workflows with specialized personas |
 | **Local Dashboard** | Visual monitoring at http://localhost:3001 (no API tokens used) |
 
-### Dashboard Views
-
-**Overview** - Hotspot treemap showing file activity, anomalies, and golden rules at a glance
-
-![Overview](https://raw.githubusercontent.com/Spacehunterz/Emergent-Learning-Framework_ELF/main/docs/images/cosmic-dashboard-overview.png)
-
-**Heuristics** - Browse and manage learned patterns with confidence scores
-
-![Heuristics](https://raw.githubusercontent.com/Spacehunterz/Emergent-Learning-Framework_ELF/main/docs/images/cosmic-dashboard-heuristics.png)
-
-**Knowledge Graph** - Interactive visualization of heuristic relationships across domains
-
-![Graph](https://raw.githubusercontent.com/Spacehunterz/Emergent-Learning-Framework_ELF/main/docs/images/cosmic-dashboard-graph.png)
-
-**Analytics** - Track learning velocity, success rates, and confidence trends over time
-
-![Analytics](https://raw.githubusercontent.com/Spacehunterz/Emergent-Learning-Framework_ELF/main/docs/images/cosmic-dashboard-analytics.png)
+![Overview](docs/images/cosmic-dashboard-overview.png)
+![Heuristics](docs/images/cosmic-dashboard-heuristics.png)
+![Graph](docs/images/cosmic-dashboard-graph.png)
+![Analytics](docs/images/cosmic-dashboard-analytics.png)
 
 ## How It Works
 
