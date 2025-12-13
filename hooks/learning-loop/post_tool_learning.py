@@ -589,6 +589,41 @@ def main():
         })
         return
 
+    # Track file operations (Read/Edit/Write/Glob/Grep) for hotspot trails
+    file_operation_tools = {'Read', 'Edit', 'Write', 'Glob', 'Grep'}
+    if tool_name in file_operation_tools:
+        try:
+            file_path = tool_input.get('file_path') or tool_input.get('path', '')
+            if file_path:
+                # Normalize path
+                file_path = file_path.replace('\\', '/')
+                # Extract relative path from common markers
+                for marker in ['.claude/emergent-learning/', 'emergent-learning/', 'dashboard-app/']:
+                    if marker in file_path:
+                        file_path = file_path[file_path.index(marker):]
+                        break
+
+                # Determine scent based on operation type
+                scent = 'read' if tool_name in ('Read', 'Glob', 'Grep') else 'write'
+                strength = 0.5 if tool_name == 'Read' else 0.9  # Writes are more significant
+
+                # Record trail
+                conn = get_db_connection()
+                if conn:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "INSERT INTO trails (run_id, location, scent, strength, agent_id, message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (None, file_path, scent, strength, 'claude-main', f'{tool_name} operation', datetime.now().isoformat())
+                    )
+                    conn.commit()
+                    conn.close()
+                    sys.stderr.write(f"[TRAIL] Recorded {tool_name} on {file_path}\n")
+        except Exception as e:
+            sys.stderr.write(f"[TRAIL_ERROR] Failed to record file operation trail: {e}\n")
+
+        output_result({})
+        return
+
     # Only process Task tool (subagent completions) for learning loop
     if tool_name != "Task":
         output_result({})
