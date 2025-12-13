@@ -60,6 +60,93 @@ class SessionIndex:
         self.projects_dir = projects_dir or Path.home() / ".claude" / "projects"
         self._index: Dict[str, SessionMetadata] = {}
         self._last_scan: Optional[datetime] = None
+        self._db_path = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
+
+    # Tools that commonly have large inputs (file contents)
+    LARGE_INPUT_TOOLS = {"Read", "Write", "Edit", "NotebookEdit"}
+
+    # Max chars for tool input display
+    MAX_INPUT_CHARS = 500
+
+    def _truncate_tool_input(self, tool_name: str, raw_input: Any) -> Any:
+        """
+        Truncate tool input to prevent context flooding.
+
+        For file-based tools, shows path and truncation indicator.
+        For other tools, truncates long string values.
+        """
+        if not isinstance(raw_input, dict):
+            if isinstance(raw_input, str) and len(raw_input) > self.MAX_INPUT_CHARS:
+                return raw_input[:self.MAX_INPUT_CHARS] + "... [truncated]"
+            return raw_input
+
+        truncated = {}
+        for key, value in raw_input.items():
+            if key in ("file_path", "path", "filepath", "notebook_path"):
+                # Always keep file paths
+                truncated[key] = value
+            elif key in ("content", "new_source", "old_string", "new_string"):
+                # These are the large content fields - heavily truncate
+                if isinstance(value, str):
+                    if len(value) > 100:
+                        truncated[key] = value[:100] + f"... [{len(value)} chars truncated]"
+                    else:
+                        truncated[key] = value
+                else:
+                    truncated[key] = value
+            elif isinstance(value, str) and len(value) > self.MAX_INPUT_CHARS:
+                truncated[key] = value[:self.MAX_INPUT_CHARS] + "... [truncated]"
+            else:
+                truncated[key] = value
+
+        # Add truncation flag for large-input tools
+        if tool_name in self.LARGE_INPUT_TOOLS:
+            truncated["_truncated"] = True
+
+        return truncated
+
+    def get_session_summary(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get haiku-generated summary for a session from database.
+
+        Returns:
+            Summary dict or None if not summarized yet
+        """
+        try:
+            import sqlite3
+            conn = sqlite3.connect(str(self._db_path))
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                SELECT tool_summary, content_summary, conversation_summary,
+                       files_touched, tool_counts, message_count,
+                       summarized_at, summarizer_model, is_stale
+                FROM session_summaries
+                WHERE session_id = ?
+            """, (session_id,))
+
+            row = cursor.fetchone()
+            conn.close()
+
+            if not row:
+                return None
+
+            return {
+                "tool_summary": row["tool_summary"],
+                "content_summary": row["content_summary"],
+                "conversation_summary": row["conversation_summary"],
+                "files_touched": json.loads(row["files_touched"]) if row["files_touched"] else [],
+                "tool_counts": json.loads(row["tool_counts"]) if row["tool_counts"] else {},
+                "message_count": row["message_count"],
+                "summarized_at": row["summarized_at"],
+                "summarizer_model": row["summarizer_model"],
+                "is_stale": bool(row["is_stale"])
+            }
+
+        except Exception as e:
+            logger.error(f"Error fetching session summary: {e}")
+            return None
 
     def scan(self) -> int:
         """
@@ -358,10 +445,16 @@ class SessionIndex:
                                 if item.get("type") == "text":
                                     text_parts.append(item.get("text", ""))
                                 elif item.get("type") == "tool_use":
+                                    tool_name = item.get("name", "")
+                                    raw_input = item.get("input", {})
+
+                                    # Truncate tool inputs to prevent context flooding
+                                    truncated_input = self._truncate_tool_input(tool_name, raw_input)
+
                                     tool_use.append({
                                         "id": item.get("id", ""),
-                                        "name": item.get("name", ""),
-                                        "input": item.get("input", {})
+                                        "name": tool_name,
+                                        "input": truncated_input
                                     })
                                 elif item.get("type") == "thinking":
                                     # Check if thinking is encrypted (has signature)
@@ -382,7 +475,10 @@ class SessionIndex:
                         thinking=thinking
                     ))
 
-            return {
+            # Try to get summary from database
+            summary = self.get_session_summary(session_id)
+
+            result = {
                 "session_id": metadata.session_id,
                 "project": metadata.project,
                 "project_path": metadata.project_path,
@@ -391,8 +487,15 @@ class SessionIndex:
                 "prompt_count": metadata.prompt_count,
                 "git_branch": metadata.git_branch,
                 "is_agent": metadata.is_agent,
-                "messages": [asdict(m) for m in messages]
+                "messages": [asdict(m) for m in messages],
+                "has_summary": summary is not None
             }
+
+            # Include summary if available
+            if summary:
+                result["summary"] = summary
+
+            return result
 
         except Exception as e:
             logger.error(f"Error loading full session {session_id}: {e}", exc_info=True)

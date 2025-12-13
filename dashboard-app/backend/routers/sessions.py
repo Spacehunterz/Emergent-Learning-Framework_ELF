@@ -3,13 +3,19 @@ Sessions Router - Session history and projects.
 """
 
 import logging
+import subprocess
+import sys
 from dataclasses import asdict
+from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
 
 router = APIRouter(prefix="/api", tags=["sessions"])
 logger = logging.getLogger(__name__)
+
+# Path to summarizer script
+SUMMARIZER_SCRIPT = Path.home() / ".claude" / "emergent-learning" / "scripts" / "summarize-session.py"
 
 # SessionIndex will be injected from main.py
 session_index = None
@@ -175,3 +181,132 @@ async def get_session_projects():
     except Exception as e:
         logger.error(f"Error getting projects: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to get projects")
+
+
+@router.get("/sessions/{session_id}/summary")
+async def get_session_summary(session_id: str):
+    """
+    Get summary for a session (if available).
+
+    Returns:
+        {
+            "tool_summary": "...",
+            "content_summary": "...",
+            "conversation_summary": "...",
+            "files_touched": [...],
+            "tool_counts": {...},
+            "summarized_at": "...",
+            "has_summary": true/false
+        }
+    """
+    try:
+        if session_index is None:
+            raise HTTPException(status_code=500, detail="Session index not initialized")
+
+        summary = session_index.get_session_summary(session_id)
+
+        if summary:
+            return {"has_summary": True, **summary}
+        else:
+            return {"has_summary": False, "message": "Session not yet summarized"}
+
+    except Exception as e:
+        logger.error(f"Error getting session summary {session_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to get session summary")
+
+
+def _run_summarizer(session_id: str, use_llm: bool = True):
+    """Background task to run the summarizer script."""
+    try:
+        cmd = [sys.executable, str(SUMMARIZER_SCRIPT), session_id]
+        if not use_llm:
+            cmd.append("--no-llm")
+
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        if result.returncode != 0:
+            logger.error(f"Summarizer failed for {session_id}: {result.stderr}")
+        else:
+            logger.info(f"Summarized session {session_id}")
+    except Exception as e:
+        logger.error(f"Error running summarizer for {session_id}: {e}")
+
+
+@router.post("/sessions/{session_id}/summarize")
+async def trigger_summarize(session_id: str, background_tasks: BackgroundTasks, use_llm: bool = True):
+    """
+    Trigger summarization of a session.
+
+    Args:
+        session_id: Session UUID
+        use_llm: Whether to use haiku (True) or fallback (False)
+
+    Returns:
+        {"status": "queued", "session_id": "..."}
+    """
+    try:
+        if session_index is None:
+            raise HTTPException(status_code=500, detail="Session index not initialized")
+
+        # Check if session exists
+        metadata = session_index.get_session_metadata(session_id)
+        if not metadata:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        # Queue summarization in background
+        background_tasks.add_task(_run_summarizer, session_id, use_llm)
+
+        return {"status": "queued", "session_id": session_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error triggering summarize for {session_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to trigger summarization")
+
+
+@router.post("/sessions/summarize-batch")
+async def trigger_batch_summarize(
+    background_tasks: BackgroundTasks,
+    older_than_hours: float = 1.0,
+    limit: int = 10,
+    use_llm: bool = True
+):
+    """
+    Trigger batch summarization of old unsummarized sessions.
+
+    Args:
+        older_than_hours: Only sessions older than this
+        limit: Max sessions to process
+        use_llm: Whether to use haiku
+
+    Returns:
+        {"status": "queued", "count": N}
+    """
+    try:
+        cmd = [
+            sys.executable, str(SUMMARIZER_SCRIPT),
+            "--batch",
+            "--older-than", f"{older_than_hours}h",
+            "--limit", str(limit)
+        ]
+        if not use_llm:
+            cmd.append("--no-llm")
+
+        # Run in background
+        def run_batch():
+            try:
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+                if result.returncode != 0:
+                    logger.error(f"Batch summarizer failed: {result.stderr}")
+                else:
+                    logger.info(f"Batch summarization completed: {result.stdout}")
+            except Exception as e:
+                logger.error(f"Batch summarizer error: {e}")
+
+        background_tasks.add_task(run_batch)
+
+        return {"status": "queued", "limit": limit, "older_than_hours": older_than_hours}
+
+    except Exception as e:
+        logger.error(f"Error triggering batch summarize: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to trigger batch summarization")
