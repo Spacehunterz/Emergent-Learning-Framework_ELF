@@ -364,8 +364,8 @@ if [ -d ".git" ]; then
         exit 1
     fi
 
-    git add "$domain_file"
-    git add "$DB_PATH"
+    git add "$domain_file" 2>/dev/null || true
+    git add "$DB_PATH" 2>/dev/null || true
     if ! git commit -m "heuristic: $rule" -m "Domain: $domain | Confidence: $confidence"; then
         log "WARN" "Git commit failed or no changes to commit"
         echo "Note: Git commit skipped (no changes or already committed)"
