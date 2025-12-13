@@ -193,6 +193,7 @@ MIT License
 <a href="https://www.buymeacoffee.com/Spacehunterz">
   <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="150">
 </a>
+
 ## Development Status
 
 ELF is under heavy active development. Rapid commits reflect live experimentation, architectural refinement, and real-world usage. The main branch represents active research and may change frequently. Stable checkpoints will be published as versioned GitHub releases; users who prefer stability should rely on tagged releases rather than the latest commit.
