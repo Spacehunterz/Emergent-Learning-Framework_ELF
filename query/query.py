@@ -546,6 +546,26 @@ class QuerySystem:
                 )
             """)
 
+            # Create decisions table (ADR - Architecture Decision Records)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS decisions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    context TEXT NOT NULL,
+                    options_considered TEXT,
+                    decision TEXT NOT NULL,
+                    rationale TEXT NOT NULL,
+                    files_touched TEXT,
+                    tests_added TEXT,
+                    status TEXT DEFAULT 'accepted',
+                    domain TEXT,
+                    superseded_by INTEGER,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (superseded_by) REFERENCES decisions(id)
+                )
+            """)
+
             # Create violations table (for accountability tracking)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS violations (
@@ -623,6 +643,26 @@ class QuerySystem:
             cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_violations_acknowledged
                 ON violations(acknowledged)
+            """)
+
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_decisions_domain
+                ON decisions(domain)
+            """)
+
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_decisions_status
+                ON decisions(status)
+            """)
+
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_decisions_created_at
+                ON decisions(created_at DESC)
+            """)
+
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_decisions_superseded_by
+                ON decisions(superseded_by)
             """)
 
             # Update query planner statistics
@@ -1385,6 +1425,111 @@ class QuerySystem:
         self._log_debug(f"Violation summary: {total} total in {days} days")
         return summary
 
+    def get_decisions(
+        self,
+        domain: Optional[str] = None,
+        status: str = 'accepted',
+        limit: int = 10,
+        timeout: int = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get architecture decisions (ADRs), optionally filtered by domain.
+
+        Args:
+            domain: Optional domain filter (e.g., 'coordination', 'query-system')
+            status: Decision status filter (default: 'accepted')
+            limit: Maximum number of results to return (default: 10)
+            timeout: Query timeout in seconds (default: 30)
+
+        Returns:
+            List of decision dictionaries with id, title, context, decision, rationale, etc.
+
+        Raises:
+            TimeoutError: If query times out
+            DatabaseError: If database operation fails
+        """
+        timeout = timeout or self.DEFAULT_TIMEOUT
+        self._log_debug(f"Querying decisions (domain={domain}, status={status}, limit={limit})")
+
+        start_time = self._get_current_time_ms()
+        error_msg = None
+        error_code = None
+        query_status = 'success'
+        results = None
+
+        try:
+            limit = self._validate_limit(limit)
+
+            with TimeoutHandler(timeout):
+                with self._get_connection() as conn:
+                    # Check if decisions table exists (backwards compatibility)
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT name FROM sqlite_master
+                        WHERE type='table' AND name='decisions'
+                    """)
+                    if not cursor.fetchone():
+                        self._log_debug("Decisions table does not exist yet - returning empty list")
+                        return []
+
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+
+                    if domain:
+                        domain = self._validate_domain(domain)
+                        cursor.execute("""
+                            SELECT id, title, context, decision, rationale, domain, status, created_at
+                            FROM decisions
+                            WHERE (domain = ? OR domain IS NULL) AND status = ?
+                            ORDER BY created_at DESC
+                            LIMIT ?
+                        """, (domain, status, limit))
+                    else:
+                        cursor.execute("""
+                            SELECT id, title, context, decision, rationale, domain, status, created_at
+                            FROM decisions
+                            WHERE status = ?
+                            ORDER BY created_at DESC
+                            LIMIT ?
+                        """, (status, limit))
+
+                    results = [dict(row) for row in cursor.fetchall()]
+
+            self._log_debug(f"Found {len(results)} decisions")
+            return results
+
+        except TimeoutError as e:
+            query_status = 'timeout'
+            error_msg = str(e)
+            error_code = 'QS003'
+            raise
+        except (ValidationError, DatabaseError, QuerySystemError) as e:
+            query_status = 'error'
+            error_msg = str(e)
+            error_code = getattr(e, 'error_code', 'QS000')
+            raise
+        except Exception as e:
+            query_status = 'error'
+            error_msg = str(e)
+            error_code = 'QS000'
+            raise
+        finally:
+            # Log the query (non-blocking)
+            duration_ms = self._get_current_time_ms() - start_time
+            decisions_count = len(results) if results else 0
+
+            self._log_query(
+                query_type='get_decisions',
+                domain=domain,
+                limit_requested=limit,
+                results_returned=decisions_count,
+                duration_ms=duration_ms,
+                status=query_status,
+                error_message=error_msg,
+                error_code=error_code,
+                query_summary=f"Decisions query (status={status})"
+            )
+
     def build_context(
         self,
         task: str,
@@ -1426,6 +1571,7 @@ class QuerySystem:
         learnings_count = 0
         experiments_count = 0
         ceo_reviews_count = 0
+        decisions_count = 0
 
         try:
             # Validate inputs
@@ -1526,6 +1672,26 @@ class QuerySystem:
                         approx_tokens += len(entry) // 4
                     learnings_count += len(tag_results)
 
+                # Add decisions (ADRs) in Tier 2
+                decisions = self.get_decisions(domain=domain, status='accepted', limit=5, timeout=timeout)
+                if decisions:
+                    context_parts.append("\n## Decisions (ADRs)\n\n")
+                    for dec in decisions:
+                        entry = f"- **{dec['title']}**"
+                        if dec.get('domain'):
+                            entry += f" (domain: {dec['domain']})"
+                        entry += "\n"
+                        if dec.get('decision'):
+                            decision_text = dec['decision'][:150] + '...' if len(dec['decision']) > 150 else dec['decision']
+                            entry += f"  Decision: {decision_text}\n"
+                        if dec.get('rationale'):
+                            rationale_text = dec['rationale'][:150] + '...' if len(dec['rationale']) > 150 else dec['rationale']
+                            entry += f"  Rationale: {rationale_text}\n"
+                        entry += "\n"
+                        context_parts.append(entry)
+                        approx_tokens += len(entry) // 4
+                    decisions_count = len(decisions)
+
                 # Tier 3: Recent context if tokens remain
                 remaining_tokens = max_tokens - approx_tokens
                 if remaining_tokens > 500:
@@ -1594,7 +1760,7 @@ class QuerySystem:
             # Log the query (non-blocking)
             duration_ms = self._get_current_time_ms() - start_time
             tokens_approx = len(result) // 4 if result else 0
-            total_results = heuristics_count + learnings_count + experiments_count + ceo_reviews_count
+            total_results = heuristics_count + learnings_count + experiments_count + ceo_reviews_count + decisions_count
 
             self._log_query(
                 query_type='build_context',
@@ -1960,6 +2126,8 @@ Error Codes:
     parser.add_argument('--violations', action='store_true', help='Show violation summary')
     parser.add_argument('--violation-days', type=int, default=7, help='Days to look back for violations (default: 7)')
     parser.add_argument('--accountability-banner', action='store_true', help='Show accountability banner')
+    parser.add_argument('--decisions', action='store_true', help='List architecture decision records (ADRs)')
+    parser.add_argument('--decision-status', type=str, default='accepted', help='Filter decisions by status (default: accepted)')
     parser.add_argument('--limit', type=int, default=10, help='Limit number of results (default: 10, max: 1000)')
 
     # Enhanced arguments
@@ -2013,6 +2181,10 @@ Error Codes:
             result = query_system.get_golden_rules()
             print(result)
             return exit_code
+
+        elif args.decisions:
+            # Handle decisions query (must come before --domain check)
+            result = query_system.get_decisions(args.domain, args.decision_status, args.limit, args.timeout)
 
         elif args.domain:
             result = query_system.query_by_domain(args.domain, args.limit, args.timeout)

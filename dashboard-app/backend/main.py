@@ -153,6 +153,30 @@ class HeuristicUpdate(BaseModel):
     is_golden: Optional[bool] = None
 
 
+class DecisionCreate(BaseModel):
+    title: str
+    context: str
+    options_considered: Optional[str] = None
+    decision: str
+    rationale: str
+    domain: Optional[str] = None
+    files_touched: Optional[str] = None
+    tests_added: Optional[str] = None
+    status: Optional[str] = "accepted"
+
+
+class DecisionUpdate(BaseModel):
+    title: Optional[str] = None
+    context: Optional[str] = None
+    options_considered: Optional[str] = None
+    decision: Optional[str] = None
+    rationale: Optional[str] = None
+    domain: Optional[str] = None
+    files_touched: Optional[str] = None
+    tests_added: Optional[str] = None
+    status: Optional[str] = None
+
+
 class WorkflowCreate(BaseModel):
     name: str
     description: str
@@ -225,6 +249,7 @@ async def monitor_changes():
     last_run_count = 0
     last_heuristics_count = 0
     last_learnings_count = 0
+    last_decisions_count = 0
     last_session_scan = None
 
     while True:
@@ -247,6 +272,9 @@ async def monitor_changes():
 
                 cursor.execute("SELECT COUNT(*) FROM learnings")
                 learnings_count = cursor.fetchone()[0]
+
+                cursor.execute("SELECT COUNT(*) FROM decisions")
+                decisions_count = cursor.fetchone()[0]
 
                 # Broadcast if changes detected
                 if metrics_count > last_metrics_count:
@@ -304,6 +332,17 @@ async def monitor_changes():
                     recent = [dict_from_row(r) for r in cursor.fetchall()]
                     await manager.broadcast_update("learnings", {"recent": recent})
                     last_learnings_count = learnings_count
+
+                if decisions_count > last_decisions_count:
+                    cursor.execute("""
+                        SELECT id, title, status, domain, created_at
+                        FROM decisions
+                        ORDER BY created_at DESC
+                        LIMIT 5
+                    """)
+                    recent = [dict_from_row(r) for r in cursor.fetchall()]
+                    await manager.broadcast_update("decisions", {"recent": recent})
+                    last_decisions_count = decisions_count
 
             # Rescan session index every 5 minutes
             current_time = datetime.now()
@@ -403,6 +442,15 @@ async def get_stats():
 
         cursor.execute("SELECT COUNT(*) FROM learnings WHERE type = 'success'")
         stats["successes"] = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM decisions")
+        stats["total_decisions"] = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM decisions WHERE status = 'accepted'")
+        stats["accepted_decisions"] = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM decisions WHERE status = 'superseded'")
+        stats["superseded_decisions"] = cursor.fetchone()[0]
 
         # Get actual run success/failure counts from workflow_runs status
         cursor.execute("SELECT COUNT(*) FROM workflow_runs WHERE status = 'completed'")
@@ -1234,6 +1282,278 @@ async def get_learnings(
 
         cursor.execute(query, params)
         return [dict_from_row(r) for r in cursor.fetchall()]
+
+
+@app.get("/api/decisions")
+async def get_decisions(
+    domain: Optional[str] = None,
+    status: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50
+):
+    """Get architecture decisions with optional filtering."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        query = """
+            SELECT id, title, context, options_considered, decision, rationale,
+                   domain, files_touched, tests_added, status, superseded_by,
+                   created_at, updated_at
+            FROM decisions
+            WHERE 1=1
+        """
+        params = []
+
+        if domain:
+            query += " AND domain = ?"
+            params.append(domain)
+
+        if status:
+            query += " AND status = ?"
+            params.append(status)
+
+        query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        params.append(limit)
+        params.append(skip)
+
+        cursor.execute(query, params)
+        return [dict_from_row(r) for r in cursor.fetchall()]
+
+
+@app.get("/api/decisions/{decision_id}")
+async def get_decision(decision_id: int):
+    """Get single decision with full details."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT * FROM decisions WHERE id = ?
+        """, (decision_id,))
+        decision = dict_from_row(cursor.fetchone())
+
+        if not decision:
+            raise HTTPException(status_code=404, detail="Decision not found")
+
+        # Get related decisions (same domain)
+        cursor.execute("""
+            SELECT id, title, status, created_at
+            FROM decisions
+            WHERE domain = ? AND id != ?
+            ORDER BY created_at DESC
+            LIMIT 5
+        """, (decision["domain"], decision_id))
+        decision["related"] = [dict_from_row(r) for r in cursor.fetchall()]
+
+        # If this decision supersedes another, get the superseded decision
+        if decision.get("superseded_by"):
+            cursor.execute("""
+                SELECT id, title, status
+                FROM decisions
+                WHERE id = ?
+            """, (decision["superseded_by"],))
+            decision["supersedes"] = dict_from_row(cursor.fetchone())
+
+        # Get decisions that this one superseded
+        cursor.execute("""
+            SELECT id, title, status, created_at
+            FROM decisions
+            WHERE superseded_by = ?
+        """, (decision_id,))
+        decision["superseded_decisions"] = [dict_from_row(r) for r in cursor.fetchall()]
+
+        return decision
+
+
+@app.post("/api/decisions")
+async def create_decision(decision: DecisionCreate) -> ActionResult:
+    """Create a new architecture decision."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO decisions (
+                title, context, options_considered, decision, rationale,
+                domain, files_touched, tests_added, status, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            decision.title,
+            decision.context,
+            decision.options_considered,
+            decision.decision,
+            decision.rationale,
+            decision.domain,
+            decision.files_touched,
+            decision.tests_added,
+            decision.status,
+            datetime.now().isoformat(),
+            datetime.now().isoformat()
+        ))
+
+        decision_id = cursor.lastrowid
+        conn.commit()
+
+        await manager.broadcast_update("decision_created", {
+            "decision_id": decision_id,
+            "title": decision.title,
+            "domain": decision.domain
+        })
+
+        return ActionResult(
+            success=True,
+            message=f"Created decision: {decision.title}",
+            data={"decision_id": decision_id}
+        )
+
+
+@app.put("/api/decisions/{decision_id}")
+async def update_decision(decision_id: int, update: DecisionUpdate) -> ActionResult:
+    """Update an existing decision."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Verify decision exists
+        cursor.execute("SELECT id FROM decisions WHERE id = ?", (decision_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Decision not found")
+
+        updates = []
+        params = []
+
+        if update.title is not None:
+            updates.append("title = ?")
+            params.append(update.title)
+
+        if update.context is not None:
+            updates.append("context = ?")
+            params.append(update.context)
+
+        if update.options_considered is not None:
+            updates.append("options_considered = ?")
+            params.append(update.options_considered)
+
+        if update.decision is not None:
+            updates.append("decision = ?")
+            params.append(update.decision)
+
+        if update.rationale is not None:
+            updates.append("rationale = ?")
+            params.append(update.rationale)
+
+        if update.domain is not None:
+            updates.append("domain = ?")
+            params.append(update.domain)
+
+        if update.files_touched is not None:
+            updates.append("files_touched = ?")
+            params.append(update.files_touched)
+
+        if update.tests_added is not None:
+            updates.append("tests_added = ?")
+            params.append(update.tests_added)
+
+        if update.status is not None:
+            updates.append("status = ?")
+            params.append(update.status)
+
+        if not updates:
+            return ActionResult(success=False, message="No updates provided")
+
+        updates.append("updated_at = ?")
+        params.append(datetime.now().isoformat())
+        params.append(decision_id)
+
+        cursor.execute(f"""
+            UPDATE decisions
+            SET {", ".join(updates)}
+            WHERE id = ?
+        """, params)
+
+        conn.commit()
+
+        await manager.broadcast_update("decision_updated", {
+            "decision_id": decision_id
+        })
+
+        return ActionResult(success=True, message="Decision updated")
+
+
+@app.delete("/api/decisions/{decision_id}")
+async def delete_decision(decision_id: int) -> ActionResult:
+    """Delete a decision."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Check if decision exists
+        cursor.execute("SELECT title FROM decisions WHERE id = ?", (decision_id,))
+        decision = cursor.fetchone()
+        if not decision:
+            raise HTTPException(status_code=404, detail="Decision not found")
+
+        # Delete the decision
+        cursor.execute("DELETE FROM decisions WHERE id = ?", (decision_id,))
+        conn.commit()
+
+        await manager.broadcast_update("decision_deleted", {
+            "decision_id": decision_id
+        })
+
+        return ActionResult(success=True, message=f"Deleted decision: {decision['title']}")
+
+
+@app.post("/api/decisions/{decision_id}/supersede")
+async def supersede_decision(decision_id: int, new_decision: DecisionCreate) -> ActionResult:
+    """Supersede a decision with a new one."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Verify old decision exists
+        cursor.execute("SELECT * FROM decisions WHERE id = ?", (decision_id,))
+        old_decision = dict_from_row(cursor.fetchone())
+        if not old_decision:
+            raise HTTPException(status_code=404, detail="Decision not found")
+
+        # Create new decision
+        cursor.execute("""
+            INSERT INTO decisions (
+                title, context, options_considered, decision, rationale,
+                domain, files_touched, tests_added, status, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            new_decision.title,
+            new_decision.context,
+            new_decision.options_considered,
+            new_decision.decision,
+            new_decision.rationale,
+            new_decision.domain,
+            new_decision.files_touched,
+            new_decision.tests_added,
+            new_decision.status,
+            datetime.now().isoformat(),
+            datetime.now().isoformat()
+        ))
+
+        new_decision_id = cursor.lastrowid
+
+        # Update old decision to mark it as superseded
+        cursor.execute("""
+            UPDATE decisions
+            SET status = 'superseded', superseded_by = ?, updated_at = ?
+            WHERE id = ?
+        """, (new_decision_id, datetime.now().isoformat(), decision_id))
+
+        conn.commit()
+
+        await manager.broadcast_update("decision_superseded", {
+            "old_decision_id": decision_id,
+            "new_decision_id": new_decision_id,
+            "title": new_decision.title
+        })
+
+        return ActionResult(
+            success=True,
+            message=f"Superseded decision #{decision_id} with #{new_decision_id}",
+            data={"new_decision_id": new_decision_id, "old_decision_id": decision_id}
+        )
 
 
 @app.get("/api/queries")
