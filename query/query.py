@@ -34,6 +34,13 @@ from datetime import datetime
 from contextlib import contextmanager
 import json
 
+# Meta-observer for system health monitoring
+try:
+    from meta_observer import MetaObserver
+    META_OBSERVER_AVAILABLE = True
+except ImportError:
+    META_OBSERVER_AVAILABLE = False
+
 # Fix Windows console encoding for Unicode characters
 if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -238,6 +245,94 @@ class QuerySystem:
         except Exception as e:
             # Non-blocking: log the error but don't raise
             self._log_debug(f"Failed to log query to building_queries: {e}")
+
+    def _record_system_metrics(self, domain: Optional[str] = None):
+        """
+        Record system health metrics via MetaObserver.
+
+        Called after each query to track:
+        - avg_confidence: Average confidence of active heuristics
+        - validation_velocity: Validations in last 24 hours
+        - contradiction_rate: Contradictions / total applications
+        - query_count: Incremented on each query
+
+        This is non-blocking - errors are logged but don't propagate.
+        """
+        if not META_OBSERVER_AVAILABLE:
+            return
+
+        try:
+            observer = MetaObserver(db_path=self.db_path)
+
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+
+                # 1. Average confidence of active heuristics
+                if domain:
+                    cursor.execute("""
+                        SELECT AVG(confidence), COUNT(*) FROM heuristics
+                        WHERE status = 'active' AND domain = ?
+                    """, (domain,))
+                else:
+                    cursor.execute("""
+                        SELECT AVG(confidence), COUNT(*) FROM heuristics
+                        WHERE status = 'active'
+                    """)
+                row = cursor.fetchone()
+                avg_conf = row[0] if row[0] else 0.5
+                heuristic_count = row[1] if row[1] else 0
+
+                if heuristic_count > 0:
+                    observer.record_metric('avg_confidence', avg_conf, domain=domain,
+                                          metadata={'heuristic_count': heuristic_count})
+
+                # 2. Validation velocity (last 24 hours)
+                cursor.execute("""
+                    SELECT COUNT(*) FROM confidence_updates
+                    WHERE update_type = 'validation'
+                      AND created_at > datetime('now', '-24 hours')
+                """)
+                validation_count = cursor.fetchone()[0] or 0
+                observer.record_metric('validation_velocity', validation_count, domain=domain)
+
+                # 3. Contradiction rate (if we have enough data)
+                cursor.execute("""
+                    SELECT
+                        SUM(times_contradicted) as contradictions,
+                        SUM(times_validated + times_violated + COALESCE(times_contradicted, 0)) as total
+                    FROM heuristics
+                    WHERE status = 'active'
+                """)
+                row = cursor.fetchone()
+                if row and row[1] and row[1] > 0:
+                    contradiction_rate = (row[0] or 0) / row[1]
+                    observer.record_metric('contradiction_rate', contradiction_rate, domain=domain)
+
+                # 4. Query count (simple increment)
+                observer.record_metric('query_count', 1, domain=domain)
+
+            self._log_debug("Recorded system metrics to meta_observer")
+
+        except Exception as e:
+            # Non-blocking: log the error but don't raise
+            self._log_debug(f"Failed to record system metrics: {e}")
+
+    def _check_system_alerts(self) -> list:
+        """
+        Check for system alerts via MetaObserver.
+
+        Returns list of active alerts, or empty list if unavailable.
+        This is non-blocking.
+        """
+        if not META_OBSERVER_AVAILABLE:
+            return []
+
+        try:
+            observer = MetaObserver(db_path=self.db_path)
+            return observer.check_alerts()
+        except Exception as e:
+            self._log_debug(f"Failed to check system alerts: {e}")
+            return []
 
     def _validate_connection(self, conn: sqlite3.Connection) -> bool:
         """
@@ -2322,6 +2417,9 @@ class QuerySystem:
                 query_summary=f"Context build for task: {task[:50]}..."
             )
 
+            # Record system metrics for monitoring (non-blocking)
+            self._record_system_metrics(domain=domain)
+
     def get_statistics(self, timeout: int = None) -> Dict[str, Any]:
         """
         Get statistics about the knowledge base.
@@ -2688,6 +2786,8 @@ Error Codes:
     parser.add_argument('--timeout', type=int, default=30,
                        help='Query timeout in seconds (default: 30)')
     parser.add_argument('--validate', action='store_true', help='Validate database integrity')
+    parser.add_argument('--health-check', action='store_true',
+                       help='Run system health check and display alerts (meta-observer)')
 
     args = parser.parse_args()
 
@@ -2716,6 +2816,66 @@ Error Codes:
                 exit_code = 1
             print(format_output(result, args.format))
             return exit_code
+
+        elif args.health_check:
+            # Run system health check via meta-observer
+            if not META_OBSERVER_AVAILABLE:
+                print("ERROR: Meta-observer not available. Cannot run health check.", file=sys.stderr)
+                return 1
+
+            print("🏥 [94mSystem Health Check[0m")
+            print("━" * 40)
+
+            # Check alerts
+            alerts = query_system._check_system_alerts()
+
+            if not alerts:
+                print("✓ No active alerts")
+            else:
+                for alert in alerts:
+                    if isinstance(alert, dict):
+                        if alert.get('mode') == 'bootstrap':
+                            print(f"⏳ Bootstrap mode: {alert.get('message', 'Collecting baseline data')}")
+                            samples = alert.get('samples', 0)
+                            needed = alert.get('samples_needed', 30)
+                            print(f"   Progress: {samples}/{needed} samples (~{(needed - samples) // 4} more queries needed)")
+                        else:
+                            alert_type = alert.get('type', alert.get('alert_type', 'unknown'))
+                            severity = alert.get('severity', 'info')
+                            icon = {'critical': '🔴', 'warning': '🟡', 'info': '🔵'}.get(severity, '⚪')
+                            print(f"{icon} [{severity.upper()}] {alert_type}")
+                            if alert.get('message'):
+                                print(f"   {alert['message']}")
+
+            # Show recent metrics
+            print("\n📊 [94mRecent Metrics[0m")
+            print("━" * 40)
+            try:
+                from meta_observer import MetaObserver
+                observer = MetaObserver(db_path=query_system.db_path)
+
+                for metric in ['avg_confidence', 'validation_velocity', 'contradiction_rate']:
+                    trend = observer.calculate_trend(metric, hours=168)  # 7 days
+                    if trend.get('confidence') != 'low':
+                        direction = trend.get('direction', 'stable')
+                        arrow = {'increasing': '↑', 'decreasing': '↓', 'stable': '→'}.get(direction, '?')
+                        spread = trend.get('time_spread_hours', 0)
+                        print(f"  {metric}: {arrow} {direction} (confidence: {trend.get('confidence')}, {spread:.1f}h spread)")
+                    elif trend.get('reason') == 'insufficient_time_spread':
+                        spread = trend.get('time_spread_hours', 0)
+                        required = trend.get('required_spread_hours', 0)
+                        print(f"  {metric}: (need more time spread - {spread:.1f}h/{required:.1f}h)")
+                    else:
+                        print(f"  {metric}: (insufficient data - {trend.get('sample_count', 0)}/{trend.get('required', 10)} samples)")
+
+                # Show active alerts from DB
+                active_alerts = observer.get_active_alerts()
+                if active_alerts:
+                    print(f"\n⚠️  {len(active_alerts)} active alert(s) in database")
+            except Exception as e:
+                print(f"  (Could not retrieve metrics: {e})")
+
+            return 0
 
         elif args.context:
             # Build full context

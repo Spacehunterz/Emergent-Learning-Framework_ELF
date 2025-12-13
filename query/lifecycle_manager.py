@@ -23,6 +23,13 @@ from enum import Enum
 # Configuration
 DB_PATH = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
 
+# Fraud detection integration
+try:
+    from fraud_detector import FraudDetector
+    FRAUD_DETECTOR_AVAILABLE = True
+except ImportError:
+    FRAUD_DETECTOR_AVAILABLE = False
+
 class HeuristicStatus(Enum):
     ACTIVE = "active"
     DORMANT = "dormant"
@@ -423,7 +430,10 @@ class LifecycleManager:
 
             conn.commit()
 
-            return {
+            # Run fraud detection after confidence update (non-blocking)
+            fraud_result = self._check_fraud_after_update(heuristic_id, total_apps)
+
+            result = {
                 "success": True,
                 "old_confidence": old_conf,
                 "new_confidence": new_conf,
@@ -437,8 +447,51 @@ class LifecycleManager:
                 "update_type": update_type.value,
                 "updates_today": update_count
             }
+
+            if fraud_result:
+                result["fraud_check"] = fraud_result
+
+            return result
         finally:
             conn.close()
+
+    def _check_fraud_after_update(self, heuristic_id: int, total_apps: int) -> Optional[Dict[str, Any]]:
+        """
+        Run fraud detection after confidence update.
+
+        Only runs if:
+        - Fraud detector is available
+        - Heuristic has sufficient applications (10+)
+
+        Non-blocking: errors are caught and logged.
+
+        Returns:
+            Fraud report summary if run, None otherwise
+        """
+        if not FRAUD_DETECTOR_AVAILABLE:
+            return None
+
+        # Only check heuristics with sufficient history
+        if total_apps < 10:
+            return None
+
+        try:
+            detector = FraudDetector(db_path=self.db_path)
+            report = detector.create_fraud_report(heuristic_id)
+
+            # Return summary (not full report which could be large)
+            return {
+                "checked": True,
+                "classification": report.classification,
+                "fraud_score": round(report.fraud_score, 3),
+                "signal_count": len(report.signals)
+            }
+        except Exception as e:
+            # Non-blocking: log error but don't fail the confidence update
+            return {
+                "checked": False,
+                "error": str(e)
+            }
 
     # =========================================================================
     # 2. RATE-BASED CONTRADICTION THRESHOLD

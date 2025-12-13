@@ -156,9 +156,17 @@ class MetaObserver:
     # =========================================================================
 
     def calculate_trend(self, metric_name: str, hours: int,
-                       domain: Optional[str] = None) -> Dict[str, Any]:
+                       domain: Optional[str] = None,
+                       min_time_spread_hours: Optional[float] = None) -> Dict[str, Any]:
         """
         Calculate linear trend over window using least-squares regression.
+
+        Args:
+            metric_name: Metric to analyze
+            hours: Window size in hours
+            domain: Optional domain filter
+            min_time_spread_hours: Minimum time spread required for valid trend.
+                                   Defaults to 10% of window size (e.g., 16.8h for 168h window)
 
         Returns:
             {
@@ -167,7 +175,8 @@ class MetaObserver:
                 'r_squared': float,  # Goodness of fit
                 'p_value': float,
                 'confidence': 'high' | 'medium' | 'low',
-                'sample_count': int
+                'sample_count': int,
+                'time_spread_hours': float
             }
         """
         observations = self.get_rolling_window(metric_name, hours, domain)
@@ -178,6 +187,21 @@ class MetaObserver:
                 'reason': 'insufficient_data',
                 'sample_count': len(observations),
                 'required': 10
+            }
+
+        # Check time spread - prevents false trends from short bursts of activity
+        # A "7-day trend" with all samples in 1 hour isn't meaningful
+        time_spread = (observations[-1].observed_at - observations[0].observed_at).total_seconds() / 3600
+        min_spread = min_time_spread_hours if min_time_spread_hours is not None else (hours * 0.1)  # 10% of window
+        min_spread = max(min_spread, 1.0)  # At least 1 hour
+
+        if time_spread < min_spread:
+            return {
+                'confidence': 'low',
+                'reason': 'insufficient_time_spread',
+                'sample_count': len(observations),
+                'time_spread_hours': round(time_spread, 2),
+                'required_spread_hours': round(min_spread, 2)
             }
 
         # Convert to numpy arrays
@@ -210,7 +234,8 @@ class MetaObserver:
             'p_value': p_value,
             'std_err': std_err,
             'confidence': confidence,
-            'sample_count': len(observations)
+            'sample_count': len(observations),
+            'time_spread_hours': round(time_spread, 2)
         }
 
     # =========================================================================
@@ -441,28 +466,30 @@ class MetaObserver:
         """
         alerts = []
 
-        # Check if in bootstrap mode (need 7 days of data)
+        # Check if in bootstrap mode (need 30 samples minimum)
+        # Sample-based, not calendar-based - adapts to actual usage patterns
         conn = self._get_connection()
         try:
             cursor = conn.execute("""
-                SELECT COUNT(*) as count,
-                       MIN(observed_at) as first_observation
+                SELECT COUNT(*) as count
                 FROM metric_observations
             """)
             row = cursor.fetchone()
+            sample_count = row['count'] or 0
 
-            if row['count'] == 0:
+            if sample_count == 0:
                 return []  # No data yet
 
-            first_obs = datetime.fromisoformat(row['first_observation'])
-            days_of_data = (datetime.now() - first_obs).days
+            # Bootstrap threshold: 30 samples (~8 queries, since each records 4 metrics)
+            BOOTSTRAP_THRESHOLD = 30
 
-            if days_of_data < 7:
+            if sample_count < BOOTSTRAP_THRESHOLD:
                 # Bootstrap mode - don't fire alerts yet
                 return [{
                     'mode': 'bootstrap',
-                    'days_remaining': 7 - days_of_data,
-                    'message': f'Collecting baseline data ({days_of_data}/7 days)'
+                    'samples': sample_count,
+                    'samples_needed': BOOTSTRAP_THRESHOLD,
+                    'message': f'Collecting baseline data ({sample_count}/{BOOTSTRAP_THRESHOLD} samples)'
                 }]
         finally:
             conn.close()
