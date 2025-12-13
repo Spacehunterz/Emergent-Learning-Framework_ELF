@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teaching Claude to Remember | Emergent Learning Framework</title>
+
+    <!-- Reveal.js CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reset.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/black.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/plugin/highlight/monokai.css">
+
+    <style>
+        :root {
+            --primary-color: #00d9ff;
+            --secondary-color: #ff6b6b;
+            --success-color: #51cf66;
+            --warning-color: #ffd43b;
+        }
+
+        .reveal {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .reveal h1, .reveal h2, .reveal h3 {
+            text-transform: none;
+            font-weight: 700;
+        }
+
+        .reveal h1 {
+            color: var(--primary-color);
+            font-size: 2.5em;
+            margin-bottom: 0.5em;
+        }
+
+        .reveal h2 {
+            color: var(--primary-color);
+            font-size: 1.8em;
+        }
+
+        .reveal h3 {
+            color: #aaa;
+            font-size: 1.3em;
+            font-weight: 400;
+        }
+
+        .reveal code {
+            font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .reveal pre code {
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 0.65em;
+            line-height: 1.4;
+            max-height: 600px;
+        }
+
+        .reveal .hljs {
+            background: #1e1e1e;
+        }
+
+        /* Custom highlights */
+        .highlight-green { color: var(--success-color) !important; }
+        .highlight-red { color: var(--secondary-color) !important; }
+        .highlight-yellow { color: var(--warning-color) !important; }
+        .highlight-cyan { color: var(--primary-color) !important; }
+
+        /* Architecture diagram */
+        .arch-box {
+            border: 2px solid var(--primary-color);
+            padding: 20px;
+            margin: 20px;
+            border-radius: 8px;
+            background: rgba(0, 217, 255, 0.1);
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            color: #aaa;
+            margin-top: 10px;
+        }
+
+        /* Emoji sizing */
+        .emoji {
+            font-size: 1.5em;
+        }
+
+        /* Small text */
+        .small {
+            font-size: 0.8em;
+            color: #999;
+        }
+
+        /* Fragment animations */
+        .reveal .fragment.fade-up {
+            transform: translateY(20px);
+        }
+
+        /* Table styling */
+        .reveal table {
+            font-size: 0.7em;
+            border-collapse: collapse;
+        }
+
+        .reveal table th {
+            background: rgba(0, 217, 255, 0.2);
+            color: var(--primary-color);
+            padding: 12px;
+        }
+
+        .reveal table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Checkmarks and crosses */
+        .check { color: var(--success-color); }
+        .cross { color: var(--secondary-color); }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- Title Slide -->
+            <section data-background-gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+                <h1>Teaching Claude to Remember</h1>
+                <h3>Emergent Learning Framework for Claude Code</h3>
+                <p style="margin-top: 60px;">A talk for developers who are tired of repeating themselves</p>
+                <p class="small" style="margin-top: 40px;">
+                    Press <kbd>Space</kbd> to navigate • <kbd>Esc</kbd> for overview • <kbd>S</kbd> for speaker notes
+                </p>
+            </section>
+
+            <!-- The Problem -->
+            <section>
+                <section data-background-color="#2c3e50">
+                    <h2><span class="emoji">🐠</span> The Problem: Claude Has Amnesia</h2>
+                </section>
+
+                <section>
+                    <h3>Session 1 - Monday 9am</h3>
+                    <pre><code class="language-bash" data-trim>
+You: "Write a React hook for data fetching with cleanup"
+Claude: *creates useDataFetch with proper cleanup*
+You: "Perfect!"
+                    </code></pre>
+
+                    <div class="fragment fade-up" style="margin-top: 40px;">
+                        <h3>Session 2 - Monday 11am</h3>
+                        <pre><code class="language-bash" data-trim>
+You: "Write another data fetching hook"
+Claude: *creates hook WITHOUT cleanup* 🤦
+You: "We literally just discussed cleanup 2 hours ago..."
+Claude: "I have no memory of previous conversations"
+                        </code></pre>
+                    </div>
+
+                    <p class="fragment highlight-red" style="margin-top: 40px; font-size: 1.2em;">
+                        <strong>Every session = fresh start = zero institutional knowledge</strong>
+                    </p>
+                </section>
+
+                <section>
+                    <h3>The Cost of Amnesia</h3>
+                    <ul style="font-size: 0.9em;">
+                        <li class="fragment">Lessons learned from failures <span class="cross">✗</span></li>
+                        <li class="fragment">Patterns that work in YOUR codebase <span class="cross">✗</span></li>
+                        <li class="fragment">Architecture decisions you've made <span class="cross">✗</span></li>
+                        <li class="fragment">Bugs you've already fixed <span class="cross">✗</span></li>
+                        <li class="fragment">Code style preferences <span class="cross">✗</span></li>
+                        <li class="fragment">Domain knowledge <span class="cross">✗</span></li>
+                    </ul>
+
+                    <div class="fragment fade-up" style="margin-top: 40px;">
+                        <div class="stat-card">
+                            <div class="stat-value">~10</div>
+                            <div class="stat-label">Claude sessions per day</div>
+                            <div style="margin-top: 20px; color: var(--secondary-color); font-size: 1.2em;">
+                                <strong>0% knowledge retention</strong> between sessions
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </section>
+
+            <!-- The Insight -->
+            <section>
+                <section data-background-color="#16a085">
+                    <h2><span class="emoji">💡</span> The Core Insight</h2>
+                </section>
+
+                <section>
+                    <div class="arch-box fragment fade-up" style="background: rgba(255, 107, 107, 0.1); border-color: var(--secondary-color);">
+                        <h3 class="highlight-red">Wrong Mental Model</h3>
+                        <p style="font-size: 1.1em;">"Claude" is persistent</p>
+                    </div>
+
+                    <div class="arch-box fragment fade-up">
+                        <h3 class="highlight-green">Correct Mental Model</h3>
+                        <p style="font-size: 1.1em;">
+                            Claude instances are <strong>disposable workers</strong><br>
+                            The <strong>building</strong> they work in is <strong>permanent</strong>
+                        </p>
+                    </div>
+
+                    <p class="fragment highlight-cyan" style="margin-top: 40px; font-size: 1.3em;">
+                        <strong>Separate the agent from the institution</strong>
+                    </p>
+                </section>
+
+                <section>
+                    <h3>The Building Metaphor</h3>
+                    <pre style="font-size: 0.5em;"><code data-trim>
+      Session 1          Session 2          Session 3
+         🧠                 🧠                 🧠
+    (Claude temp)      (Claude temp)      (Claude temp)
+         ↓                  ↓                  ↓
+    ┌────────────────────────────────────────────┐
+    │       THE BUILDING (Permanent)             │
+    │  ┌──────────────────────────────────────┐ │
+    │  │ SQLite: Failures, Patterns, Rules    │ │
+    │  │ Heuristics: confidence scores 0→1    │ │
+    │  │ Golden Rules: proven principles      │ │
+    │  │ Pheromone Trails: file hotspots      │ │
+    │  └──────────────────────────────────────┘ │
+    └────────────────────────────────────────────┘
+         ↑                  ↑                  ↑
+      QUERY              APPLY              LEARN
+                    </code></pre>
+
+                    <p class="fragment highlight-cyan" style="font-size: 1.1em; margin-top: 30px;">
+                        Workers change daily. Building accumulates knowledge forever.
+                    </p>
+                </section>
+            </section>
+
+            <!-- Architecture -->
+            <section>
+                <section data-background-color="#8e44ad">
+                    <h2><span class="emoji">🏗️</span> Technical Architecture</h2>
+                </section>
+
+                <section>
+                    <h3>Tech Stack</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card fragment">
+                            <div style="color: var(--primary-color); font-size: 1.5em;">⚡ FastAPI</div>
+                            <div class="stat-label">Async REST + WebSocket</div>
+                        </div>
+                        <div class="stat-card fragment">
+                            <div style="color: var(--primary-color); font-size: 1.5em;">🗄️ SQLite</div>
+                            <div class="stat-label">Local persistence</div>
+                        </div>
+                        <div class="stat-card fragment">
+                            <div style="color: var(--primary-color); font-size: 1.5em;">⚛️ React 18</div>
+                            <div class="stat-label">Dashboard UI</div>
+                        </div>
+                        <div class="stat-card fragment">
+                            <div style="color: var(--primary-color); font-size: 1.5em;">📊 D3.js</div>
+                            <div class="stat-label">Visualizations</div>
+                        </div>
+                    </div>
+
+                    <p class="fragment" style="margin-top: 40px; color: var(--success-color);">
+                        <strong>100% Local • No Cloud • No External APIs</strong>
+                    </p>
+                </section>
+
+                <section>
+                    <h3>Database Schema</h3>
+                    <pre><code class="language-sql" data-trim data-line-numbers="1-5|7-11|13-17">
+-- Patterns gain confidence through validation
+CREATE TABLE heuristics (
+    pattern TEXT NOT NULL,
+    confidence REAL DEFAULT 0.0,  -- 0.0 → 1.0
+    validation_count INTEGER
+);
+
+-- High-confidence principles
+CREATE TABLE golden_rules (
+    rule TEXT NOT NULL,
+    auto_load BOOLEAN DEFAULT true
+);
+
+-- Track file activity (pheromone trails)
+CREATE TABLE pheromone_trails (
+    file_path TEXT,
+    touch_count INTEGER
+);
+                    </code></pre>
+                </section>
+            </section>
+
+            <!-- The Learning Loop -->
+            <section>
+                <section data-background-color="#e74c3c">
+                    <h2><span class="emoji">🔄</span> The Learning Loop</h2>
+                </section>
+
+                <section>
+                    <h3>Cycle Implementation</h3>
+                    <pre><code class="language-python" data-trim data-line-numbers="1-2|4-5|7-8|10-14|16-17">
+# 1. TRY
+outcome = attempt_task(current_knowledge)
+
+# 2. BREAK (or succeed)
+result = evaluate(outcome)
+
+# 3. ANALYZE
+principle = extract_lesson(result)
+
+# 4. LEARN
+if principle.validated:
+    heuristic.confidence += 0.1
+    if heuristic.confidence > 0.9:
+        promote_to_golden_rule(heuristic)
+
+# 5. NEXT
+current_knowledge = load_building()
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Live Example: useEffect Cleanup</h3>
+                    <div class="fragment fade-up">
+                        <h4 class="highlight-red">Session 1: Mistake</h4>
+                        <pre><code class="language-javascript" data-trim>
+useEffect(() => {
+  setInterval(() => fetch('/api/data'), 1000);
+}, []);
+// ⚠️ NO CLEANUP - Memory leak!
+                        </code></pre>
+                    </div>
+
+                    <div class="fragment fade-up">
+                        <p class="highlight-yellow">Record failure: "Always cleanup intervals in useEffect"</p>
+                        <p class="small">→ Heuristic created: confidence = 0.3</p>
+                    </div>
+
+                    <div class="fragment fade-up">
+                        <h4 class="highlight-green">Session 2: Applied</h4>
+                        <pre><code class="language-javascript" data-trim>
+useEffect(() => {
+  const id = setInterval(() => fetch('/api/data'), 1000);
+  return () => clearInterval(id); // ✅ CLEANUP!
+}, []);
+                        </code></pre>
+                        <p class="small">→ Confidence increased: 0.3 → 0.6 → 0.9 → <span class="highlight-green">Golden Rule</span></p>
+                    </div>
+                </section>
+            </section>
+
+            <!-- Security -->
+            <section>
+                <section data-background-color="#2980b9">
+                    <h2><span class="emoji">🔒</span> Security: Defense in Depth</h2>
+                </section>
+
+                <section>
+                    <h3>Input Validation</h3>
+                    <pre><code class="language-python" data-trim data-line-numbers="1-6|8-10|12-14">
+def validate_identifier(value: str, max_length=100):
+    """Prevents command injection, path traversal"""
+
+    # Only alphanumeric + underscore + hyphen
+    if not re.match(r'^[a-zA-Z0-9_-]+$', value):
+        raise ValidationError("Invalid identifier")
+
+    # Blocks: ; | & $ ` ../ quotes newlines wildcards
+    # Tested against 86 attack patterns
+    return value
+
+# Every node_id, workflow_id validated before:
+# - Subprocess execution
+# - File operations
+# - Environment variables
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Security Audit Results (Dec 2025)</h3>
+                    <table>
+                        <tr>
+                            <th>Protection</th>
+                            <th>Status</th>
+                        </tr>
+                        <tr>
+                            <td>Command Injection</td>
+                            <td><span class="check">✓</span> Validated + no shell=True</td>
+                        </tr>
+                        <tr>
+                            <td>SQL Injection</td>
+                            <td><span class="check">✓</span> Parameterized queries</td>
+                        </tr>
+                        <tr>
+                            <td>Path Traversal</td>
+                            <td><span class="check">✓</span> Input validation</td>
+                        </tr>
+                        <tr>
+                            <td>XSS/CSRF</td>
+                            <td><span class="check">✓</span> Security headers + CORS</td>
+                        </tr>
+                        <tr>
+                            <td>Test Coverage</td>
+                            <td><span class="check">✓</span> 86 subtests passing</td>
+                        </tr>
+                    </table>
+
+                    <p class="fragment highlight-green" style="margin-top: 30px; font-size: 1.2em;">
+                        <strong>Status: SECURE</strong>
+                    </p>
+                </section>
+            </section>
+
+            <!-- Features -->
+            <section>
+                <section data-background-color="#27ae60">
+                    <h2><span class="emoji">⚡</span> Power Features</h2>
+                </section>
+
+                <section>
+                    <h3>Cross-Session Search</h3>
+                    <pre><code class="language-bash" data-trim>
+# Natural language search over all sessions
+You: "/search what was I working on with React last week?"
+
+Claude: "Found 3 sessions:
+  - 2025-12-06: useEffect cleanup pattern
+  - 2025-12-05: Custom hooks architecture
+  - 2025-12-04: Context API optimization
+
+  Most relevant: useEffect cleanup..."
+                    </code></pre>
+
+                    <p class="fragment small" style="margin-top: 30px;">
+                        Token cost: ~500 tokens (lightweight RAG)
+                    </p>
+                </section>
+
+                <section>
+                    <h3>Swarm Coordination</h3>
+                    <pre style="font-size: 0.45em;"><code data-trim>
+You: "/swarm investigate the authentication system"
+
+┌──────────────┬────────────────────────────────┐
+│ RESEARCHER   │ "Gathering OAuth2 best        │
+│              │  practices from docs..."       │
+├──────────────┼────────────────────────────────┤
+│ ARCHITECT    │ "Mapping token flow:           │
+│              │  Login→JWT→Refresh→Logout"     │
+├──────────────┼────────────────────────────────┤
+│ SKEPTIC      │ "Found: No rate limiting       │
+│              │  on /auth/login endpoint"      │
+├──────────────┼────────────────────────────────┤
+│ CREATIVE     │ "Idea: Add biometric fallback  │
+│              │  for passwordless auth"        │
+└──────────────┴────────────────────────────────┘
+
+Results aggregated → Synthesized report
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h3>Dashboard: Visual Insights</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div>📊 Knowledge Graph</div>
+                            <div class="stat-label">Interactive D3.js visualization</div>
+                        </div>
+                        <div class="stat-card">
+                            <div>🔥 Hotspots</div>
+                            <div class="stat-label">Treemap of file activity</div>
+                        </div>
+                        <div class="stat-card">
+                            <div>📈 Analytics</div>
+                            <div class="stat-label">Learning velocity trends</div>
+                        </div>
+                        <div class="stat-card">
+                            <div>💬 Sessions</div>
+                            <div class="stat-label">Searchable conversation history</div>
+                        </div>
+                    </div>
+
+                    <p class="fragment highlight-cyan" style="margin-top: 30px;">
+                        Real-time updates via WebSocket • localhost:3001
+                    </p>
+                </section>
+            </section>
+
+            <!-- Economics -->
+            <section>
+                <section data-background-color="#f39c12">
+                    <h2><span class="emoji">💰</span> Token Economics</h2>
+                </section>
+
+                <section>
+                    <h3>Cost Breakdown</h3>
+                    <table>
+                        <tr>
+                            <th>Operation</th>
+                            <th>Tokens</th>
+                            <th>Cost</th>
+                        </tr>
+                        <tr>
+                            <td>Golden rules load</td>
+                            <td>~500</td>
+                            <td>$0.0015</td>
+                        </tr>
+                        <tr>
+                            <td>Domain query</td>
+                            <td>~2-5k</td>
+                            <td>$0.006-$0.015</td>
+                        </tr>
+                        <tr>
+                            <td>Session search</td>
+                            <td>~500</td>
+                            <td>$0.0015</td>
+                        </tr>
+                        <tr class="fragment highlight-cyan">
+                            <td><strong>Daily (10 sessions)</strong></td>
+                            <td><strong>~15k</strong></td>
+                            <td><strong>$0.10-0.50</strong></td>
+                        </tr>
+                    </table>
+
+                    <div class="fragment fade-up" style="margin-top: 40px;">
+                        <div class="arch-box">
+                            <p style="font-size: 1.1em;">Compare to: Re-explaining context manually</p>
+                            <p class="highlight-red">~100k tokens/day wasted on repetition = <strong>$9/month</strong></p>
+                        </div>
+                        <p class="highlight-green" style="font-size: 1.2em; margin-top: 20px;">
+                            <strong>ROI: Positive after week 1</strong>
+                        </p>
+                    </div>
+                </section>
+            </section>
+
+            <!-- Installation -->
+            <section>
+                <section data-background-color="#9b59b6">
+                    <h2><span class="emoji">🚀</span> Getting Started</h2>
+                </section>
+
+                <section>
+                    <h3>Installation (2 minutes)</h3>
+                    <pre><code class="language-bash" data-trim>
+# Clone
+git clone https://github.com/Spacehunterz/\
+  Emergent-Learning-Framework_ELF
+cd Emergent-Learning-Framework_ELF
+
+# Install (Mac/Linux)
+./install.sh
+
+# Or Windows
+./install.ps1
+                    </code></pre>
+
+                    <p class="small fragment" style="margin-top: 30px;">
+                        Installs to <code>~/.claude/emergent-learning/</code><br>
+                        Requirements: Python 3.8+, Bun/Node (for dashboard)
+                    </p>
+                </section>
+
+                <section>
+                    <h3>First Session Workflow</h3>
+                    <pre><code class="language-bash" data-trim data-line-numbers="1-2|4-5|7-11|13-14|16-17">
+# 1. Start Claude Code
+claude
+
+# 2. Check in (most important command)
+You: "check in"
+
+# Auto-setup on first run:
+# - Creates CLAUDE.md (global config)
+# - Starts dashboard (localhost:3001)
+# - Returns golden rules + stats
+# - Ready to learn!
+
+# 3. Work normally
+You: "Help me debug this API endpoint"
+
+# 4. Record learnings
+You: "record failure: Don't use sync fs in async handlers"
+                    </code></pre>
+                </section>
+            </section>
+
+            <!-- Use Cases -->
+            <section>
+                <section data-background-color="#34495e">
+                    <h2><span class="emoji">🎯</span> When ELF Shines</h2>
+                </section>
+
+                <section>
+                    <h3>Key Use Cases</h3>
+                    <ul style="font-size: 0.9em;">
+                        <li class="fragment">
+                            <strong class="highlight-cyan">Onboarding new codebases</strong><br>
+                            <span class="small">Record architecture decisions as you learn</span>
+                        </li>
+                        <li class="fragment">
+                            <strong class="highlight-cyan">Bug pattern recognition</strong><br>
+                            <span class="small">Prevent regression, identify problem areas</span>
+                        </li>
+                        <li class="fragment">
+                            <strong class="highlight-cyan">Code review automation</strong><br>
+                            <span class="small">Golden rules encode team standards</span>
+                        </li>
+                        <li class="fragment">
+                            <strong class="highlight-cyan">Experiment tracking</strong><br>
+                            <span class="small">Build evidence-based heuristics systematically</span>
+                        </li>
+                    </ul>
+
+                    <div class="fragment arch-box" style="margin-top: 40px;">
+                        <p style="font-size: 1.1em;">
+                            <strong>Week 1:</strong> 5 heuristics<br>
+                            <strong>Month 1:</strong> 50 heuristics<br>
+                            <strong>Year 1:</strong> Institutional wisdom
+                        </p>
+                    </div>
+                </section>
+            </section>
+
+            <!-- Key Takeaways -->
+            <section>
+                <section data-background-color="#1abc9c">
+                    <h2><span class="emoji">📝</span> Key Takeaways</h2>
+                </section>
+
+                <section>
+                    <h3>TL;DR</h3>
+                    <ol style="font-size: 0.85em; line-height: 1.8;">
+                        <li class="fragment">
+                            <strong class="highlight-cyan">Separate agent from institution</strong><br>
+                            Claude = temp worker, Building = permanent memory
+                        </li>
+                        <li class="fragment">
+                            <strong class="highlight-cyan">Learning is automatic</strong><br>
+                            Record failures → extract principles → gain confidence
+                        </li>
+                        <li class="fragment">
+                            <strong class="highlight-cyan">Knowledge compounds</strong><br>
+                            Gets smarter every week without manual intervention
+                        </li>
+                        <li class="fragment">
+                            <strong class="highlight-cyan">Local-first privacy</strong><br>
+                            No cloud, no APIs, you own your data
+                        </li>
+                        <li class="fragment">
+                            <strong class="highlight-cyan">Production-ready security</strong><br>
+                            Validated, tested, audited, documented
+                        </li>
+                    </ol>
+                </section>
+            </section>
+
+            <!-- Closing -->
+            <section data-background-gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+                <h2 class="highlight-cyan">The Bottom Line</h2>
+                <p style="font-size: 1.2em; margin-top: 40px; line-height: 1.6;">
+                    AI agents are getting smarter every month.<br>
+                    But they're still <strong class="highlight-red">amnesiacs</strong>.
+                </p>
+
+                <p class="fragment fade-up" style="font-size: 1.3em; margin-top: 40px; line-height: 1.6;">
+                    This framework gives them <strong class="highlight-cyan">time</strong> —<br>
+                    the ability to learn across sessions,<br>
+                    compound knowledge,<br>
+                    and get better the longer you use them.
+                </p>
+
+                <p class="fragment fade-up highlight-green" style="font-size: 1.5em; margin-top: 60px;">
+                    <strong>That's not artificial intelligence.</strong><br>
+                    <strong>That's emergent intelligence.</strong>
+                </p>
+            </section>
+
+            <!-- Resources -->
+            <section>
+                <h2>Resources</h2>
+                <div style="text-align: left; margin: 40px auto; max-width: 800px;">
+                    <p><strong class="highlight-cyan">GitHub:</strong><br>
+                    <a href="https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF">
+                        github.com/Spacehunterz/Emergent-Learning-Framework_ELF
+                    </a></p>
+
+                    <p style="margin-top: 30px;"><strong class="highlight-cyan">Quick Start:</strong></p>
+                    <pre><code class="language-bash" data-trim>
+git clone &lt;repo&gt;
+./install.sh
+# In Claude Code: "check in"
+                    </code></pre>
+
+                    <p style="margin-top: 30px;">
+                        <strong class="highlight-cyan">License:</strong> MIT<br>
+                        <strong class="highlight-cyan">Cost:</strong> Free, local-only<br>
+                        <strong class="highlight-cyan">Requirements:</strong> Python 3.8+, Claude Code
+                    </p>
+                </div>
+            </section>
+
+            <!-- Q&A -->
+            <section data-background-color="#2c3e50">
+                <h1 style="font-size: 3em;">Questions?</h1>
+                <p style="margin-top: 60px; font-size: 1.2em;">
+                    <span class="emoji">💬</span> Let's discuss your use cases<br>
+                    <span class="emoji">🔧</span> Integration ideas<br>
+                    <span class="emoji">🤝</span> Contribution opportunities
+                </p>
+
+                <p style="margin-top: 80px; color: var(--primary-color); font-size: 1.3em;">
+                    <strong>"The agent is temporary. The building is permanent."</strong>
+                </p>
+
+                <p style="margin-top: 40px;">
+                    Go build something that remembers.
+                </p>
+            </section>
+
+        </div>
+    </div>
+
+    <!-- Reveal.js -->
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/plugin/notes/notes.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/plugin/markdown/markdown.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/plugin/highlight/highlight.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/plugin/zoom/zoom.js"></script>
+
+    <script>
+        Reveal.initialize({
+            hash: true,
+            slideNumber: 'c/t',
+            showSlideNumber: 'speaker',
+            transition: 'slide',
+            backgroundTransition: 'fade',
+
+            // Responsive width/height
+            width: 1280,
+            height: 720,
+            margin: 0.04,
+
+            // Controls
+            controls: true,
+            controlsLayout: 'bottom-right',
+            progress: true,
+
+            // Keyboard shortcuts
+            keyboard: {
+                78: null, // Disable 'n' for next (conflicts with typing)
+                80: null  // Disable 'p' for prev
+            },
+
+            // Plugins
+            plugins: [
+                RevealMarkdown,
+                RevealHighlight,
+                RevealNotes,
+                RevealZoom
+            ]
+        });
+
+        // Custom keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // 'F' for fullscreen
+            if (e.key === 'f' || e.key === 'F') {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
