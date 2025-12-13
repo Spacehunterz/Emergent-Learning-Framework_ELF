@@ -143,8 +143,8 @@ SRC_DIR="$SCRIPT_DIR"
 
 # Copy core files
 cp "$SRC_DIR/query/query.py" "$EMERGENT_LEARNING_DIR/query/query.py"
-cp "$SRC_DIR/memory/golden-rules.md" "$EMERGENT_LEARNING_DIR/memory/golden-rules.md"
-cp "$SRC_DIR/memory/init_db.sql" "$EMERGENT_LEARNING_DIR/memory/init_db.sql"
+cp "$SRC_DIR/templates/golden-rules.md" "$EMERGENT_LEARNING_DIR/memory/golden-rules.md"
+cp "$SRC_DIR/templates/init_db.sql" "$EMERGENT_LEARNING_DIR/memory/init_db.sql"
 echo -e "  ${GREEN}Copied query system${NC}"
 
 # Copy hooks

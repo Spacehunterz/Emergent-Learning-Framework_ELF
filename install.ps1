@@ -140,13 +140,13 @@ Write-Host "[Step 3/5] Installing core components..." -ForegroundColor Yellow
 
 $srcDir = $ScriptDir
 $srcQueryDir = Join-Path $srcDir "query"
-$srcMemoryDir = Join-Path $srcDir "memory"
+$srcTemplatesDir = Join-Path $srcDir "templates"
 $dstQueryDir = Join-Path $EmergentLearningDir "query"
 
 # Copy core files
 Copy-Item -Path (Join-Path $srcQueryDir "query.py") -Destination (Join-Path $dstQueryDir "query.py") -Force
-Copy-Item -Path (Join-Path $srcMemoryDir "golden-rules.md") -Destination (Join-Path $MemoryDir "golden-rules.md") -Force
-Copy-Item -Path (Join-Path $srcMemoryDir "init_db.sql") -Destination (Join-Path $MemoryDir "init_db.sql") -Force
+Copy-Item -Path (Join-Path $srcTemplatesDir "golden-rules.md") -Destination (Join-Path $MemoryDir "golden-rules.md") -Force
+Copy-Item -Path (Join-Path $srcTemplatesDir "init_db.sql") -Destination (Join-Path $MemoryDir "init_db.sql") -Force
 Write-Host "  Copied query system" -ForegroundColor Green
 
 # Copy hooks
