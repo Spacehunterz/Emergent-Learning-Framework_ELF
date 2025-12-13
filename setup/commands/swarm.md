@@ -5,33 +5,46 @@ Spawn and manage coordinated agents using the blackboard pattern.
 ## Usage
 
 ```
-/swarm [task]    # Execute task (or continue/iterate if no task given)
-/swarm show      # View full state (agents + findings + tasks + questions)
+/swarm [task]    # Execute task with monitoring
+/swarm show      # View full state
 /swarm reset     # Clear blackboard
-/swarm stop      # Disable coordination
+/swarm stop      # Stop monitoring
 ```
 
 ## Examples
 
 ```
-/swarm investigate the authentication system end-to-end
+/swarm investigate the authentication system
+/swarm implement feature X
 /swarm show
 /swarm reset
 ```
 
 ---
 
+## How Monitoring Works
+
+**Single-Pass Watcher Model:**
+1. You spawn work agents with `[SWARM]` tag
+2. Hook reminds main Claude if watcher needed
+3. Main Claude spawns haiku watcher (single pass)
+4. Watcher analyzes state, fixes problems, logs, exits
+5. Next user message triggers next monitoring cycle
+
+Watchers do NOT self-perpetuate (cost control). The cycle is driven by user interaction.
+
+---
+
 ## Instructions
 
-### `/swarm <task>` or `/swarm` (Execute/Continue)
+### `/swarm <task>` (Execute)
 
 **With task:** Start fresh coordinated execution
-**Without task:** Continue - process pending follow-up tasks
 
 1. **Initialize** (if needed):
    ```bash
-   mkdir -p .coordination
-   python ~/.claude/plugins/agent-coordination/utils/blackboard.py reset
+   mkdir -p ~/.claude/emergent-learning/.coordination
+   python ~/.claude/emergent-learning/watcher/watcher_loop.py clear
    ```
 
 2. **Analyze & decompose** the task into parallel subtasks
@@ -51,74 +64,77 @@ Spawn and manage coordinated agents using the blackboard pattern.
    Proceed? [Y/n]
    ```
 
-4. **Spawn agents** using Task tool with `[SWARM]` marker:
+4. **Spawn work agents** using Task tool with `[SWARM]` marker:
 
-   **IMPORTANT:** Always include `[SWARM]` in the description so hooks inject coordination:
+   **IMPORTANT:**
+   - Always include `[SWARM]` in description (triggers hooks)
+   - Always use `run_in_background: true` (Golden Rule #12)
+
    ```
    Task tool call:
    - description: "[SWARM] Investigate auth service"
    - prompt: "Your task: ..."
    - subagent_type: "general-purpose"
+   - run_in_background: true
    ```
 
-   The hook will automatically:
-   - Create `.coordination/` if needed
-   - Register agent on blackboard
-   - Inject context about other agents
-   - Add coordination instructions
+5. **Spawn watcher** (optional but recommended):
+   ```bash
+   python ~/.claude/emergent-learning/watcher/watcher_loop.py prompt
+   ```
 
-5. **Iterate** on follow-up tasks from queue (max 5 iterations)
+   Then spawn with Task tool:
+   ```
+   - description: "[WATCHER] Monitor swarm"
+   - subagent_type: "general-purpose"
+   - model: "haiku"
+   - run_in_background: true
+   - prompt: (output from above command)
+   ```
 
-6. **Synthesize** all findings into summary
+   The watcher will:
+   - Do ONE comprehensive monitoring pass
+   - Detect problems (stale agents, errors)
+   - Fix issues directly (update blackboard)
+   - Log findings and exit
+
+   A UserPromptSubmit hook will remind you to spawn another watcher if needed.
+
+6. **Iterate** on follow-up tasks from queue (max 5 iterations)
+
+7. **Synthesize** all findings into summary
+
+8. **Stop monitoring** when done:
+   ```bash
+   python ~/.claude/emergent-learning/watcher/watcher_loop.py stop
+   ```
 
 ### `/swarm show` (View State)
 
-Display everything:
-
 ```bash
-python ~/.claude/plugins/agent-coordination/utils/blackboard.py summary
+python ~/.claude/emergent-learning/watcher/watcher_loop.py status
 ```
 
-Output format:
-```
-## Swarm Status
-
-**Agents:** 3 (2 completed, 1 active)
-- agent-a1b2: Investigate auth [completed]
-- agent-c3d4: Write tests [active]
-- agent-e5f6: Update docs [completed]
-
-**Findings:** 5
-- [fact] Auth uses JWT tokens (agent-a1b2)
-- [hypothesis] Rate limiting missing (agent-a1b2)
-- [blocker] Need DB schema (agent-c3d4)
-
-**Pending Tasks:** 2
-- [8] Investigate token refresh
-- [5] Add rate limiting
-
-**Open Questions:** 1
-- agent-c3d4: What auth provider to use?
+Also check blackboard:
+```bash
+cat ~/.claude/emergent-learning/.coordination/blackboard.json | python -m json.tool
 ```
 
 ### `/swarm reset` (Clear)
 
 Clear all state:
-
 ```bash
-python ~/.claude/plugins/agent-coordination/utils/blackboard.py reset
+rm -rf ~/.claude/emergent-learning/.coordination/*
 ```
 
 ### `/swarm stop` (Disable)
 
-Stop coordination and mark all agents as stopped:
-
-```python
-from blackboard import Blackboard
-bb = Blackboard()
-for agent_id in bb.get_active_agents():
-    bb.update_agent_status(agent_id, 'stopped')
+Stop monitoring:
+```bash
+python ~/.claude/emergent-learning/watcher/watcher_loop.py stop
 ```
+
+This creates a `watcher-stop` file that prevents future watcher spawns.
 
 ---
 
@@ -134,4 +150,5 @@ Agents report in `## FINDINGS` section:
 
 - File-based IPC (no external services)
 - Windows compatible
-- Max 5 iterations
+- Single-pass watchers (user-driven cycle)
+- Max 5 iterations per swarm

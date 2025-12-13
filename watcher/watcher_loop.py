@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
 """
-Self-Perpetuating Watcher Loop
+Single-Pass Watcher System
 
-This generates the complete watcher prompt that includes instructions
-for the watcher to spawn the next iteration using the Task tool.
+Generates prompts for watcher agents that do ONE comprehensive monitoring pass.
+Watchers analyze state, make decisions, execute interventions, and exit.
+Main Claude (via hook reminder) spawns the next watcher when user interacts.
 
 Design:
-    Watcher (Haiku) → analyzes state → outputs status
-    If nominal → spawns next Watcher (Haiku)
-    If escalate → spawns Handler (Opus)
-    Handler → makes decision → spawns next Watcher (Haiku)
+    User message → Hook checks if watcher needed → Main Claude spawns watcher
+    Watcher (Haiku) → analyzes → decides → intervenes if needed → logs → exits
+    Next user message → cycle repeats if swarm still active
 
-    This creates an infinite monitoring loop until swarm completes.
+This is "continuous monitoring with deferred action" - monitoring happens each
+user interaction, interventions happen immediately, but the cycle is driven
+by user presence rather than autonomous agent spawning.
 
 Usage:
-    python watcher_loop.py start     # Print prompt to start loop
-    python watcher_loop.py stop      # Create stop signal file
-    python watcher_loop.py status    # Check if watcher is active
+    python watcher_loop.py prompt                              # Output watcher prompt
+    python watcher_loop.py handler-prompt --escalation <json>  # Output handler prompt (for complex issues)
+    python watcher_loop.py stop                                # Create stop signal file
+    python watcher_loop.py status                              # Check watcher status
+    python watcher_loop.py clear                               # Clear stop signal
+    python watcher_loop.py summary                             # Show last watcher actions
 """
 
 import json
@@ -30,6 +35,7 @@ COORDINATION_DIR = Path.home() / ".claude" / "emergent-learning" / ".coordinatio
 BLACKBOARD_FILE = COORDINATION_DIR / "blackboard.json"
 WATCHER_LOG = COORDINATION_DIR / "watcher-log.md"
 STOP_FILE = COORDINATION_DIR / "watcher-stop"
+DECISION_FILE = COORDINATION_DIR / "decision.md"
 
 
 def gather_state() -> Dict[str, Any]:
@@ -59,16 +65,22 @@ def gather_state() -> Dict[str, Any]:
     return state
 
 
-def get_watcher_prompt(state: Dict[str, Any], interval_seconds: int = 45) -> str:
-    """
-    Generate the self-perpetuating watcher prompt.
+def output_watcher_prompt():
+    """Output single-pass watcher prompt."""
+    state = gather_state()
 
-    The watcher agent will:
-    1. Analyze the provided state
-    2. Output status (nominal/escalate)
-    3. Spawn the next agent (watcher or handler) using Task tool
-    """
-    return f'''You are a self-perpetuating monitoring agent for a multi-agent swarm.
+    prompt = f"""You are a single-pass monitoring agent for a multi-agent swarm.
+
+## Your Job
+
+Do ONE comprehensive monitoring pass:
+1. Analyze the coordination state
+2. Detect any problems
+3. Take action if needed (you CAN update files directly)
+4. Log your findings
+5. Exit with a clear summary
+
+You do NOT need to spawn another watcher - that happens automatically on the next user interaction.
 
 ## Current Coordination State
 
@@ -76,159 +88,171 @@ def get_watcher_prompt(state: Dict[str, Any], interval_seconds: int = 45) -> str
 {json.dumps(state, indent=2)}
 ```
 
-## Your Tasks
+## Step 1: Analyze State
 
-### 1. Analyze State
+Check for these problems:
+- **Stale agents**: No heartbeat update > 120 seconds (check last_seen timestamps)
+- **Errors**: Any "error" fields in blackboard
+- **Stuck tasks**: Agent marked "active" but no progress
+- **Completed swarm**: All agents status = "completed" or "failed"
 
-Check for problems:
-- Stale agents (no update > 120 seconds)
-- Errors in blackboard
-- Stuck tasks
-- Deadlocks
+## Step 2: Determine Status
 
-### 2. Output Status
+Based on analysis, your status is one of:
 
-```
-STATUS: nominal
-NOTES: [brief observation]
-```
+| Status | Meaning |
+|--------|---------|
+| `nominal` | Everything healthy, swarm progressing |
+| `stale` | Agent(s) not updating, may need restart |
+| `error` | Error detected in coordination state |
+| `complete` | Swarm finished (all agents done) |
+| `stopped` | Stop file exists, monitoring should end |
 
-OR if problem found:
+## Step 3: Take Action (if needed)
 
-```
-STATUS: escalate
-REASON: [what's wrong]
-AFFECTED: [which agents]
-SEVERITY: [low/medium/high]
-```
+**For `stale` agents - you can restart them directly:**
 
-### 3. CRITICAL: Spawn Next Agent
+```python
+# Update blackboard to restart agent
+import json
+from pathlib import Path
 
-**You MUST use the Task tool at the end of your response.**
+bb_path = Path.home() / ".claude" / "emergent-learning" / ".coordination" / "blackboard.json"
+bb = json.loads(bb_path.read_text())
 
-If STATUS was `nominal`:
-- Wait {interval_seconds} seconds (sleep command)
-- Then spawn the next watcher (yourself, essentially)
+# Mark agent for restart
+bb["agents"]["<agent_id>"]["status"] = "restarting"
+bb["agents"]["<agent_id>"]["last_seen"] = "<current_timestamp>"
 
-If STATUS was `escalate`:
-- Spawn the Opus handler to decide what to do
-
-**Stop conditions (do NOT spawn next agent):**
-- `stop_requested` is true in state
-- Blackboard shows all agents completed
-- No active swarm (blackboard empty or missing)
-
-## Task Tool Calls
-
-### To spawn next watcher (nominal case):
-
-Use Task tool with:
-- description: "[WATCHER] Monitor swarm"
-- subagent_type: "general-purpose"
-- model: "haiku"
-- run_in_background: true
-- prompt: (copy from below)
-
-Watcher prompt to use:
-```
-You are a monitoring agent. Read coordination state from ~/.claude/emergent-learning/.coordination/
-
-Check: blackboard.json, agent_*.md files, watcher-log.md
-
-Look for: stale agents (>120s), errors, stuck tasks, deadlocks.
-
-Output:
-- "STATUS: nominal" + notes if OK
-- "STATUS: escalate" + reason/affected/severity if problem
-
-Then SPAWN NEXT AGENT using Task tool:
-- If nominal: spawn another haiku watcher (model: haiku, run_in_background: true)
-- If escalate: spawn opus handler (model: opus)
-- If .coordination/watcher-stop exists or swarm complete: do NOT spawn
-
-This creates a self-perpetuating monitoring loop.
+bb_path.write_text(json.dumps(bb, indent=2))
 ```
 
-### To spawn handler (escalate case):
+**For `error` states - log the error and recommend action**
 
-Use Task tool with:
-- description: "[HANDLER] Intervene in swarm"
-- subagent_type: "general-purpose"
-- model: "opus"
-- prompt: Include the escalation details and ask Opus to decide action (RESTART/REASSIGN/SYNTHESIZE/ABORT/ESCALATE_TO_HUMAN)
+**For `complete` - create stop file to end monitoring:**
+```bash
+touch ~/.claude/emergent-learning/.coordination/watcher-stop
+```
 
-## Important
+## Step 4: Log Your Findings
 
-- Always check for watcher-stop file before spawning
-- Log your status to watcher-log.md
+Append to watcher-log.md:
+```bash
+echo "<timestamp> | STATUS: <status> | NOTES: <brief observation>" >> ~/.claude/emergent-learning/.coordination/watcher-log.md
+```
+
+## Step 5: Output Summary
+
+End with a clear summary block:
+
+```
+== WATCHER SUMMARY ==
+STATUS: <nominal|stale|error|complete|stopped>
+AGENTS_CHECKED: <count>
+ISSUES_FOUND: <count or "none">
+ACTIONS_TAKEN: <what you did, or "none">
+RECOMMENDATION: <what main Claude should do next, if anything>
+```
+
+## Important Notes
+
+- You have FULL access to Bash, Read, Edit, Write tools
+- You CAN and SHOULD fix problems directly when possible
+- You do NOT have Task tool (cannot spawn agents) - that's fine, main Claude handles that
 - Be concise - this runs frequently
-- The loop continues until stopped or swarm completes
-'''
+- If swarm is complete, create the stop file so monitoring ends
+
+## Example Workflow
+
+1. Read the state above
+2. Notice agent "worker-1" last_seen is 300 seconds ago (stale!)
+3. Update blackboard to mark it "restarting"
+4. Log: "Restarted stale agent worker-1"
+5. Output summary with STATUS: stale, ACTIONS_TAKEN: restarted worker-1
+"""
+
+    print(prompt)
 
 
-def get_handler_prompt(escalation: Dict[str, Any]) -> str:
-    """Generate prompt for Opus handler when escalation needed."""
-    return f'''You are an intervention agent. The watcher detected an issue.
+def output_handler_prompt(escalation_json: str):
+    """Output handler prompt for complex issues requiring deeper analysis."""
+    try:
+        escalation = json.loads(escalation_json)
+    except json.JSONDecodeError:
+        escalation = {"reason": escalation_json, "severity": "unknown"}
 
-## Escalation
+    prompt = f"""You are an intervention handler for a complex swarm issue.
+
+The regular watcher detected something that needs deeper analysis.
+
+## Escalation Details
 
 ```json
 {json.dumps(escalation, indent=2)}
 ```
 
-## Full Context
+## Your Tasks
 
-Read: ~/.claude/emergent-learning/.coordination/
-- blackboard.json (agent states)
-- agent_*.md (outputs)
-- watcher-log.md (history)
+### 1. Gather Full Context
 
-## Available Actions
+Read these files to understand the situation:
+- `~/.claude/emergent-learning/.coordination/blackboard.json` - agent states
+- `~/.claude/emergent-learning/.coordination/watcher-log.md` - monitoring history
+- Any `agent_*.md` files in `.coordination/` - agent outputs
 
-1. **RESTART** - Reset stuck agent, let it retry
-2. **REASSIGN** - Mark failed, put task back in queue
-3. **SYNTHESIZE** - Collect partial outputs, create synthesis task
-4. **ABORT** - Stop work on this task
-5. **ESCALATE_TO_HUMAN** - Write to ceo-inbox/ for human decision
+### 2. Analyze the Situation
 
-## Your Task
+- What exactly went wrong?
+- Is this recoverable or critical?
+- What's the root cause?
 
-1. Analyze the situation
-2. Decide on action
-3. Write decision to .coordination/decision.md
-4. **Spawn next watcher** to resume monitoring (Task tool, model: haiku, run_in_background: true)
+### 3. Decide and Execute
 
-Be decisive. Explain your reasoning briefly.
-'''
+Available actions (pick one):
 
+| Action | When to Use | How to Execute |
+|--------|-------------|----------------|
+| **RESTART** | Agent stuck but task valid | Update blackboard: status="restarting" |
+| **ABANDON** | Task is invalid/impossible | Update blackboard: status="abandoned" |
+| **ESCALATE** | Need human decision | Write to `~/.claude/emergent-learning/ceo-inbox/` |
 
-def start_watcher_loop():
-    """Print the initial watcher prompt to start the loop."""
-    state = gather_state()
-    prompt = get_watcher_prompt(state)
+### 4. Document Your Decision
 
-    print("=" * 60)
-    print("TIERED WATCHER LOOP - Start Prompt")
-    print("=" * 60)
-    print()
-    print("To start the watcher loop, use the Task tool with:")
-    print()
-    print("```")
-    print("Task(")
-    print('    description="[WATCHER] Monitor swarm",')
-    print('    subagent_type="general-purpose",')
-    print('    model="haiku",')
-    print('    run_in_background=True,')
-    print('    prompt="""')
-    print(prompt[:2000])
-    if len(prompt) > 2000:
-        print("... [truncated for display]")
-    print('"""')
-    print(")")
-    print("```")
-    print()
-    print("The watcher will self-perpetuate by spawning the next watcher.")
-    print("To stop: python watcher_loop.py stop")
+Write to `~/.claude/emergent-learning/.coordination/decision.md`:
+
+```markdown
+## [timestamp] HANDLER DECISION
+
+**Issue:** <what was wrong>
+**Analysis:** <your reasoning>
+**Action:** <RESTART|ABANDON|ESCALATE>
+**Details:** <what you did>
+```
+
+### 5. Log and Exit
+
+Append to watcher-log.md:
+```
+<timestamp> | HANDLER: <action taken> | <brief note>
+```
+
+Then output summary:
+```
+== HANDLER SUMMARY ==
+ISSUE: <what was escalated>
+DECISION: <action taken>
+RESULT: <outcome>
+```
+
+## Important
+
+- Be decisive - analyze quickly, act clearly
+- You CAN fix things directly (update files, blackboard)
+- You do NOT need to spawn another watcher - that's automatic
+- If you need human input, use ESCALATE (write to ceo-inbox/)
+"""
+
+    print(prompt)
 
 
 def stop_watcher_loop():
@@ -236,63 +260,152 @@ def stop_watcher_loop():
     COORDINATION_DIR.mkdir(parents=True, exist_ok=True)
     STOP_FILE.write_text(f"Stop requested at {datetime.now().isoformat()}\n")
     print(f"Stop signal created: {STOP_FILE}")
-    print("Watcher will stop after current iteration.")
+    print("Monitoring will stop - no more watchers will be spawned.")
 
 
 def check_status():
-    """Check if watcher loop is active."""
-    print("=" * 40)
-    print("Watcher Status")
-    print("=" * 40)
+    """Check watcher/swarm status."""
+    print("=" * 50)
+    print("WATCHER STATUS")
+    print("=" * 50)
 
+    # Stop file
     if STOP_FILE.exists():
-        print(f"Stop requested: YES ({STOP_FILE.read_text().strip()})")
+        print(f"[STOP] Stop requested: YES")
+        print(f"       ({STOP_FILE.read_text().strip()})")
     else:
-        print("Stop requested: NO")
+        print("[OK] Stop requested: NO (monitoring active)")
 
+    # Watcher log
     if WATCHER_LOG.exists():
         log = WATCHER_LOG.read_text()
-        lines = log.strip().split("\n")
-        print(f"Log entries: {log.count('## [')}")
-        if lines:
-            print(f"Last entry: {lines[-1][:60]}...")
-    else:
-        print("Log: Not started yet")
+        entries = log.count("STATUS:")
+        print(f"\nLog entries: {entries}")
 
+        # Show last 3 entries
+        lines = [l for l in log.strip().split("\n") if l.strip()]
+        if lines:
+            print("   Recent:")
+            for line in lines[-3:]:
+                print(f"   {line[:70]}...")
+    else:
+        print("\nLog: No entries yet")
+
+    # Blackboard state
     state = gather_state()
-    print(f"Active agents: {len(state['agent_files'])}")
-    if state['blackboard']:
-        agents = state['blackboard'].get('agents', {})
-        print(f"Blackboard agents: {len(agents)}")
+    bb = state.get("blackboard", {})
+    agents = bb.get("agents", {})
+
+    print(f"\nAgents in blackboard: {len(agents)}")
+
+    if agents:
+        active = sum(1 for a in agents.values() if a.get("status") == "active")
+        completed = sum(1 for a in agents.values() if a.get("status") == "completed")
+        other = len(agents) - active - completed
+        print(f"   Active: {active} | Completed: {completed} | Other: {other}")
+
+        # Check for stale
+        for aid, agent in agents.items():
+            last_seen = agent.get("last_seen", "")
+            if last_seen:
+                try:
+                    ls_time = datetime.fromisoformat(last_seen.replace("Z", "+00:00"))
+                    age = (datetime.now(ls_time.tzinfo) - ls_time).total_seconds()
+                    if age > 120 and agent.get("status") == "active":
+                        print(f"   [!] {aid}: STALE ({int(age)}s since last update)")
+                except:
+                    pass
+
+    print("=" * 50)
 
 
 def clear_stop():
-    """Clear the stop signal to allow restart."""
+    """Clear the stop signal to allow monitoring to resume."""
     if STOP_FILE.exists():
         STOP_FILE.unlink()
-        print("Stop signal cleared. Watcher can be restarted.")
+        print("[OK] Stop signal cleared.")
+        print("     Monitoring can resume on next user interaction.")
     else:
         print("No stop signal to clear.")
 
 
+def show_summary():
+    """Show summary of last watcher actions."""
+    print("=" * 50)
+    print("LAST WATCHER SUMMARY")
+    print("=" * 50)
+
+    # Check decision file
+    if DECISION_FILE.exists():
+        print("\nLast Decision:")
+        content = DECISION_FILE.read_text()
+        # Show last decision block
+        if "## [" in content:
+            blocks = content.split("## [")
+            if len(blocks) > 1:
+                last_block = "## [" + blocks[-1]
+                print(last_block[:500])
+                if len(last_block) > 500:
+                    print("   ...")
+        else:
+            print(content[:300])
+    else:
+        print("\nNo decisions recorded yet")
+
+    # Check watcher log for last entry
+    if WATCHER_LOG.exists():
+        log = WATCHER_LOG.read_text()
+        lines = [l for l in log.strip().split("\n") if l.strip()]
+        if lines:
+            print(f"\nLast Log Entry:")
+            print(f"   {lines[-1]}")
+
+    print("=" * 50)
+
+
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python watcher_loop.py [start|stop|status|clear]")
+        print("Single-Pass Watcher System")
+        print("")
+        print("Usage: python watcher_loop.py <command>")
+        print("")
+        print("Commands:")
+        print("  prompt                              Generate watcher prompt")
+        print("  handler-prompt --escalation <json>  Generate handler prompt")
+        print("  stop                                Stop monitoring (create stop file)")
+        print("  status                              Show current status")
+        print("  clear                               Clear stop signal, resume monitoring")
+        print("  summary                             Show last watcher actions")
+        print("")
+        print("Model: Single-pass watchers analyze->decide->act->exit.")
+        print("       Main Claude spawns next watcher on user interaction.")
         return
 
     cmd = sys.argv[1].lower()
 
-    if cmd == "start":
-        start_watcher_loop()
+    if cmd == "prompt":
+        output_watcher_prompt()
+    elif cmd == "handler-prompt":
+        escalation_json = "{}"
+        if len(sys.argv) > 2 and sys.argv[2] == "--escalation":
+            if len(sys.argv) > 3:
+                escalation_json = sys.argv[3]
+            else:
+                print("Error: --escalation requires JSON argument", file=sys.stderr)
+                sys.exit(1)
+        output_handler_prompt(escalation_json)
     elif cmd == "stop":
         stop_watcher_loop()
     elif cmd == "status":
         check_status()
     elif cmd == "clear":
         clear_stop()
+    elif cmd == "summary":
+        show_summary()
     else:
         print(f"Unknown command: {cmd}")
-        print("Use: start, stop, status, or clear")
+        print("Use: prompt, handler-prompt, stop, status, clear, summary")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
