@@ -1,9 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
 import * as d3 from 'd3'
 import { Workflow, WorkflowNode, WorkflowEdge } from '../types'
-import { Plus, Play, Save, Trash2, Zap, GitBranch, Bell, Filter } from 'lucide-react'
+import { Plus, Play, Save, GitBranch, Zap, Filter, Bell } from 'lucide-react'
+import {
+  NodePalette,
+  WorkflowCanvas,
+  NodeConfigPanel,
+  WorkflowList,
+  WorkflowBuilderProps,
+  NodeTypeConfig,
+} from './workflow-builder'
 
-const nodeTypes = {
+const nodeTypes: Record<string, NodeTypeConfig> = {
   trigger: { icon: Zap, color: 'bg-sky-500', label: 'Trigger' },
   condition: { icon: Filter, color: 'bg-amber-500', label: 'Condition' },
   action: { icon: Play, color: 'bg-emerald-500', label: 'Action' },
@@ -25,13 +33,6 @@ const actionOptions = [
   { id: 'run_command', label: 'Run Command', description: 'Execute shell command' },
 ]
 
-interface WorkflowBuilderProps {
-  workflows: Workflow[]
-  onSave: (workflow: Workflow) => void
-  onDelete: (id: string) => void
-  onRun: (id: string) => void
-}
-
 export default function WorkflowBuilder({ workflows, onSave, onRun }: WorkflowBuilderProps) {
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null)
   const [nodes, setNodes] = useState<WorkflowNode[]>([])
@@ -39,12 +40,11 @@ export default function WorkflowBuilder({ workflows, onSave, onRun }: WorkflowBu
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null)
   const [isAddingNode, setIsAddingNode] = useState(false)
   const [addingNodeType, setAddingNodeType] = useState<string | null>(null)
-  void isAddingNode // Will be used for add node UI
-  void addingNodeType // Will be used for add node UI
+  void isAddingNode
+  void addingNodeType
   const [isDirty, setIsDirty] = useState(false)
   const canvasRef = useRef<SVGSVGElement>(null)
 
-  // Initialize with selected workflow
   useEffect(() => {
     if (selectedWorkflow) {
       setNodes(selectedWorkflow.nodes)
@@ -56,7 +56,6 @@ export default function WorkflowBuilder({ workflows, onSave, onRun }: WorkflowBu
     setIsDirty(false)
   }, [selectedWorkflow])
 
-  // Draw edges
   useEffect(() => {
     if (!canvasRef.current) return
 
@@ -102,13 +101,11 @@ export default function WorkflowBuilder({ workflows, onSave, onRun }: WorkflowBu
     setIsDirty(true)
   }
 
-  // Node drag handler - currently unused, will be used when drag-and-drop is implemented
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleNodeDrag = (id: string, x: number, y: number) => {
     setNodes(nodes.map(n => n.id === id ? { ...n, position: { x, y } } : n))
     setIsDirty(true)
   }
-  void handleNodeDrag // Mark as intentionally unused for now
+  void handleNodeDrag
 
   const handleSave = () => {
     if (!selectedWorkflow) return
@@ -138,7 +135,6 @@ export default function WorkflowBuilder({ workflows, onSave, onRun }: WorkflowBu
 
   return (
     <div className="bg-slate-800 rounded-lg p-4">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <GitBranch className="w-5 h-5 text-emerald-400" />
@@ -176,104 +172,26 @@ export default function WorkflowBuilder({ workflows, onSave, onRun }: WorkflowBu
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        {/* Workflow list */}
         <div className="col-span-1 bg-slate-700/50 rounded-lg p-3">
-          <div className="text-sm font-medium text-slate-400 mb-2">Workflows</div>
-          <div className="space-y-1">
-            {workflows.map(wf => (
-              <button
-                key={wf.id}
-                onClick={() => setSelectedWorkflow(wf)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition
-                  ${selectedWorkflow?.id === wf.id
-                    ? 'bg-sky-500/20 text-sky-400'
-                    : 'text-slate-300 hover:bg-slate-700'
-                  }`}
-              >
-                <div className="font-medium">{wf.name}</div>
-                <div className="text-xs text-slate-500">{wf.nodes.length} nodes</div>
-              </button>
-            ))}
-            {workflows.length === 0 && (
-              <div className="text-sm text-slate-500 py-4 text-center">
-                No workflows yet
-              </div>
-            )}
-          </div>
+          <WorkflowList
+            workflows={workflows}
+            selectedWorkflow={selectedWorkflow}
+            onSelect={setSelectedWorkflow}
+          />
         </div>
 
-        {/* Canvas */}
         <div className="col-span-2 bg-slate-900/50 rounded-lg relative h-[500px] overflow-hidden">
           {selectedWorkflow ? (
             <>
-              {/* Node palette */}
-              <div className="absolute top-2 left-2 flex space-x-2 z-10">
-                {Object.entries(nodeTypes).map(([type, config]) => {
-                  const Icon = config.icon
-                  return (
-                    <button
-                      key={type}
-                      onClick={() => handleAddNode(type)}
-                      className={`flex items-center space-x-1 px-2 py-1 ${config.color} text-white rounded text-xs font-medium hover:opacity-80 transition`}
-                    >
-                      <Icon className="w-3 h-3" />
-                      <span>{config.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-
-              {/* SVG canvas */}
-              <svg ref={canvasRef} className="w-full h-full">
-                <defs>
-                  <marker
-                    id="arrowhead"
-                    markerWidth="10"
-                    markerHeight="7"
-                    refX="9"
-                    refY="3.5"
-                    orient="auto"
-                  >
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#475569" />
-                  </marker>
-                </defs>
-
-                {/* Nodes */}
-                {nodes.map(node => {
-                  const config = nodeTypes[node.type]
-                  const Icon = config?.icon || Zap
-
-                  return (
-                    <g
-                      key={node.id}
-                      transform={`translate(${node.position.x}, ${node.position.y})`}
-                      className="cursor-pointer"
-                      onClick={() => setSelectedNode(node)}
-                    >
-                      <rect
-                        width="160"
-                        height="60"
-                        rx="8"
-                        fill={selectedNode?.id === node.id ? '#1e3a5f' : '#1e293b'}
-                        stroke={selectedNode?.id === node.id ? '#0ea5e9' : '#334155'}
-                        strokeWidth="2"
-                      />
-                      <foreignObject x="8" y="8" width="144" height="44">
-                        <div className="flex items-center space-x-2">
-                          <div className={`p-1.5 rounded ${config?.color || 'bg-slate-500'}`}>
-                            <Icon className="w-4 h-4 text-white" />
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-white">{node.label}</div>
-                            <div className="text-xs text-slate-400">{node.type}</div>
-                          </div>
-                        </div>
-                      </foreignObject>
-                    </g>
-                  )
-                })}
-              </svg>
-
+              <NodePalette nodeTypes={nodeTypes} onAddNode={handleAddNode} />
+              <WorkflowCanvas
+                nodes={nodes}
+                edges={edges}
+                selectedNode={selectedNode}
+                onSelectNode={setSelectedNode}
+                canvasRef={canvasRef}
+                nodeTypes={nodeTypes}
+              />
               {nodes.length === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center text-slate-500">
                   Click a node type above to add it to the canvas
@@ -287,103 +205,17 @@ export default function WorkflowBuilder({ workflows, onSave, onRun }: WorkflowBu
           )}
         </div>
 
-        {/* Node config panel */}
         <div className="col-span-1 bg-slate-700/50 rounded-lg p-3">
-          {selectedNode ? (
-            <>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-sm font-medium text-white">{selectedNode.label}</div>
-                <button
-                  onClick={() => handleDeleteNode(selectedNode.id)}
-                  className="p-1 text-red-400 hover:text-red-300 transition"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">Label</label>
-                  <input
-                    type="text"
-                    value={selectedNode.label}
-                    onChange={(e) => {
-                      setNodes(nodes.map(n =>
-                        n.id === selectedNode.id ? { ...n, label: e.target.value } : n
-                      ))
-                      setSelectedNode({ ...selectedNode, label: e.target.value })
-                      setIsDirty(true)
-                    }}
-                    className="w-full bg-slate-800 text-white text-sm rounded px-2 py-1.5 border border-slate-600"
-                  />
-                </div>
-
-                {selectedNode.type === 'trigger' && (
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Trigger Type</label>
-                    <select
-                      value={selectedNode.config.trigger_type || ''}
-                      onChange={(e) => {
-                        const updated = { ...selectedNode, config: { ...selectedNode.config, trigger_type: e.target.value } }
-                        setNodes(nodes.map(n => n.id === selectedNode.id ? updated : n))
-                        setSelectedNode(updated)
-                        setIsDirty(true)
-                      }}
-                      className="w-full bg-slate-800 text-white text-sm rounded px-2 py-1.5 border border-slate-600"
-                    >
-                      <option value="">Select trigger...</option>
-                      {triggerOptions.map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {selectedNode.type === 'action' && (
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Action Type</label>
-                    <select
-                      value={selectedNode.config.action_type || ''}
-                      onChange={(e) => {
-                        const updated = { ...selectedNode, config: { ...selectedNode.config, action_type: e.target.value } }
-                        setNodes(nodes.map(n => n.id === selectedNode.id ? updated : n))
-                        setSelectedNode(updated)
-                        setIsDirty(true)
-                      }}
-                      className="w-full bg-slate-800 text-white text-sm rounded px-2 py-1.5 border border-slate-600"
-                    >
-                      <option value="">Select action...</option>
-                      {actionOptions.map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {selectedNode.type === 'condition' && (
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Condition</label>
-                    <input
-                      type="text"
-                      placeholder="e.g., confidence > 0.9"
-                      value={selectedNode.config.expression || ''}
-                      onChange={(e) => {
-                        const updated = { ...selectedNode, config: { ...selectedNode.config, expression: e.target.value } }
-                        setNodes(nodes.map(n => n.id === selectedNode.id ? updated : n))
-                        setSelectedNode(updated)
-                        setIsDirty(true)
-                      }}
-                      className="w-full bg-slate-800 text-white text-sm rounded px-2 py-1.5 border border-slate-600"
-                    />
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="h-full flex items-center justify-center text-slate-500 text-sm">
-              Select a node to configure
-            </div>
-          )}
+          <NodeConfigPanel
+            selectedNode={selectedNode}
+            nodes={nodes}
+            setNodes={setNodes}
+            setSelectedNode={setSelectedNode}
+            setIsDirty={setIsDirty}
+            onDeleteNode={handleDeleteNode}
+            triggerOptions={triggerOptions}
+            actionOptions={actionOptions}
+          />
         </div>
       </div>
     </div>

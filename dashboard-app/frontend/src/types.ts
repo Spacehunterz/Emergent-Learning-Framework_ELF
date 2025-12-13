@@ -1,16 +1,21 @@
+// Stats from API /api/stats endpoint
 export interface Stats {
   total_runs: number
-  successful_runs: number
-  failed_runs: number
-  success_rate: number
+  total_executions: number
+  total_trails: number
   total_heuristics: number
   golden_rules: number
   total_learnings: number
-  hotspot_count: number
+  failures: number
+  successes: number
+  successful_runs: number
+  failed_runs: number
   avg_confidence: number
   total_validations: number
+  total_violations: number
+  metrics_last_hour: number
   runs_today: number
-  active_domains: number
+  // Query stats
   queries_today: number
   total_queries: number
   avg_query_duration_ms: number
@@ -24,21 +29,23 @@ export interface Heuristic {
   confidence: number
   times_validated: number
   times_violated: number
-  is_golden: boolean
+  is_golden: boolean | number  // API may return 0/1 instead of true/false
   source_type: string
   created_at: string
   updated_at: string
 }
 
+// Hotspot from API /api/hotspots endpoint
 export interface Hotspot {
-  id: number
-  file_path: string
-  function_name: string | null
-  hit_count: number
-  last_hit: string
-  strength: number
-  domains: string[]
-  severity: 'low' | 'medium' | 'high' | 'critical'
+  location: string
+  trail_count: number
+  total_strength: number
+  scents: string[]
+  agents: string[]
+  agent_count: number
+  last_activity: string
+  first_activity: string
+  related_heuristics: any[]
 }
 
 export interface TreemapNode {
@@ -50,6 +57,7 @@ export interface TreemapNode {
   children?: TreemapNode[]
 }
 
+// Run interface for display (used by RunsPanel)
 export interface Run {
   id: string
   agent_type: string
@@ -63,6 +71,21 @@ export interface Run {
   outcome_reason: string | null
 }
 
+// ApiRun from API /api/runs endpoint
+export interface ApiRun {
+  id: number
+  workflow_id: number | null
+  workflow_name: string
+  status: string
+  phase: string
+  total_nodes: number
+  completed_nodes: number
+  failed_nodes: number
+  started_at: string
+  completed_at: string | null
+  created_at: string
+}
+
 export interface TimelineEvent {
   id: number
   timestamp: string
@@ -74,6 +97,31 @@ export interface TimelineEvent {
   domain?: string
 }
 
+// TimelineData from API /api/timeline endpoint
+export interface TimelineData {
+  runs: { date: string; runs: number }[]
+  trails: { date: string; trails: number; strength: number }[]
+  validations: { date: string; validations: number }[]
+  failures: { date: string; failures: number }[]
+}
+
+// RawEvent from API /api/events endpoint (different field names than TimelineEvent)
+export interface RawEvent {
+  id?: number
+  timestamp: string
+  event_type?: string
+  type?: string  // API uses 'type' instead of 'event_type'
+  description?: string
+  message?: string  // API uses 'message' instead of 'description'
+  metadata?: Record<string, any>
+  tags?: string  // API uses 'tags'
+  context?: string
+  file_path?: string
+  line_number?: number
+  domain?: string
+}
+
+// Anomaly interface for display (used by AnomalyPanel)
 export interface Anomaly {
   id: string
   type: 'repeated_failure' | 'confidence_drop' | 'hotspot_surge' | 'validation_gap' | 'rule_conflict'
@@ -83,6 +131,14 @@ export interface Anomaly {
   timestamp: string
   related_ids: number[]
   suggested_action?: string
+}
+
+// ApiAnomaly from API /api/anomalies endpoint
+export interface ApiAnomaly {
+  type: string
+  severity: string
+  message: string
+  data: Record<string, any>
 }
 
 export interface Learning {

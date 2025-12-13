@@ -1,137 +1,63 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ThemeProvider } from './context/ThemeContext'
-import { SettingsPanel } from './components/SettingsPanel'
-import { ParticleBackground } from './components/ParticleBackground'
-import { useWebSocket } from './hooks/useWebSocket'
-import { useAPI } from './hooks/useAPI'
-import { useNotifications } from './hooks/useNotifications'
-import Header from './components/Header'
-import StatsBar from './components/StatsBar'
-import HotspotTreemap from './components/HotspotTreemap'
-import HeuristicPanel from './components/HeuristicPanel'
-import TimelineView from './components/TimelineView'
-import RunsPanel from './components/RunsPanel'
-import QueryInterface from './components/QueryInterface'
-import AnomalyPanel from './components/AnomalyPanel'
-import KnowledgeGraph from './components/KnowledgeGraph'
-import { CommandPalette } from './components/CommandPalette'
-import { NotificationPanel } from './components/NotificationPanel'
-import { LearningVelocity } from './components/LearningVelocity'
-import SessionHistoryPanel from './components/SessionHistoryPanel'
-import AssumptionsPanel from './components/AssumptionsPanel'
-import SpikeReportsPanel from './components/SpikeReportsPanel'
-import InvariantsPanel from './components/InvariantsPanel'
-import FraudReviewPanel from './components/FraudReviewPanel'
-import { TimelineEvent } from './types'
+import { ThemeProvider, NotificationProvider, useNotificationContext, DataProvider, useDataContext } from './context'
+import { useWebSocket, useAPI } from './hooks'
+import {
+  SettingsPanel,
+  ParticleBackground,
+  Header,
+  StatsBar,
+  HotspotTreemap,
+  HeuristicPanel,
+  TimelineView,
+  RunsPanel,
+  QueryInterface,
+  AnomalyPanel,
+  KnowledgeGraph,
+  CommandPalette,
+  NotificationPanel,
+  LearningVelocity,
+  SessionHistoryPanel,
+  AssumptionsPanel,
+  SpikeReportsPanel,
+  InvariantsPanel,
+  FraudReviewPanel
+} from './components'
+import {
+  TimelineEvent,
+  Stats,
+  Heuristic,
+  Hotspot,
+  ApiRun,
+  ApiAnomaly,
+  TimelineData,
+  RawEvent
+} from './types'
 
-// Simplified types matching API responses
-interface Stats {
-  total_runs: number
-  total_executions: number
-  total_trails: number
-  total_heuristics: number
-  golden_rules: number
-  total_learnings: number
-  failures: number
-  successes: number
-  successful_runs: number
-  failed_runs: number
-  avg_confidence: number
-  total_validations: number
-  total_violations: number
-  metrics_last_hour: number
-  runs_today: number
-  // Query stats
-  queries_today: number
-  total_queries: number
-  avg_query_duration_ms: number
-}
-
-interface Heuristic {
-  id: number
-  domain: string
-  rule: string
-  explanation: string | null
-  confidence: number
-  times_validated: number
-  times_violated: number
-  is_golden: boolean | number
-  source_type: string
-  created_at: string
-  updated_at: string
-}
-
-interface Hotspot {
-  location: string
-  trail_count: number
-  total_strength: number
-  scents: string[]
-  agents: string[]
-  agent_count: number
-  last_activity: string
-  first_activity: string
-  related_heuristics: any[]
-}
-
-interface Run {
-  id: number
-  workflow_id: number | null
-  workflow_name: string
-  status: string
-  phase: string
-  total_nodes: number
-  completed_nodes: number
-  failed_nodes: number
-  started_at: string
-  completed_at: string | null
-  created_at: string
-}
-
-interface Anomaly {
-  type: string
-  severity: string
-  message: string
-  data: Record<string, any>
-}
-
-interface TimelineData {
-  runs: { date: string; runs: number }[]
-  trails: { date: string; trails: number; strength: number }[]
-  validations: { date: string; validations: number }[]
-  failures: { date: string; failures: number }[]
-}
-
-// Raw event from API (may have different field names)
-interface RawEvent {
-  id?: number
-  timestamp: string
-  event_type?: string
-  type?: string  // API uses 'type' instead of 'event_type'
-  description?: string
-  message?: string  // API uses 'message' instead of 'description'
-  metadata?: Record<string, any>
-  tags?: string  // API uses 'tags'
-  context?: string
-  file_path?: string
-  line_number?: number
-  domain?: string
-}
-
-function App() {
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [heuristics, setHeuristics] = useState<Heuristic[]>([])
-  const [hotspots, setHotspots] = useState<Hotspot[]>([])
-  const [runs, setRuns] = useState<Run[]>([])
-  const [events, setEvents] = useState<RawEvent[]>([])
-  const [_timeline, setTimeline] = useState<TimelineData | null>(null)
-  const [anomalies, setAnomalies] = useState<Anomaly[]>([])
+function AppContent() {
   const [activeTab, setActiveTab] = useState<'overview' | 'heuristics' | 'runs' | 'timeline' | 'query' | 'analytics' | 'graph' | 'sessions' | 'assumptions' | 'spikes' | 'invariants' | 'fraud'>('overview')
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
 
   const api = useAPI()
-  const notifications = useNotifications()
+  const notifications = useNotificationContext()
+  const {
+    stats,
+    hotspots,
+    runs,
+    events,
+    timeline: _timeline,
+    anomalies,
+    reload: reloadDashboardData,
+    loadStats,
+    setAnomalies,
+    heuristics,
+    promoteHeuristic,
+    demoteHeuristic,
+    deleteHeuristic,
+    updateHeuristic,
+    reloadHeuristics,
+  } = useDataContext()
 
   // Handle WebSocket messages
   const handleMessage = useCallback((data: any) => {
@@ -141,11 +67,11 @@ function App() {
       case 'metrics':
       case 'trails':
         // Trigger a refresh of relevant data
-        loadStats()
+        reloadDashboardData()
         break
       case 'runs':
         // Refresh stats
-        loadStats()
+        reloadDashboardData()
         // Notify about run status
         if (data.status === 'completed') {
           notifications.success(
@@ -161,7 +87,7 @@ function App() {
         break
       case 'heuristics':
         // Refresh heuristics
-        loadHeuristics()
+        reloadHeuristics()
         // Notify about new heuristic
         notifications.info(
           'New Heuristic Created',
@@ -170,7 +96,7 @@ function App() {
         break
       case 'heuristic_promoted':
         // Refresh heuristics
-        loadHeuristics()
+        reloadHeuristics()
         // Notify about promotion to golden rule
         notifications.success(
           'Heuristic Promoted to Golden Rule',
@@ -179,7 +105,7 @@ function App() {
         break
       case 'learnings':
         // Learnings changed, refresh stats
-        loadStats()
+        reloadDashboardData()
         break
       case 'ceo_inbox':
         // New CEO inbox item
@@ -189,7 +115,7 @@ function App() {
         )
         break
     }
-  }, [notifications])
+  }, [notifications, reloadDashboardData, reloadHeuristics])
 
   // Use relative path - hook handles URL building, Vite proxies in dev
   const { connectionStatus } = useWebSocket('/ws', handleMessage)
@@ -209,118 +135,6 @@ function App() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
-
-  const loadStats = async () => {
-    try {
-      const data = await api.get('/api/stats')
-      setStats(data)
-    } catch (err) {
-      console.error('Failed to load stats:', err)
-    }
-  }
-
-  const loadHeuristics = async () => {
-    try {
-      const data = await api.get('/api/heuristics')
-      setHeuristics(data || [])
-    } catch (err) {
-      console.error('Failed to load heuristics:', err)
-    }
-  }
-
-  // Initial data load
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [statsData, heuristicsData, hotspotsData, runsData, timelineData, anomaliesData, eventsData] = await Promise.all([
-          api.get('/api/stats').catch(() => null),
-          api.get('/api/heuristics').catch(() => []),
-          api.get('/api/hotspots').catch(() => []),
-          api.get('/api/runs?limit=100').catch(() => []),
-          api.get('/api/timeline').catch(() => null),
-          api.get('/api/anomalies').catch(() => []),
-          api.get('/api/events?limit=100').catch(() => []),
-        ])
-        if (statsData) setStats(statsData)
-        setHeuristics(heuristicsData || [])
-        setHotspots(hotspotsData || [])
-        setRuns(runsData || [])
-        if (timelineData) setTimeline(timelineData)
-        setAnomalies(anomaliesData || [])
-        setEvents(eventsData || [])
-      } catch (err) {
-        console.error('Failed to load initial data:', err)
-      }
-    }
-    loadData()
-
-    // Auto-refresh stats and runs every 10 seconds
-    const interval = setInterval(() => {
-      // Refresh stats
-      api.get('/api/stats').then(data => {
-        if (data) setStats(data)
-      }).catch(() => {})
-      // Refresh runs
-      api.get('/api/runs?limit=100').then(data => {
-        if (data) setRuns(data)
-      }).catch(() => {})
-      // Refresh events
-      api.get('/api/events?limit=100').then(data => {
-        if (data) setEvents(data)
-      }).catch(() => {})
-    }, 10000)
-
-    return () => clearInterval(interval)
-  }, [])
-
-  // Action handlers
-  const handlePromoteHeuristic = async (id: number) => {
-    try {
-      await api.post(`/api/heuristics/${id}/promote`)
-      setHeuristics(prev => prev.map(h =>
-        h.id === id ? { ...h, is_golden: true } : h
-      ))
-      // Reload stats to update golden rules count
-      loadStats()
-    } catch (err) {
-      console.error('Failed to promote heuristic:', err)
-    }
-  }
-
-  const handleDemoteHeuristic = async (id: number) => {
-    try {
-      await api.post(`/api/heuristics/${id}/demote`)
-      setHeuristics(prev => prev.map(h =>
-        h.id === id ? { ...h, is_golden: false } : h
-      ))
-      // Reload stats to update golden rules count
-      loadStats()
-    } catch (err) {
-      console.error('Failed to demote heuristic:', err)
-    }
-  }
-
-  const handleDeleteHeuristic = async (id: number) => {
-    try {
-      await api.del(`/api/heuristics/${id}`)
-      setHeuristics(prev => prev.filter(h => h.id !== id))
-      // Reload stats to update counts
-      loadStats()
-    } catch (err) {
-      console.error('Failed to delete heuristic:', err)
-    }
-  }
-
-  const handleUpdateHeuristic = async (id: number, updates: { rule?: string; explanation?: string; domain?: string }) => {
-    try {
-      await api.put(`/api/heuristics/${id}`, updates)
-      setHeuristics(prev => prev.map(h =>
-        h.id === id ? { ...h, ...updates } : h
-      ))
-    } catch (err) {
-      console.error('Failed to update heuristic:', err)
-    }
-  }
 
   const handleRetryRun = async (runId: string) => {
     try {
@@ -381,35 +195,34 @@ function App() {
     { id: 'timeline', label: 'View Timeline', category: 'Navigation', action: () => setActiveTab('timeline') },
     { id: 'analytics', label: 'View Learning Analytics', category: 'Navigation', action: () => setActiveTab('analytics') },
     { id: 'query', label: 'Query the Building', shortcut: '⌘Q', category: 'Actions', action: () => setActiveTab('query') },
-    { id: 'refresh', label: 'Refresh Data', shortcut: '⌘R', category: 'Actions', action: () => { loadStats(); loadHeuristics() } },
+    { id: 'refresh', label: 'Refresh Data', shortcut: '⌘R', category: 'Actions', action: () => { loadStats(); reloadHeuristics() } },
     { id: 'clearDomain', label: 'Clear Domain Filter', category: 'Actions', action: () => setSelectedDomain(null) },
     { id: 'toggleNotificationSound', label: notifications.soundEnabled ? 'Mute Notifications' : 'Unmute Notifications', category: 'Settings', action: notifications.toggleSound },
     { id: 'clearNotifications', label: 'Clear All Notifications', category: 'Actions', action: notifications.clearAll },
   ]
 
   return (
-    <ThemeProvider>
     <div className="min-h-screen relative overflow-hidden transition-colors duration-500" style={{ backgroundColor: "var(--theme-bg-primary)" }}>
-        <ParticleBackground />
-        <SettingsPanel />
-        <CommandPalette
-          isOpen={commandPaletteOpen}
-          onClose={() => setCommandPaletteOpen(false)}
-          commands={commands}
-        />
-        <NotificationPanel
-          notifications={notifications.notifications}
-          onDismiss={notifications.removeNotification}
-          onClearAll={notifications.clearAll}
-          soundEnabled={notifications.soundEnabled}
-          onToggleSound={notifications.toggleSound}
-        />
-        <div className="relative z-10">
-      <Header
-        isConnected={isConnected}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
+      <ParticleBackground />
+      <SettingsPanel />
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        commands={commands}
       />
+      <NotificationPanel
+        notifications={notifications.notifications}
+        onDismiss={notifications.removeNotification}
+        onClearAll={notifications.clearAll}
+        soundEnabled={notifications.soundEnabled}
+        onToggleSound={notifications.toggleSound}
+      />
+      <div className="relative z-10">
+        <Header
+          isConnected={isConnected}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
 
       <main className="container mx-auto px-4 py-6">
         {/* Stats Bar - Always visible */}
@@ -455,10 +268,10 @@ function App() {
           {activeTab === 'heuristics' && (
             <HeuristicPanel
               heuristics={normalizedHeuristics}
-              onPromote={handlePromoteHeuristic}
-              onDemote={handleDemoteHeuristic}
-              onDelete={handleDeleteHeuristic}
-              onUpdate={handleUpdateHeuristic}
+              onPromote={promoteHeuristic}
+              onDemote={demoteHeuristic}
+              onDelete={deleteHeuristic}
+              onUpdate={updateHeuristic}
               selectedDomain={selectedDomain}
               onDomainFilter={setSelectedDomain}
             />
@@ -530,8 +343,19 @@ function App() {
           )}
         </div>
       </main>
-        </div>
       </div>
+    </div>
+  )
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <NotificationProvider>
+        <DataProvider>
+          <AppContent />
+        </DataProvider>
+      </NotificationProvider>
     </ThemeProvider>
   )
 }
