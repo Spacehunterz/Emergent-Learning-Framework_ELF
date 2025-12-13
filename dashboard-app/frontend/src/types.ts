@@ -214,3 +214,42 @@ export interface Invariant {
   created_at: string;
   updated_at: string;
 }
+
+// Fraud Detection Types
+
+export interface FraudReport {
+  id: number;
+  heuristic_id: number;
+  fraud_score: number;
+  classification: 'clean' | 'low_confidence' | 'suspicious' | 'fraud_likely' | 'fraud_confirmed';
+  likelihood_ratio: number | null;
+  signal_count: number;
+  created_at: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  review_outcome: 'true_positive' | 'false_positive' | 'pending' | null;
+
+  // Joined from heuristics table
+  domain: string;
+  rule: string;
+  confidence: number;
+  status?: string;
+  times_validated?: number;
+  times_violated?: number;
+  times_contradicted?: number;
+
+  // Signals (only in detailed view)
+  signals?: AnomalySignal[];
+}
+
+export interface AnomalySignal {
+  id: number;
+  fraud_report_id: number;
+  heuristic_id: number;
+  detector_name: string;
+  score: number;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  reason: string;
+  evidence: Record<string, any>;
+  created_at: string;
+}

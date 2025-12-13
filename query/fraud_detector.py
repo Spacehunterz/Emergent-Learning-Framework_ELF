@@ -181,17 +181,28 @@ class FraudDetector:
         row = cursor.fetchone()
         return dict(row) if row else None
 
-    def update_domain_baseline(self, domain: str) -> Dict[str, Any]:
+    def update_domain_baseline(self, domain: str, triggered_by: str = 'manual') -> Dict[str, Any]:
         """
         Recalculate domain baseline from all heuristics in domain.
+        Now with history tracking and drift detection.
 
         Calculates:
         - Average success rate
         - Standard deviation of success rate
         - Average update frequency
+
+        Args:
+            domain: Domain to update baseline for
+            triggered_by: Source of update ('manual', 'scheduled', 'on_demand')
+
+        Returns:
+            Dict with baseline stats and drift information
         """
         conn = self._get_connection()
         try:
+            # Get previous baseline for drift detection
+            prev_baseline = self._get_domain_baseline(conn, domain)
+
             # Get all heuristics in domain with sufficient data
             cursor = conn.execute("""
                 SELECT
@@ -250,7 +261,34 @@ class FraudDetector:
             avg_freq = mean(update_frequencies) if update_frequencies else 0.0
             std_freq = stdev(update_frequencies) if len(update_frequencies) > 1 else 0.0
 
-            # Store baseline
+            # Calculate drift from previous baseline
+            drift_percentage = None
+            is_significant_drift = False
+            prev_avg = None
+
+            if prev_baseline:
+                prev_avg = prev_baseline['avg_success_rate']
+                if prev_avg and prev_avg > 0:
+                    drift_percentage = ((avg_success - prev_avg) / prev_avg) * 100
+                    is_significant_drift = abs(drift_percentage) > 20.0  # 20% threshold
+
+            # Store in history table
+            cursor = conn.execute("""
+                INSERT INTO domain_baseline_history
+                (domain, avg_success_rate, std_success_rate,
+                 avg_update_frequency, std_update_frequency, sample_count,
+                 prev_avg_success_rate, prev_std_success_rate,
+                 drift_percentage, is_significant_drift, triggered_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                domain, avg_success, std_success, avg_freq, std_freq, len(heuristics),
+                prev_avg, prev_baseline['std_success_rate'] if prev_baseline else None,
+                drift_percentage, is_significant_drift, triggered_by
+            ))
+
+            history_id = cursor.lastrowid
+
+            # Update current baseline
             conn.execute("""
                 INSERT OR REPLACE INTO domain_baselines
                 (domain, avg_success_rate, std_success_rate,
@@ -259,6 +297,16 @@ class FraudDetector:
                 VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """, (domain, avg_success, std_success, avg_freq, std_freq, len(heuristics)))
 
+            # Create drift alert if significant
+            if is_significant_drift:
+                severity = self._classify_drift_severity(abs(drift_percentage))
+                conn.execute("""
+                    INSERT INTO baseline_drift_alerts
+                    (domain, baseline_history_id, drift_percentage,
+                     previous_baseline, new_baseline, severity)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (domain, history_id, drift_percentage, prev_avg, avg_success, severity))
+
             conn.commit()
 
             return {
@@ -266,8 +314,147 @@ class FraudDetector:
                 "avg_success_rate": avg_success,
                 "std_success_rate": std_success,
                 "avg_update_frequency": avg_freq,
-                "sample_count": len(heuristics)
+                "sample_count": len(heuristics),
+                "drift_percentage": drift_percentage,
+                "is_significant_drift": is_significant_drift,
+                "previous_avg": prev_avg
             }
+        finally:
+            conn.close()
+
+    def _classify_drift_severity(self, drift_pct: float) -> str:
+        """Classify drift severity based on percentage."""
+        if drift_pct >= 50:
+            return "critical"
+        elif drift_pct >= 35:
+            return "high"
+        elif drift_pct >= 20:
+            return "medium"
+        else:
+            return "low"
+
+    def refresh_all_baselines(self, triggered_by: str = 'manual') -> Dict[str, Any]:
+        """
+        Recalculate baselines for all domains.
+
+        Returns summary of all domain updates including drift alerts.
+        """
+        conn = self._get_connection()
+        try:
+            # Get all distinct domains with active heuristics
+            cursor = conn.execute("""
+                SELECT DISTINCT domain
+                FROM heuristics
+                WHERE status = 'active'
+                ORDER BY domain
+            """)
+
+            domains = [row['domain'] for row in cursor.fetchall()]
+
+            results = {
+                "total_domains": len(domains),
+                "updated": [],
+                "errors": [],
+                "drift_alerts": [],
+                "triggered_by": triggered_by,
+                "timestamp": datetime.now().isoformat()
+            }
+
+            for domain in domains:
+                try:
+                    result = self.update_domain_baseline(domain, triggered_by)
+
+                    if "error" in result:
+                        results["errors"].append(result)
+                    else:
+                        results["updated"].append(result)
+
+                        # Track significant drifts
+                        if result.get("is_significant_drift"):
+                            results["drift_alerts"].append({
+                                "domain": domain,
+                                "drift_percentage": result["drift_percentage"],
+                                "previous": result["previous_avg"],
+                                "new": result["avg_success_rate"]
+                            })
+                except Exception as e:
+                    results["errors"].append({
+                        "domain": domain,
+                        "error": str(e)
+                    })
+
+            # Update refresh schedule
+            if triggered_by == 'scheduled':
+                conn.execute("""
+                    UPDATE baseline_refresh_schedule
+                    SET last_refresh = CURRENT_TIMESTAMP,
+                        next_refresh = datetime('now', '+' || interval_days || ' days')
+                    WHERE domain IS NULL
+                """)
+                conn.commit()
+
+            return results
+        finally:
+            conn.close()
+
+    def get_domains_needing_refresh(self) -> List[Dict]:
+        """Get list of domains that need baseline refresh based on schedule."""
+        conn = self._get_connection()
+        try:
+            cursor = conn.execute("""
+                SELECT * FROM domains_needing_refresh
+                WHERE needs_refresh = 1
+            """)
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def schedule_baseline_refresh(self, interval_days: int = 30, domain: Optional[str] = None):
+        """
+        Set up baseline refresh schedule.
+
+        Args:
+            interval_days: Days between refreshes (default 30)
+            domain: Specific domain to schedule, or None for all domains
+        """
+        conn = self._get_connection()
+        try:
+            conn.execute("""
+                INSERT OR REPLACE INTO baseline_refresh_schedule
+                (domain, interval_days, last_refresh, next_refresh, enabled)
+                VALUES (?, ?, CURRENT_TIMESTAMP, datetime('now', '+' || ? || ' days'), 1)
+            """, (domain, interval_days, interval_days))
+            conn.commit()
+
+            return {
+                "domain": domain or "all",
+                "interval_days": interval_days,
+                "next_refresh": f"in {interval_days} days"
+            }
+        finally:
+            conn.close()
+
+    def get_unacknowledged_drift_alerts(self) -> List[Dict]:
+        """Get all drift alerts that haven't been acknowledged."""
+        conn = self._get_connection()
+        try:
+            cursor = conn.execute("SELECT * FROM unacknowledged_drift_alerts")
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            conn.close()
+
+    def acknowledge_drift_alert(self, alert_id: int, acknowledged_by: str, notes: Optional[str] = None):
+        """Acknowledge a drift alert."""
+        conn = self._get_connection()
+        try:
+            conn.execute("""
+                UPDATE baseline_drift_alerts
+                SET acknowledged_at = CURRENT_TIMESTAMP,
+                    acknowledged_by = ?,
+                    resolution_notes = ?
+                WHERE id = ?
+            """, (acknowledged_by, notes, alert_id))
+            conn.commit()
         finally:
             conn.close()
 
@@ -653,6 +840,68 @@ class FraudDetector:
         finally:
             conn.close()
 
+    def record_outcome(self, report_id: int, outcome: str,
+                      decided_by: str = 'user', notes: Optional[str] = None) -> bool:
+        """
+        Record human decision on a fraud report.
+
+        This is a convenience wrapper that delegates to fraud_outcomes.FraudOutcomeTracker.
+
+        Args:
+            report_id: ID of the fraud_reports record
+            outcome: Decision - 'true_positive', 'false_positive', 'dismissed', 'pending'
+            decided_by: Who made the decision
+            notes: Optional explanation
+
+        Returns:
+            True if recorded successfully
+
+        Example:
+            >>> detector = FraudDetector()
+            >>> detector.record_outcome(123, 'false_positive', 'ceo', 'Normal behavior')
+        """
+        # Import here to avoid circular dependency
+        from fraud_outcomes import FraudOutcomeTracker
+        tracker = FraudOutcomeTracker(db_path=self.db_path)
+        return tracker.record_outcome(report_id, outcome, decided_by, notes)
+
+    def get_detector_accuracy(self, detector_name: Optional[str] = None,
+                             days: Optional[int] = 30) -> List[Dict]:
+        """
+        Get accuracy metrics for detectors.
+
+        Args:
+            detector_name: Specific detector (None = all)
+            days: Time window in days (None = all time)
+
+        Returns:
+            List of detector accuracy metrics
+
+        Example:
+            >>> detector = FraudDetector()
+            >>> accuracies = detector.get_detector_accuracy(days=30)
+            >>> for acc in accuracies:
+            ...     print(f"{acc['detector_name']}: {acc['precision']:.1%} precision")
+        """
+        from fraud_outcomes import FraudOutcomeTracker
+        tracker = FraudOutcomeTracker(db_path=self.db_path)
+        results = tracker.get_detector_accuracy(detector_name, days)
+
+        # Convert dataclasses to dicts
+        return [
+            {
+                'detector_name': r.detector_name,
+                'time_period': r.time_period,
+                'total_reports': r.total_reports,
+                'true_positives': r.true_positives,
+                'false_positives': r.false_positives,
+                'pending': r.pending,
+                'precision': r.precision,
+                'avg_anomaly_score': r.avg_anomaly_score
+            }
+            for r in results
+        ]
+
     def track_context(self, session_id: str, context_text: str,
                       heuristics_applied: List[int],
                       agent_id: Optional[str] = None):
@@ -706,11 +955,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Fraud Detection System")
     parser.add_argument("command", choices=[
-        "check", "update-baseline", "pending", "stats"
+        "check", "update-baseline", "refresh-all", "pending", "stats",
+        "drift-alerts", "baseline-history", "needs-refresh"
     ])
     parser.add_argument("--heuristic-id", type=int, help="Heuristic ID to check")
     parser.add_argument("--domain", help="Domain for baseline update")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
+    parser.add_argument("--limit", type=int, default=10, help="Limit results (default: 10)")
 
     args = parser.parse_args()
 
@@ -740,7 +991,20 @@ if __name__ == "__main__":
         if not args.domain:
             print("Error: --domain required for update-baseline command")
             exit(1)
-        result = detector.update_domain_baseline(args.domain)
+        result = detector.update_domain_baseline(args.domain, triggered_by='manual')
+
+    elif args.command == "refresh-all":
+        print("Refreshing all domain baselines...")
+        result = detector.refresh_all_baselines(triggered_by='manual')
+        if not args.json:
+            print(f"\nRefresh complete:")
+            print(f"  Domains updated: {len(result['updated'])}")
+            print(f"  Errors: {len(result['errors'])}")
+            print(f"  Drift alerts: {len(result['drift_alerts'])}")
+            if result['drift_alerts']:
+                print("\n  Drift Alerts:")
+                for alert in result['drift_alerts']:
+                    print(f"    {alert['domain']}: {alert['drift_percentage']:+.1f}%")
 
     elif args.command == "pending":
         result = detector.get_pending_reports()
@@ -752,7 +1016,69 @@ if __name__ == "__main__":
         result = [dict(row) for row in cursor.fetchall()]
         conn.close()
 
+    elif args.command == "drift-alerts":
+        result = detector.get_unacknowledged_drift_alerts()
+        if not args.json:
+            if not result:
+                print("No unacknowledged drift alerts.")
+            else:
+                print(f"\n{len(result)} Unacknowledged Drift Alerts:\n")
+                for alert in result[:args.limit]:
+                    print(f"  ID {alert['id']}: {alert['domain']}")
+                    print(f"    Severity: {alert['severity'].upper()}")
+                    print(f"    Drift: {alert['drift_percentage']:+.1f}%")
+                    print(f"    {alert['previous_baseline']:.4f} -> {alert['new_baseline']:.4f}")
+                    print(f"    Pending: {alert['days_pending']:.0f} days")
+                    print()
+
+    elif args.command == "baseline-history":
+        conn = detector._get_connection()
+        if args.domain:
+            cursor = conn.execute("""
+                SELECT * FROM domain_baseline_history
+                WHERE domain = ?
+                ORDER BY calculated_at DESC
+                LIMIT ?
+            """, (args.domain, args.limit))
+        else:
+            cursor = conn.execute("""
+                SELECT * FROM domain_baseline_history
+                ORDER BY calculated_at DESC
+                LIMIT ?
+            """, (args.limit,))
+        result = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+
+        if not args.json and result:
+            print(f"\nBaseline History (latest {len(result)}):\n")
+            for record in result:
+                print(f"  {record['domain']} @ {record['calculated_at']}")
+                print(f"    Success rate: {record['avg_success_rate']:.4f} ± {record['std_success_rate']:.4f}")
+                if record['drift_percentage']:
+                    drift_marker = "***" if record['is_significant_drift'] else ""
+                    print(f"    Drift: {record['drift_percentage']:+.1f}% {drift_marker}")
+                print(f"    Samples: {record['sample_count']}")
+                print()
+
+    elif args.command == "needs-refresh":
+        result = detector.get_domains_needing_refresh()
+        if not args.json:
+            if not result:
+                print("No domains need refresh at this time.")
+            else:
+                print(f"\n{len(result)} Domains Need Refresh:\n")
+                for domain in result:
+                    print(f"  {domain['domain'] or 'ALL'}")
+                    print(f"    Last refresh: {domain['last_refresh'] or 'Never'}")
+                    days_since = domain['days_since_refresh']
+                    if days_since is not None:
+                        print(f"    Days since: {days_since:.1f}")
+                    else:
+                        print(f"    Days since: N/A (never refreshed)")
+                    print(f"    Interval: {domain['interval_days']} days")
+                    print()
+
     if args.json:
         print(json.dumps(result, indent=2, default=str))
-    else:
+    elif args.command not in ["refresh-all", "drift-alerts", "baseline-history", "needs-refresh"]:
         print(json.dumps(result, indent=2, default=str))

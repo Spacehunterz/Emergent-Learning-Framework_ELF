@@ -1,4 +1,4 @@
-import { Activity, Brain, Clock, Search, Workflow, Inbox, ChevronDown, X, FileText, TrendingUp, Network, History, Lightbulb, FileSearch, ShieldCheck } from 'lucide-react'
+import { Activity, Brain, Clock, Search, Workflow, Inbox, ChevronDown, X, FileText, TrendingUp, Network, History, Lightbulb, FileSearch, ShieldCheck, Shield } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import ReactMarkdown from 'react-markdown'
@@ -16,7 +16,7 @@ interface CeoItem {
 interface HeaderProps {
   isConnected: boolean
   activeTab: string
-  onTabChange: (tab: 'overview' | 'heuristics' | 'runs' | 'timeline' | 'query' | 'analytics' | 'graph' | 'sessions' | 'assumptions' | 'spikes' | 'invariants') => void
+  onTabChange: (tab: 'overview' | 'heuristics' | 'runs' | 'timeline' | 'query' | 'analytics' | 'graph' | 'sessions' | 'assumptions' | 'spikes' | 'invariants' | 'fraud') => void
 }
 
 const tabs = [
@@ -31,6 +31,7 @@ const tabs = [
   { id: 'timeline', label: 'Timeline', icon: Clock },
   { id: 'analytics', label: 'Analytics', icon: TrendingUp },
   { id: 'query', label: 'Query', icon: Search },
+  { id: 'fraud', label: 'Fraud', icon: Shield },
 ] as const
 
 const priorityColors: Record<string, string> = {

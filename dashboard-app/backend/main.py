@@ -36,6 +36,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 # Import session indexing
 from session_index import SessionIndex
+# Import fraud review module
+sys.path.insert(0, str(EMERGENT_LEARNING_PATH / "query"))
+from fraud_review import FraudReviewer
+
 
 # Paths
 EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
@@ -253,6 +257,11 @@ class SpikeReportUpdate(BaseModel):
 
 class SpikeReportRate(BaseModel):
     score: float  # 0-5 usefulness score
+
+class FraudReviewRequest(BaseModel):
+    outcome: str  # 'true_positive' or 'false_positive'
+    reviewed_by: Optional[str] = 'human'
+    notes: Optional[str] = None
 
 
 class ActionResult(BaseModel):
@@ -3212,6 +3221,68 @@ async def export_data(export_type: str, format: str = "json"):
             raise HTTPException(status_code=400, detail=f"Unknown export type: {export_type}")
 
         return data
+
+
+
+
+# ==============================================================================
+# REST API: Fraud Review
+# ==============================================================================
+
+@app.get("/api/fraud-reports")
+async def get_pending_fraud_reports():
+    """Get all pending fraud reports for human review."""
+    try:
+        reviewer = FraudReviewer()
+        reports = reviewer.get_pending_reports()
+        return reports
+    except Exception as e:
+        logger.error(f"Error fetching fraud reports: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/fraud-reports/{report_id}")
+async def get_fraud_report(report_id: int):
+    """Get detailed fraud report with all anomaly signals."""
+    try:
+        reviewer = FraudReviewer()
+        report = reviewer.get_report_with_signals(report_id)
+
+        if not report:
+            raise HTTPException(status_code=404, detail=f"Fraud report {report_id} not found")
+
+        return report
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching fraud report {report_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/fraud-reports/{report_id}/review")
+async def review_fraud_report(report_id: int, review: FraudReviewRequest) -> ActionResult:
+    """Record human review outcome for a fraud report."""
+    try:
+        reviewer = FraudReviewer()
+        result = reviewer.record_review_outcome(
+            fraud_report_id=report_id,
+            outcome=review.outcome,
+            reviewed_by=review.reviewed_by,
+            notes=review.notes
+        )
+
+        outcome_msg = "confirmed as fraud" if review.outcome == "true_positive" else "marked as false positive"
+
+        return ActionResult(
+            success=True,
+            message=f"Fraud report #{report_id} {outcome_msg}",
+            data=result
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error reviewing fraud report {report_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ==============================================================================
