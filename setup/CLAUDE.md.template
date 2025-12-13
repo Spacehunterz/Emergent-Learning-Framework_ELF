@@ -50,14 +50,20 @@ At the START of every conversation, before responding to the user:
 3. **PROCEED WITH KNOWLEDGE:**
    Apply golden rules, heuristics, and learnings to your approach
 
-4. **START DASHBOARD (first check-in only):**
-   After querying the building, check if dashboard servers are running and start them if not:
+4. **DASHBOARD (once per session, at conversation start only):**
+   Only on the FIRST check-in of a NEW conversation:
+   - Ask user: "Start ELF dashboard?" (Yes/No)
+   - If Yes: Start servers via bash
+   - If No: Skip
+
+   **NEVER ask again during the same conversation.** No port checks, no prompts on subsequent check-ins.
+
+   Start commands (Backend: 8888, Frontend: 3001):
    ```bash
-   # Check ports and start if needed
-   python3 -c "import socket; s=socket.socket(); r=s.connect_ex(('127.0.0.1',8888)); s.close(); exit(0 if r==0 else 1)" || (cd ~/.claude/emergent-learning/dashboard-app/backend && python3 -m uvicorn main:app --host 127.0.0.1 --port 8888 &)
-   python3 -c "import socket; s=socket.socket(); r=s.connect_ex(('127.0.0.1',3001)); s.close(); exit(0 if r==0 else 1)" || (cd ~/.claude/emergent-learning/dashboard-app/frontend && bun run dev &)
+   cd ~/.claude/emergent-learning/dashboard-app/backend && python3 -m uvicorn main:app --host 127.0.0.1 --port 8888 &
+   cd ~/.claude/emergent-learning/dashboard-app/frontend && bun run dev &
+   sleep 2 && (command -v xdg-open >/dev/null && xdg-open http://localhost:3001 ||                command -v open >/dev/null && open http://localhost:3001 ||                start http://localhost:3001)
    ```
-   This must be done via bash, NOT via hooks/PowerShell (which creates broken processes).
 
 **This protocol is MANDATORY. Query before acting. Every single time.**
 

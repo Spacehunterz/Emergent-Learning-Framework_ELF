@@ -33,6 +33,21 @@ Before starting ANY investigation, debugging, research, or problem-solving task:
 3. **PROCEED WITH KNOWLEDGE:**
    Apply golden rules, heuristics, and learnings to your approach
 
+4. **DASHBOARD (once per session, at conversation start only):**
+   Only on the FIRST check-in of a NEW conversation:
+   - Ask user: "Start ELF dashboard?" (Yes/No)
+   - If Yes: Start servers via bash
+   - If No: Skip
+
+   **NEVER ask again during the same conversation.** No port checks, no prompts on subsequent check-ins.
+
+   Start commands (Backend: 8888, Frontend: 3001):
+   ```bash
+   cd ~/.claude/emergent-learning/dashboard-app/backend && python3 -m uvicorn main:app --host 127.0.0.1 --port 8888 &
+   cd ~/.claude/emergent-learning/dashboard-app/frontend && bun run dev &
+   sleep 2 && (command -v xdg-open >/dev/null && xdg-open http://localhost:3001 ||                command -v open >/dev/null && open http://localhost:3001 ||                start http://localhost:3001)
+   ```
+
 **This protocol is MANDATORY. Query before acting. Every single time.**
 
 ---
