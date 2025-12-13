@@ -222,6 +222,7 @@ function AppContent() {
           isConnected={isConnected}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          onOpenCommandPalette={() => setCommandPaletteOpen(true)}
         />
 
       <main className="container mx-auto px-4 py-6">
