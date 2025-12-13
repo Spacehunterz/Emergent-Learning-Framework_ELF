@@ -1,57 +1,68 @@
-# Golden Rule 12: Use Background Agents for Multi-Step Tasks
+# Golden Rule 12: Always Use Async Subagents
 
-> For any task requiring multiple steps, parallel work, or monitoring, spawn background haiku agents. Don't do everything synchronously in main context.
+> Default to `run_in_background=True` for ALL subagent spawns. Block with TaskOutput only when you actually need the result. Never use synchronous subagents.
 
 ## Why
 
-- Background agents save context window in active session
-- Parallel work completes faster
-- Monitoring can happen while main work continues
-- The capability exists and is powerful - USE IT
+- Async lets you do other work while agent runs
+- Multiple agents can run in parallel
+- Main context stays responsive
+- Sync wastes time waiting when you could be productive
+- There's NO good reason to block immediately on spawn
 
-## When to Spawn Background Agents
-
-1. **Multi-step tasks** - More than 3 sequential operations
-2. **Batch processing** - Comparing N items, scanning files, etc.
-3. **Monitoring** - Watching for changes, health checks
-4. **Swarm work** - Always spawn watcher with /swarm
-5. **Session start** - Consider spawning monitoring agent
-
-## How
+## The Pattern
 
 ```python
-Task(
+# 1. SPAWN ASYNC (always)
+task_id = Task(
     subagent_type="general-purpose",
-    model="haiku",  # Cheap, fast, good enough for most background work
-    description="[BACKGROUND] Task description",
+    model="haiku",
     prompt="Your task...",
-    run_in_background=True
+    run_in_background=True  # ALWAYS
 )
+
+# 2. DO OTHER WORK while agent runs
+read_files()
+check_status()
+spawn_more_agents()
+
+# 3. BLOCK ONLY WHEN YOU NEED THE RESULT
+result = TaskOutput(task_id=task_id, block=True)
 ```
 
-Then later:
+## Parallel Execution
+
+Spawn multiple agents, then collect results:
+
 ```python
-TaskOutput(task_id="agent-xxx", block=False)  # Check progress
-TaskOutput(task_id="agent-xxx", block=True)   # Wait for completion
+# Spawn all at once
+task1 = Task(..., run_in_background=True)
+task2 = Task(..., run_in_background=True)
+task3 = Task(..., run_in_background=True)
+
+# Do other work...
+
+# Collect when needed
+result1 = TaskOutput(task_id=task1, block=True)
+result2 = TaskOutput(task_id=task2, block=True)
+result3 = TaskOutput(task_id=task3, block=True)
 ```
 
-## Anti-Pattern (What NOT to Do)
+## Anti-Patterns (NEVER DO)
 
-- Suggest background agents but never spawn them
+- Synchronous subagent spawn (no `run_in_background`)
+- Spawning async then immediately blocking (pointless)
+- Suggesting async but never actually using it
 - Spawn and forget (never check TaskOutput)
-- Do everything synchronously when parallel would be faster
-- Read docs about background agents, nod, then ignore them
 
 ## Enforcement
 
-Before starting multi-step work, ask:
-> "Should this run in background while I continue other work?"
+Every Task tool call MUST have `run_in_background=True`.
 
-Before ending session, ask:
-> "Did I check all background agent outputs?"
+Exception: None. There is no valid exception.
 
 ---
 
 **Promoted:** 2025-12-13
-**Reason:** Capability exists but consistently underutilized. CEO identified pattern of suggesting but not using background agents.
-**Status:** CONSTITUTIONAL - behavioral correction
+**Reason:** CEO identified that sync subagents waste time. Async is always better - block only when result is needed.
+**Status:** CONSTITUTIONAL - default behavior change
