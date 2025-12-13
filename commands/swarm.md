@@ -74,12 +74,16 @@ No flags needed. Watcher is always on.
 
 5. **Spawn agents** using Task tool with `[SWARM]` marker:
 
-   **IMPORTANT:** Always include `[SWARM]` in the description so hooks inject coordination:
+   **IMPORTANT:**
+   - Always include `[SWARM]` in description so hooks inject coordination
+   - Always use `run_in_background: true` (Golden Rule #12)
+
    ```
    Task tool call:
    - description: "[SWARM] Investigate auth service"
    - prompt: "Your task: ..."
    - subagent_type: "general-purpose"
+   - run_in_background: true   # REQUIRED - always async
    ```
 
    The hook will automatically:
