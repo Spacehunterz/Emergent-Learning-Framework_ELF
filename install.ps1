@@ -138,7 +138,7 @@ Write-Host "  Created directory structure (7 directories for core)" -ForegroundC
 Write-Host ""
 Write-Host "[Step 3/5] Installing core components..." -ForegroundColor Yellow
 
-$srcDir = Join-Path (Join-Path $ScriptDir "src") "emergent-learning"
+$srcDir = $ScriptDir
 $srcQueryDir = Join-Path $srcDir "query"
 $srcMemoryDir = Join-Path $srcDir "memory"
 $dstQueryDir = Join-Path $EmergentLearningDir "query"
@@ -150,7 +150,7 @@ Copy-Item -Path (Join-Path $srcMemoryDir "init_db.sql") -Destination (Join-Path 
 Write-Host "  Copied query system" -ForegroundColor Green
 
 # Copy hooks
-$srcHooksDir = Join-Path $ScriptDir "src"
+$srcHooksDir = $ScriptDir
 $hooksSource = Join-Path (Join-Path $srcHooksDir "hooks") "learning-loop"
 $learningLoopDir = Join-Path $HooksDir "learning-loop"
 Copy-Item -Path (Join-Path $hooksSource "*.py") -Destination $learningLoopDir -Force
@@ -217,7 +217,7 @@ if ($InstallSwarm) {
     # Copy swarm command
     $commandsDir = Join-Path $ClaudeDir "commands"
     New-Item -ItemType Directory -Path $commandsDir -Force | Out-Null
-    $srcCommandsDir = Join-Path (Join-Path $ScriptDir "src") "commands"
+    $srcCommandsDir = Join-Path $ScriptDir "commands"
     $swarmCmd = Join-Path $srcCommandsDir "swarm.md"
     if (Test-Path $swarmCmd) {
         Copy-Item -Path $swarmCmd -Destination $commandsDir -Force
@@ -232,7 +232,7 @@ if ($InstallSwarm) {
     New-Item -ItemType Directory -Path $pluginsUtilsDir -Force | Out-Null
     New-Item -ItemType Directory -Path $pluginsHooksDir -Force | Out-Null
 
-    $srcPluginsDir = Join-Path (Join-Path $ScriptDir "src") "plugins"
+    $srcPluginsDir = Join-Path $ScriptDir "plugins"
     $pluginSrc = Join-Path $srcPluginsDir "agent-coordination"
     $pluginSrcUtils = Join-Path $pluginSrc "utils"
     $pluginSrcHooks = Join-Path $pluginSrc "hooks"

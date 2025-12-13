@@ -139,7 +139,7 @@ echo -e "  ${GREEN}Created directory structure (7 directories for core)${NC}"
 echo ""
 echo -e "${YELLOW}[Step 3/5]${NC} Installing core components..."
 
-SRC_DIR="$SCRIPT_DIR/src/emergent-learning"
+SRC_DIR="$SCRIPT_DIR"
 
 # Copy core files
 cp "$SRC_DIR/query/query.py" "$EMERGENT_LEARNING_DIR/query/query.py"
@@ -148,7 +148,7 @@ cp "$SRC_DIR/memory/init_db.sql" "$EMERGENT_LEARNING_DIR/memory/init_db.sql"
 echo -e "  ${GREEN}Copied query system${NC}"
 
 # Copy hooks
-cp "$SCRIPT_DIR/src/hooks/learning-loop/"*.py "$HOOKS_DIR/learning-loop/"
+cp "$SCRIPT_DIR/hooks/learning-loop/"*.py "$HOOKS_DIR/learning-loop/"
 echo -e "  ${GREEN}Copied learning hooks${NC}"
 
 # Copy scripts
@@ -192,15 +192,15 @@ if [ "$INSTALL_SWARM" = true ]; then
 
     # Copy swarm command
     mkdir -p "$CLAUDE_DIR/commands"
-    cp "$SCRIPT_DIR/src/commands/swarm.md" "$CLAUDE_DIR/commands/" 2>&1 || echo -e "  ${YELLOW}Warning: swarm.md not copied${NC}"
+    cp "$SCRIPT_DIR/commands/swarm.md" "$CLAUDE_DIR/commands/" 2>&1 || echo -e "  ${YELLOW}Warning: swarm.md not copied${NC}"
     echo -e "  ${GREEN}Copied /swarm command${NC}"
 
     # Copy agent coordination plugin
     mkdir -p "$CLAUDE_DIR/plugins/agent-coordination/utils"
     mkdir -p "$CLAUDE_DIR/plugins/agent-coordination/hooks"
-    cp "$SCRIPT_DIR/src/plugins/agent-coordination/utils/"*.py "$CLAUDE_DIR/plugins/agent-coordination/utils/" 2>&1 || echo -e "  ${YELLOW}Warning: Some plugin utils not copied${NC}"
-    cp "$SCRIPT_DIR/src/plugins/agent-coordination/hooks/"*.py "$CLAUDE_DIR/plugins/agent-coordination/hooks/" 2>&1 || echo -e "  ${YELLOW}Warning: Some plugin hooks .py not copied${NC}"
-    cp "$SCRIPT_DIR/src/plugins/agent-coordination/hooks/"*.json "$CLAUDE_DIR/plugins/agent-coordination/hooks/" 2>&1 || echo -e "  ${YELLOW}Warning: Some plugin hooks .json not copied${NC}"
+    cp "$SCRIPT_DIR/plugins/agent-coordination/utils/"*.py "$CLAUDE_DIR/plugins/agent-coordination/utils/" 2>&1 || echo -e "  ${YELLOW}Warning: Some plugin utils not copied${NC}"
+    cp "$SCRIPT_DIR/plugins/agent-coordination/hooks/"*.py "$CLAUDE_DIR/plugins/agent-coordination/hooks/" 2>&1 || echo -e "  ${YELLOW}Warning: Some plugin hooks .py not copied${NC}"
+    cp "$SCRIPT_DIR/plugins/agent-coordination/hooks/"*.json "$CLAUDE_DIR/plugins/agent-coordination/hooks/" 2>&1 || echo -e "  ${YELLOW}Warning: Some plugin hooks .json not copied${NC}"
     echo -e "  ${GREEN}Copied agent coordination plugin${NC}"
 fi
 
