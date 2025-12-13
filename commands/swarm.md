@@ -44,14 +44,40 @@ No flags needed. Watcher is always on.
    python ~/.claude/plugins/agent-coordination/utils/blackboard.py reset
    ```
 
-2. **Start watcher agent** (runs in background):
+2. **Start watcher loop** (self-perpetuating):
+
+   Clear any previous stop signal:
+   ```bash
+   python ~/.claude/emergent-learning/watcher/watcher_loop.py clear
+   ```
+
+   Spawn watcher using Task tool:
    ```
    Task tool call:
    - description: "[WATCHER] Monitor swarm"
-   - prompt: "Monitor ~/.claude/emergent-learning/.coordination/ for stuck agents..."
    - subagent_type: "general-purpose"
    - model: "haiku"
    - run_in_background: true
+   - prompt: WATCHER_PROMPT (see below)
+   ```
+
+   **WATCHER_PROMPT:**
+   ```
+   You are a self-perpetuating monitoring agent for a swarm.
+
+   1. Read state from ~/.claude/emergent-learning/.coordination/
+      - blackboard.json, agent_*.md files, watcher-log.md
+
+   2. Check for: stale agents (>120s), errors, stuck tasks
+
+   3. Output: "STATUS: nominal" or "STATUS: escalate" + details
+
+   4. Log to watcher-log.md
+
+   5. SPAWN NEXT AGENT (Task tool):
+      - If nominal: spawn haiku watcher (model: haiku, run_in_background: true)
+      - If escalate: spawn opus handler (model: opus)
+      - STOP if: watcher-stop file exists OR all agents complete
    ```
 
 3. **Analyze & decompose** the task into parallel subtasks
@@ -153,14 +179,13 @@ python ~/.claude/plugins/agent-coordination/utils/blackboard.py reset
 
 ### `/swarm stop` (Disable)
 
-Stop coordination and mark all agents as stopped:
+Stop coordination and watcher:
 
-```python
-from blackboard import Blackboard
-bb = Blackboard()
-for agent_id in bb.get_active_agents():
-    bb.update_agent_status(agent_id, 'stopped')
+```bash
+python ~/.claude/emergent-learning/watcher/watcher_loop.py stop
 ```
+
+This creates a `watcher-stop` file that signals the watcher to terminate.
 
 ---
 
