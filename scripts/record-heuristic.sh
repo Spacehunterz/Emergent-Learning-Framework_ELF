@@ -353,32 +353,9 @@ EOF
 echo "Appended to: $domain_file"
 log "INFO" "Appended heuristic to: $domain_file"
 
-# Git commit with locking for concurrent access
-cd "$BASE_DIR"
-if [ -d ".git" ]; then
-    LOCK_FILE="$BASE_DIR/.git/claude-lock"
-    
-    if ! acquire_git_lock "$LOCK_FILE" 30; then
-        log "ERROR" "Could not acquire git lock"
-        echo "Error: Could not acquire git lock"
-        exit 1
-    fi
-
-    git add "$domain_file" 2>/dev/null || true
-    git add "$DB_PATH" 2>/dev/null || true
-    if ! git commit -m "heuristic: $rule" -m "Domain: $domain | Confidence: $confidence"; then
-        log "WARN" "Git commit failed or no changes to commit"
-        echo "Note: Git commit skipped (no changes or already committed)"
-    else
-        log "INFO" "Git commit created"
-        echo "Git commit created"
-    fi
-
-    release_git_lock "$LOCK_FILE"
-else
-    log "WARN" "Not a git repository. Skipping commit."
-    echo "Warning: Not a git repository. Skipping commit."
-fi
+# NOTE: Auto-commit removed for safety (can grab unrelated staged files)
+# User should commit manually if desired:
+#   git add memory/heuristics/ memory/index.db && git commit -m "heuristic: <description>"
 
 log "INFO" "Heuristic recorded successfully: $rule"
 echo ""

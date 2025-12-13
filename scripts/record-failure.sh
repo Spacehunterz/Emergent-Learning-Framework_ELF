@@ -585,33 +585,9 @@ fi
 echo "Database record created (ID: $LAST_ID)"
 log "INFO" "Database record created (ID: $LAST_ID)"
 
-# Git commit with locking for concurrent access
-cd "$BASE_DIR"
-if [ -d ".git" ]; then
-    LOCK_FILE="$BASE_DIR/.git/claude-lock"
-    
-    if ! acquire_git_lock "$LOCK_FILE" 30; then
-        log "ERROR" "Could not acquire git lock - rolling back"
-        cleanup_on_failure "$filepath" "$LAST_ID"
-        echo "Error: Could not acquire git lock"
-        exit 1
-    fi
-
-    git add "$filepath"
-    git add "$DB_PATH"
-    if ! git commit -m "failure: $title" -m "Domain: $domain | Severity: $severity"; then
-        log "WARN" "Git commit failed or no changes to commit"
-        echo "Note: Git commit skipped (no changes or already committed)"
-    else
-        log "INFO" "Git commit created"
-        echo "Git commit created"
-    fi
-
-    release_git_lock "$LOCK_FILE"
-else
-    log "WARN" "Not a git repository. Skipping commit."
-    echo "Warning: Not a git repository. Skipping commit."
-fi
+# NOTE: Auto-commit removed for safety (can grab unrelated staged files)
+# User should commit manually if desired:
+#   git add failure-analysis/ memory/index.db && git commit -m "failure: <description>"
 
 log "INFO" "Failure recorded successfully: $title"
 echo ""

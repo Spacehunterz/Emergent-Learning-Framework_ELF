@@ -435,51 +435,9 @@ fi
 echo "Created decision file: $decision_file"
 log "INFO" "Created decision file: $decision_file"
 
-# Git commit with locking for concurrent access
-cd "$BASE_DIR"
-if [ -d ".git" ]; then
-    LOCK_FILE="$BASE_DIR/.git/claude-lock"
-
-    if ! acquire_git_lock "$LOCK_FILE" 30; then
-        log "ERROR" "Could not acquire git lock"
-        echo "Error: Could not acquire git lock"
-        exit 1
-    fi
-
-    # Check if files are ignored before attempting to add them
-    files_to_commit=()
-    if ! git check-ignore -q "$decision_file" 2>/dev/null; then
-        files_to_commit+=("$decision_file")
-    else
-        log "INFO" "Decision file is in .gitignore, skipping git add"
-    fi
-
-    if ! git check-ignore -q "$DB_PATH" 2>/dev/null; then
-        files_to_commit+=("$DB_PATH")
-    else
-        log "INFO" "Database is in .gitignore, skipping git add"
-    fi
-
-    # Only attempt commit if we have files to commit
-    if [ ${#files_to_commit[@]} -gt 0 ]; then
-        git add "${files_to_commit[@]}"
-        if ! git commit -m "decision: $title" -m "Domain: $domain | ADR-$decision_id"; then
-            log "WARN" "Git commit failed or no changes to commit"
-            echo "Note: Git commit skipped (no changes or already committed)"
-        else
-            log "INFO" "Git commit created"
-            echo "Git commit created"
-        fi
-    else
-        log "INFO" "All files are ignored by git, skipping commit"
-        echo "Note: All files are in .gitignore, no git commit needed"
-    fi
-
-    release_git_lock "$LOCK_FILE"
-else
-    log "WARN" "Not a git repository. Skipping commit."
-    echo "Warning: Not a git repository. Skipping commit."
-fi
+# NOTE: Auto-commit removed for safety (can grab unrelated staged files)
+# User should commit manually if desired:
+#   git add memory/decisions/ memory/index.db && git commit -m "decision: <description>"
 
 log "INFO" "Decision recorded successfully: $title"
 echo ""
