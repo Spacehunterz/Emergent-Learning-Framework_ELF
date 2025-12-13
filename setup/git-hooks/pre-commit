@@ -1,0 +1,21 @@
+#!/bin/bash
+# ELF Pre-commit Hook - Enforces invariants before allowing commits
+#
+# Bypass with: git commit --no-verify
+
+echo "🔍 Running invariant checks..."
+echo ""
+
+# Run the check against the ELF repo
+~/.claude/emergent-learning/scripts/check-invariants.sh --project ~/.claude/emergent-learning
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ Commit blocked. Fix the invariant violations above."
+    echo "   (bypass with: git commit --no-verify)"
+    exit 1
+fi
+
+echo ""
+echo "✅ All invariants passed. Proceeding with commit."
+exit 0

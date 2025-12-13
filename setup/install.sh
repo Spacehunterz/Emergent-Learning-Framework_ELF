@@ -45,15 +45,30 @@ install_hooks() {
     done
 }
 
+install_git_hooks() {
+    # Install git pre-commit hook for invariant enforcement
+    local elf_dir="$HOME/.claude/emergent-learning"
+    local git_hooks_dir="$elf_dir/.git/hooks"
+
+    if [ -d "$git_hooks_dir" ]; then
+        if [ -f "$SCRIPT_DIR/git-hooks/pre-commit" ]; then
+            cp "$SCRIPT_DIR/git-hooks/pre-commit" "$git_hooks_dir/pre-commit"
+            chmod +x "$git_hooks_dir/pre-commit"
+            echo "[ELF] Git pre-commit hook installed (invariant enforcement)"
+        fi
+    fi
+}
+
 case "$MODE" in
     fresh)
         # New user - install everything
         cp "$SCRIPT_DIR/CLAUDE.md.template" "$CLAUDE_DIR/CLAUDE.md"
         install_commands
         install_hooks
+        install_git_hooks
         echo "[ELF] Fresh install complete"
         ;;
-    
+
     merge)
         # Merge: their config + ELF
         if [ -f "$CLAUDE_DIR/CLAUDE.md" ]; then
@@ -73,8 +88,9 @@ case "$MODE" in
         fi
         install_commands
         install_hooks
+        install_git_hooks
         ;;
-    
+
     replace)
         # Replace: backup theirs, use ELF only
         if [ -f "$CLAUDE_DIR/CLAUDE.md" ]; then
@@ -83,24 +99,26 @@ case "$MODE" in
         cp "$SCRIPT_DIR/CLAUDE.md.template" "$CLAUDE_DIR/CLAUDE.md"
         install_commands
         install_hooks
+        install_git_hooks
         echo "[ELF] Replaced config (backup: CLAUDE.md.backup)"
         ;;
-    
+
     skip)
         # Skip CLAUDE.md but install commands/hooks
         echo "[ELF] Skipping CLAUDE.md modification"
         echo "[ELF] Warning: ELF may not function correctly without CLAUDE.md instructions"
         install_commands
         install_hooks
+        install_git_hooks
         ;;
-    
+
     interactive|*)
         # Interactive mode - show menu
         echo "========================================"
         echo "Emergent Learning Framework - Setup"
         echo "========================================"
         echo ""
-        
+
         if [ -f "$CLAUDE_DIR/CLAUDE.md" ]; then
             if grep -q "Emergent Learning Framework" "$CLAUDE_DIR/CLAUDE.md" 2>/dev/null; then
                 echo "ELF already configured in CLAUDE.md"
@@ -125,9 +143,10 @@ case "$MODE" in
             bash "$0" --mode fresh
             exit 0
         fi
-        
+
         install_commands
         install_hooks
+        install_git_hooks
         echo ""
         echo "Setup complete!"
         ;;
