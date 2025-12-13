@@ -163,3 +163,54 @@ export interface SessionMessage {
 export interface SessionDetail extends Session {
   messages: SessionMessage[]
 }
+
+// Knowledge Systems Types
+
+export interface Assumption {
+  id: number;
+  assumption: string;
+  context: string;
+  source: string | null;
+  confidence: number;
+  status: 'active' | 'verified' | 'challenged' | 'invalidated';
+  domain: string | null;
+  verified_count: number;
+  challenged_count: number;
+  last_verified_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SpikeReport {
+  id: number;
+  title: string;
+  topic: string;
+  question: string;
+  findings: string;
+  gotchas: string | null;
+  resources: string | null;
+  time_invested_minutes: number | null;
+  domain: string | null;
+  tags: string | null;
+  usefulness_score: number;
+  access_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Invariant {
+  id: number;
+  statement: string;
+  rationale: string;
+  domain: string | null;
+  scope: 'codebase' | 'module' | 'function' | 'runtime';
+  validation_type: 'manual' | 'automated' | 'test' | null;
+  validation_code: string | null;
+  severity: 'error' | 'warning' | 'info';
+  status: 'active' | 'deprecated' | 'violated';
+  violation_count: number;
+  last_validated_at: string | null;
+  last_violated_at: string | null;
+  created_at: string;
+  updated_at: string;
+}

@@ -177,6 +177,44 @@ class DecisionUpdate(BaseModel):
     status: Optional[str] = None
 
 
+class InvariantCreate(BaseModel):
+    statement: str
+    rationale: str
+    domain: Optional[str] = None
+    scope: Optional[str] = "codebase"  # codebase, module, function, runtime
+    validation_type: Optional[str] = None  # manual, automated, test
+    validation_code: Optional[str] = None
+    severity: Optional[str] = "error"  # error, warning, info
+
+
+class InvariantUpdate(BaseModel):
+    statement: Optional[str] = None
+    rationale: Optional[str] = None
+    domain: Optional[str] = None
+    scope: Optional[str] = None
+    validation_type: Optional[str] = None
+    validation_code: Optional[str] = None
+    severity: Optional[str] = None
+    status: Optional[str] = None
+
+
+class AssumptionCreate(BaseModel):
+    assumption: str
+    context: str
+    source: Optional[str] = None
+    confidence: Optional[float] = 0.5
+    domain: Optional[str] = None
+
+
+class AssumptionUpdate(BaseModel):
+    assumption: Optional[str] = None
+    context: Optional[str] = None
+    source: Optional[str] = None
+    confidence: Optional[float] = None
+    status: Optional[str] = None
+    domain: Optional[str] = None
+
+
 class WorkflowCreate(BaseModel):
     name: str
     description: str
@@ -187,6 +225,34 @@ class WorkflowCreate(BaseModel):
 class QueryRequest(BaseModel):
     query: str
     limit: int = 20
+
+
+class SpikeReportCreate(BaseModel):
+    title: str
+    topic: str
+    question: str
+    findings: str
+    gotchas: Optional[str] = None
+    resources: Optional[str] = None
+    time_invested_minutes: Optional[int] = None
+    domain: Optional[str] = None
+    tags: Optional[str] = None
+
+
+class SpikeReportUpdate(BaseModel):
+    title: Optional[str] = None
+    topic: Optional[str] = None
+    question: Optional[str] = None
+    findings: Optional[str] = None
+    gotchas: Optional[str] = None
+    resources: Optional[str] = None
+    time_invested_minutes: Optional[int] = None
+    domain: Optional[str] = None
+    tags: Optional[str] = None
+
+
+class SpikeReportRate(BaseModel):
+    score: float  # 0-5 usefulness score
 
 
 class ActionResult(BaseModel):
@@ -250,6 +316,7 @@ async def monitor_changes():
     last_heuristics_count = 0
     last_learnings_count = 0
     last_decisions_count = 0
+    last_invariants_count = 0
     last_session_scan = None
 
     while True:
@@ -275,6 +342,9 @@ async def monitor_changes():
 
                 cursor.execute("SELECT COUNT(*) FROM decisions")
                 decisions_count = cursor.fetchone()[0]
+
+                cursor.execute("SELECT COUNT(*) FROM invariants")
+                invariants_count = cursor.fetchone()[0]
 
                 # Broadcast if changes detected
                 if metrics_count > last_metrics_count:
@@ -343,6 +413,17 @@ async def monitor_changes():
                     recent = [dict_from_row(r) for r in cursor.fetchall()]
                     await manager.broadcast_update("decisions", {"recent": recent})
                     last_decisions_count = decisions_count
+
+                if invariants_count > last_invariants_count:
+                    cursor.execute("""
+                        SELECT id, statement, status, severity, domain, violation_count, created_at
+                        FROM invariants
+                        ORDER BY created_at DESC
+                        LIMIT 5
+                    """)
+                    recent = [dict_from_row(r) for r in cursor.fetchall()]
+                    await manager.broadcast_update("invariants", {"recent": recent})
+                    last_invariants_count = invariants_count
 
             # Rescan session index every 5 minutes
             current_time = datetime.now()
@@ -452,6 +533,21 @@ async def get_stats():
         cursor.execute("SELECT COUNT(*) FROM decisions WHERE status = 'superseded'")
         stats["superseded_decisions"] = cursor.fetchone()[0]
 
+        # Spike reports stats
+        try:
+            cursor.execute("SELECT COUNT(*) FROM spike_reports")
+            stats["total_spike_reports"] = cursor.fetchone()[0]
+
+            cursor.execute("SELECT AVG(usefulness_score) FROM spike_reports WHERE usefulness_score > 0")
+            stats["avg_spike_usefulness"] = cursor.fetchone()[0] or 0
+
+            cursor.execute("SELECT SUM(time_invested_minutes) FROM spike_reports")
+            stats["total_spike_time_invested"] = cursor.fetchone()[0] or 0
+        except Exception:
+            stats["total_spike_reports"] = 0
+            stats["avg_spike_usefulness"] = 0
+            stats["total_spike_time_invested"] = 0
+
         # Get actual run success/failure counts from workflow_runs status
         cursor.execute("SELECT COUNT(*) FROM workflow_runs WHERE status = 'completed'")
         stats["successful_runs"] = cursor.fetchone()[0]
@@ -498,6 +594,20 @@ async def get_stats():
             WHERE duration_ms IS NOT NULL
         """)
         stats["avg_query_duration_ms"] = cursor.fetchone()[0] or 0
+
+
+        # Invariant statistics
+        cursor.execute("SELECT COUNT(*) FROM invariants")
+        stats["total_invariants"] = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM invariants WHERE status = 'active'")
+        stats["active_invariants"] = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM invariants WHERE status = 'violated'")
+        stats["violated_invariants"] = cursor.fetchone()[0]
+
+        cursor.execute("SELECT SUM(violation_count) FROM invariants")
+        stats["total_invariant_violations"] = cursor.fetchone()[0] or 0
 
         return stats
 
@@ -1554,6 +1664,880 @@ async def supersede_decision(decision_id: int, new_decision: DecisionCreate) -> 
             message=f"Superseded decision #{decision_id} with #{new_decision_id}",
             data={"new_decision_id": new_decision_id, "old_decision_id": decision_id}
         )
+
+
+# ==============================================================================
+# REST API: Assumptions
+# ==============================================================================
+
+@app.get("/api/assumptions")
+async def get_assumptions(
+    domain: Optional[str] = None,
+    status: Optional[str] = None,
+    min_confidence: Optional[float] = None,
+    skip: int = 0,
+    limit: int = 50
+):
+    """Get assumptions with optional filtering."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        query = """
+            SELECT id, assumption, context, source, confidence, status, domain,
+                   verified_count, challenged_count, last_verified_at,
+                   created_at, updated_at
+            FROM assumptions
+            WHERE 1=1
+        """
+        params = []
+
+        if domain:
+            query += " AND domain = ?"
+            params.append(domain)
+
+        if status:
+            query += " AND status = ?"
+            params.append(status)
+
+        if min_confidence is not None:
+            query += " AND confidence >= ?"
+            params.append(min_confidence)
+
+        query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        params.append(limit)
+        params.append(skip)
+
+        cursor.execute(query, params)
+        return [dict_from_row(r) for r in cursor.fetchall()]
+
+
+@app.get("/api/assumptions/{assumption_id}")
+async def get_assumption(assumption_id: int):
+    """Get single assumption with full details."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT * FROM assumptions WHERE id = ?
+        """, (assumption_id,))
+        assumption = dict_from_row(cursor.fetchone())
+
+        if not assumption:
+            raise HTTPException(status_code=404, detail="Assumption not found")
+
+        # Get related assumptions (same domain)
+        if assumption.get("domain"):
+            cursor.execute("""
+                SELECT id, assumption, status, confidence, created_at
+                FROM assumptions
+                WHERE domain = ? AND id != ?
+                ORDER BY created_at DESC
+                LIMIT 5
+            """, (assumption["domain"], assumption_id))
+            assumption["related"] = [dict_from_row(r) for r in cursor.fetchall()]
+        else:
+            assumption["related"] = []
+
+        return assumption
+
+
+@app.post("/api/assumptions")
+async def create_assumption(assumption: AssumptionCreate) -> ActionResult:
+    """Create a new assumption."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Validate confidence range
+        confidence = assumption.confidence
+        if confidence is None:
+            confidence = 0.5
+        confidence = max(0.0, min(1.0, confidence))
+
+        cursor.execute("""
+            INSERT INTO assumptions (
+                assumption, context, source, confidence, domain,
+                status, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, 'active', ?, ?)
+        """, (
+            assumption.assumption,
+            assumption.context,
+            assumption.source,
+            confidence,
+            assumption.domain,
+            datetime.now().isoformat(),
+            datetime.now().isoformat()
+        ))
+
+        assumption_id = cursor.lastrowid
+        conn.commit()
+
+        await manager.broadcast_update("assumption_created", {
+            "assumption_id": assumption_id,
+            "assumption": assumption.assumption[:100],
+            "domain": assumption.domain
+        })
+
+        return ActionResult(
+            success=True,
+            message=f"Created assumption #{assumption_id}",
+            data={"assumption_id": assumption_id}
+        )
+
+
+@app.put("/api/assumptions/{assumption_id}")
+async def update_assumption(assumption_id: int, update: AssumptionUpdate) -> ActionResult:
+    """Update an existing assumption."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Verify assumption exists
+        cursor.execute("SELECT id FROM assumptions WHERE id = ?", (assumption_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Assumption not found")
+
+        updates = []
+        params = []
+
+        if update.assumption is not None:
+            updates.append("assumption = ?")
+            params.append(update.assumption)
+
+        if update.context is not None:
+            updates.append("context = ?")
+            params.append(update.context)
+
+        if update.source is not None:
+            updates.append("source = ?")
+            params.append(update.source)
+
+        if update.confidence is not None:
+            # Validate confidence range
+            confidence = max(0.0, min(1.0, update.confidence))
+            updates.append("confidence = ?")
+            params.append(confidence)
+
+        if update.status is not None:
+            # Validate status
+            valid_statuses = ['active', 'verified', 'challenged', 'invalidated']
+            if update.status not in valid_statuses:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+                )
+            updates.append("status = ?")
+            params.append(update.status)
+
+        if update.domain is not None:
+            updates.append("domain = ?")
+            params.append(update.domain)
+
+        if not updates:
+            return ActionResult(success=False, message="No updates provided")
+
+        updates.append("updated_at = ?")
+        params.append(datetime.now().isoformat())
+        params.append(assumption_id)
+
+        cursor.execute(f"""
+            UPDATE assumptions
+            SET {", ".join(updates)}
+            WHERE id = ?
+        """, params)
+
+        conn.commit()
+
+        await manager.broadcast_update("assumption_updated", {
+            "assumption_id": assumption_id
+        })
+
+        return ActionResult(success=True, message="Assumption updated")
+
+
+@app.post("/api/assumptions/{assumption_id}/verify")
+async def verify_assumption(assumption_id: int) -> ActionResult:
+    """Mark an assumption as verified (increment verified_count)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Verify assumption exists
+        cursor.execute("SELECT * FROM assumptions WHERE id = ?", (assumption_id,))
+        assumption = dict_from_row(cursor.fetchone())
+        if not assumption:
+            raise HTTPException(status_code=404, detail="Assumption not found")
+
+        # Increment verified count and update confidence
+        new_verified = assumption['verified_count'] + 1
+        total_checks = new_verified + assumption['challenged_count']
+        new_confidence = new_verified / total_checks if total_checks > 0 else assumption['confidence']
+
+        cursor.execute("""
+            UPDATE assumptions
+            SET verified_count = ?,
+                confidence = ?,
+                status = CASE WHEN verified_count >= 3 THEN 'verified' ELSE status END,
+                last_verified_at = ?,
+                updated_at = ?
+            WHERE id = ?
+        """, (
+            new_verified,
+            new_confidence,
+            datetime.now().isoformat(),
+            datetime.now().isoformat(),
+            assumption_id
+        ))
+
+        conn.commit()
+
+        await manager.broadcast_update("assumption_verified", {
+            "assumption_id": assumption_id,
+            "verified_count": new_verified,
+            "new_confidence": new_confidence
+        })
+
+        return ActionResult(
+            success=True,
+            message=f"Assumption verified ({new_verified} times)",
+            data={"verified_count": new_verified, "confidence": new_confidence}
+        )
+
+
+@app.post("/api/assumptions/{assumption_id}/challenge")
+async def challenge_assumption(assumption_id: int) -> ActionResult:
+    """Mark an assumption as challenged (increment challenged_count)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Verify assumption exists
+        cursor.execute("SELECT * FROM assumptions WHERE id = ?", (assumption_id,))
+        assumption = dict_from_row(cursor.fetchone())
+        if not assumption:
+            raise HTTPException(status_code=404, detail="Assumption not found")
+
+        # Increment challenged count and update confidence
+        new_challenged = assumption['challenged_count'] + 1
+        total_checks = assumption['verified_count'] + new_challenged
+        new_confidence = assumption['verified_count'] / total_checks if total_checks > 0 else assumption['confidence'] * 0.8
+
+        # Determine new status
+        new_status = assumption['status']
+        if new_challenged >= 3 and assumption['verified_count'] == 0:
+            new_status = 'invalidated'
+        elif new_challenged >= assumption['verified_count']:
+            new_status = 'challenged'
+
+        cursor.execute("""
+            UPDATE assumptions
+            SET challenged_count = ?,
+                confidence = ?,
+                status = ?,
+                updated_at = ?
+            WHERE id = ?
+        """, (
+            new_challenged,
+            new_confidence,
+            new_status,
+            datetime.now().isoformat(),
+            assumption_id
+        ))
+
+        conn.commit()
+
+        await manager.broadcast_update("assumption_challenged", {
+            "assumption_id": assumption_id,
+            "challenged_count": new_challenged,
+            "new_confidence": new_confidence,
+            "new_status": new_status
+        })
+
+        return ActionResult(
+            success=True,
+            message=f"Assumption challenged ({new_challenged} times, status: {new_status})",
+            data={"challenged_count": new_challenged, "confidence": new_confidence, "status": new_status}
+        )
+
+
+@app.delete("/api/assumptions/{assumption_id}")
+async def delete_assumption(assumption_id: int) -> ActionResult:
+    """Delete an assumption."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Check if assumption exists
+        cursor.execute("SELECT assumption FROM assumptions WHERE id = ?", (assumption_id,))
+        assumption = cursor.fetchone()
+        if not assumption:
+            raise HTTPException(status_code=404, detail="Assumption not found")
+
+        # Delete the assumption
+        cursor.execute("DELETE FROM assumptions WHERE id = ?", (assumption_id,))
+        conn.commit()
+
+        await manager.broadcast_update("assumption_deleted", {
+            "assumption_id": assumption_id
+        })
+
+        return ActionResult(success=True, message=f"Deleted assumption #{assumption_id}")
+
+
+# ==============================================================================
+# REST API: Invariants
+# ==============================================================================
+
+@app.get("/api/invariants")
+async def get_invariants(
+    domain: Optional[str] = None,
+    scope: Optional[str] = None,
+    status: Optional[str] = None,
+    severity: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50
+):
+    """Get invariants with optional filtering."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        query = """
+            SELECT id, statement, rationale, domain, scope, validation_type,
+                   validation_code, severity, status, violation_count,
+                   last_validated_at, last_violated_at, created_at, updated_at
+            FROM invariants
+            WHERE 1=1
+        """
+        params = []
+
+        if domain:
+            query += " AND domain = ?"
+            params.append(domain)
+
+        if scope:
+            query += " AND scope = ?"
+            params.append(scope)
+
+        if status:
+            query += " AND status = ?"
+            params.append(status)
+
+        if severity:
+            query += " AND severity = ?"
+            params.append(severity)
+
+        query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        params.append(limit)
+        params.append(skip)
+
+        cursor.execute(query, params)
+        return [dict_from_row(r) for r in cursor.fetchall()]
+
+
+@app.get("/api/invariants/{invariant_id}")
+async def get_invariant(invariant_id: int):
+    """Get single invariant with full details."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT * FROM invariants WHERE id = ?
+        """, (invariant_id,))
+        invariant = dict_from_row(cursor.fetchone())
+
+        if not invariant:
+            raise HTTPException(status_code=404, detail="Invariant not found")
+
+        # Get related invariants (same domain)
+        if invariant.get("domain"):
+            cursor.execute("""
+                SELECT id, statement, status, severity, created_at
+                FROM invariants
+                WHERE domain = ? AND id != ?
+                ORDER BY created_at DESC
+                LIMIT 5
+            """, (invariant["domain"], invariant_id))
+            invariant["related"] = [dict_from_row(r) for r in cursor.fetchall()]
+        else:
+            invariant["related"] = []
+
+        return invariant
+
+
+@app.post("/api/invariants")
+async def create_invariant(invariant: InvariantCreate) -> ActionResult:
+    """Create a new invariant."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO invariants (
+                statement, rationale, domain, scope, validation_type,
+                validation_code, severity, status, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+        """, (
+            invariant.statement,
+            invariant.rationale,
+            invariant.domain,
+            invariant.scope,
+            invariant.validation_type,
+            invariant.validation_code,
+            invariant.severity,
+            datetime.now().isoformat(),
+            datetime.now().isoformat()
+        ))
+
+        invariant_id = cursor.lastrowid
+        conn.commit()
+
+        await manager.broadcast_update("invariant_created", {
+            "invariant_id": invariant_id,
+            "statement": invariant.statement[:100],
+            "domain": invariant.domain
+        })
+
+        return ActionResult(
+            success=True,
+            message=f"Created invariant: {invariant.statement[:50]}...",
+            data={"invariant_id": invariant_id}
+        )
+
+
+@app.put("/api/invariants/{invariant_id}")
+async def update_invariant(invariant_id: int, update: InvariantUpdate) -> ActionResult:
+    """Update an existing invariant."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Verify invariant exists
+        cursor.execute("SELECT id FROM invariants WHERE id = ?", (invariant_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Invariant not found")
+
+        updates = []
+        params = []
+
+        if update.statement is not None:
+            updates.append("statement = ?")
+            params.append(update.statement)
+
+        if update.rationale is not None:
+            updates.append("rationale = ?")
+            params.append(update.rationale)
+
+        if update.domain is not None:
+            updates.append("domain = ?")
+            params.append(update.domain)
+
+        if update.scope is not None:
+            updates.append("scope = ?")
+            params.append(update.scope)
+
+        if update.validation_type is not None:
+            updates.append("validation_type = ?")
+            params.append(update.validation_type)
+
+        if update.validation_code is not None:
+            updates.append("validation_code = ?")
+            params.append(update.validation_code)
+
+        if update.severity is not None:
+            updates.append("severity = ?")
+            params.append(update.severity)
+
+        if update.status is not None:
+            updates.append("status = ?")
+            params.append(update.status)
+
+        if not updates:
+            return ActionResult(success=False, message="No updates provided")
+
+        updates.append("updated_at = ?")
+        params.append(datetime.now().isoformat())
+        params.append(invariant_id)
+
+        cursor.execute(f"""
+            UPDATE invariants
+            SET {", ".join(updates)}
+            WHERE id = ?
+        """, params)
+
+        conn.commit()
+
+        await manager.broadcast_update("invariant_updated", {
+            "invariant_id": invariant_id
+        })
+
+        return ActionResult(success=True, message="Invariant updated")
+
+
+@app.post("/api/invariants/{invariant_id}/validate")
+async def validate_invariant(invariant_id: int) -> ActionResult:
+    """Mark an invariant as validated (update last_validated_at)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Verify invariant exists
+        cursor.execute("SELECT statement FROM invariants WHERE id = ?", (invariant_id,))
+        invariant = cursor.fetchone()
+        if not invariant:
+            raise HTTPException(status_code=404, detail="Invariant not found")
+
+        cursor.execute("""
+            UPDATE invariants
+            SET last_validated_at = ?, updated_at = ?
+            WHERE id = ?
+        """, (datetime.now().isoformat(), datetime.now().isoformat(), invariant_id))
+
+        conn.commit()
+
+        await manager.broadcast_update("invariant_validated", {
+            "invariant_id": invariant_id
+        })
+
+        return ActionResult(
+            success=True,
+            message=f"Invariant #{invariant_id} marked as validated",
+            data={"invariant_id": invariant_id, "validated_at": datetime.now().isoformat()}
+        )
+
+
+@app.post("/api/invariants/{invariant_id}/violate")
+async def record_invariant_violation(invariant_id: int) -> ActionResult:
+    """Record a violation of an invariant (increment count, update timestamp)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Verify invariant exists
+        cursor.execute("SELECT statement, violation_count FROM invariants WHERE id = ?", (invariant_id,))
+        invariant = cursor.fetchone()
+        if not invariant:
+            raise HTTPException(status_code=404, detail="Invariant not found")
+
+        new_count = (invariant["violation_count"] or 0) + 1
+
+        cursor.execute("""
+            UPDATE invariants
+            SET violation_count = ?,
+                last_violated_at = ?,
+                updated_at = ?,
+                status = CASE WHEN ? >= 3 THEN 'violated' ELSE status END
+            WHERE id = ?
+        """, (new_count, datetime.now().isoformat(), datetime.now().isoformat(), new_count, invariant_id))
+
+        conn.commit()
+
+        await manager.broadcast_update("invariant_violated", {
+            "invariant_id": invariant_id,
+            "violation_count": new_count
+        })
+
+        return ActionResult(
+            success=True,
+            message=f"Recorded violation for invariant #{invariant_id} (total: {new_count})",
+            data={"invariant_id": invariant_id, "violation_count": new_count}
+        )
+
+
+@app.delete("/api/invariants/{invariant_id}")
+async def delete_invariant(invariant_id: int) -> ActionResult:
+    """Delete an invariant."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Check if invariant exists
+        cursor.execute("SELECT statement FROM invariants WHERE id = ?", (invariant_id,))
+        invariant = cursor.fetchone()
+        if not invariant:
+            raise HTTPException(status_code=404, detail="Invariant not found")
+
+        # Delete the invariant
+        cursor.execute("DELETE FROM invariants WHERE id = ?", (invariant_id,))
+        conn.commit()
+
+        await manager.broadcast_update("invariant_deleted", {
+            "invariant_id": invariant_id
+        })
+
+        return ActionResult(success=True, message=f"Deleted invariant: {invariant['statement'][:50]}...")
+
+
+# ==============================================================================
+# REST API: Spike Reports
+# ==============================================================================
+
+@app.get("/api/spike-reports")
+async def get_spike_reports(
+    domain: Optional[str] = None,
+    tags: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: str = "recent",
+    skip: int = 0,
+    limit: int = 50
+):
+    """Get spike reports with optional filtering."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        query = """
+            SELECT id, title, topic, question, findings, gotchas, resources,
+                   time_invested_minutes, domain, tags, usefulness_score,
+                   access_count, created_at, updated_at
+            FROM spike_reports
+            WHERE 1=1
+        """
+        params = []
+
+        if domain:
+            query += " AND domain = ?"
+            params.append(domain)
+
+        if tags:
+            tag_list = [t.strip() for t in tags.split(',')]
+            tag_conditions = " OR ".join(["tags LIKE ?" for _ in tag_list])
+            query += f" AND ({tag_conditions})"
+            params.extend([f"%{escape_like(tag)}%" for tag in tag_list])
+
+        if search:
+            escaped_search = escape_like(search)
+            query += " AND (title LIKE ? OR topic LIKE ? OR question LIKE ? OR findings LIKE ?)"
+            params.extend([f"%{escaped_search}%"] * 4)
+
+        sort_map = {
+            "recent": "created_at DESC",
+            "useful": "usefulness_score DESC",
+            "accessed": "access_count DESC",
+            "time": "time_invested_minutes DESC"
+        }
+        query += f" ORDER BY {sort_map.get(sort_by, 'created_at DESC')}"
+        query += " LIMIT ? OFFSET ?"
+        params.append(limit)
+        params.append(skip)
+
+        cursor.execute(query, params)
+        return [dict_from_row(r) for r in cursor.fetchall()]
+
+
+@app.get("/api/spike-reports/search")
+async def search_spike_reports(
+    q: str = Query(..., min_length=2),
+    limit: int = 20
+):
+    """Full-text search in spike report findings and gotchas."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute("""
+                SELECT s.id, s.title, s.topic, s.question, s.findings, s.gotchas,
+                       s.resources, s.time_invested_minutes, s.domain, s.tags,
+                       s.usefulness_score, s.access_count, s.created_at, s.updated_at
+                FROM spike_reports s
+                JOIN spike_reports_fts fts ON fts.spike_id = s.id
+                WHERE spike_reports_fts MATCH ?
+                ORDER BY s.usefulness_score DESC
+                LIMIT ?
+            """, (q, limit))
+            results = [dict_from_row(r) for r in cursor.fetchall()]
+            if results:
+                return results
+        except Exception as e:
+            logger.debug(f"FTS search failed, falling back to LIKE: {e}")
+
+        escaped_q = escape_like(q)
+        cursor.execute("""
+            SELECT id, title, topic, question, findings, gotchas, resources,
+                   time_invested_minutes, domain, tags, usefulness_score,
+                   access_count, created_at, updated_at
+            FROM spike_reports
+            WHERE title LIKE ? OR topic LIKE ? OR question LIKE ?
+               OR findings LIKE ? OR gotchas LIKE ?
+            ORDER BY usefulness_score DESC
+            LIMIT ?
+        """, tuple([f"%{escaped_q}%"] * 5) + (limit,))
+
+        return [dict_from_row(r) for r in cursor.fetchall()]
+
+
+@app.get("/api/spike-reports/{spike_id}")
+async def get_spike_report(spike_id: int):
+    """Get single spike report and increment access count."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            UPDATE spike_reports
+            SET access_count = access_count + 1
+            WHERE id = ?
+        """, (spike_id,))
+
+        cursor.execute("""
+            SELECT id, title, topic, question, findings, gotchas, resources,
+                   time_invested_minutes, domain, tags, usefulness_score,
+                   access_count, created_at, updated_at
+            FROM spike_reports
+            WHERE id = ?
+        """, (spike_id,))
+
+        spike = dict_from_row(cursor.fetchone())
+
+        if not spike:
+            raise HTTPException(status_code=404, detail="Spike report not found")
+
+        conn.commit()
+
+        related = []
+        if spike.get("domain"):
+            cursor.execute("""
+                SELECT id, title, topic, usefulness_score, time_invested_minutes
+                FROM spike_reports
+                WHERE domain = ? AND id != ?
+                ORDER BY usefulness_score DESC
+                LIMIT 3
+            """, (spike["domain"], spike_id))
+            related = [dict_from_row(r) for r in cursor.fetchall()]
+
+        spike["related"] = related
+
+        return spike
+
+
+@app.post("/api/spike-reports")
+async def create_spike_report(spike: SpikeReportCreate) -> ActionResult:
+    """Create a new spike report."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO spike_reports (
+                title, topic, question, findings, gotchas, resources,
+                time_invested_minutes, domain, tags, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            spike.title,
+            spike.topic,
+            spike.question,
+            spike.findings,
+            spike.gotchas,
+            spike.resources,
+            spike.time_invested_minutes,
+            spike.domain,
+            spike.tags,
+            datetime.now().isoformat(),
+            datetime.now().isoformat()
+        ))
+
+        spike_id = cursor.lastrowid
+        conn.commit()
+
+        await manager.broadcast_update("spike_report_created", {
+            "spike_id": spike_id,
+            "title": spike.title,
+            "topic": spike.topic,
+            "domain": spike.domain
+        })
+
+        return ActionResult(
+            success=True,
+            message=f"Created spike report: {spike.title}",
+            data={"spike_id": spike_id}
+        )
+
+
+@app.put("/api/spike-reports/{spike_id}")
+async def update_spike_report(spike_id: int, update: SpikeReportUpdate) -> ActionResult:
+    """Update an existing spike report."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id FROM spike_reports WHERE id = ?", (spike_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Spike report not found")
+
+        updates = []
+        params = []
+
+        for field in ['title', 'topic', 'question', 'findings', 'gotchas',
+                      'resources', 'time_invested_minutes', 'domain', 'tags']:
+            value = getattr(update, field, None)
+            if value is not None:
+                updates.append(f"{field} = ?")
+                params.append(value)
+
+        if not updates:
+            return ActionResult(success=False, message="No updates provided")
+
+        updates.append("updated_at = ?")
+        params.append(datetime.now().isoformat())
+        params.append(spike_id)
+
+        cursor.execute(f"""
+            UPDATE spike_reports
+            SET {", ".join(updates)}
+            WHERE id = ?
+        """, params)
+
+        conn.commit()
+
+        await manager.broadcast_update("spike_report_updated", {
+            "spike_id": spike_id
+        })
+
+        return ActionResult(success=True, message="Spike report updated")
+
+
+@app.post("/api/spike-reports/{spike_id}/rate")
+async def rate_spike_report(spike_id: int, rating: SpikeReportRate) -> ActionResult:
+    """Rate the usefulness of a spike report (0-5 scale)."""
+    if not 0 <= rating.score <= 5:
+        raise HTTPException(status_code=400, detail="Score must be between 0 and 5")
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT usefulness_score, access_count
+            FROM spike_reports WHERE id = ?
+        """, (spike_id,))
+        row = cursor.fetchone()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Spike report not found")
+
+        current_score = row['usefulness_score'] or 0
+        access_count = row['access_count'] or 1
+
+        new_score = (current_score * access_count + rating.score) / (access_count + 1)
+
+        cursor.execute("""
+            UPDATE spike_reports
+            SET usefulness_score = ?, updated_at = ?
+            WHERE id = ?
+        """, (new_score, datetime.now().isoformat(), spike_id))
+
+        conn.commit()
+
+        return ActionResult(
+            success=True,
+            message=f"Rated spike report with score {rating.score}",
+            data={"new_average": round(new_score, 2)}
+        )
+
+
+@app.delete("/api/spike-reports/{spike_id}")
+async def delete_spike_report(spike_id: int) -> ActionResult:
+    """Delete a spike report."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT title FROM spike_reports WHERE id = ?", (spike_id,))
+        spike = cursor.fetchone()
+        if not spike:
+            raise HTTPException(status_code=404, detail="Spike report not found")
+
+        cursor.execute("DELETE FROM spike_reports WHERE id = ?", (spike_id,))
+        conn.commit()
+
+        await manager.broadcast_update("spike_report_deleted", {
+            "spike_id": spike_id
+        })
+
+        return ActionResult(success=True, message=f"Deleted spike report: {spike['title']}")
 
 
 @app.get("/api/queries")

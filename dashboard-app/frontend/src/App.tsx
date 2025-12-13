@@ -18,6 +18,9 @@ import { CommandPalette } from './components/CommandPalette'
 import { NotificationPanel } from './components/NotificationPanel'
 import { LearningVelocity } from './components/LearningVelocity'
 import SessionHistoryPanel from './components/SessionHistoryPanel'
+import AssumptionsPanel from './components/AssumptionsPanel'
+import SpikeReportsPanel from './components/SpikeReportsPanel'
+import InvariantsPanel from './components/InvariantsPanel'
 import { TimelineEvent } from './types'
 
 // Simplified types matching API responses
@@ -121,7 +124,7 @@ function App() {
   const [events, setEvents] = useState<RawEvent[]>([])
   const [_timeline, setTimeline] = useState<TimelineData | null>(null)
   const [anomalies, setAnomalies] = useState<Anomaly[]>([])
-  const [activeTab, setActiveTab] = useState<'overview' | 'heuristics' | 'runs' | 'timeline' | 'query' | 'analytics' | 'graph' | 'sessions'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'heuristics' | 'runs' | 'timeline' | 'query' | 'analytics' | 'graph' | 'sessions' | 'assumptions' | 'spikes' | 'invariants'>('overview')
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
@@ -368,6 +371,9 @@ function App() {
   const commands = [
     { id: 'overview', label: 'Go to Overview', category: 'Navigation', action: () => setActiveTab('overview') },
     { id: 'heuristics', label: 'View Heuristics', category: 'Navigation', action: () => setActiveTab('heuristics') },
+    { id: 'assumptions', label: 'View Assumptions', category: 'Navigation', action: () => setActiveTab('assumptions') },
+    { id: 'spikes', label: 'View Spike Reports', category: 'Navigation', action: () => setActiveTab('spikes') },
+    { id: 'invariants', label: 'View Invariants', category: 'Navigation', action: () => setActiveTab('invariants') },
     { id: 'graph', label: 'View Knowledge Graph', category: 'Navigation', action: () => setActiveTab('graph') },
     { id: 'runs', label: 'View Runs', category: 'Navigation', action: () => setActiveTab('runs') },
     { id: 'timeline', label: 'View Timeline', category: 'Navigation', action: () => setActiveTab('timeline') },
@@ -487,6 +493,12 @@ function App() {
           )}
 
           {activeTab === 'sessions' && <SessionHistoryPanel />}
+
+          {activeTab === 'assumptions' && <AssumptionsPanel />}
+
+          {activeTab === 'spikes' && <SpikeReportsPanel />}
+
+          {activeTab === 'invariants' && <InvariantsPanel />}
 
           {activeTab === 'timeline' && (
             <TimelineView

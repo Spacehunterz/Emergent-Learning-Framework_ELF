@@ -55,6 +55,37 @@ Flag when session behavior contradicts existing heuristics:
 - Two heuristics gave conflicting guidance
 - New evidence challenges an existing rule
 
+### Decisions (Architecture Decision Records)
+Identify moments where a non-trivial choice was made between alternatives:
+- Technology/library selections ("I'll use X instead of Y")
+- Architectural patterns chosen ("Let's structure this as...")
+- Implementation strategies ("The approach will be...")
+- Trade-off resolutions ("Given the constraints, we should...")
+
+**Decision signals in sessions:**
+- "I chose X over Y because..."
+- "The options are... I recommend..."
+- "We could do A or B. Going with A because..."
+- "Let's use [technology/pattern] for [reason]"
+- Creating config files, schemas, or architectural structures
+- User approving a proposed approach
+
+**What to capture:**
+- **Context**: What problem prompted the decision
+- **Options**: What alternatives were considered (even if briefly)
+- **Decision**: What was chosen
+- **Rationale**: WHY it was chosen (the key part)
+- **Domain**: Category (infrastructure, architecture, security, etc.)
+- **Files touched**: If implementation happened
+
+**Good decision example:**
+> "For caching, we could use Redis, in-memory, or file-based. Going with Redis because it's distributed and the team knows it."
+
+**Bad decision example:**
+> "I'll put this in utils.py" (Trivial, not architectural)
+
+**Threshold:** Only extract decisions that future sessions might re-litigate. Ask: "Would a new Claude instance question this choice?"
+
 ## Quality Criteria
 
 ### For Heuristics
@@ -79,6 +110,12 @@ Flag when session behavior contradicts existing heuristics:
 2. **Both sides documented**: Evidence for each
 3. **Resolution path**: Suggestion for how to resolve
 
+### For Decisions
+1. **Non-trivial**: Would a new Claude instance question this choice?
+2. **Alternatives existed**: There were other reasonable options
+3. **Rationale captured**: The WHY is documented
+4. **Domain identified**: Can be filtered/queried later
+
 ## Output Format
 
 For each proposal, generate a file with this structure:
@@ -86,7 +123,7 @@ For each proposal, generate a file with this structure:
 ```markdown
 # Proposal: [Descriptive Title]
 
-**Type:** heuristic|failure|pattern|contradiction
+**Type:** heuristic|failure|pattern|contradiction|decision
 **Confidence:** 0.0-1.0
 **Source Sessions:** [list of session files analyzed]
 **Domain:** [relevant domain from: coordination, debugging, architecture, testing, infrastructure, security, communication, process, etc.]
@@ -125,6 +162,17 @@ For each proposal, generate a file with this structure:
 **Existing Knowledge:** [What the building currently says]
 **New Evidence:** [What the session showed]
 **Suggested Resolution:** [How to reconcile]
+
+### For Decisions (ADRs):
+**Title:** [Descriptive title - e.g., "Use Redis for API caching"]
+**Context:** [Why this decision was needed - what problem or constraint]
+**Options Considered:** [Brief list of alternatives, even if only 2]
+**Decision:** [What was chosen]
+**Rationale:** [WHY - this is the most important field]
+**Domain:** [architecture, infrastructure, security, testing, process, etc.]
+**Files Touched:** [If implementation happened, list affected files]
+**Status:** [proposed|accepted|superseded]
+
 
 ## Cross-References
 [Related existing heuristics, failures, or patterns]
@@ -233,6 +281,58 @@ useEffect hooks with callback functions in the dependency array cause infinite r
 ---
 **Status:** pending
 **Generated:** 2025-12-11T12:34:56Z
+**Reviewed:**
+```
+
+## Example Decision Extraction
+
+**Session excerpt:**
+```
+User: Should we use SQLite or PostgreSQL for this?
+Claude: For the ELF database, I'll use SQLite. The reasons:
+1. Single-user system (no concurrent access concerns)
+2. Zero configuration - works out of the box
+3. Portable - entire DB is one file
+4. Good enough performance for our scale
+PostgreSQL would be overkill for an institutional learning system.
+[Creates elf.db with SQLite schema]
+```
+
+**Extracted decision proposal:**
+```markdown
+# Proposal: Use SQLite for ELF Database
+
+**Type:** decision
+**Confidence:** 0.8
+**Source Sessions:** [session_2025-12-12_example.jsonl]
+**Domain:** infrastructure
+
+## Summary
+Chose SQLite over PostgreSQL for the Emergent Learning Framework database due to simplicity and single-user use case.
+
+## Evidence
+- User asked about database choice
+- Claude evaluated both options explicitly
+- Rationale was documented: single-user, zero config, portable
+- Implementation followed immediately
+
+## Proposed Content
+**Title:** Use SQLite for ELF Database
+**Context:** ELF needs persistent storage for heuristics, failures, experiments
+**Options Considered:** SQLite, PostgreSQL
+**Decision:** SQLite
+**Rationale:** Single-user system with no concurrent access; zero config; portable (one file); performance sufficient for scale
+**Domain:** infrastructure
+**Files Touched:** elf.db, schema.sql
+**Status:** accepted
+
+## Cross-References
+- Related to: infrastructure-simplicity heuristic
+- May inform: future scaling decisions
+
+---
+**Status:** pending
+**Generated:** 2025-12-12T10:00:00Z
 **Reviewed:**
 ```
 

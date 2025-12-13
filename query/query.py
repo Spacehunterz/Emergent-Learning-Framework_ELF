@@ -579,6 +579,27 @@ class QuerySystem:
                 )
             """)
 
+
+            # Create invariants table (statements about what must always be true)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS invariants (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    statement TEXT NOT NULL,
+                    rationale TEXT NOT NULL,
+                    domain TEXT,
+                    scope TEXT DEFAULT 'codebase',
+                    validation_type TEXT,
+                    validation_code TEXT,
+                    severity TEXT DEFAULT 'error',
+                    status TEXT DEFAULT 'active',
+                    violation_count INTEGER DEFAULT 0,
+                    last_validated_at DATETIME,
+                    last_violated_at DATETIME,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
             # Create indexes for efficient querying
             cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_learnings_domain
@@ -663,6 +684,22 @@ class QuerySystem:
             cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_decisions_superseded_by
                 ON decisions(superseded_by)
+            """)
+
+
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_invariants_domain
+                ON invariants(domain)
+            """)
+
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_invariants_status
+                ON invariants(status)
+            """)
+
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_invariants_severity
+                ON invariants(severity)
             """)
 
             # Update query planner statistics
@@ -1530,6 +1567,419 @@ class QuerySystem:
                 query_summary=f"Decisions query (status={status})"
             )
 
+
+    def get_invariants(
+        self,
+        domain: Optional[str] = None,
+        status: str = 'active',
+        scope: Optional[str] = None,
+        severity: Optional[str] = None,
+        limit: int = 10,
+        timeout: int = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get invariants, optionally filtered by domain, status, scope, or severity.
+
+        Invariants are statements about what must ALWAYS be true, different from
+        Golden Rules which say "don't do X". Invariants can be validated automatically.
+
+        Args:
+            domain: Optional domain filter
+            status: Invariant status filter (active, deprecated, violated)
+            scope: Scope filter (codebase, module, function, runtime)
+            severity: Severity filter (error, warning, info)
+            limit: Maximum number of results to return (default: 10)
+            timeout: Query timeout in seconds (default: 30)
+
+        Returns:
+            List of invariant dictionaries with id, statement, rationale, etc.
+
+        Raises:
+            TimeoutError: If query times out
+            DatabaseError: If database operation fails
+        """
+        timeout = timeout or self.DEFAULT_TIMEOUT
+        self._log_debug(f"Querying invariants (domain={domain}, status={status}, limit={limit})")
+
+        start_time = self._get_current_time_ms()
+        error_msg = None
+        error_code = None
+        query_status = 'success'
+        results = None
+
+        try:
+            limit = self._validate_limit(limit)
+
+            with TimeoutHandler(timeout):
+                with self._get_connection() as conn:
+                    # Check if invariants table exists (backwards compatibility)
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT name FROM sqlite_master
+                        WHERE type='table' AND name='invariants'
+                    """)
+                    if not cursor.fetchone():
+                        self._log_debug("Invariants table does not exist yet - returning empty list")
+                        return []
+
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+
+                    query = """
+                        SELECT id, statement, rationale, domain, scope, validation_type,
+                               validation_code, severity, status, violation_count,
+                               last_validated_at, last_violated_at, created_at
+                        FROM invariants
+                        WHERE 1=1
+                    """
+                    params = []
+
+                    if status:
+                        query += " AND status = ?"
+                        params.append(status)
+
+                    if domain:
+                        domain = self._validate_domain(domain)
+                        query += " AND (domain = ? OR domain IS NULL)"
+                        params.append(domain)
+
+                    if scope:
+                        query += " AND scope = ?"
+                        params.append(scope)
+
+                    if severity:
+                        query += " AND severity = ?"
+                        params.append(severity)
+
+                    query += " ORDER BY created_at DESC LIMIT ?"
+                    params.append(limit)
+
+                    cursor.execute(query, params)
+                    results = [dict(row) for row in cursor.fetchall()]
+
+            self._log_debug(f"Found {len(results)} invariants")
+            return results
+
+        except TimeoutError as e:
+            query_status = 'timeout'
+            error_msg = str(e)
+            error_code = 'QS003'
+            raise
+        except (ValidationError, DatabaseError, QuerySystemError) as e:
+            query_status = 'error'
+            error_msg = str(e)
+            error_code = getattr(e, 'error_code', 'QS000')
+            raise
+        except Exception as e:
+            query_status = 'error'
+            error_msg = str(e)
+            error_code = 'QS000'
+            raise
+        finally:
+            # Log the query (non-blocking)
+            duration_ms = self._get_current_time_ms() - start_time
+            invariants_count = len(results) if results else 0
+
+            self._log_query(
+                query_type='get_invariants',
+                domain=domain,
+                limit_requested=limit,
+                results_returned=invariants_count,
+                duration_ms=duration_ms,
+                status=query_status,
+                error_message=error_msg,
+                error_code=error_code,
+                query_summary=f"Invariants query (status={status})"
+            )
+
+    def get_assumptions(
+        self,
+        domain: Optional[str] = None,
+        status: str = 'active',
+        min_confidence: float = 0.0,
+        limit: int = 10,
+        timeout: int = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get assumptions, optionally filtered by domain and status.
+
+        Args:
+            domain: Optional domain filter
+            status: Assumption status filter (active, verified, challenged, invalidated)
+            min_confidence: Minimum confidence threshold (default: 0.0)
+            limit: Maximum number of results to return (default: 10)
+            timeout: Query timeout in seconds (default: 30)
+
+        Returns:
+            List of assumption dictionaries
+
+        Raises:
+            TimeoutError: If query times out
+            DatabaseError: If database operation fails
+        """
+        timeout = timeout or self.DEFAULT_TIMEOUT
+        self._log_debug(f"Querying assumptions (domain={domain}, status={status}, limit={limit})")
+
+        start_time = self._get_current_time_ms()
+        error_msg = None
+        error_code = None
+        query_status = 'success'
+        results = None
+
+        try:
+            limit = self._validate_limit(limit)
+
+            with TimeoutHandler(timeout):
+                with self._get_connection() as conn:
+                    # Check if assumptions table exists (backwards compatibility)
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT name FROM sqlite_master
+                        WHERE type='table' AND name='assumptions'
+                    """)
+                    if not cursor.fetchone():
+                        self._log_debug("Assumptions table does not exist yet - returning empty list")
+                        return []
+
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+
+                    query = """
+                        SELECT id, assumption, context, source, confidence, status, domain,
+                               verified_count, challenged_count, last_verified_at, created_at
+                        FROM assumptions
+                        WHERE status = ? AND confidence >= ?
+                    """
+                    params = [status, min_confidence]
+
+                    if domain:
+                        domain = self._validate_domain(domain)
+                        query += " AND (domain = ? OR domain IS NULL)"
+                        params.append(domain)
+
+                    query += " ORDER BY confidence DESC, created_at DESC LIMIT ?"
+                    params.append(limit)
+
+                    cursor.execute(query, params)
+                    results = [dict(row) for row in cursor.fetchall()]
+
+            self._log_debug(f"Found {len(results)} assumptions")
+            return results
+
+        except TimeoutError as e:
+            query_status = 'timeout'
+            error_msg = str(e)
+            error_code = 'QS003'
+            raise
+        except (ValidationError, DatabaseError, QuerySystemError) as e:
+            query_status = 'error'
+            error_msg = str(e)
+            error_code = getattr(e, 'error_code', 'QS000')
+            raise
+        except Exception as e:
+            query_status = 'error'
+            error_msg = str(e)
+            error_code = 'QS000'
+            raise
+        finally:
+            # Log the query (non-blocking)
+            duration_ms = self._get_current_time_ms() - start_time
+            assumptions_count = len(results) if results else 0
+
+            self._log_query(
+                query_type='get_assumptions',
+                domain=domain,
+                limit_requested=limit,
+                results_returned=assumptions_count,
+                duration_ms=duration_ms,
+                status=query_status,
+                error_message=error_msg,
+                error_code=error_code,
+                query_summary=f"Assumptions query (status={status}, min_confidence={min_confidence})"
+            )
+
+    def get_challenged_assumptions(
+        self,
+        domain: Optional[str] = None,
+        limit: int = 10,
+        timeout: int = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get challenged or invalidated assumptions as warnings.
+
+        These are assumptions that have been found to be incorrect or questionable.
+        Future sessions should be aware of these to avoid repeating mistakes.
+
+        Args:
+            domain: Optional domain filter
+            limit: Maximum number of results to return (default: 10)
+            timeout: Query timeout in seconds (default: 30)
+
+        Returns:
+            List of challenged/invalidated assumption dictionaries
+        """
+        timeout = timeout or self.DEFAULT_TIMEOUT
+        self._log_debug(f"Querying challenged assumptions (domain={domain}, limit={limit})")
+
+        with TimeoutHandler(timeout):
+            with self._get_connection() as conn:
+                # Check if assumptions table exists
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT name FROM sqlite_master
+                    WHERE type='table' AND name='assumptions'
+                """)
+                if not cursor.fetchone():
+                    return []
+
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+
+                query = """
+                    SELECT id, assumption, context, source, confidence, status, domain,
+                           verified_count, challenged_count, created_at
+                    FROM assumptions
+                    WHERE status IN ('challenged', 'invalidated')
+                """
+                params = []
+
+                if domain:
+                    domain = self._validate_domain(domain)
+                    query += " AND (domain = ? OR domain IS NULL)"
+                    params.append(domain)
+
+                query += " ORDER BY challenged_count DESC, created_at DESC LIMIT ?"
+                params.append(limit)
+
+                cursor.execute(query, params)
+                results = [dict(row) for row in cursor.fetchall()]
+
+        self._log_debug(f"Found {len(results)} challenged/invalidated assumptions")
+        return results
+
+    def get_spike_reports(
+        self,
+        domain: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        search: Optional[str] = None,
+        limit: int = 10,
+        timeout: int = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get spike reports (research/investigation knowledge).
+
+        Spike reports capture knowledge from research sessions that would otherwise
+        be lost when the session ends. They preserve time-invested research findings.
+
+        Args:
+            domain: Optional domain filter
+            tags: Optional list of tags to match
+            search: Optional search term for title/topic/findings
+            limit: Maximum number of results to return (default: 10)
+            timeout: Query timeout in seconds (default: 30)
+
+        Returns:
+            List of spike report dictionaries ordered by usefulness and recency
+
+        Raises:
+            TimeoutError: If query times out
+            DatabaseError: If database operation fails
+        """
+        timeout = timeout or self.DEFAULT_TIMEOUT
+        self._log_debug(f"Querying spike reports (domain={domain}, tags={tags}, limit={limit})")
+
+        start_time = self._get_current_time_ms()
+        error_msg = None
+        error_code = None
+        query_status = 'success'
+        results = None
+
+        try:
+            limit = self._validate_limit(limit)
+
+            with TimeoutHandler(timeout):
+                with self._get_connection() as conn:
+                    # Check if spike_reports table exists (backwards compatibility)
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT name FROM sqlite_master
+                        WHERE type='table' AND name='spike_reports'
+                    """)
+                    if not cursor.fetchone():
+                        self._log_debug("spike_reports table does not exist yet - returning empty list")
+                        return []
+
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+
+                    # Build query dynamically
+                    query = """
+                        SELECT id, title, topic, question, findings, gotchas, resources,
+                               time_invested_minutes, domain, tags, usefulness_score,
+                               access_count, created_at, updated_at
+                        FROM spike_reports
+                        WHERE 1=1
+                    """
+                    params = []
+
+                    if domain:
+                        domain = self._validate_domain(domain)
+                        query += " AND (domain = ? OR domain IS NULL)"
+                        params.append(domain)
+
+                    if tags:
+                        tags = self._validate_tags(tags)
+                        tag_conditions = " OR ".join(["tags LIKE ?" for _ in tags])
+                        query += f" AND ({tag_conditions})"
+                        params.extend([f"%{escape_like(tag)}%" for tag in tags])
+
+                    if search:
+                        escaped_search = escape_like(search)
+                        query += " AND (title LIKE ? OR topic LIKE ? OR question LIKE ? OR findings LIKE ?)"
+                        params.extend([f"%{escaped_search}%"] * 4)
+
+                    # Order by usefulness then recency
+                    query += " ORDER BY usefulness_score DESC, created_at DESC LIMIT ?"
+                    params.append(limit)
+
+                    cursor.execute(query, params)
+                    results = [dict(row) for row in cursor.fetchall()]
+
+            self._log_debug(f"Found {len(results)} spike reports")
+            return results
+
+        except TimeoutError as e:
+            query_status = 'timeout'
+            error_msg = str(e)
+            error_code = 'QS003'
+            raise
+        except (ValidationError, DatabaseError, QuerySystemError) as e:
+            query_status = 'error'
+            error_msg = str(e)
+            error_code = getattr(e, 'error_code', 'QS000')
+            raise
+        except Exception as e:
+            query_status = 'error'
+            error_msg = str(e)
+            error_code = 'QS000'
+            raise
+        finally:
+            duration_ms = self._get_current_time_ms() - start_time
+            spike_count = len(results) if results else 0
+
+            self._log_query(
+                query_type='get_spike_reports',
+                domain=domain,
+                limit_requested=limit,
+                results_returned=spike_count,
+                duration_ms=duration_ms,
+                status=query_status,
+                error_message=error_msg,
+                error_code=error_code,
+                query_summary=f"Spike reports query"
+            )
+
+
     def build_context(
         self,
         task: str,
@@ -1691,6 +2141,97 @@ class QuerySystem:
                         context_parts.append(entry)
                         approx_tokens += len(entry) // 4
                     decisions_count = len(decisions)
+
+
+                # Add invariants (what must always be true)
+                invariants = self.get_invariants(domain=domain, status='active', limit=5, timeout=timeout)
+                violated_invariants = self.get_invariants(domain=domain, status='violated', limit=3, timeout=timeout)
+                
+                if violated_invariants:
+                    context_parts.append("\n## VIOLATED INVARIANTS\n\n")
+                    for inv in violated_invariants:
+                        entry = f"- **[VIOLATED {inv['violation_count']}x] {inv['statement'][:100]}{'...' if len(inv['statement']) > 100 else ''}**\n"
+                        entry += f"  Severity: {inv['severity']} | Scope: {inv['scope']}\n"
+                        if inv.get('rationale'):
+                            rationale_text = inv['rationale'][:100] + '...' if len(inv['rationale']) > 100 else inv['rationale']
+                            entry += f"  Rationale: {rationale_text}\n"
+                        entry += "\n"
+                        context_parts.append(entry)
+                        approx_tokens += len(entry) // 4
+
+                if invariants:
+                    context_parts.append("\n## Active Invariants\n\n")
+                    for inv in invariants:
+                        entry = f"- **{inv['statement'][:100]}{'...' if len(inv['statement']) > 100 else ''}**"
+                        if inv.get('domain'):
+                            entry += f" (domain: {inv['domain']})"
+                        entry += f"\n  Severity: {inv['severity']} | Scope: {inv['scope']}"
+                        if inv.get('validation_type'):
+                            entry += f" | Validation: {inv['validation_type']}"
+                        entry += "\n\n"
+                        context_parts.append(entry)
+                        approx_tokens += len(entry) // 4
+
+                # Add high-confidence active assumptions
+                assumptions = self.get_assumptions(domain=domain, status='active', min_confidence=0.6, limit=5, timeout=timeout)
+                if assumptions:
+                    context_parts.append("\n## Active Assumptions (High Confidence)\n\n")
+                    for assum in assumptions:
+                        entry = f"- **{assum['assumption'][:100]}{'...' if len(assum['assumption']) > 100 else ''}**"
+                        entry += f" (confidence: {assum['confidence']:.0%}"
+                        if assum['verified_count'] > 0:
+                            entry += f", verified: {assum['verified_count']}x"
+                        entry += ")\n"
+                        if assum.get('context'):
+                            context_text = assum['context'][:100] + '...' if len(assum['context']) > 100 else assum['context']
+                            entry += f"  Context: {context_text}\n"
+                        if assum.get('source'):
+                            entry += f"  Source: {assum['source']}\n"
+                        entry += "\n"
+                        context_parts.append(entry)
+                        approx_tokens += len(entry) // 4
+
+                # Show challenged/invalidated assumptions as warnings
+                challenged = self.get_challenged_assumptions(domain=domain, limit=3, timeout=timeout)
+                if challenged:
+                    context_parts.append("\n## Challenged/Invalidated Assumptions\n\n")
+                    for assum in challenged:
+                        status_emoji = "INVALIDATED" if assum['status'] == 'invalidated' else "CHALLENGED"
+                        entry = f"- **[{status_emoji}] {assum['assumption'][:80]}{'...' if len(assum['assumption']) > 80 else ''}**\n"
+                        entry += f"  Challenged {assum['challenged_count']}x"
+                        if assum['verified_count'] > 0:
+                            entry += f", verified {assum['verified_count']}x"
+                        entry += f" | Confidence: {assum['confidence']:.0%}\n"
+                        if assum.get('context'):
+                            context_text = assum['context'][:80] + '...' if len(assum['context']) > 80 else assum['context']
+                            entry += f"  Original context: {context_text}\n"
+                        entry += "\n"
+                        context_parts.append(entry)
+                        approx_tokens += len(entry) // 4
+
+                
+                # Add relevant spike reports (hard-won research knowledge)
+                spike_reports = self.get_spike_reports(domain=domain, limit=5, timeout=timeout)
+                if spike_reports:
+                    context_parts.append("\n## Spike Reports (Research Knowledge)\n\n")
+                    for spike in spike_reports:
+                        entry = f"- **{spike['title']}**"
+                        if spike.get('time_invested_minutes'):
+                            entry += f" ({spike['time_invested_minutes']} min invested)"
+                        entry += "\n"
+                        if spike.get('topic'):
+                            entry += f"  Topic: {spike['topic'][:100]}{'...' if len(spike['topic']) > 100 else ''}\n"
+                        if spike.get('findings'):
+                            findings_text = spike['findings'][:200] + '...' if len(spike['findings']) > 200 else spike['findings']
+                            entry += f"  Findings: {findings_text}\n"
+                        if spike.get('gotchas'):
+                            gotchas_text = spike['gotchas'][:100] + '...' if len(spike['gotchas']) > 100 else spike['gotchas']
+                            entry += f"  Gotchas: {gotchas_text}\n"
+                        if spike.get('usefulness_score') and spike['usefulness_score'] > 0:
+                            entry += f"  Usefulness: {spike['usefulness_score']:.1f}/5\n"
+                        entry += "\n"
+                        context_parts.append(entry)
+                        approx_tokens += len(entry) // 4
 
                 # Tier 3: Recent context if tokens remain
                 remaining_tokens = max_tokens - approx_tokens
@@ -2127,7 +2668,15 @@ Error Codes:
     parser.add_argument('--violation-days', type=int, default=7, help='Days to look back for violations (default: 7)')
     parser.add_argument('--accountability-banner', action='store_true', help='Show accountability banner')
     parser.add_argument('--decisions', action='store_true', help='List architecture decision records (ADRs)')
+    parser.add_argument('--spikes', action='store_true', help='List spike reports (research knowledge)')
     parser.add_argument('--decision-status', type=str, default='accepted', help='Filter decisions by status (default: accepted)')
+    parser.add_argument('--assumptions', action='store_true', help='List assumptions')
+    parser.add_argument('--assumption-status', type=str, default='active', help='Filter assumptions by status: active, verified, challenged, invalidated (default: active)')
+    parser.add_argument('--min-confidence', type=float, default=0.0, help='Minimum confidence for assumptions (default: 0.0)')
+    parser.add_argument('--invariants', action='store_true', help='List invariants (what must always be true)')
+    parser.add_argument('--invariant-status', type=str, default='active', help='Filter invariants by status: active, deprecated, violated (default: active)')
+    parser.add_argument('--invariant-scope', type=str, help='Filter invariants by scope: codebase, module, function, runtime')
+    parser.add_argument('--invariant-severity', type=str, help='Filter invariants by severity: error, warning, info')
     parser.add_argument('--limit', type=int, default=10, help='Limit number of results (default: 10, max: 1000)')
 
     # Enhanced arguments
@@ -2185,6 +2734,46 @@ Error Codes:
         elif args.decisions:
             # Handle decisions query (must come before --domain check)
             result = query_system.get_decisions(args.domain, args.decision_status, args.limit, args.timeout)
+
+
+        elif args.spikes:
+            result = query_system.get_spike_reports(
+                domain=args.domain,
+                tags=args.tags.split(',') if args.tags else None,
+                limit=args.limit,
+                timeout=args.timeout
+            )
+
+        elif args.assumptions:
+            # Handle assumptions query
+            result = query_system.get_assumptions(
+                domain=args.domain,
+                status=args.assumption_status,
+                min_confidence=args.min_confidence,
+                limit=args.limit,
+                timeout=args.timeout
+            )
+            # Also show challenged/invalidated if viewing all or specifically requested
+            if args.assumption_status in ['challenged', 'invalidated']:
+                pass  # Already filtering by that status
+            elif not result:
+                # If no active assumptions, show a summary
+                challenged = query_system.get_challenged_assumptions(args.domain, args.limit, args.timeout)
+                if challenged:
+                    print("\n--- Challenged/Invalidated Assumptions ---\n")
+                    result = challenged
+
+
+        elif args.invariants:
+            # Handle invariants query
+            result = query_system.get_invariants(
+                domain=args.domain,
+                status=args.invariant_status,
+                scope=args.invariant_scope,
+                severity=args.invariant_severity,
+                limit=args.limit,
+                timeout=args.timeout
+            )
 
         elif args.domain:
             result = query_system.query_by_domain(args.domain, args.limit, args.timeout)

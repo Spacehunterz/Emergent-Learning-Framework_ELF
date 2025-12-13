@@ -1,4 +1,4 @@
-import { Activity, Brain, Clock, Search, Workflow, Inbox, ChevronDown, X, FileText, TrendingUp, Network, History } from 'lucide-react'
+import { Activity, Brain, Clock, Search, Workflow, Inbox, ChevronDown, X, FileText, TrendingUp, Network, History, Lightbulb, FileSearch, ShieldCheck } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import ReactMarkdown from 'react-markdown'
@@ -16,12 +16,15 @@ interface CeoItem {
 interface HeaderProps {
   isConnected: boolean
   activeTab: string
-  onTabChange: (tab: 'overview' | 'heuristics' | 'runs' | 'timeline' | 'query' | 'analytics' | 'graph' | 'sessions') => void
+  onTabChange: (tab: 'overview' | 'heuristics' | 'runs' | 'timeline' | 'query' | 'analytics' | 'graph' | 'sessions' | 'assumptions' | 'spikes' | 'invariants') => void
 }
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: Activity },
   { id: 'heuristics', label: 'Heuristics', icon: Brain },
+  { id: 'assumptions', label: 'Assumptions', icon: Lightbulb },
+  { id: 'spikes', label: 'Spikes', icon: FileSearch },
+  { id: 'invariants', label: 'Invariants', icon: ShieldCheck },
   { id: 'graph', label: 'Graph', icon: Network },
   { id: 'runs', label: 'Runs', icon: Workflow },
   { id: 'sessions', label: 'Sessions', icon: History },
