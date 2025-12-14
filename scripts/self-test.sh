@@ -17,6 +17,16 @@ MEMORY_DIR="$BASE_DIR/memory"
 DB_PATH="$MEMORY_DIR/index.db"
 LOGS_DIR="$BASE_DIR/logs"
 
+# Detect Python command
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Python not found. Install from https://python.org"
+    exit 1
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -172,7 +182,7 @@ test_script_functionality() {
     done
 
     # Test query.py basic functionality
-    if python3 "$BASE_DIR/query/query.py" --stats >/dev/null 2>&1; then
+    if $PYTHON_CMD "$BASE_DIR/query/query.py" --stats >/dev/null 2>&1; then
         pass "query.py --stats executes successfully"
     else
         fail "query.py --stats failed to execute"
@@ -236,7 +246,7 @@ test_golden_rules() {
     fi
 
     # Check if golden rules are loaded by query system
-    if python3 "$BASE_DIR/query/query.py" --golden-rules 2>/dev/null | grep -q "Golden Rules"; then
+    if $PYTHON_CMD "$BASE_DIR/query/query.py" --golden-rules 2>/dev/null | grep -q "Golden Rules"; then
         pass "Golden rules can be loaded by query system"
     else
         warn "Golden rules query returned unexpected format"
@@ -248,7 +258,7 @@ test_memory_system() {
     log "=== Test 7: Memory System ==="
 
     # Test recent query
-    if python3 "$BASE_DIR/query/query.py" --recent 1 >/dev/null 2>&1; then
+    if $PYTHON_CMD "$BASE_DIR/query/query.py" --recent 1 >/dev/null 2>&1; then
         pass "Recent learnings query works"
     else
         fail "Recent learnings query failed"
@@ -257,7 +267,7 @@ test_memory_system() {
     # Test domain query (use a domain we know exists)
     local domains=$(sqlite3 "$DB_PATH" "SELECT DISTINCT domain FROM learnings LIMIT 1")
     if [ -n "$domains" ]; then
-        if python3 "$BASE_DIR/query/query.py" --domain "$domains" --limit 1 >/dev/null 2>&1; then
+        if $PYTHON_CMD "$BASE_DIR/query/query.py" --domain "$domains" --limit 1 >/dev/null 2>&1; then
             pass "Domain query works"
         else
             fail "Domain query failed"
@@ -267,7 +277,7 @@ test_memory_system() {
     fi
 
     # Test stats query
-    local stats=$(python3 "$BASE_DIR/query/query.py" --stats 2>/dev/null)
+    local stats=$($PYTHON_CMD "$BASE_DIR/query/query.py" --stats 2>/dev/null)
     if echo "$stats" | grep -q "total_learnings"; then
         pass "Statistics query works"
     else

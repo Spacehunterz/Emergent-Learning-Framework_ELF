@@ -10,6 +10,16 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
+# Detect Python command
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Python not found. Install from https://python.org"
+    exit 1
+fi
+
 # Default: suppress warnings
 REDIRECT="2>/dev/null"
 SAVE_OUTPUT=false
@@ -42,9 +52,9 @@ if [ "$SAVE_OUTPUT" = true ]; then
     echo "Running stress tests... (saving to $OUTPUT_FILE)"
 
     if [ "$QUICK" = true ]; then
-        python test_stress.py --quick 2>&1 | tee "$OUTPUT_FILE"
+        $PYTHON_CMD test_stress.py --quick 2>&1 | tee "$OUTPUT_FILE"
     else
-        python test_stress.py 2>&1 | tee "$OUTPUT_FILE"
+        $PYTHON_CMD test_stress.py 2>&1 | tee "$OUTPUT_FILE"
     fi
 
     echo ""
@@ -55,10 +65,10 @@ else
     echo ""
 
     if [ -z "$REDIRECT" ]; then
-        python test_stress.py
+        $PYTHON_CMD test_stress.py
     else
         # Suppress warnings, show summary
-        python test_stress.py 2>/dev/null | grep -E "Running:|PASS|FAIL|Duration|Throughput|Errors|Total Tests|Success Rate"
+        $PYTHON_CMD test_stress.py 2>/dev/null | grep -E "Running:|PASS|FAIL|Duration|Throughput|Errors|Total Tests|Success Rate"
     fi
 fi
 

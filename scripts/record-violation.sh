@@ -14,6 +14,16 @@ BASE_DIR="$(dirname "$SCRIPT_DIR")"
 DB_PATH="$BASE_DIR/memory/index.db"
 GOLDEN_RULES_PATH="$BASE_DIR/memory/golden-rules.md"
 
+# Detect Python command
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Python not found. Install from https://python.org"
+    exit 1
+fi
+
 # Color output
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
@@ -64,7 +74,7 @@ if [ ! -f "$DB_PATH" ]; then
 fi
 
 # Insert violation into database using Python for proper SQL escaping
-python3 -c "
+$PYTHON_CMD -c "
 import sqlite3
 import sys
 

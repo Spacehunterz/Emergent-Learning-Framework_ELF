@@ -12,6 +12,16 @@ echo ""
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
+# Detect Python command
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Python not found. Install from https://python.org"
+    exit 1
+fi
+
 PASSED=0
 FAILED=0
 
@@ -46,40 +56,40 @@ run_test() {
 echo "1. CORE FUNCTIONALITY TESTS"
 echo "------------------------------"
 
-run_test "Help display" "python query.py --help" 0
-run_test "Stats query" "python query.py --stats" 0
-run_test "Recent query" "python query.py --recent 5" 0
-run_test "Golden rules" "python query.py --golden-rules" 0
+run_test "Help display" "$PYTHON_CMD query.py --help" 0
+run_test "Stats query" "$PYTHON_CMD query.py --stats" 0
+run_test "Recent query" "$PYTHON_CMD query.py --recent 5" 0
+run_test "Golden rules" "$PYTHON_CMD query.py --golden-rules" 0
 echo ""
 
 # 2. CLI Enhancement Tests
 echo "2. CLI ENHANCEMENT TESTS"
 echo "------------------------------"
 
-run_test "Debug flag" "python query.py --stats --debug" 0
-run_test "JSON format" "python query.py --stats --format json" 0
-run_test "CSV format" "python query.py --recent 3 --format csv" 0
-run_test "Database validation" "python query.py --validate" 0
-run_test "Timeout parameter" "python query.py --stats --timeout 60" 0
+run_test "Debug flag" "$PYTHON_CMD query.py --stats --debug" 0
+run_test "JSON format" "$PYTHON_CMD query.py --stats --format json" 0
+run_test "CSV format" "$PYTHON_CMD query.py --recent 3 --format csv" 0
+run_test "Database validation" "$PYTHON_CMD query.py --validate" 0
+run_test "Timeout parameter" "$PYTHON_CMD query.py --stats --timeout 60" 0
 echo ""
 
 # 3. Validation Tests (should fail)
 echo "3. VALIDATION TESTS (Expected Failures)"
 echo "------------------------------"
 
-run_test "Invalid domain" "python query.py --domain 'invalid@domain'" 1
-run_test "Limit too large" "python query.py --recent 2000" 1
-run_test "Limit too small" "python query.py --recent 0" 1
+run_test "Invalid domain" "$PYTHON_CMD query.py --domain 'invalid@domain'" 1
+run_test "Limit too large" "$PYTHON_CMD query.py --recent 2000" 1
+run_test "Limit too small" "$PYTHON_CMD query.py --recent 0" 1
 echo ""
 
 # 4. Integration Tests
 echo "4. INTEGRATION TESTS"
 echo "------------------------------"
 
-run_test "Context with domain" "python query.py --context --domain test" 0
-run_test "Tags query" "python query.py --tags test,debug --limit 5" 0
-run_test "Domain query" "python query.py --domain test --limit 5" 0
-run_test "Debug + JSON combo" "python query.py --stats --debug --format json" 0
+run_test "Context with domain" "$PYTHON_CMD query.py --context --domain test" 0
+run_test "Tags query" "$PYTHON_CMD query.py --tags test,debug --limit 5" 0
+run_test "Domain query" "$PYTHON_CMD query.py --domain test --limit 5" 0
+run_test "Debug + JSON combo" "$PYTHON_CMD query.py --stats --debug --format json" 0
 echo ""
 
 # 5. Comprehensive Test Suite
@@ -87,7 +97,7 @@ echo "5. COMPREHENSIVE TEST SUITE"
 echo "------------------------------"
 
 echo -n "Running full test suite... "
-if python test_query.py > /dev/null 2>&1; then
+if $PYTHON_CMD test_query.py > /dev/null 2>&1; then
     echo "PASS (51/51 tests)"
     ((PASSED++))
 else

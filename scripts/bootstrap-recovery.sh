@@ -16,6 +16,16 @@ DB_PATH="$MEMORY_DIR/index.db"
 BACKUP_DIR="$BASE_DIR/backups"
 LOGS_DIR="$BASE_DIR/logs"
 
+# Detect Python command
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Python not found. Install from https://python.org"
+    exit 1
+fi
+
 # Output formatting
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -162,10 +172,10 @@ rebuild_database() {
     fi
 
     # Initialize new database using query.py
-    if ! python3 "$BASE_DIR/query/query.py" --stats &>/dev/null; then
+    if ! $PYTHON_CMD "$BASE_DIR/query/query.py" --stats &>/dev/null; then
         info "Initializing database..."
         # The query system auto-creates the database
-        python3 - <<EOF
+        $PYTHON_CMD - <<EOF
 import sys
 sys.path.insert(0, '$BASE_DIR/query')
 from query import QuerySystem
@@ -300,7 +310,7 @@ verify_recovery() {
     fi
 
     # Check if query system works
-    if python3 "$BASE_DIR/query/query.py" --stats &>/dev/null; then
+    if $PYTHON_CMD "$BASE_DIR/query/query.py" --stats &>/dev/null; then
         pass "Query system functional"
     else
         fail "Query system not working"

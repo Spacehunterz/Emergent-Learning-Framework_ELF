@@ -8,6 +8,16 @@ BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEST_DIR="$BASE_DIR/tests/attack-sandbox"
 REPORT="$BASE_DIR/tests/security_audit_report.md"
 
+# Detect Python command
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Python not found. Install from https://python.org"
+    exit 1
+fi
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -317,7 +327,7 @@ test_filename_length_dos() {
     echo -e "\n${BLUE}TEST 7: Filename Length DoS${NC}"
 
     # Create extremely long filename (>255 chars, typical filesystem limit)
-    local long_title=$(python3 -c "print('A' * 300)")
+    local long_title=$($PYTHON_CMD -c "print('A' * 300)")
     export FAILURE_TITLE="$long_title"
     export FAILURE_DOMAIN="test"
     export FAILURE_SUMMARY="test"
@@ -327,7 +337,7 @@ test_filename_length_dos() {
     if bash scripts/record-failure.sh 2>&1 | grep -q "File name too long"; then
         log_vulnerability "LOW" "Filename Length DoS" \
             "Extremely long titles can cause filesystem errors or DoS" \
-            "FAILURE_TITLE=\$(python3 -c \"print('A' * 300)\") ./record-failure.sh" \
+            "FAILURE_TITLE=\$($PYTHON_CMD -c \"print('A' * 300)\") ./record-failure.sh" \
             "Truncate filename to safe length: filename=\${filename:0:200}"
     else
         # Check if file was created successfully (which means length is handled)

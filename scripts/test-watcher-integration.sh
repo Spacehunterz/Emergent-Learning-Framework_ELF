@@ -8,6 +8,16 @@
 
 set -e
 
+# Detect Python command
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Python not found. Install from https://python.org"
+    exit 1
+fi
+
 PROJECT_DIR="$HOME/.claude/emergent-learning"
 WATCHER_DIR="$PROJECT_DIR/watcher"
 COORD_DIR="$PROJECT_DIR/.coordination"
@@ -68,9 +78,9 @@ fi
 # Test 4: Python syntax
 echo
 echo "[4/8] Validating Python syntax..."
-python -m py_compile "$WATCHER_DIR/launcher.py" 2>/dev/null && echo "  ✓ launcher.py" || (echo "  ✗ launcher.py syntax error" && exit 1)
-python -m py_compile "$WATCHER_DIR/haiku_watcher.py" 2>/dev/null && echo "  ✓ haiku_watcher.py" || (echo "  ✗ haiku_watcher.py syntax error" && exit 1)
-python -m py_compile "$WATCHER_DIR/opus_handler.py" 2>/dev/null && echo "  ✓ opus_handler.py" || (echo "  ✗ opus_handler.py syntax error" && exit 1)
+$PYTHON_CMD -m py_compile "$WATCHER_DIR/launcher.py" 2>/dev/null && echo "  ✓ launcher.py" || (echo "  ✗ launcher.py syntax error" && exit 1)
+$PYTHON_CMD -m py_compile "$WATCHER_DIR/haiku_watcher.py" 2>/dev/null && echo "  ✓ haiku_watcher.py" || (echo "  ✗ haiku_watcher.py syntax error" && exit 1)
+$PYTHON_CMD -m py_compile "$WATCHER_DIR/opus_handler.py" 2>/dev/null && echo "  ✓ opus_handler.py" || (echo "  ✗ opus_handler.py syntax error" && exit 1)
 
 # Test 5: Configuration structure
 echo

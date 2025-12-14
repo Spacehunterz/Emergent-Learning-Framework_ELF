@@ -14,6 +14,16 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 WATCHER_DIR="$PROJECT_DIR/watcher"
 LAUNCHER_SCRIPT="$WATCHER_DIR/launcher.py"
 
+# Detect Python command
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Python not found. Install from https://python.org"
+    exit 1
+fi
+
 # Check if launcher exists
 if [ ! -f "$LAUNCHER_SCRIPT" ]; then
     echo "Error: Launcher script not found at $LAUNCHER_SCRIPT"
@@ -39,12 +49,12 @@ fi
 # Start launcher
 if [ "$DAEMON" = true ]; then
     echo "Starting watcher in daemon mode..."
-    nohup python3 "$LAUNCHER_SCRIPT" > /dev/null 2>&1 &
+    nohup $PYTHON_CMD "$LAUNCHER_SCRIPT" > /dev/null 2>&1 &
     PID=$!
     echo "Watcher started with PID: $PID"
     echo "Monitor logs at: $PROJECT_DIR/.coordination/launcher.log"
     echo "Stop with: kill $PID"
 else
     echo "Starting watcher (Ctrl+C to stop)..."
-    python3 "$LAUNCHER_SCRIPT"
+    $PYTHON_CMD "$LAUNCHER_SCRIPT"
 fi
