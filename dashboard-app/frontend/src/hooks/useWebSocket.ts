@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 
 type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error'
 
@@ -110,5 +110,9 @@ export function useWebSocket(url: string, onMessage: (data: any) => void) {
     }
   }, []) // Empty deps - only run once
 
-  return { sendMessage, connectionStatus, reconnect: connect }
+  return useMemo(() => ({ 
+    sendMessage, 
+    connectionStatus, 
+    reconnect: connect 
+  }), [sendMessage, connectionStatus, connect])
 }

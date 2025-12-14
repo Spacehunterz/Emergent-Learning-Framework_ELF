@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error'
 
@@ -142,7 +142,7 @@ export function useNotifications() {
     setSoundEnabled((prev) => !prev)
   }, [])
 
-  return {
+  return useMemo(() => ({
     notifications,
     addNotification,
     removeNotification,
@@ -153,5 +153,6 @@ export function useNotifications() {
     error,
     soundEnabled,
     toggleSound,
-  }
+  }), [notifications, addNotification, removeNotification, clearAll, info, success, warning, error, soundEnabled, toggleSound])
+
 }

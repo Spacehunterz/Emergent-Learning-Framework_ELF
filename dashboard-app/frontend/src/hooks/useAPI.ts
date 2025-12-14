@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 
 const BASE_URL = ''
 
@@ -34,5 +34,5 @@ export function useAPI() {
   const put = useCallback((endpoint: string, body?: any) => request('PUT', endpoint, body), [request])
   const del = useCallback((endpoint: string) => request('DELETE', endpoint), [request])
 
-  return { get, post, put, del }
+  return useMemo(() => ({ get, post, put, del }), [get, post, put, del])
 }

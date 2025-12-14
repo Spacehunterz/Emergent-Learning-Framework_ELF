@@ -146,10 +146,7 @@ function AppContent() {
 
   const handleOpenInEditor = async (path: string, line?: number) => {
     try {
-      // API expects path as query parameter
-      const params = new URLSearchParams({ path })
-      if (line) params.append('line', String(line))
-      await api.post(`/api/open-in-editor?${params.toString()}`)
+      await api.post('/api/open-in-editor', { path, line })
     } catch (err) {
       console.error('Failed to open in editor:', err)
     }

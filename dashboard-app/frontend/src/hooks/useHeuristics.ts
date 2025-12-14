@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { Heuristic } from '../types'
 import { useAPI } from './useAPI'
 
@@ -26,7 +26,6 @@ export function useHeuristics(options?: UseHeuristicsOptions) {
       setHeuristics(prev => prev.map(h =>
         h.id === id ? { ...h, is_golden: true } : h
       ))
-      // Reload stats to update golden rules count
       if (onStatsChange) onStatsChange()
     } catch (err) {
       console.error('Failed to promote heuristic:', err)
@@ -40,7 +39,6 @@ export function useHeuristics(options?: UseHeuristicsOptions) {
       setHeuristics(prev => prev.map(h =>
         h.id === id ? { ...h, is_golden: false } : h
       ))
-      // Reload stats to update golden rules count
       if (onStatsChange) onStatsChange()
     } catch (err) {
       console.error('Failed to demote heuristic:', err)
@@ -52,7 +50,6 @@ export function useHeuristics(options?: UseHeuristicsOptions) {
     try {
       await api.del(`/api/heuristics/${id}`)
       setHeuristics(prev => prev.filter(h => h.id !== id))
-      // Reload stats to update counts
       if (onStatsChange) onStatsChange()
     } catch (err) {
       console.error('Failed to delete heuristic:', err)
@@ -75,12 +72,11 @@ export function useHeuristics(options?: UseHeuristicsOptions) {
     }
   }, [api])
 
-  // Load heuristics on mount - MUST be after all useCallback hooks
   useEffect(() => {
     reloadHeuristics()
   }, [reloadHeuristics])
 
-  return {
+  return useMemo(() => ({
     heuristics,
     setHeuristics,
     promoteHeuristic,
@@ -88,5 +84,5 @@ export function useHeuristics(options?: UseHeuristicsOptions) {
     deleteHeuristic,
     updateHeuristic,
     reloadHeuristics,
-  }
+  }), [heuristics, promoteHeuristic, demoteHeuristic, deleteHeuristic, updateHeuristic, reloadHeuristics])
 }

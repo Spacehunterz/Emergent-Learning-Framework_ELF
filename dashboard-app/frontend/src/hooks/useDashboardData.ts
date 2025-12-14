@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Stats, Hotspot, ApiRun, RawEvent, TimelineData, ApiAnomaly } from '../types'
 import { useAPI } from './useAPI'
 
@@ -73,7 +73,7 @@ export function useDashboardData() {
     return () => clearInterval(interval)
   }, [loadData, api])
 
-  return {
+  return useMemo(() => ({
     stats,
     hotspots,
     runs,
@@ -85,5 +85,5 @@ export function useDashboardData() {
     loadStats,
     setStats,
     setAnomalies,
-  }
+  }), [stats, hotspots, runs, events, timeline, anomalies, isLoading, reload, loadStats])
 }
