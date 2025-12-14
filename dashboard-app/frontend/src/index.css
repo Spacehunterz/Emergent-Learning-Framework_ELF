@@ -403,23 +403,19 @@ body {
   backdrop-filter: blur(4px);
 }
 
-/* UFO Cursor - Beam on click */
-body:active {
-  cursor: url("/ufo-beam.svg") 16 16, auto;
+/* UFO Cursor - ALWAYS use UFO cursor everywhere */
+*, *::before, *::after {
+  cursor: url("/ufo-cursor.svg") 16 16, auto !important;
 }
 
-/* All interactive elements use UFO cursor */
-a, button, [role='button'], .cursor-pointer,
-input, select, textarea, label[for],
-input[type='checkbox'], input[type='radio'],
-[onclick], [tabindex]:not([tabindex='-1']) {
-  cursor: url("/ufo-cursor.svg") 16 16, pointer !important;
+/* Beam on click for everything */
+*:active {
+  cursor: url("/ufo-beam.svg") 16 16, auto !important;
 }
 
-/* Beam on for active/clicking state on interactive elements */
-a:active, button:active, [role='button']:active,
-input:active, select:active, .cursor-pointer:active {
-  cursor: url("/ufo-beam.svg") 16 16, pointer !important;
+/* Canvas elements need inline style override */
+canvas {
+  cursor: url("/ufo-cursor.svg") 16 16, auto !important;
 }
 
 /* Shimmer animation for cosmic title */

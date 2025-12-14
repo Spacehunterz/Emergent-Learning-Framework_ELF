@@ -1,4 +1,5 @@
 // Component barrel exports
+export { default as AlertsPanel } from './AlertsPanel'
 export { default as AnomalyPanel } from './AnomalyPanel'
 export { default as AssumptionsPanel } from './AssumptionsPanel'
 export { CommandPalette } from './CommandPalette'
@@ -8,6 +9,7 @@ export { default as FraudReviewPanel } from './FraudReviewPanel'
 export { default as Header } from './Header'
 export { default as HeuristicPanel } from './HeuristicPanel'
 export { default as HotspotTreemap } from './hotspot-treemap'
+export { HotspotVisualization } from './cosmic-view'
 export { default as InvariantsPanel } from './invariants-panel'
 export { default as KnowledgeGraph } from './knowledge-graph'
 export { LearningVelocity } from './learning-velocity'

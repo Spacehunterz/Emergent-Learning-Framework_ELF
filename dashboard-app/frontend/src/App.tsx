@@ -6,12 +6,12 @@ import {
   ParticleBackground,
   Header,
   StatsBar,
-  HotspotTreemap,
+  HotspotVisualization,
   HeuristicPanel,
   TimelineView,
   RunsPanel,
   QueryInterface,
-  AnomalyPanel,
+  AlertsPanel,
   KnowledgeGraph,
   CommandPalette,
   NotificationPanel,
@@ -230,9 +230,9 @@ function AppContent() {
         <div className="mt-6">
           {activeTab === 'overview' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Main area - Treemap */}
+              {/* Main area - Hotspot Visualization (Grid/Cosmic toggle) */}
               <div className="lg:col-span-2">
-                <HotspotTreemap
+                <HotspotVisualization
                   hotspots={hotspots}
                   onSelect={(path) => handleOpenInEditor(path)}
                   selectedDomain={selectedDomain}
@@ -240,25 +240,13 @@ function AppContent() {
                 />
               </div>
 
-              {/* Sidebar */}
+              {/* Sidebar - Unified Alerts Panel */}
               <div className="space-y-6">
-                <AnomalyPanel
+                <AlertsPanel
                   anomalies={anomalies}
-                  onDismiss={(index) => setAnomalies(prev => prev.filter((_, i) => i !== index))}
+                  goldenRules={normalizedHeuristics.filter(h => h.is_golden)}
+                  onDismissAnomaly={(index) => setAnomalies(prev => prev.filter((_, i) => i !== index))}
                 />
-                <div className="bg-slate-800 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-amber-400 mb-3">Golden Rules</h3>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {normalizedHeuristics.filter(h => h.is_golden).map(h => (
-                      <div key={h.id} className="text-sm text-slate-300 p-2 bg-slate-700/50 rounded">
-                        {h.rule}
-                      </div>
-                    ))}
-                    {normalizedHeuristics.filter(h => h.is_golden).length === 0 && (
-                      <div className="text-sm text-slate-400">No golden rules yet</div>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           )}
