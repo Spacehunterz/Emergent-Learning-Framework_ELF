@@ -44,8 +44,8 @@ def gather_full_context(escalation: Dict[str, Any]) -> Dict[str, Any]:
     if BLACKBOARD_FILE.exists():
         try:
             context["blackboard"] = json.loads(BLACKBOARD_FILE.read_text())
-        except:
-            context["blackboard"] = {"error": "Could not parse"}
+        except (json.JSONDecodeError, IOError, OSError) as e:
+            context["blackboard"] = {"error": f"Could not parse: {e}"}
 
     # Read agent output files
     for f in COORDINATION_DIR.glob("agent_*.md"):
@@ -55,8 +55,8 @@ def gather_full_context(escalation: Dict[str, Any]) -> Dict[str, Any]:
             if len(content) > 2000:
                 content = content[:2000] + "\n...[truncated]..."
             context["agent_outputs"][f.stem] = content
-        except:
-            context["agent_outputs"][f.stem] = "[could not read]"
+        except (IOError, OSError, UnicodeDecodeError) as e:
+            context["agent_outputs"][f.stem] = f"[could not read: {e}]"
 
     # Read recent watcher log
     if WATCHER_LOG.exists():
@@ -64,8 +64,8 @@ def gather_full_context(escalation: Dict[str, Any]) -> Dict[str, Any]:
             log = WATCHER_LOG.read_text()
             # Last 2000 chars
             context["recent_log"] = log[-2000:] if len(log) > 2000 else log
-        except:
-            pass
+        except (IOError, OSError, UnicodeDecodeError):
+            pass  # Log is optional, skip if unreadable
 
     return context
 

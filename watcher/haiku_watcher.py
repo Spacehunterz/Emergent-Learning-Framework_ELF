@@ -40,8 +40,8 @@ def gather_state() -> Dict[str, Any]:
     if BLACKBOARD_FILE.exists():
         try:
             state["blackboard"] = json.loads(BLACKBOARD_FILE.read_text())
-        except:
-            state["blackboard"] = {"error": "Could not parse blackboard.json"}
+        except (json.JSONDecodeError, IOError, OSError) as e:
+            state["blackboard"] = {"error": f"Could not parse blackboard.json: {e}"}
 
     # List agent files
     for f in COORDINATION_DIR.glob("agent_*.md"):

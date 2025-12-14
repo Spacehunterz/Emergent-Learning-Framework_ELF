@@ -15,16 +15,27 @@ import json
 import os
 import subprocess
 import sys
+import time
+import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 import re
+
+# Windows-compatible file locking
+try:
+    import msvcrt
+    WINDOWS = True
+except ImportError:
+    import fcntl
+    WINDOWS = False
 
 # Paths
 EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
 SESSIONS_PATH = EMERGENT_LEARNING_PATH / "sessions"
 LOGS_PATH = SESSIONS_PATH / "logs"
 PROCESSED_MARKER = SESSIONS_PATH / ".processed"
+PROCESSED_MARKER_LOCK = SESSIONS_PATH / ".processed.lock"
 PROPOSALS_PATH = EMERGENT_LEARNING_PATH / "proposals"
 PENDING_PROPOSALS_PATH = PROPOSALS_PATH / "pending"
 
@@ -55,6 +66,91 @@ class SessionIntegration:
         for path in [SESSIONS_PATH, LOGS_PATH, PROPOSALS_PATH, PENDING_PROPOSALS_PATH]:
             path.mkdir(parents=True, exist_ok=True)
 
+    def _get_marker_lock(self, timeout: float = 10.0) -> Optional[Any]:
+        """Acquire lock for processed marker file. Returns file handle or None."""
+        PROCESSED_MARKER_LOCK.parent.mkdir(parents=True, exist_ok=True)
+        start = time.time()
+        handle = None
+
+        while time.time() - start < timeout:
+            try:
+                # Create/open lock file
+                if WINDOWS:
+                    handle = open(PROCESSED_MARKER_LOCK, 'w')
+                    # Lock 1024 bytes for better protection against race conditions
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1024)
+                    return handle
+                else:
+                    handle = open(PROCESSED_MARKER_LOCK, 'w')
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    return handle
+            except (IOError, OSError):
+                # Lock held by another process - close handle before retry to prevent leak
+                if handle is not None:
+                    try:
+                        handle.close()
+                    except (IOError, OSError):
+                        pass
+                    handle = None
+                time.sleep(0.1)
+
+        # Timeout - ensure handle is closed if we somehow still have one
+        if handle is not None:
+            try:
+                handle.close()
+            except (IOError, OSError):
+                pass
+        return None  # Timeout
+
+    def _release_marker_lock(self, handle):
+        """Release processed marker lock."""
+        if handle:
+            try:
+                if WINDOWS:
+                    # Must unlock same number of bytes that were locked
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1024)
+                else:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            except (IOError, OSError, ValueError):
+                # IOError/OSError: lock already released or file issue
+                # ValueError: file already closed (fileno() fails)
+                pass
+            finally:
+                try:
+                    handle.close()
+                except (IOError, OSError):
+                    pass
+
+    def _write_marker_atomic(self, data: Dict):
+        """Write processed marker atomically using temp file + rename.
+
+        This prevents corruption if process crashes mid-write.
+        Uses os.replace() which is atomic on both Unix and Windows.
+        """
+        SESSIONS_PATH.mkdir(parents=True, exist_ok=True)
+
+        # Write to temp file in same directory (ensures same filesystem)
+        temp_fd, temp_path = tempfile.mkstemp(
+            dir=SESSIONS_PATH,
+            prefix='.processed_',
+            suffix='.tmp'
+        )
+
+        try:
+            # Write JSON to temp file
+            with os.fdopen(temp_fd, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+
+            # Atomic replace (works on both Unix and Windows)
+            os.replace(temp_path, PROCESSED_MARKER)
+        except Exception:
+            # Clean up temp file on failure
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
+            raise
+
     def get_processed_files(self) -> List[str]:
         """Get list of already processed session log files."""
         if not PROCESSED_MARKER.exists():
@@ -84,18 +180,31 @@ class SessionIntegration:
         return sorted(unprocessed)
 
     def mark_as_processed(self, log_files: List[Path]):
-        """Mark log files as processed."""
-        processed = self.get_processed_files()
-        for f in log_files:
-            if f.name not in processed:
-                processed.append(f.name)
+        """Mark log files as processed (thread-safe with file locking)."""
+        lock = self._get_marker_lock()
+        if lock is None:
+            raise TimeoutError("Could not acquire processed marker lock after 10 seconds")
 
-        data = {
-            'processed_files': processed,
-            'last_processed': datetime.now().isoformat()
-        }
-        PROCESSED_MARKER.write_text(json.dumps(data, indent=2), encoding='utf-8')
-        self._log_debug(f"Marked {len(log_files)} files as processed")
+        try:
+            # Read current state inside lock
+            processed = self.get_processed_files()
+
+            # Add new files
+            for f in log_files:
+                if f.name not in processed:
+                    processed.append(f.name)
+
+            # Prepare data
+            data = {
+                'processed_files': processed,
+                'last_processed': datetime.now().isoformat()
+            }
+
+            # Atomic write
+            self._write_marker_atomic(data)
+            self._log_debug(f"Marked {len(log_files)} files as processed")
+        finally:
+            self._release_marker_lock(lock)
 
     def trigger_learning_extractor(self, log_files: List[Path]) -> bool:
         """

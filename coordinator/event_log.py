@@ -92,8 +92,13 @@ class EventLog:
     # Locking (for sequence number only - writes are lock-free via O_APPEND)
     # =========================================================================
 
-    def _get_lock(self, timeout: float = 30.0) -> Optional[IO[str]]:
-        """Acquire file lock for sequence number increment."""
+    def _get_lock(self, timeout: float = 30.0) -> IO[str]:
+        """
+        Acquire file lock for sequence number increment.
+
+        Raises:
+            TimeoutError: If lock cannot be acquired within timeout period
+        """
         self._ensure_dir()
         start = time.time()
         handle = None
@@ -120,7 +125,7 @@ class EventLog:
                     handle = None
                 time.sleep(0.1 + random.uniform(0, 0.1))
 
-        return None
+        raise TimeoutError(f"Could not acquire event log lock after {timeout} seconds")
 
     def _release_lock(self, handle: Any) -> None:
         """Release file lock."""
@@ -146,12 +151,11 @@ class EventLog:
         """
         Get next monotonic sequence number.
         Uses lock to ensure uniqueness across concurrent writers.
+
+        Raises:
+            TimeoutError: If lock cannot be acquired within timeout
         """
         lock = self._get_lock(timeout=5.0)
-        if lock is None:
-            # Fallback: use timestamp-based sequence (less ideal but won't block)
-            return int(time.time() * 1000000)
-
         try:
             # Read current sequence
             if self.seq_file.exists():
@@ -204,10 +208,12 @@ class EventLog:
         checksum = hashlib.md5(line.encode()).hexdigest()[:8]
         line_with_checksum = f"{line}|{checksum}\n"
 
-        # Atomic append (O_APPEND on Unix, best-effort on Windows)
-        # Key: each line is independent, partial writes only affect that line
-        with open(self.event_log_file, 'a', encoding='utf-8', newline='') as f:
-            f.write(line_with_checksum)
+        # Atomic append: Write complete line in binary mode for atomicity
+        # Binary mode + complete line ensures no byte interleaving between processes
+        # Encode to bytes first, then write atomically
+        line_bytes = line_with_checksum.encode('utf-8')
+        with open(self.event_log_file, 'ab') as f:
+            f.write(line_bytes)
             f.flush()
             os.fsync(f.fileno())  # Ensure durability
 

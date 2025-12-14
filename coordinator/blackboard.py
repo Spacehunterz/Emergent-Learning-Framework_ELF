@@ -24,6 +24,7 @@ import json
 import os
 import time
 import random
+import tempfile
 from pathlib import Path
 from typing import Optional, Dict, List, Any, Callable, Set
 from datetime import datetime, timedelta
@@ -167,10 +168,34 @@ class Blackboard:
             return self._default_state()
 
     def _write_state(self, state: Dict):
-        """Write blackboard state."""
+        """Write blackboard state atomically using temp file + rename.
+
+        This prevents corruption if process crashes mid-write.
+        Uses os.replace() which is atomic on both Unix and Windows.
+        """
         self._ensure_dir()
-        with open(self.blackboard_file, 'w', encoding='utf-8') as f:
-            json.dump(state, f, indent=2, default=str)
+
+        # Write to temp file in same directory (ensures same filesystem)
+        temp_fd, temp_path = tempfile.mkstemp(
+            dir=self.coordination_dir,
+            prefix='.blackboard_',
+            suffix='.tmp'
+        )
+
+        try:
+            # Write JSON to temp file
+            with os.fdopen(temp_fd, 'w', encoding='utf-8') as f:
+                json.dump(state, f, indent=2, default=str)
+
+            # Atomic replace (works on both Unix and Windows)
+            os.replace(temp_path, self.blackboard_file)
+        except Exception:
+            # Clean up temp file on failure
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
+            raise
 
     def _default_state(self) -> Dict:
         """Return default empty blackboard state."""
@@ -244,15 +269,43 @@ class Blackboard:
             return False
         return self._with_lock(op)
 
+    def heartbeat(self, agent_id: str) -> bool:
+        """Update agent's last_seen timestamp to indicate it's still alive.
+
+        Should be called periodically (every 60s recommended) by long-running agents
+        to prevent being marked as stale by the watcher.
+
+        Args:
+            agent_id: ID of the agent sending heartbeat
+
+        Returns:
+            True if heartbeat was recorded, False if agent not found
+        """
+        def op():
+            state = self._read_state()
+
+            if agent_id not in state.get("agents", {}):
+                return False
+
+            state["agents"][agent_id]["last_seen"] = datetime.now().isoformat()
+            self._write_state(state)
+            return True
+
+        return self._with_lock(op)
+
     def get_active_agents(self) -> Dict:
         """Get all active agents."""
-        state = self._read_state()
-        return {k: v for k, v in state["agents"].items() if v["status"] == "active"}
+        def op():
+            state = self._read_state()
+            return {k: v for k, v in state["agents"].items() if v["status"] == "active"}
+        return self._with_lock(op)
 
     def get_all_agents(self) -> Dict:
         """Get all agents (any status)."""
-        state = self._read_state()
-        return state.get("agents", {})
+        def op():
+            state = self._read_state()
+            return state.get("agents", {})
+        return self._with_lock(op)
 
     # =========================================================================
     # Findings
@@ -300,17 +353,19 @@ class Blackboard:
     def get_findings(self, since: str = None, finding_type: str = None,
                      importance: str = None) -> List[Dict]:
         """Get findings, optionally filtered."""
-        state = self._read_state()
-        findings = state.get("findings", [])
+        def op():
+            state = self._read_state()
+            findings = state.get("findings", [])
 
-        if since:
-            findings = [f for f in findings if f["timestamp"] > since]
-        if finding_type:
-            findings = [f for f in findings if f["type"] == finding_type]
-        if importance:
-            findings = [f for f in findings if f["importance"] == importance]
+            if since:
+                findings = [f for f in findings if f["timestamp"] > since]
+            if finding_type:
+                findings = [f for f in findings if f["type"] == finding_type]
+            if importance:
+                findings = [f for f in findings if f["importance"] == importance]
 
-        return findings
+            return findings
+        return self._with_lock(op)
 
     def get_findings_since_cursor(self, cursor: int) -> List[Dict]:
         """Get findings added after a specific cursor position.
@@ -318,18 +373,22 @@ class Blackboard:
         This enables delta notifications - agents only see what's new
         since they last checked.
         """
-        state = self._read_state()
-        findings = state.get("findings", [])
-        return findings[cursor:] if cursor < len(findings) else []
+        def op():
+            state = self._read_state()
+            findings = state.get("findings", [])
+            return findings[cursor:] if cursor < len(findings) else []
+        return self._with_lock(op)
 
     def get_critical_findings(self) -> List[Dict]:
         """Get all critical/blocker findings that haven't been resolved."""
-        state = self._read_state()
-        findings = state.get("findings", [])
-        return [
-            f for f in findings
-            if f.get("importance") == "critical" or f.get("type") == "blocker"
-        ]
+        def op():
+            state = self._read_state()
+            findings = state.get("findings", [])
+            return [
+                f for f in findings
+                if f.get("importance") == "critical" or f.get("type") == "blocker"
+            ]
+        return self._with_lock(op)
 
     def get_findings_for_interests(self, interests: List[str]) -> List[Dict]:
         """Get findings matching agent interests.
@@ -341,21 +400,23 @@ class Blackboard:
         if not interests:
             return []
 
-        state = self._read_state()
-        findings = state.get("findings", [])
-        interests_lower = [i.lower() for i in interests]
+        def op():
+            state = self._read_state()
+            findings = state.get("findings", [])
+            interests_lower = [i.lower() for i in interests]
 
-        relevant = []
-        for f in findings:
-            finding_tags = set(t.lower() for t in f.get("tags", []))
-            content_lower = f.get("content", "").lower()
+            relevant = []
+            for f in findings:
+                finding_tags = set(t.lower() for t in f.get("tags", []))
+                content_lower = f.get("content", "").lower()
 
-            for interest in interests_lower:
-                if interest in finding_tags or interest in content_lower:
-                    relevant.append(f)
-                    break
+                for interest in interests_lower:
+                    if interest in finding_tags or interest in content_lower:
+                        relevant.append(f)
+                        break
 
-        return relevant
+            return relevant
+        return self._with_lock(op)
 
     def search_findings(self, query: str, limit: int = 10) -> List[Dict]:
         """Simple substring search on findings.
@@ -365,20 +426,22 @@ class Blackboard:
 
         This method only does basic keyword matching on content and tags.
         """
-        state = self._read_state()
-        findings = state.get("findings", [])
-        query_lower = query.lower()
+        def op():
+            state = self._read_state()
+            findings = state.get("findings", [])
+            query_lower = query.lower()
 
-        matches = []
-        for f in findings:
-            content = f.get("content", "").lower()
-            tags = " ".join(f.get("tags", [])).lower()
-            if query_lower in content or query_lower in tags:
-                matches.append(f)
-                if len(matches) >= limit:
-                    break
+            matches = []
+            for f in findings:
+                content = f.get("content", "").lower()
+                tags = " ".join(f.get("tags", [])).lower()
+                if query_lower in content or query_lower in tags:
+                    matches.append(f)
+                    if len(matches) >= limit:
+                        break
 
-        return matches
+            return matches
+        return self._with_lock(op)
 
     def update_agent_cursor(self, agent_id: str) -> int:
         """Update agent's cursor to current position. Returns new cursor.
@@ -398,15 +461,19 @@ class Blackboard:
 
     def get_agent_cursor(self, agent_id: str) -> int:
         """Get the cursor position for an agent."""
-        state = self._read_state()
-        agent = state.get("agents", {}).get(agent_id, {})
-        return agent.get("context_cursor", 0)
+        def op():
+            state = self._read_state()
+            agent = state.get("agents", {}).get(agent_id, {})
+            return agent.get("context_cursor", 0)
+        return self._with_lock(op)
 
     def get_agent_interests(self, agent_id: str) -> List[str]:
         """Get the interest tags for an agent."""
-        state = self._read_state()
-        agent = state.get("agents", {}).get(agent_id, {})
-        return agent.get("interests", [])
+        def op():
+            state = self._read_state()
+            agent = state.get("agents", {}).get(agent_id, {})
+            return agent.get("interests", [])
+        return self._with_lock(op)
 
     # =========================================================================
     # Messages
@@ -418,7 +485,7 @@ class Blackboard:
         def op():
             state = self._read_state()
             message = {
-                "id": f"msg-{len(state['messages']) + 1}",
+                "id": f"msg-{uuid.uuid4().hex[:8]}",
                 "from": from_agent,
                 "to": to_agent,  # Use "*" for broadcast
                 "type": msg_type,  # info, question, warning, handoff
@@ -434,14 +501,16 @@ class Blackboard:
 
     def get_messages(self, agent_id: str, unread_only: bool = False) -> List[Dict]:
         """Get messages for an agent (including broadcasts)."""
-        state = self._read_state()
-        messages = state.get("messages", [])
+        def op():
+            state = self._read_state()
+            messages = state.get("messages", [])
 
-        result = [m for m in messages if m["to"] in (agent_id, "*")]
-        if unread_only:
-            result = [m for m in result if not m["read"]]
+            result = [m for m in messages if m["to"] in (agent_id, "*")]
+            if unread_only:
+                result = [m for m in result if not m["read"]]
 
-        return result
+            return result
+        return self._with_lock(op)
 
     def mark_message_read(self, message_id: str) -> bool:
         """Mark a message as read."""
@@ -466,7 +535,7 @@ class Blackboard:
         def op():
             state = self._read_state()
             task_item = {
-                "id": f"task-{len(state['task_queue']) + 1}",
+                "id": f"task-{uuid.uuid4().hex[:8]}",
                 "task": task,
                 "priority": priority,  # 1 (highest) to 10 (lowest)
                 "depends_on": depends_on or [],
@@ -512,9 +581,11 @@ class Blackboard:
 
     def get_pending_tasks(self) -> List[Dict]:
         """Get all pending tasks sorted by priority."""
-        state = self._read_state()
-        pending = [t for t in state.get("task_queue", []) if t["status"] == "pending"]
-        return sorted(pending, key=lambda t: t["priority"])
+        def op():
+            state = self._read_state()
+            pending = [t for t in state.get("task_queue", []) if t["status"] == "pending"]
+            return sorted(pending, key=lambda t: t["priority"])
+        return self._with_lock(op)
 
     # =========================================================================
     # Questions (Blockers)
@@ -526,7 +597,7 @@ class Blackboard:
         def op():
             state = self._read_state()
             q = {
-                "id": f"q-{len(state['questions']) + 1}",
+                "id": f"q-{uuid.uuid4().hex[:8]}",
                 "agent_id": agent_id,
                 "question": question,
                 "options": options,
@@ -560,8 +631,10 @@ class Blackboard:
 
     def get_open_questions(self) -> List[Dict]:
         """Get all open questions."""
-        state = self._read_state()
-        return [q for q in state.get("questions", []) if q["status"] == "open"]
+        def op():
+            state = self._read_state()
+            return [q for q in state.get("questions", []) if q["status"] == "open"]
+        return self._with_lock(op)
 
     # =========================================================================
     # Context (Shared Key-Value Store)
@@ -581,10 +654,12 @@ class Blackboard:
 
     def get_context(self, key: str = None) -> Any:
         """Get context value(s)."""
-        state = self._read_state()
-        if key:
-            return state.get("context", {}).get(key, {}).get("value")
-        return {k: v["value"] for k, v in state.get("context", {}).items()}
+        def op():
+            state = self._read_state()
+            if key:
+                return state.get("context", {}).get(key, {}).get("value")
+            return {k: v["value"] for k, v in state.get("context", {}).items()}
+        return self._with_lock(op)
 
 
     # =========================================================================
@@ -735,21 +810,23 @@ class Blackboard:
         Returns:
             List of ClaimChain objects that claim any of the specified files
         """
-        state = self._read_state()
-        self._expire_old_chains(state)
+        def op():
+            state = self._read_state()
+            self._expire_old_chains(state)
 
-        normalized_files = set(str(Path(f)) for f in files)
-        blocking = []
+            normalized_files = set(str(Path(f)) for f in files)
+            blocking = []
 
-        for chain_data in state.get("claim_chains", []):
-            if chain_data["status"] != "active":
-                continue
+            for chain_data in state.get("claim_chains", []):
+                if chain_data["status"] != "active":
+                    continue
 
-            chain_files = set(chain_data["files"])
-            if normalized_files & chain_files:
-                blocking.append(ClaimChain.from_dict(chain_data))
+                chain_files = set(chain_data["files"])
+                if normalized_files & chain_files:
+                    blocking.append(ClaimChain.from_dict(chain_data))
 
-        return blocking
+            return blocking
+        return self._with_lock(op)
 
     def get_claim_for_file(self, file_path: str) -> Optional[ClaimChain]:
         """Get the active claim chain containing this file.
@@ -760,19 +837,21 @@ class Blackboard:
         Returns:
             ClaimChain if file is claimed, None otherwise
         """
-        state = self._read_state()
-        self._expire_old_chains(state)
+        def op():
+            state = self._read_state()
+            self._expire_old_chains(state)
 
-        normalized_path = str(Path(file_path))
+            normalized_path = str(Path(file_path))
 
-        for chain_data in state.get("claim_chains", []):
-            if chain_data["status"] != "active":
-                continue
+            for chain_data in state.get("claim_chains", []):
+                if chain_data["status"] != "active":
+                    continue
 
-            if normalized_path in chain_data["files"]:
-                return ClaimChain.from_dict(chain_data)
+                if normalized_path in chain_data["files"]:
+                    return ClaimChain.from_dict(chain_data)
 
-        return None
+            return None
+        return self._with_lock(op)
 
     def get_agent_chains(self, agent_id: str) -> List[ClaimChain]:
         """Get all claim chains for an agent.
@@ -783,14 +862,16 @@ class Blackboard:
         Returns:
             List of ClaimChain objects owned by the agent
         """
-        state = self._read_state()
-        chains = []
+        def op():
+            state = self._read_state()
+            chains = []
 
-        for chain_data in state.get("claim_chains", []):
-            if chain_data["agent_id"] == agent_id:
-                chains.append(ClaimChain.from_dict(chain_data))
+            for chain_data in state.get("claim_chains", []):
+                if chain_data["agent_id"] == agent_id:
+                    chains.append(ClaimChain.from_dict(chain_data))
 
-        return chains
+            return chains
+        return self._with_lock(op)
 
     def get_all_active_chains(self) -> List[ClaimChain]:
         """Get all active claim chains.
@@ -798,15 +879,17 @@ class Blackboard:
         Returns:
             List of all active ClaimChain objects
         """
-        state = self._read_state()
-        self._expire_old_chains(state)
+        def op():
+            state = self._read_state()
+            self._expire_old_chains(state)
 
-        chains = []
-        for chain_data in state.get("claim_chains", []):
-            if chain_data["status"] == "active":
-                chains.append(ClaimChain.from_dict(chain_data))
+            chains = []
+            for chain_data in state.get("claim_chains", []):
+                if chain_data["status"] == "active":
+                    chains.append(ClaimChain.from_dict(chain_data))
 
-        return chains
+            return chains
+        return self._with_lock(op)
 
 
     # =========================================================================
@@ -815,42 +898,46 @@ class Blackboard:
 
     def get_full_state(self) -> Dict:
         """Get complete blackboard state."""
-        return self._read_state()
+        def op():
+            return self._read_state()
+        return self._with_lock(op)
 
     def get_summary(self) -> str:
         """Get human-readable summary of blackboard state."""
-        state = self._read_state()
+        def op():
+            state = self._read_state()
 
-        active_agents = [a for a in state["agents"].values() if a["status"] == "active"]
-        pending_tasks = [t for t in state["task_queue"] if t["status"] == "pending"]
-        open_questions = [q for q in state["questions"] if q["status"] == "open"]
-        recent_findings = state["findings"][-5:] if state["findings"] else []
+            active_agents = [a for a in state["agents"].values() if a["status"] == "active"]
+            pending_tasks = [t for t in state["task_queue"] if t["status"] == "pending"]
+            open_questions = [q for q in state["questions"] if q["status"] == "open"]
+            recent_findings = state["findings"][-5:] if state["findings"] else []
 
-        lines = [
-            "## Blackboard Summary",
-            "",
-            f"**Active Agents:** {len(active_agents)}",
-        ]
+            lines = [
+                "## Blackboard Summary",
+                "",
+                f"**Active Agents:** {len(active_agents)}",
+            ]
 
-        for agent_id, info in state["agents"].items():
-            if info["status"] == "active":
-                lines.append(f"  - {agent_id}: {info['task']}")
+            for agent_id, info in state["agents"].items():
+                if info["status"] == "active":
+                    lines.append(f"  - {agent_id}: {info['task']}")
 
-        lines.append(f"\n**Pending Tasks:** {len(pending_tasks)}")
-        for task in pending_tasks[:3]:
-            lines.append(f"  - [{task['priority']}] {task['task']}")
+            lines.append(f"\n**Pending Tasks:** {len(pending_tasks)}")
+            for task in pending_tasks[:3]:
+                lines.append(f"  - [{task['priority']}] {task['task']}")
 
-        if open_questions:
-            lines.append(f"\n**Open Questions:** {len(open_questions)}")
-            for q in open_questions:
-                lines.append(f"  - {q['agent_id']}: {q['question']}")
+            if open_questions:
+                lines.append(f"\n**Open Questions:** {len(open_questions)}")
+                for q in open_questions:
+                    lines.append(f"  - {q['agent_id']}: {q['question']}")
 
-        if recent_findings:
-            lines.append(f"\n**Recent Findings:** {len(state['findings'])} total")
-            for f in recent_findings:
-                lines.append(f"  - [{f['type']}] {f['content'][:50]}...")
+            if recent_findings:
+                lines.append(f"\n**Recent Findings:** {len(state['findings'])} total")
+                for f in recent_findings:
+                    lines.append(f"  - [{f['type']}] {f['content'][:50]}...")
 
-        return "\n".join(lines)
+            return "\n".join(lines)
+        return self._with_lock(op)
 
     def reset(self) -> None:
         """Reset blackboard to empty state."""

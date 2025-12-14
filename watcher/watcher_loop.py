@@ -50,8 +50,8 @@ def gather_state() -> Dict[str, Any]:
     if BLACKBOARD_FILE.exists():
         try:
             state["blackboard"] = json.loads(BLACKBOARD_FILE.read_text())
-        except:
-            state["blackboard"] = {"error": "Could not parse blackboard.json"}
+        except (json.JSONDecodeError, IOError, OSError) as e:
+            state["blackboard"] = {"error": f"Could not parse blackboard.json: {e}"}
 
     for f in COORDINATION_DIR.glob("agent_*.md"):
         mtime = datetime.fromtimestamp(f.stat().st_mtime)
@@ -313,7 +313,8 @@ def check_status():
                     age = (datetime.now(ls_time.tzinfo) - ls_time).total_seconds()
                     if age > 120 and agent.get("status") == "active":
                         print(f"   [!] {aid}: STALE ({int(age)}s since last update)")
-                except:
+                except (ValueError, TypeError, AttributeError) as e:
+                    # Skip agents with malformed timestamps
                     pass
 
     print("=" * 50)

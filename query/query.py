@@ -388,6 +388,10 @@ class QuerySystem:
 
         except sqlite3.Error as e:
             if conn:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 conn.close()
             raise DatabaseError(
                 f"Database operation failed: {e}. "
@@ -395,6 +399,10 @@ class QuerySystem:
             )
         except Exception as e:
             if conn:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 conn.close()
             raise
 
@@ -817,12 +825,19 @@ class QuerySystem:
                         # Remove inheritance and grant full control only to current user
                         # icacls command: /inheritance:r removes inherited permissions
                         # /grant:r grants permissions, replacing existing ones
-                        subprocess.run(
-                            ['icacls', str(self.db_path), '/inheritance:r',
-                             '/grant:r', f'{os.environ.get("USERNAME")}:F'],
-                            check=False, capture_output=True
-                        )
-                        self._log_debug(f"Set Windows ACLs for {self.db_path}")
+
+                        # Security fix: Validate USERNAME to prevent command injection
+                        # Only allow alphanumeric, underscore, hyphen, and dot characters
+                        username = os.environ.get("USERNAME", "")
+                        if username and re.match(r'^[a-zA-Z0-9_\-\.]+$', username):
+                            subprocess.run(
+                                ['icacls', str(self.db_path), '/inheritance:r',
+                                 '/grant:r', f'{username}:F'],
+                                check=False, capture_output=True
+                            )
+                            self._log_debug(f"Set Windows ACLs for {self.db_path}")
+                        else:
+                            self._log_debug("Skipping icacls: invalid or missing USERNAME")
                     except Exception as win_err:
                         self._log_debug(f"Warning: Could not set Windows ACLs: {win_err}")
 

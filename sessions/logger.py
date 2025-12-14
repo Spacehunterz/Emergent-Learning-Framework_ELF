@@ -145,8 +145,8 @@ class SessionLogger:
         """Log an error to stderr (non-blocking)."""
         try:
             sys.stderr.write(f"[SessionLogger] ERROR: {message}\n")
-        except:
-            pass  # Truly non-blocking
+        except (IOError, OSError, AttributeError):
+            pass  # Truly non-blocking - stderr may be unavailable
 
     def _log_debug(self, message: str):
         """Log a debug message to stderr."""
@@ -154,14 +154,17 @@ class SessionLogger:
             # Only log in debug mode (check env var)
             if os.environ.get('ELF_DEBUG', '').lower() in ('1', 'true', 'yes'):
                 sys.stderr.write(f"[SessionLogger] DEBUG: {message}\n")
-        except:
-            pass
+        except (IOError, OSError, AttributeError):
+            pass  # Debug logging is best-effort
 
     def _write_entry(self, entry: Dict[str, Any]) -> bool:
         """
         Write an entry to the current log file (thread-safe).
 
         Returns True on success, False on failure.
+
+        Uses binary mode append for better atomicity. Binary writes with flush
+        reduce the risk of partial writes during process crashes.
         """
         try:
             log_file = self._get_log_file()
@@ -170,13 +173,19 @@ class SessionLogger:
             if not self._ensure_dirs():
                 return False
 
-            # Serialize entry
-            line = json.dumps(entry, default=str, ensure_ascii=False) + "\n"
+            # Serialize entry and ensure it ends with newline
+            line = json.dumps(entry, default=str, ensure_ascii=False)
+            if not line.endswith('\n'):
+                line += '\n'
 
-            # Thread-safe write
+            # Encode to bytes for atomic binary write
+            line_bytes = line.encode('utf-8')
+
+            # Thread-safe atomic write
             with _write_lock:
-                with open(log_file, 'a', encoding='utf-8') as f:
-                    f.write(line)
+                with open(log_file, 'ab') as f:
+                    f.write(line_bytes)
+                    f.flush()  # Force write to OS buffer
 
             self._log_debug(f"Logged entry: {entry.get('type')} - {entry.get('tool', 'N/A')}")
             return True
@@ -326,7 +335,10 @@ class ProcessedTracker:
 
     def save(self, data: Dict[str, Any]) -> bool:
         """
-        Save the processed tracking data.
+        Save the processed tracking data using atomic write pattern.
+
+        Writes to temporary file first, then atomically replaces original.
+        This prevents corruption if process crashes during write.
 
         Args:
             data: Dict with 'processed_files' and 'last_processed'
@@ -336,10 +348,27 @@ class ProcessedTracker:
         """
         try:
             self._ensure_parent()
-            with open(self.processed_file, 'w', encoding='utf-8') as f:
+
+            # Write to temporary file first
+            temp_file = self.processed_file.with_suffix('.tmp')
+            with open(temp_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, default=str)
+                f.flush()
+                os.fsync(f.fileno())  # Force write to disk
+
+            # Atomically replace original file
+            # os.replace() is atomic on both Windows and Unix
+            os.replace(temp_file, self.processed_file)
             return True
+
         except Exception:
+            # Clean up temp file if it exists
+            try:
+                temp_file = self.processed_file.with_suffix('.tmp')
+                if temp_file.exists():
+                    temp_file.unlink()
+            except (IOError, OSError, PermissionError):
+                pass  # Best effort cleanup - file may be locked or missing
             return False
 
     def is_processed(self, filename: str) -> bool:
