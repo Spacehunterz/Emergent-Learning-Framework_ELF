@@ -180,6 +180,28 @@ Full documentation in the [Wiki](https://github.com/Spacehunterz/Emergent-Learni
 | Pro ($20) | Yes | Yes |
 | Max ($100+) | Yes | Yes |
 
+## Troubleshooting
+
+### Dashboard fails on Windows with Git Bash (Issue #11)
+
+If you see `Cannot find module @rollup/rollup-win32-x64-msvc` when starting the dashboard:
+
+**Cause:** Git Bash makes npm think it's running on Linux, so it installs Linux-specific binaries instead of Windows binaries.
+
+**Fix Option 1:** Use PowerShell or CMD for npm install:
+```powershell
+cd ~/.claude/emergent-learning/dashboard-app/frontend
+rm -rf node_modules package-lock.json
+npm install
+```
+
+**Fix Option 2:** Use Bun (handles platform detection correctly):
+```bash
+bun install
+```
+
+The start-dashboard.sh script will now detect this issue and warn you before failing.
+
 ## Links
 
 - [Claude Code Docs](https://docs.anthropic.com/en/docs/claude-code)

@@ -11,6 +11,64 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Helper function: Copy only if source and destination are different paths
+# Fixes issue #12 where cloning directly to target directory causes Copy-Item to fail
+function Copy-IfDifferent {
+    param(
+        [string]$Source,
+        [string]$Destination,
+        [switch]$Recurse
+    )
+
+    # Check if source exists
+    if (-not (Test-Path $Source)) {
+        return $false
+    }
+
+    # Resolve source to absolute path
+    $resolvedSrc = (Resolve-Path $Source).Path
+
+    # For destination, we need to handle both existing and non-existing paths
+    # If destination is a directory and source is a file, append the filename
+    if ((Test-Path $Destination) -and (Test-Path $Destination -PathType Container) -and (Test-Path $Source -PathType Leaf)) {
+        $resolvedDst = Join-Path (Resolve-Path $Destination).Path (Split-Path $Source -Leaf)
+    } elseif (Test-Path $Destination) {
+        $resolvedDst = (Resolve-Path $Destination).Path
+    } else {
+        # Destination doesn't exist - normalize the path
+        $resolvedDst = [System.IO.Path]::GetFullPath($Destination)
+    }
+
+    # Normalize paths for comparison (handle trailing slashes, case-insensitivity on Windows)
+    $normalizedSrc = $resolvedSrc.TrimEnd('\', '/').ToLower()
+    $normalizedDst = $resolvedDst.TrimEnd('\', '/').ToLower()
+
+    if ($normalizedSrc -eq $normalizedDst) {
+        # Source and destination are the same - skip copy
+        return $false
+    }
+
+    if ($Recurse) {
+        Copy-Item -Path $Source -Destination $Destination -Recurse -Force
+    } else {
+        Copy-Item -Path $Source -Destination $Destination -Force
+    }
+    return $true
+}
+
+# Helper to check if we're running from the target directory (in-place install)
+function Test-InPlaceInstall {
+    param(
+        [string]$ScriptDir,
+        [string]$TargetDir
+    )
+
+    $normalizedScript = $ScriptDir.TrimEnd('\', '/').ToLower()
+    $normalizedTarget = $TargetDir.TrimEnd('\', '/').ToLower()
+
+    return $normalizedScript -eq $normalizedTarget
+}
+
 if ($Help) {
     Write-Host "Usage: install.ps1 [OPTIONS]"
     Write-Host ""
@@ -54,6 +112,14 @@ $ClaudeDir = Join-Path $env:USERPROFILE ".claude"
 $EmergentLearningDir = Join-Path $ClaudeDir "emergent-learning"
 $HooksDir = Join-Path $ClaudeDir "hooks"
 $SettingsFile = Join-Path $ClaudeDir "settings.json"
+
+# Detect in-place installation (cloned directly to target)
+$InPlaceInstall = Test-InPlaceInstall -ScriptDir $ScriptDir -TargetDir $EmergentLearningDir
+if ($InPlaceInstall) {
+    Write-Host "  Detected: In-place installation (repo cloned to target directory)" -ForegroundColor Cyan
+    Write-Host "  Note: Skipping self-copy operations" -ForegroundColor Cyan
+    Write-Host ""
+}
 
 # Check prerequisites
 Write-Host "[Step 1/5] Checking prerequisites..." -ForegroundColor Yellow
@@ -143,26 +209,26 @@ $srcQueryDir = Join-Path $srcDir "query"
 $srcTemplatesDir = Join-Path $srcDir "templates"
 $dstQueryDir = Join-Path $EmergentLearningDir "query"
 
-# Copy core files
-Copy-Item -Path (Join-Path $srcQueryDir "query.py") -Destination (Join-Path $dstQueryDir "query.py") -Force
-Copy-Item -Path (Join-Path $srcTemplatesDir "golden-rules.md") -Destination (Join-Path $MemoryDir "golden-rules.md") -Force
-Copy-Item -Path (Join-Path $srcTemplatesDir "init_db.sql") -Destination (Join-Path $MemoryDir "init_db.sql") -Force
+# Copy core files (using safe copy that skips if src=dst)
+Copy-IfDifferent -Source (Join-Path $srcQueryDir "query.py") -Destination (Join-Path $dstQueryDir "query.py") | Out-Null
+Copy-IfDifferent -Source (Join-Path $srcTemplatesDir "golden-rules.md") -Destination (Join-Path $MemoryDir "golden-rules.md") | Out-Null
+Copy-IfDifferent -Source (Join-Path $srcTemplatesDir "init_db.sql") -Destination (Join-Path $MemoryDir "init_db.sql") | Out-Null
 Write-Host "  Copied query system" -ForegroundColor Green
 
-# Copy hooks
+# Copy hooks (these go to a different location, so always safe)
 $srcHooksDir = $ScriptDir
 $hooksSource = Join-Path (Join-Path $srcHooksDir "hooks") "learning-loop"
 $learningLoopDir = Join-Path $HooksDir "learning-loop"
 Copy-Item -Path (Join-Path $hooksSource "*.py") -Destination $learningLoopDir -Force
 Write-Host "  Copied learning hooks" -ForegroundColor Green
 
-# Copy scripts
+# Copy scripts (using safe copy)
 $scriptsDst = Join-Path $EmergentLearningDir "scripts"
 New-Item -ItemType Directory -Path $scriptsDst -Force | Out-Null
 $scriptsSource = Join-Path $srcDir "scripts"
 if (Test-Path $scriptsSource) {
     Get-ChildItem -Path $scriptsSource -Filter "*.sh" -ErrorAction SilentlyContinue | ForEach-Object {
-        Copy-Item -Path $_.FullName -Destination $scriptsDst -Force
+        Copy-IfDifferent -Source $_.FullName -Destination $scriptsDst | Out-Null
     }
 }
 Write-Host "  Copied recording scripts" -ForegroundColor Green
@@ -188,18 +254,18 @@ if ($InstallSwarm) {
     Write-Host ""
     Write-Host "[Installing] Swarm components..." -ForegroundColor Yellow
 
-    # Copy conductor
+    # Copy conductor (using safe copy)
     $conductorSrc = Join-Path $srcDir "conductor"
     $conductorDst = Join-Path $EmergentLearningDir "conductor"
     Get-ChildItem -Path $conductorSrc -Filter "*.py" | ForEach-Object {
-        Copy-Item -Path $_.FullName -Destination $conductorDst -Force
+        Copy-IfDifferent -Source $_.FullName -Destination $conductorDst | Out-Null
     }
     Get-ChildItem -Path $conductorSrc -Filter "*.sql" -ErrorAction SilentlyContinue | ForEach-Object {
-        Copy-Item -Path $_.FullName -Destination $conductorDst -Force
+        Copy-IfDifferent -Source $_.FullName -Destination $conductorDst | Out-Null
     }
     Write-Host "  Copied conductor module" -ForegroundColor Green
 
-    # Copy agent personas
+    # Copy agent personas (using safe copy)
     $srcAgentsDir = Join-Path $srcDir "agents"
     $dstAgentsDir = Join-Path $EmergentLearningDir "agents"
     $agents = @("researcher", "architect", "skeptic", "creative")
@@ -208,13 +274,13 @@ if ($InstallSwarm) {
         $agentDst = Join-Path $dstAgentsDir $agent
         if (Test-Path $agentSrc) {
             Get-ChildItem -Path $agentSrc | ForEach-Object {
-                Copy-Item -Path $_.FullName -Destination $agentDst -Force
+                Copy-IfDifferent -Source $_.FullName -Destination $agentDst | Out-Null
             }
         }
     }
     Write-Host "  Copied agent personas" -ForegroundColor Green
 
-    # Copy swarm command
+    # Copy swarm command (goes to different location, always safe)
     $commandsDir = Join-Path $ClaudeDir "commands"
     New-Item -ItemType Directory -Path $commandsDir -Force | Out-Null
     $srcCommandsDir = Join-Path $ScriptDir "commands"
@@ -224,7 +290,7 @@ if ($InstallSwarm) {
     }
     Write-Host "  Copied /swarm command" -ForegroundColor Green
 
-    # Copy agent coordination plugin
+    # Copy agent coordination plugin (goes to different location, always safe)
     $claudePluginsDir = Join-Path $ClaudeDir "plugins"
     $pluginsDir = Join-Path $claudePluginsDir "agent-coordination"
     $pluginsUtilsDir = Join-Path $pluginsDir "utils"
@@ -259,11 +325,16 @@ if ($InstallDashboard) {
     $dashboardDst = Join-Path $EmergentLearningDir "dashboard-app"
 
     if (Test-Path $dashboardSrc) {
-        if (Test-Path $dashboardDst) {
-            Remove-Item -Path $dashboardDst -Recurse -Force
+        # For in-place install, skip the copy entirely
+        if (-not $InPlaceInstall) {
+            if (Test-Path $dashboardDst) {
+                Remove-Item -Path $dashboardDst -Recurse -Force
+            }
+            Copy-Item -Path $dashboardSrc -Destination $dashboardDst -Recurse
+            Write-Host "  Copied dashboard" -ForegroundColor Green
+        } else {
+            Write-Host "  Dashboard already in place (in-place install)" -ForegroundColor Cyan
         }
-        Copy-Item -Path $dashboardSrc -Destination $dashboardDst -Recurse
-        Write-Host "  Copied dashboard" -ForegroundColor Green
 
         # Install frontend dependencies
         $frontendDir = Join-Path $dashboardDst "frontend"
@@ -398,18 +469,73 @@ try {
     exit 1
 }
 
-# === CLAUDE.MD ===
+# === CLAUDE.MD SETUP (Issue #13: Interactive prompts) ===
 $claudeMdDst = Join-Path $ClaudeDir "CLAUDE.md"
 $templatesDir = Join-Path $ScriptDir "templates"
 $claudeMdSrc = Join-Path $templatesDir "CLAUDE.md.template"
 
 if (-not (Test-Path $claudeMdDst)) {
+    # No existing CLAUDE.md - fresh install
     if (Test-Path $claudeMdSrc) {
         Copy-Item -Path $claudeMdSrc -Destination $claudeMdDst
         Write-Host "  Created CLAUDE.md" -ForegroundColor Green
     }
 } else {
-    Write-Host "  CLAUDE.md exists (not overwritten)" -ForegroundColor Yellow
+    # Existing CLAUDE.md found - check if ELF already configured
+    $existingContent = Get-Content $claudeMdDst -Raw
+    if ($existingContent -match "Emergent Learning Framework") {
+        Write-Host "  CLAUDE.md already contains ELF configuration (skipped)" -ForegroundColor Green
+    } else {
+        # Existing config without ELF - prompt user for action
+        Write-Host ""
+        Write-Host "  Existing CLAUDE.md detected!" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "  How would you like to add ELF configuration?" -ForegroundColor Cyan
+        Write-Host "    [1] Merge    - Keep your config, add ELF below (Recommended)" -ForegroundColor White
+        Write-Host "    [2] Replace  - Use ELF only (your config backed up)" -ForegroundColor White
+        Write-Host "    [3] Skip     - Don't modify CLAUDE.md" -ForegroundColor White
+        Write-Host ""
+
+        $choice = Read-Host "  Enter choice (1/2/3)"
+
+        switch ($choice) {
+            "1" {
+                # Merge: Keep existing + append ELF
+                $backupFile = Join-Path $ClaudeDir "CLAUDE.md.backup"
+                Copy-Item -Path $claudeMdDst -Destination $backupFile -Force
+
+                $elfContent = Get-Content $claudeMdSrc -Raw
+                $mergedContent = @"
+$existingContent
+
+
+# ==============================================
+# EMERGENT LEARNING FRAMEWORK - AUTO-APPENDED
+# ==============================================
+
+$elfContent
+"@
+                [System.IO.File]::WriteAllText($claudeMdDst, $mergedContent, [System.Text.UTF8Encoding]::new($false))
+                Write-Host "  Merged ELF with your config (backup: CLAUDE.md.backup)" -ForegroundColor Green
+            }
+            "2" {
+                # Replace: Backup existing, use ELF only
+                $backupFile = Join-Path $ClaudeDir "CLAUDE.md.backup"
+                Copy-Item -Path $claudeMdDst -Destination $backupFile -Force
+                Copy-Item -Path $claudeMdSrc -Destination $claudeMdDst -Force
+                Write-Host "  Replaced with ELF config (your config backed up to CLAUDE.md.backup)" -ForegroundColor Green
+            }
+            "3" {
+                # Skip: Don't modify
+                Write-Host "  Skipped CLAUDE.md modification" -ForegroundColor Yellow
+                Write-Host "  Note: ELF may not function correctly without CLAUDE.md instructions" -ForegroundColor Yellow
+            }
+            default {
+                Write-Host "  Invalid choice. Skipping CLAUDE.md modification." -ForegroundColor Yellow
+                Write-Host "  Run installer again to configure CLAUDE.md" -ForegroundColor Yellow
+            }
+        }
+    }
 }
 
 # === DONE ===

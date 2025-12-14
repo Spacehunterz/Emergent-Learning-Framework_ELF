@@ -2,6 +2,39 @@
 # Smart dashboard startup - checks if running, opens correct port
 
 ELF_DIR="$HOME/.claude/emergent-learning"
+
+# Issue #11: Detect Git Bash + npm platform mismatch on Windows
+# Git Bash makes npm think it's Linux, installing wrong native binaries
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ -n "$MSYSTEM" ]]; then
+    FRONTEND_DIR="$ELF_DIR/dashboard-app/frontend"
+    if [ -d "$FRONTEND_DIR/node_modules/@rollup" ]; then
+        # Check if we have Linux binaries instead of Windows
+        if ls "$FRONTEND_DIR/node_modules/@rollup/"*linux* >/dev/null 2>&1 && \
+           ! ls "$FRONTEND_DIR/node_modules/@rollup/"*win32* >/dev/null 2>&1; then
+            echo ""
+            echo "WARNING: Git Bash npm platform mismatch detected!"
+            echo "=========================================="
+            echo "npm installed Linux binaries instead of Windows binaries."
+            echo ""
+            echo "To fix, run these commands in PowerShell or CMD (not Git Bash):"
+            echo ""
+            echo "  cd $FRONTEND_DIR"
+            echo "  rm -rf node_modules package-lock.json"
+            echo "  npm install"
+            echo ""
+            echo "Or use Bun instead (works correctly everywhere):"
+            echo "  bun install"
+            echo ""
+            echo "=========================================="
+            echo ""
+            read -p "Try to continue anyway? (may fail) [y/N]: " choice
+            if [[ ! "$choice" =~ ^[Yy]$ ]]; then
+                exit 1
+            fi
+        fi
+    fi
+fi
+
 BACKEND_PORT=8888
 FRONTEND_OUTPUT="/tmp/claude-dashboard-frontend.log"
 

@@ -2667,19 +2667,29 @@ def ensure_full_setup():
     """
     Check setup status and return status code for Claude to handle.
     Claude will use AskUserQuestion tool to show selection boxes if needed.
-    
+
     Returns:
         "ok" - Already set up, proceed normally
         "fresh_install" - New user, auto-installed successfully
         "needs_user_choice" - Has existing config, Claude should ask user
         "install_failed" - Something went wrong
     """
+    import platform
+
     global_claude_md = Path.home() / ".claude" / "CLAUDE.md"
-    setup_script = Path(__file__).parent.parent / "setup" / "install.sh"
-    
+    elf_dir = Path(__file__).parent.parent
+
+    # Detect OS and find appropriate installer
+    is_windows = platform.system() == "Windows"
+
+    if is_windows:
+        setup_script = elf_dir / "install.ps1"
+    else:
+        setup_script = elf_dir / "setup" / "install.sh"
+
     if not setup_script.exists():
         return "ok"
-    
+
     # Case 1: No CLAUDE.md - new user, auto-install
     if not global_claude_md.exists():
         import subprocess
@@ -2690,16 +2700,24 @@ def ensure_full_setup():
         print("")
         print("Installing:")
         print("  - CLAUDE.md : Core instructions")
-        print("  - /search   : Session history search")  
+        print("  - /search   : Session history search")
         print("  - /checkin  : Building check-in")
         print("  - /swarm    : Multi-agent coordination")
         print("  - Hooks     : Auto-query & enforcement")
         print("")
         try:
-            result = subprocess.run(
-                ["bash", str(setup_script), "--mode", "fresh"],
-                capture_output=True, text=True, timeout=30
-            )
+            if is_windows:
+                # Windows: use PowerShell with CoreOnly to avoid dashboard during auto-setup
+                result = subprocess.run(
+                    ["powershell", "-ExecutionPolicy", "Bypass", "-File", str(setup_script), "-CoreOnly"],
+                    capture_output=True, text=True, timeout=60
+                )
+            else:
+                # Unix: use bash
+                result = subprocess.run(
+                    ["bash", str(setup_script), "--mode", "fresh"],
+                    capture_output=True, text=True, timeout=30
+                )
             print("[ELF] Setup complete!")
             print("")
             return "fresh_install"
