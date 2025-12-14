@@ -7,9 +7,19 @@ echo "QUERY SYSTEM v2.0 - ROBUSTNESS DEMONSTRATION"
 echo "======================================================================"
 echo ""
 
+# Detect Python command
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Python not found. Install from https://python.org"
+    exit 1
+fi
+
 echo "1. HELP SYSTEM (Enhanced with examples and error codes)"
 echo "----------------------------------------------------------------------"
-python query.py --help | head -20
+$PYTHON_CMD query.py --help | head -20
 echo ""
 echo "Press Enter to continue..."
 read
@@ -17,7 +27,7 @@ read
 echo ""
 echo "2. DATABASE VALIDATION"
 echo "----------------------------------------------------------------------"
-python query.py --validate | head -20
+$PYTHON_CMD query.py --validate | head -20
 echo ""
 echo "Press Enter to continue..."
 read
@@ -25,7 +35,7 @@ read
 echo ""
 echo "3. DEBUG MODE + JSON FORMAT"
 echo "----------------------------------------------------------------------"
-python query.py --stats --format json --debug 2>&1 | head -30
+$PYTHON_CMD query.py --stats --format json --debug 2>&1 | head -30
 echo ""
 echo "Press Enter to continue..."
 read
@@ -33,7 +43,7 @@ read
 echo ""
 echo "4. CSV FORMAT OUTPUT"
 echo "----------------------------------------------------------------------"
-python query.py --recent 3 --format csv
+$PYTHON_CMD query.py --recent 3 --format csv
 echo ""
 echo "Press Enter to continue..."
 read
@@ -41,7 +51,7 @@ read
 echo ""
 echo "5. INPUT VALIDATION (Invalid Domain)"
 echo "----------------------------------------------------------------------"
-python query.py --domain "invalid@domain" 2>&1 || true
+$PYTHON_CMD query.py --domain "invalid@domain" 2>&1 || true
 echo ""
 echo "Press Enter to continue..."
 read
@@ -49,7 +59,7 @@ read
 echo ""
 echo "6. INPUT VALIDATION (Limit Too Large)"
 echo "----------------------------------------------------------------------"
-python query.py --recent 2000 2>&1 || true
+$PYTHON_CMD query.py --recent 2000 2>&1 || true
 echo ""
 echo "Press Enter to continue..."
 read
@@ -57,7 +67,7 @@ read
 echo ""
 echo "7. CONTEXT BUILDING WITH DEBUG"
 echo "----------------------------------------------------------------------"
-python query.py --context --domain coordination --debug 2>&1 | head -40
+$PYTHON_CMD query.py --context --domain coordination --debug 2>&1 | head -40
 echo ""
 echo "Press Enter to continue..."
 read
@@ -65,7 +75,7 @@ read
 echo ""
 echo "8. STATISTICS QUERY"
 echo "----------------------------------------------------------------------"
-python query.py --stats --format text | head -30
+$PYTHON_CMD query.py --stats --format text | head -30
 echo ""
 echo "======================================================================"
 echo "DEMONSTRATION COMPLETE"

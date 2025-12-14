@@ -305,8 +305,14 @@ settings['hooks']['PostToolUse'] = [
     if not (h.get('matcher') == 'Task' and any('learning-loop' in hook.get('command', '') for hook in h.get('hooks', [])))
 ]
 
-# Add ELF hooks - use python3 on Unix, python on Windows
-python_cmd = "python3" if os.path.exists("/usr/bin/python3") or os.system("which python3 > /dev/null 2>&1") == 0 else "python"
+# Add ELF hooks - use python on Windows, python3 on Unix
+# Check for Windows by looking at path style (contains backslash or drive letter)
+is_windows = os.name == 'nt' or (len(pre_hook) > 1 and pre_hook[1] == ':')
+if is_windows:
+    python_cmd = "python"
+else:
+    # On Unix, prefer python3 if available
+    python_cmd = "python3" if os.path.exists("/usr/bin/python3") or os.system("which python3 > /dev/null 2>&1") == 0 else "python"
 settings['hooks']['PreToolUse'].append({
     "matcher": "Task",
     "hooks": [{"type": "command", "command": f"{python_cmd} \"{pre_hook}\""}]
@@ -323,8 +329,8 @@ PYEOF
 
 echo -e "  ${GREEN}Configured hooks (preserved existing hooks)${NC}"
 
-# Validate settings.json
-if $PYTHON_CMD -c "import json; json.load(open('$SETTINGS_FILE'))" 2>/dev/null; then
+# Validate settings.json (use env var to handle MSYS/Windows path conversion)
+if SETTINGS_FILE="$SETTINGS_FILE" $PYTHON_CMD -c "import json, os; json.load(open(os.environ['SETTINGS_FILE']))" 2>/dev/null; then
     echo -e "  ${GREEN}[OK] settings.json validated${NC}"
 else
     echo -e "  ${RED}[ERROR] settings.json validation failed!${NC}"
@@ -368,7 +374,7 @@ if [ "$INSTALL_DASHBOARD" = true ]; then
     echo ""
 fi
 echo "  # 3. Test the query system:"
-echo "  python3 ~/.claude/emergent-learning/query/query.py --context"
+echo "  $PYTHON_CMD ~/.claude/emergent-learning/query/query.py --context"
 echo ""
 echo "  # 4. Start using Claude Code (it will now query the building automatically!)"
 echo "  claude"

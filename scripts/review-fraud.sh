@@ -16,6 +16,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ELF_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 FRAUD_REVIEW_PY="$ELF_ROOT/query/fraud_review.py"
 
+# Detect Python command
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Python not found. Install from https://python.org"
+    exit 1
+fi
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -64,7 +74,7 @@ REPORT_ID="${2:-}"
 case "$COMMAND" in
     list)
         echo -e "${BLUE}=== Pending Fraud Reports ===${NC}\n"
-        python "$FRAUD_REVIEW_PY" list
+        $PYTHON_CMD "$FRAUD_REVIEW_PY" list
         ;;
 
     show)
@@ -74,7 +84,7 @@ case "$COMMAND" in
             exit 1
         fi
         echo -e "${BLUE}=== Fraud Report #$REPORT_ID ===${NC}\n"
-        python "$FRAUD_REVIEW_PY" show --report-id "$REPORT_ID"
+        $PYTHON_CMD "$FRAUD_REVIEW_PY" show --report-id "$REPORT_ID"
         ;;
 
     confirm)
@@ -90,7 +100,7 @@ case "$COMMAND" in
         read -r CONFIRM
 
         if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
-            python "$FRAUD_REVIEW_PY" confirm --report-id "$REPORT_ID"
+            $PYTHON_CMD "$FRAUD_REVIEW_PY" confirm --report-id "$REPORT_ID"
             echo -e "${GREEN}Report #$REPORT_ID confirmed as fraud.${NC}"
         else
             echo -e "${BLUE}Cancelled.${NC}"
@@ -110,7 +120,7 @@ case "$COMMAND" in
         read -r CONFIRM
 
         if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
-            python "$FRAUD_REVIEW_PY" reject --report-id "$REPORT_ID"
+            $PYTHON_CMD "$FRAUD_REVIEW_PY" reject --report-id "$REPORT_ID"
             echo -e "${GREEN}Report #$REPORT_ID marked as false positive.${NC}"
         else
             echo -e "${BLUE}Cancelled.${NC}"

@@ -3,6 +3,16 @@
 
 ELF_DIR="$HOME/.claude/emergent-learning"
 
+# Detect Python command
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "Error: Python not found. Install from https://python.org"
+    exit 1
+fi
+
 # Issue #11: Detect Git Bash + npm platform mismatch on Windows
 # Git Bash makes npm think it's Linux, installing wrong native binaries
 if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ -n "$MSYSTEM" ]]; then
@@ -44,7 +54,7 @@ if curl -s "http://127.0.0.1:$BACKEND_PORT/health" >/dev/null 2>&1; then
     BACKEND_RUNNING=true
 else
     echo "Starting backend..."
-    cd "$ELF_DIR/dashboard-app/backend" && python3 -m uvicorn main:app --host 127.0.0.1 --port $BACKEND_PORT &
+    cd "$ELF_DIR/dashboard-app/backend" && $PYTHON_CMD -m uvicorn main:app --host 127.0.0.1 --port $BACKEND_PORT &
     BACKEND_RUNNING=false
 fi
 
