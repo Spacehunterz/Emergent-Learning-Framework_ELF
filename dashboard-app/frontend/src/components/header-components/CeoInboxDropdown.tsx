@@ -54,8 +54,8 @@ export default function CeoInboxDropdown({
       {/* Dropdown Panel */}
       {isOpen && (
         <div
-          className="absolute right-0 mt-2 w-96 rounded-lg shadow-2xl overflow-hidden z-50"
-          style={{ background: '#0f172a', border: '1px solid #334155' }}
+          className="fixed right-4 w-96 rounded-lg shadow-2xl overflow-hidden z-[100]"
+          style={{ background: '#0f172a', border: '1px solid #334155', top: '70px' }}
         >
           <div className="p-3 border-b border-slate-700" style={{ background: '#1e293b' }}>
             <h3 className="text-sm font-semibold text-white">CEO Inbox</h3>

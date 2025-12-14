@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { SpikeReport } from '../types'
 import { FileSearch, Clock } from 'lucide-react'
 import { useAPI } from '../hooks/useAPI'
@@ -21,22 +21,7 @@ export default function SpikeReportsPanel({ className = '' }: SpikeReportsPanelP
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [ratingLoading, setRatingLoading] = useState<number | null>(null)
 
-  useEffect(() => {
-    loadReports()
-  }, [domainFilter, tagFilter])
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchQuery) {
-        searchReports()
-      } else {
-        loadReports()
-      }
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
-
-  const loadReports = async () => {
+  const loadReports = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -56,9 +41,9 @@ export default function SpikeReportsPanel({ className = '' }: SpikeReportsPanelP
     } finally {
       setLoading(false)
     }
-  }
+  }, [api, domainFilter, tagFilter])
 
-  const searchReports = async () => {
+  const searchReports = useCallback(async () => {
     setLoading(true)
     try {
       const data = await api.get(`/api/spike-reports/search?q=${encodeURIComponent(searchQuery)}`)
@@ -68,7 +53,22 @@ export default function SpikeReportsPanel({ className = '' }: SpikeReportsPanelP
     } finally {
       setLoading(false)
     }
-  }
+  }, [api, searchQuery])
+
+  useEffect(() => {
+    loadReports()
+  }, [loadReports])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery) {
+        searchReports()
+      } else {
+        loadReports()
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery, searchReports, loadReports])
 
   const handleRate = async (id: number, score: number) => {
     setRatingLoading(id)

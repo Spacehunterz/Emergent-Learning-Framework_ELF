@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Heuristic } from '../types'
 import { useAPI } from './useAPI'
 
@@ -74,6 +74,11 @@ export function useHeuristics(options?: UseHeuristicsOptions) {
       throw err
     }
   }, [api])
+
+  // Load heuristics on mount - MUST be after all useCallback hooks
+  useEffect(() => {
+    reloadHeuristics()
+  }, [reloadHeuristics])
 
   return {
     heuristics,
