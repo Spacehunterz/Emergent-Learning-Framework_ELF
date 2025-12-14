@@ -219,6 +219,86 @@ CREATE TABLE IF NOT EXISTS conductor_decisions (
     FOREIGN KEY (run_id) REFERENCES workflow_runs(id) ON DELETE CASCADE
 );
 
+-- Building query logging (tracks all queries to the framework)
+CREATE TABLE IF NOT EXISTS building_queries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    query_type TEXT NOT NULL,
+    session_id TEXT,
+    agent_id TEXT,
+    domain TEXT,
+    tags TEXT,
+    limit_requested INTEGER,
+    max_tokens_requested INTEGER,
+    results_returned INTEGER,
+    tokens_approximated INTEGER,
+    duration_ms INTEGER,
+    status TEXT DEFAULT 'success',
+    error_message TEXT,
+    error_code TEXT,
+    golden_rules_returned INTEGER DEFAULT 0,
+    heuristics_count INTEGER DEFAULT 0,
+    learnings_count INTEGER DEFAULT 0,
+    experiments_count INTEGER DEFAULT 0,
+    ceo_reviews_count INTEGER DEFAULT 0,
+    query_summary TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME
+);
+
+-- Spike reports (time-boxed research investigations)
+CREATE TABLE IF NOT EXISTS spike_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    topic TEXT,
+    question TEXT,
+    findings TEXT,
+    gotchas TEXT,
+    resources TEXT,
+    time_invested_minutes INTEGER,
+    domain TEXT,
+    tags TEXT,
+    usefulness_score REAL DEFAULT 0,
+    access_count INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Assumptions tracking (hypotheses to verify or challenge)
+CREATE TABLE IF NOT EXISTS assumptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    assumption TEXT NOT NULL,
+    context TEXT,
+    source TEXT,
+    confidence REAL DEFAULT 0.5 CHECK(confidence >= 0.0 AND confidence <= 1.0),
+    status TEXT DEFAULT 'active' CHECK(status IN ('active', 'verified', 'challenged', 'invalidated')),
+    domain TEXT,
+    verified_count INTEGER DEFAULT 0,
+    challenged_count INTEGER DEFAULT 0,
+    last_verified_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Session summaries (haiku-generated summaries of Claude sessions)
+CREATE TABLE IF NOT EXISTS session_summaries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL UNIQUE,
+    project TEXT NOT NULL,
+    tool_summary TEXT,
+    content_summary TEXT,
+    conversation_summary TEXT,
+    files_touched TEXT DEFAULT '[]',
+    tool_counts TEXT DEFAULT '{}',
+    message_count INTEGER DEFAULT 0,
+    session_file_path TEXT,
+    session_file_size INTEGER,
+    session_last_modified DATETIME,
+    summarized_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    summarizer_model TEXT DEFAULT 'haiku',
+    summary_version INTEGER DEFAULT 1,
+    is_stale INTEGER DEFAULT 0,
+    needs_resummarize INTEGER DEFAULT 0
+);
 -- Indexes for efficient querying
 CREATE INDEX IF NOT EXISTS idx_learnings_domain ON learnings(domain);
 CREATE INDEX IF NOT EXISTS idx_learnings_type ON learnings(type);
@@ -274,6 +354,27 @@ CREATE INDEX IF NOT EXISTS idx_trails_agent ON trails(agent_id);
 CREATE INDEX IF NOT EXISTS idx_decisions_run ON conductor_decisions(run_id);
 CREATE INDEX IF NOT EXISTS idx_decisions_type ON conductor_decisions(decision_type);
 
+
+-- Indexes for new tables
+CREATE INDEX IF NOT EXISTS idx_building_queries_type ON building_queries(query_type);
+CREATE INDEX IF NOT EXISTS idx_building_queries_session ON building_queries(session_id);
+CREATE INDEX IF NOT EXISTS idx_building_queries_created ON building_queries(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_building_queries_status ON building_queries(status);
+
+CREATE INDEX IF NOT EXISTS idx_spike_reports_domain ON spike_reports(domain);
+CREATE INDEX IF NOT EXISTS idx_spike_reports_topic ON spike_reports(topic);
+CREATE INDEX IF NOT EXISTS idx_spike_reports_created ON spike_reports(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_spike_reports_usefulness ON spike_reports(usefulness_score DESC);
+
+CREATE INDEX IF NOT EXISTS idx_assumptions_domain ON assumptions(domain);
+CREATE INDEX IF NOT EXISTS idx_assumptions_status ON assumptions(status);
+CREATE INDEX IF NOT EXISTS idx_assumptions_confidence ON assumptions(confidence DESC);
+CREATE INDEX IF NOT EXISTS idx_assumptions_created ON assumptions(created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_session_summaries_session ON session_summaries(session_id);
+CREATE INDEX IF NOT EXISTS idx_session_summaries_project ON session_summaries(project);
+CREATE INDEX IF NOT EXISTS idx_session_summaries_summarized ON session_summaries(summarized_at DESC);
+CREATE INDEX IF NOT EXISTS idx_session_summaries_stale ON session_summaries(is_stale);
 -- Validation triggers
 CREATE TRIGGER IF NOT EXISTS learnings_validate_insert
 BEFORE INSERT ON learnings
@@ -314,7 +415,9 @@ BEGIN
 END;
 
 -- Initialize schema version
-INSERT OR IGNORE INTO schema_version (version, description) VALUES (1, 'Initial schema');
+
+-- Initialize schema version
+INSERT OR REPLACE INTO schema_version (version, description) VALUES (2, 'Added building_queries, spike_reports, assumptions, session_summaries tables');
 
 -- Initialize db operations tracking
 INSERT OR IGNORE INTO db_operations (id, operation_count, total_vacuums, total_analyzes) VALUES (1, 0, 0, 0);

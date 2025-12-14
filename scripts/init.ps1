@@ -67,7 +67,7 @@ Thumbs.db
 
 # Initialize database
 $DbPath = Join-Path $BaseDir "memory\index.db"
-$SchemaPath = Join-Path $BaseDir "memory\schema.sql"
+$SchemaPath = Join-Path $BaseDir "templates\init_db.sql"
 
 if (Test-Path $SchemaPath) {
     Write-Host ""
@@ -75,7 +75,7 @@ if (Test-Path $SchemaPath) {
     Get-Content $SchemaPath | sqlite3.exe $DbPath
     Write-Host "✓ Database initialized" -ForegroundColor Green
 } else {
-    Write-Host "Warning: schema.sql not found at $SchemaPath" -ForegroundColor Yellow
+    Write-Host "Warning: init_db.sql not found at $SchemaPath" -ForegroundColor Yellow
     Write-Host "Database initialization skipped"
 }
 

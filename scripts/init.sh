@@ -56,7 +56,7 @@ fi
 
 # Initialize database
 DB_PATH="$BASE_DIR/memory/index.db"
-SCHEMA_PATH="$BASE_DIR/memory/schema.sql"
+SCHEMA_PATH="$BASE_DIR/templates/init_db.sql"
 
 if [ -f "$SCHEMA_PATH" ]; then
     echo ""
@@ -64,7 +64,7 @@ if [ -f "$SCHEMA_PATH" ]; then
     sqlite3 "$DB_PATH" < "$SCHEMA_PATH"
     echo "✓ Database initialized"
 else
-    echo "Warning: schema.sql not found at $SCHEMA_PATH"
+    echo "Warning: init_db.sql not found at $SCHEMA_PATH"
     echo "Database initialization skipped"
 fi
 
