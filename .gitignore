@@ -21,3 +21,4 @@ wiki-repo/
 *.db.backup*
 .claude/
 desktop.ini
+sessions/.processed
