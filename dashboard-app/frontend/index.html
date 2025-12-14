@@ -5,9 +5,85 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Emergent Learning Dashboard</title>
+    <style>
+      /* Intro screen - fullscreen video overlay */
+      #intro-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 99999;
+        background: #0f172a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.5s ease-out;
+      }
+      #intro-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #intro-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    </style>
   </head>
   <body>
+    <!-- Intro screen - shows immediately while React loads -->
+    <div id="intro-screen">
+      <video id="intro-video" autoplay muted playsinline>
+        <source src="/intro.mp4" type="video/mp4" />
+      </video>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <script>
+      (function() {
+        var video = document.getElementById('intro-video');
+        var screen = document.getElementById('intro-screen');
+        var dashboardReady = false;
+        var videoEnded = false;
+
+        function maybeHideIntro() {
+          if (dashboardReady && videoEnded) {
+            screen.classList.add('hidden');
+            setTimeout(function() {
+              screen.style.display = 'none';
+            }, 500);
+          }
+        }
+
+        // When video ends
+        video.addEventListener('ended', function() {
+          videoEnded = true;
+          maybeHideIntro();
+        });
+
+        // Fallback: if video fails to load or play, hide after short delay
+        video.addEventListener('error', function() {
+          videoEnded = true;
+          maybeHideIntro();
+        });
+
+        // Fallback timeout - don't block forever if something goes wrong
+        setTimeout(function() {
+          if (!videoEnded) {
+            videoEnded = true;
+            maybeHideIntro();
+          }
+        }, 10000);
+
+        // Called by React when dashboard is ready
+        window.__dashboardReady = function() {
+          dashboardReady = true;
+          maybeHideIntro();
+        };
+      })();
+    </script>
   </body>
 </html>
