@@ -2212,6 +2212,59 @@ class QuerySystem:
                             approx_tokens += len(entry) // 4
                         learnings_count += len(domain_data['learnings'])
 
+                else:
+                    # No domain specified - show recent heuristics across all domains
+                    try:
+                        with self._get_connection() as conn:
+                            conn.row_factory = sqlite3.Row
+                            cursor = conn.cursor()
+
+                            # Get recent non-golden heuristics (golden are in TIER 1)
+                            cursor.execute("""
+                                SELECT * FROM heuristics
+                                WHERE is_golden = 0 OR is_golden IS NULL
+                                ORDER BY created_at DESC, confidence DESC
+                                LIMIT 10
+                            """)
+                            recent_heuristics = [dict(row) for row in cursor.fetchall()]
+
+                            if recent_heuristics:
+                                context_parts.append("## Recent Heuristics (all domains)\n\n")
+                                for h in recent_heuristics:
+                                    h_domain = h.get('domain', 'general')
+                                    entry = f"- **{h['rule']}** (domain: {h_domain}, confidence: {h['confidence']:.2f})\n"
+                                    if h.get('explanation'):
+                                        expl = h['explanation'][:100] + '...' if len(h['explanation']) > 100 else h['explanation']
+                                        entry += f"  {expl}\n"
+                                    entry += "\n"
+                                    context_parts.append(entry)
+                                    approx_tokens += len(entry) // 4
+                                heuristics_count += len(recent_heuristics)
+
+                            # Get recent learnings across all domains
+                            cursor.execute("""
+                                SELECT * FROM learnings
+                                ORDER BY created_at DESC
+                                LIMIT 10
+                            """)
+                            recent_learnings = [dict(row) for row in cursor.fetchall()]
+
+                            if recent_learnings:
+                                context_parts.append("## Recent Learnings (all domains)\n\n")
+                                for l in recent_learnings:
+                                    l_domain = l.get('domain', 'general')
+                                    entry = f"- **{l['title']}** ({l['type']}, domain: {l_domain})\n"
+                                    if l.get('summary'):
+                                        summary = l['summary'][:100] + '...' if len(l['summary']) > 100 else l['summary']
+                                        entry += f"  {summary}\n"
+                                    entry += "\n"
+                                    context_parts.append(entry)
+                                    approx_tokens += len(entry) // 4
+                                learnings_count += len(recent_learnings)
+
+                    except Exception as e:
+                        self._log_debug(f"Failed to fetch recent heuristics/learnings: {e}")
+
                 if tags:
                     context_parts.append(f"## Tag Matches: {', '.join(tags)}\n\n")
                     tag_results = self.query_by_tags(tags, limit=5, timeout=timeout)
