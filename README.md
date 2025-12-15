@@ -15,6 +15,8 @@ Claude Code learns from your failures and successes, building institutional know
 ./install.ps1             # Windows
 ```
 
+**New to ELF?** See the [Getting Started Guide](GETTING_STARTED.md) for detailed step-by-step instructions including prerequisites and troubleshooting.
+
 ## First Use: Say "check in"
 
 **Every session, start with `check in`.** This is the most important habit:
@@ -159,6 +161,8 @@ cd ~/.claude/emergent-learning/dashboard-app && ./run-dashboard.sh
 | **Creative** | Novel solutions, lateral thinking |
 
 ## Documentation
+
+**Quick Start:** [Getting Started Guide](GETTING_STARTED.md) - Step-by-step setup from zero to running
 
 Full documentation in the [Wiki](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/wiki):
 
