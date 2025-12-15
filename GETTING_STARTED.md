@@ -140,7 +140,7 @@ cd ~/.claude/emergent-learning/dashboard-app
 ./run-dashboard.sh
 ```
 
-Then open: http://localhost:3000
+Then open: http://localhost:3001
 
 ### Query the Building Manually
 
@@ -215,7 +215,7 @@ See `UNINSTALL.md` for clean removal instructions.
 
 - **Issues:** GitHub Issues on the repo
 - **README:** Full documentation in README.md
-- **Dashboard:** Visual interface at localhost:3000 (if installed)
+- **Dashboard:** Visual interface at localhost:3001 (if installed)
 
 ---
 

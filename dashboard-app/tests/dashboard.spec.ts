@@ -138,33 +138,33 @@ test.describe('Emergent Learning Dashboard', () => {
 
   test('API endpoints respond correctly', async ({ request }) => {
     // Test stats endpoint
-    const statsResponse = await request.get('http://localhost:8000/api/stats');
+    const statsResponse = await request.get('http://localhost:8888/api/stats');
     expect(statsResponse.ok()).toBeTruthy();
     const stats = await statsResponse.json();
     expect(stats).toHaveProperty('total_heuristics');
     expect(stats).toHaveProperty('golden_rules');
 
     // Test heuristics endpoint
-    const heuristicsResponse = await request.get('http://localhost:8000/api/heuristics');
+    const heuristicsResponse = await request.get('http://localhost:8888/api/heuristics');
     expect(heuristicsResponse.ok()).toBeTruthy();
     const heuristics = await heuristicsResponse.json();
     expect(Array.isArray(heuristics)).toBeTruthy();
 
     // Test hotspots endpoint
-    const hotspotsResponse = await request.get('http://localhost:8000/api/hotspots');
+    const hotspotsResponse = await request.get('http://localhost:8888/api/hotspots');
     expect(hotspotsResponse.ok()).toBeTruthy();
     const hotspots = await hotspotsResponse.json();
     expect(Array.isArray(hotspots)).toBeTruthy();
 
     // Test anomalies endpoint
-    const anomaliesResponse = await request.get('http://localhost:8000/api/anomalies');
+    const anomaliesResponse = await request.get('http://localhost:8888/api/anomalies');
     expect(anomaliesResponse.ok()).toBeTruthy();
     const anomalies = await anomaliesResponse.json();
     expect(Array.isArray(anomalies)).toBeTruthy();
   });
 
   test('natural language query works', async ({ request }) => {
-    const response = await request.post('http://localhost:8000/api/query', {
+    const response = await request.post('http://localhost:8888/api/query', {
       data: {
         query: 'show me heuristics',
         limit: 10
@@ -178,7 +178,7 @@ test.describe('Emergent Learning Dashboard', () => {
   });
 
   test('export endpoint works', async ({ request }) => {
-    const response = await request.get('http://localhost:8000/api/export/heuristics');
+    const response = await request.get('http://localhost:8888/api/export/heuristics');
     expect(response.ok()).toBeTruthy();
     const data = await response.json();
     expect(Array.isArray(data)).toBeTruthy();
@@ -186,18 +186,18 @@ test.describe('Emergent Learning Dashboard', () => {
 
   test('heuristic promote/demote endpoints exist', async ({ request }) => {
     // Get a heuristic ID first
-    const heuristicsResponse = await request.get('http://localhost:8000/api/heuristics');
+    const heuristicsResponse = await request.get('http://localhost:8888/api/heuristics');
     const heuristics = await heuristicsResponse.json();
 
     if (heuristics.length > 0) {
       const id = heuristics[0].id;
 
       // Test promote endpoint exists (may fail if already golden, but should return 200)
-      const promoteResponse = await request.post(`http://localhost:8000/api/heuristics/${id}/promote`);
+      const promoteResponse = await request.post(`http://localhost:8888/api/heuristics/${id}/promote`);
       expect(promoteResponse.status()).toBeLessThan(500); // Not a server error
 
       // Test demote endpoint exists
-      const demoteResponse = await request.post(`http://localhost:8000/api/heuristics/${id}/demote`);
+      const demoteResponse = await request.post(`http://localhost:8888/api/heuristics/${id}/demote`);
       expect(demoteResponse.status()).toBeLessThan(500);
     }
   });

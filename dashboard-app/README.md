@@ -26,7 +26,7 @@ Or manually:
 # Terminal 1 - Backend
 cd backend
 pip install -r requirements.txt
-python -m uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --reload --port 8888
 
 # Terminal 2 - Frontend
 cd frontend
@@ -36,9 +36,9 @@ bun run dev
 
 ## URLs
 
-- **Dashboard**: http://localhost:3000
-- **API**: http://localhost:8000
-- **API Docs**: http://localhost:8000/docs
+- **Dashboard**: http://localhost:3001
+- **API**: http://localhost:8888
+- **API Docs**: http://localhost:8888/docs
 
 ## Architecture
 

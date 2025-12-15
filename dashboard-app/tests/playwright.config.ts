@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:3001',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -20,14 +20,14 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'cd ../backend && python -m uvicorn main:app --port 8000',
-      url: 'http://localhost:8000/api/stats',
+      command: 'cd ../backend && python -m uvicorn main:app --port 8888',
+      url: 'http://localhost:8888/api/stats',
       reuseExistingServer: !process.env.CI,
       timeout: 30000,
     },
     {
       command: 'cd ../frontend && bun run dev',
-      url: 'http://localhost:3000',
+      url: 'http://localhost:3001',
       reuseExistingServer: !process.env.CI,
       timeout: 30000,
     },

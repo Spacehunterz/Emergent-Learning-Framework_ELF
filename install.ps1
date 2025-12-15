@@ -74,14 +74,14 @@ if ($Help) {
     Write-Host ""
     Write-Host "Options:"
     Write-Host "  -CoreOnly      Install only core (query system, hooks, golden rules)"
-    Write-Host "  -NoDashboard   Skip dashboard installation (skips visual UI at localhost:3000)"
+    Write-Host "  -NoDashboard   Skip dashboard installation (skips visual UI at localhost:3001)"
     Write-Host "  -NoSwarm       Skip swarm/conductor installation"
     Write-Host "  -All           Install everything (default)"
     Write-Host "  -Help          Show this help"
     Write-Host ""
     Write-Host "Components:"
     Write-Host "  Core:      Query system, learning hooks, golden rules, CLAUDE.md"
-    Write-Host "  Dashboard: React UI for monitoring (localhost:3000)"
+    Write-Host "  Dashboard: React UI for monitoring (localhost:3001)"
     Write-Host "  Swarm:     Multi-agent conductor, agent personas"
     exit 0
 }
@@ -547,7 +547,7 @@ Write-Host ""
 Write-Host "Installed:"
 Write-Host "  [+] Core (query system, hooks, golden rules)" -ForegroundColor Green
 if ($InstallDashboard) {
-    Write-Host "  [+] Dashboard (localhost:3000)" -ForegroundColor Green
+    Write-Host "  [+] Dashboard (localhost:3001)" -ForegroundColor Green
 }
 if ($InstallSwarm) {
     Write-Host "  [+] Swarm (conductor, agent personas)" -ForegroundColor Green
