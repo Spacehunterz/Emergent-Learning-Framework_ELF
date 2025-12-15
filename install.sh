@@ -300,14 +300,14 @@ if 'PostToolUse' not in settings['hooks']:
     settings['hooks']['PostToolUse'] = []
 
 # Remove any existing ELF hooks (to avoid duplicates on reinstall)
-# Only remove hooks where matcher="Task" AND command contains "learning-loop"
+# Remove hooks where command contains "learning-loop"
 settings['hooks']['PreToolUse'] = [
     h for h in settings['hooks']['PreToolUse']
-    if not (h.get('matcher') == 'Task' and any('learning-loop' in hook.get('command', '') for hook in h.get('hooks', [])))
+    if not any('learning-loop' in hook.get('command', '') for hook in h.get('hooks', []))
 ]
 settings['hooks']['PostToolUse'] = [
     h for h in settings['hooks']['PostToolUse']
-    if not (h.get('matcher') == 'Task' and any('learning-loop' in hook.get('command', '') for hook in h.get('hooks', [])))
+    if not any('learning-loop' in hook.get('command', '') for hook in h.get('hooks', []))
 ]
 
 # Add ELF hooks - use python on Windows, python3 on Unix
@@ -325,6 +325,12 @@ settings['hooks']['PreToolUse'].append({
 
 settings['hooks']['PostToolUse'].append({
     "matcher": "Task",
+    "hooks": [{"type": "command", "command": f"{python_cmd} \"{post_hook}\""}]
+})
+
+# Add hook for file operations (trail tracking for hotspots)
+settings['hooks']['PostToolUse'].append({
+    "matcher": "Read|Edit|Write|Glob|Grep",
     "hooks": [{"type": "command", "command": f"{python_cmd} \"{post_hook}\""}]
 })
 

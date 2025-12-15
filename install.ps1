@@ -427,6 +427,17 @@ $elfPostHook = @{
     )
 }
 
+# Hook for file operations (trail tracking for hotspots)
+$elfFileOpsHook = @{
+    "matcher" = "Read|Edit|Write|Glob|Grep"
+    "hooks" = @(
+        @{
+            "type" = "command"
+            "command" = "$pythonCmd `"$postToolHook`""
+        }
+    )
+}
+
 # Merge with existing hooks (don't overwrite user's other hooks)
 if (-not $settings["hooks"].ContainsKey("PreToolUse")) {
     $settings["hooks"]["PreToolUse"] = @()
@@ -436,12 +447,12 @@ if (-not $settings["hooks"].ContainsKey("PostToolUse")) {
 }
 
 # Remove any existing ELF hooks (to avoid duplicates on reinstall)
-# Only remove hooks where matcher="Task" AND command contains "learning-loop"
+# Remove hooks where command contains "learning-loop"
 $settings["hooks"]["PreToolUse"] = @($settings["hooks"]["PreToolUse"] | Where-Object {
-    -not ($_.matcher -eq "Task" -and $_.hooks -and ($_.hooks | Where-Object { $_.command -like "*learning-loop*" }))
+    -not ($_.hooks -and ($_.hooks | Where-Object { $_.command -like "*learning-loop*" }))
 })
 $settings["hooks"]["PostToolUse"] = @($settings["hooks"]["PostToolUse"] | Where-Object {
-    -not ($_.matcher -eq "Task" -and $_.hooks -and ($_.hooks | Where-Object { $_.command -like "*learning-loop*" }))
+    -not ($_.hooks -and ($_.hooks | Where-Object { $_.command -like "*learning-loop*" }))
 })
 
 # Add ELF hooks using ArrayList to avoid nested array issues
@@ -451,6 +462,7 @@ $settings["hooks"]["PreToolUse"] = $preHooks
 
 [System.Collections.ArrayList]$postHooks = @($settings["hooks"]["PostToolUse"])
 $postHooks.Add($elfPostHook) | Out-Null
+$postHooks.Add($elfFileOpsHook) | Out-Null
 $settings["hooks"]["PostToolUse"] = $postHooks
 
 # Write without BOM (UTF8 BOM can break JSON parsers)
