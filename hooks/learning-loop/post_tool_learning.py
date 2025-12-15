@@ -670,20 +670,24 @@ def main():
             exec_id = conductor.record_node_start(run_id, node, tool_input.get('prompt', ''))
 
             # Record completion or failure
-            if outcome == 'success':
+            # Note: 'unknown' is treated as success (optimistic) because:
+            # 1. Task tool with run_in_background=true has empty initial output
+            # 2. Most tasks complete successfully even without verbose output
+            # 3. Learning systems should assume success unless failure is explicit
+            if outcome == 'failure':
+                conductor.record_node_failure(
+                    exec_id=exec_id,
+                    error_message=reason,
+                    error_type='task_failure'
+                )
+                conductor.update_run_status(run_id, 'failed', error_message=reason)
+            else:  # 'success' OR 'unknown'
                 conductor.record_node_completion(
                     exec_id=exec_id,
                     result_text=str(tool_output.get('content', '') if isinstance(tool_output, dict) else tool_output)[:1000],
                     result_dict={'outcome': outcome, 'reason': reason}
                 )
-                conductor.update_run_status(run_id, 'completed', output={'outcome': outcome})
-            else:
-                conductor.record_node_failure(
-                    exec_id=exec_id,
-                    error_message=reason,
-                    error_type='task_failure' if outcome == 'failure' else 'unknown'
-                )
-                conductor.update_run_status(run_id, 'failed', error_message=reason)
+                conductor.update_run_status(run_id, 'completed', output={'outcome': outcome, 'reason': reason})
     except Exception as e:
         # Don't fail the hook if conductor fails
         sys.stderr.write(f"Conductor integration error (non-fatal): {e}\n")
