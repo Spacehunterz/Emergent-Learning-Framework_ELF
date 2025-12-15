@@ -130,6 +130,18 @@ preflight_check() {
 preflight_check
 
 # ============================================
+# Sync Golden Rules (if script exists)
+# ============================================
+if [ -f "$SCRIPT_DIR/sync-golden-rules.sh" ]; then
+    log_info "Syncing golden rules from markdown to database..."
+    if "$SCRIPT_DIR/sync-golden-rules.sh" 2>/dev/null; then
+        log_success "Golden rules sync completed"
+    else
+        log_warn "Golden rules sync failed (non-fatal)"
+    fi
+fi
+
+# ============================================
 # Helper Functions
 # ============================================
 
