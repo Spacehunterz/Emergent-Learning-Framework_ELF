@@ -231,7 +231,11 @@ if [ "$INSTALL_DASHBOARD" = true ]; then
 
         BACKEND_DIR="$DASHBOARD_DST/backend"
         if [ -d "$BACKEND_DIR" ]; then
-            pip install -q fastapi uvicorn aiofiles websockets 2>&1 || pip3 install -q fastapi uvicorn aiofiles websockets 2>&1
+            if [ -f "$BACKEND_DIR/requirements.txt" ]; then
+                pip install -q -r "$BACKEND_DIR/requirements.txt" 2>&1 || pip3 install -q -r "$BACKEND_DIR/requirements.txt" 2>&1
+            else
+                pip install -q fastapi uvicorn aiofiles websockets aiosqlite python-dateutil 2>&1 || pip3 install -q fastapi uvicorn aiofiles websockets aiosqlite python-dateutil 2>&1
+            fi
             echo -e "  ${GREEN}Installed backend dependencies${NC}"
         fi
 
