@@ -200,7 +200,7 @@ npm install
 bun install
 ```
 
-The start-dashboard.sh script will now detect this issue and warn you before failing.
+The run-dashboard.sh script will now detect this issue and warn you before failing.
 
 ## Links
 

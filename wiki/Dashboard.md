@@ -2,13 +2,13 @@
 
 ## Starting the Dashboard
 
-**Auto-Start:** Dashboard starts automatically via startup hook.
+**On Checkin:** Claude prompts "Start Dashboard? [Y/n]" at conversation start.
 
 **Manual Start:**
 ```bash
 cd ~/.claude/emergent-learning/dashboard-app
-./run-dashboard.ps1  # Windows
-./run-dashboard.sh   # Mac/Linux
+./run-dashboard.ps1  # Windows PowerShell
+./run-dashboard.sh   # Mac/Linux/Git Bash
 ```
 
 Open http://localhost:3001

@@ -43,7 +43,7 @@ Before starting ANY investigation, debugging, research, or problem-solving task:
 
    Start command (handles port detection, skips if already running):
    ```bash
-   bash ~/.claude/emergent-learning/scripts/start-dashboard.sh
+   bash ~/.claude/emergent-learning/dashboard-app/run-dashboard.sh
    ```
 
 **This protocol is MANDATORY. Query before acting. Every single time.**

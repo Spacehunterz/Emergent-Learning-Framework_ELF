@@ -29,15 +29,26 @@ function Test-Port {
 function Start-Backend {
     Write-Host "[Starting] Backend API server..." -ForegroundColor Yellow
     Start-Process -FilePath "python" `
-        -ArgumentList "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000" `
+        -ArgumentList "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8888" `
         -WorkingDirectory $BackendPath `
         -WindowStyle Hidden
 }
 
+# Detect package manager
+$PkgMgr = $null
+if (Get-Command "bun" -ErrorAction SilentlyContinue) {
+    $PkgMgr = "bun"
+} elseif (Get-Command "npm" -ErrorAction SilentlyContinue) {
+    $PkgMgr = "npm"
+} else {
+    Write-Host "Error: Neither bun nor npm found. Install from https://bun.sh or https://nodejs.org" -ForegroundColor Red
+    exit 1
+}
+
 # Function to start frontend
 function Start-Frontend {
-    Write-Host "[Starting] Frontend dev server..." -ForegroundColor Yellow
-    Start-Process -FilePath "bun" `
+    Write-Host "[Starting] Frontend dev server (using $PkgMgr)..." -ForegroundColor Yellow
+    Start-Process -FilePath $PkgMgr `
         -ArgumentList "run", "dev" `
         -WorkingDirectory $FrontendPath `
         -WindowStyle Hidden
@@ -51,15 +62,15 @@ Start-Sleep -Seconds 4
 
 # Open browser
 Write-Host "[Opening] Browser..." -ForegroundColor Yellow
-Start-Process "http://localhost:3000"
+Start-Process "http://localhost:3001"
 
 Write-Host ""
 Write-Host "========================================================" -ForegroundColor Green
 Write-Host "  Dashboard is running!                                 " -ForegroundColor Green
 Write-Host "                                                        " -ForegroundColor Green
-Write-Host "  Frontend:  http://localhost:3000                      " -ForegroundColor Green
-Write-Host "  Backend:   http://localhost:8000                      " -ForegroundColor Green
-Write-Host "  API Docs:  http://localhost:8000/docs                 " -ForegroundColor Green
+Write-Host "  Frontend:  http://localhost:3001                      " -ForegroundColor Green
+Write-Host "  Backend:   http://localhost:8888                      " -ForegroundColor Green
+Write-Host "  API Docs:  http://localhost:8888/docs                 " -ForegroundColor Green
 Write-Host "                                                        " -ForegroundColor Green
 Write-Host "  Close this window to stop all servers                 " -ForegroundColor Green
 Write-Host "========================================================" -ForegroundColor Green
@@ -73,7 +84,7 @@ function Stop-Servers {
 
     # Kill any processes on these ports
     try {
-        $portProcesses = Get-NetTCPConnection -LocalPort 3000,8000 -ErrorAction SilentlyContinue |
+        $portProcesses = Get-NetTCPConnection -LocalPort 3001,8888 -ErrorAction SilentlyContinue |
                          Select-Object -ExpandProperty OwningProcess -Unique
         foreach ($pid in $portProcesses) {
             Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
@@ -98,7 +109,7 @@ try {
 
         # Health check backend (only if we haven't exceeded restart limit)
         if ($backendRestartCount -lt $maxRestarts) {
-            if (-not (Test-Port -Port 8000 -Path "/api/stats")) {
+            if (-not (Test-Port -Port 8888 -Path "/api/stats")) {
                 $backendRestartCount++
                 Write-Host "[Warning] Backend not responding (attempt $backendRestartCount/$maxRestarts)..." -ForegroundColor Red
                 Start-Backend
@@ -111,7 +122,7 @@ try {
 
         # Health check frontend (only if we haven't exceeded restart limit)
         if ($frontendRestartCount -lt $maxRestarts) {
-            if (-not (Test-Port -Port 3000)) {
+            if (-not (Test-Port -Port 3001)) {
                 $frontendRestartCount++
                 Write-Host "[Warning] Frontend not responding (attempt $frontendRestartCount/$maxRestarts)..." -ForegroundColor Red
                 Start-Frontend

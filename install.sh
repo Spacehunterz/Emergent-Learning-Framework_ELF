@@ -235,6 +235,11 @@ if [ "$INSTALL_DASHBOARD" = true ]; then
             echo -e "  ${GREEN}Installed backend dependencies${NC}"
         fi
 
+        # Make dashboard scripts executable
+        chmod +x "$DASHBOARD_DST/run-dashboard.sh" 2>/dev/null || true
+        chmod +x "$DASHBOARD_DST/"*.sh 2>/dev/null || true
+        echo -e "  ${GREEN}Made dashboard scripts executable${NC}"
+
         cd "$SCRIPT_DIR"
     fi
 fi
@@ -344,12 +349,49 @@ CLAUDE_MD_DST="$CLAUDE_DIR/CLAUDE.md"
 CLAUDE_MD_SRC="$SCRIPT_DIR/templates/CLAUDE.md.template"
 
 if [ ! -f "$CLAUDE_MD_DST" ]; then
+    # No existing CLAUDE.md - create fresh
     if [ -f "$CLAUDE_MD_SRC" ]; then
         cp "$CLAUDE_MD_SRC" "$CLAUDE_MD_DST"
         echo -e "  ${GREEN}Created CLAUDE.md${NC}"
     fi
+elif grep -q "Emergent Learning Framework" "$CLAUDE_MD_DST" 2>/dev/null; then
+    # Already has ELF instructions
+    echo -e "  ${GREEN}CLAUDE.md already has ELF instructions${NC}"
 else
-    echo -e "  ${YELLOW}CLAUDE.md exists (not overwritten)${NC}"
+    # Has CLAUDE.md but no ELF - prompt user
+    echo ""
+    echo -e "  ${YELLOW}Existing CLAUDE.md found without ELF instructions.${NC}"
+    echo ""
+    echo "  How should we proceed?"
+    echo "    1) Merge - Add ELF instructions to your existing config (recommended)"
+    echo "    2) Replace - Use ELF config only (backs up existing to CLAUDE.md.backup)"
+    echo "    3) Skip - Don't modify CLAUDE.md (ELF features may not work)"
+    echo ""
+    read -p "  Choose [1/2/3]: " choice
+    
+    case $choice in
+        1|"")
+            # Merge: append ELF instructions to existing
+            echo "" >> "$CLAUDE_MD_DST"
+            echo "---" >> "$CLAUDE_MD_DST"
+            echo "" >> "$CLAUDE_MD_DST"
+            cat "$CLAUDE_MD_SRC" >> "$CLAUDE_MD_DST"
+            echo -e "  ${GREEN}Merged ELF instructions into existing CLAUDE.md${NC}"
+            ;;
+        2)
+            # Replace: backup and overwrite
+            cp "$CLAUDE_MD_DST" "$CLAUDE_MD_DST.backup"
+            cp "$CLAUDE_MD_SRC" "$CLAUDE_MD_DST"
+            echo -e "  ${GREEN}Replaced CLAUDE.md (backup saved to CLAUDE.md.backup)${NC}"
+            ;;
+        3)
+            echo -e "  ${YELLOW}Skipped CLAUDE.md modification${NC}"
+            echo -e "  ${YELLOW}Warning: ELF features may not work without proper CLAUDE.md setup${NC}"
+            ;;
+        *)
+            echo -e "  ${YELLOW}Invalid choice, skipping CLAUDE.md modification${NC}"
+            ;;
+    esac
 fi
 
 # === DONE ===
