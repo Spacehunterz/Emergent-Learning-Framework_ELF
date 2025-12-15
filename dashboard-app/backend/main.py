@@ -24,7 +24,7 @@ from fastapi.responses import FileResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # Import utilities
-from utils import get_db, dict_from_row, ConnectionManager
+from utils import get_db, dict_from_row, ConnectionManager, auto_capture
 
 # Import routers
 from routers import (
@@ -295,6 +295,17 @@ async def startup_event():
 
     # Start background monitoring
     asyncio.create_task(monitor_changes())
+
+    # Start auto-capture background job
+    asyncio.create_task(auto_capture.start())
+    logger.info("Auto-capture background job started")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    # Stop auto-capture gracefully
+    auto_capture.stop()
+    logger.info("Auto-capture background job stopped")
 
 
 # ==============================================================================

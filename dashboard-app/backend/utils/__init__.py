@@ -5,11 +5,13 @@ Modules:
 - database: Database connection and helper functions
 - broadcast: WebSocket connection management
 - repository: Base repository for generic CRUD operations
+- auto_capture: Background job for automatic failure capture
 """
 
 from .database import get_db, dict_from_row, escape_like
 from .broadcast import ConnectionManager
 from .repository import BaseRepository
+from .auto_capture import AutoCapture, auto_capture
 
 __all__ = [
     'get_db',
@@ -17,4 +19,6 @@ __all__ = [
     'escape_like',
     'ConnectionManager',
     'BaseRepository',
+    'AutoCapture',
+    'auto_capture',
 ]
