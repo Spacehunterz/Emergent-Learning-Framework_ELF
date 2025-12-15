@@ -34,19 +34,21 @@ python --version    # or python3 --version
 - **Mac:** `brew install python` or https://www.python.org/downloads/
 - **Linux:** `sudo apt install python3` or your package manager
 
-### Optional: Node.js or Bun (for Dashboard only)
+### Optional: Bun or Node.js (for Dashboard only)
 
 Only needed if you want the visual dashboard.
 
 **Check:**
 ```bash
-node --version    # or
-bun --version
+bun --version    # or
+node --version
 ```
 
 **If not installed:**
-- **Node.js:** https://nodejs.org/ (LTS version recommended)
-- **Bun (faster):** https://bun.sh/
+- **Bun (recommended):** https://bun.sh/ - Faster, and avoids npm bugs on Windows
+- **Node.js:** https://nodejs.org/ (LTS version)
+
+> **Windows Users:** We strongly recommend **Bun** over npm. npm has a [known bug](https://github.com/npm/cli/issues/4828) with optional dependencies that causes Rollup to fail on Windows.
 
 ---
 
@@ -191,12 +193,24 @@ chmod +x ~/.claude/emergent-learning/dashboard-app/run-dashboard.sh
 ```
 
 ### Dashboard won't start
-- Check Node.js/Bun is installed: `node --version`
+- Check Bun/Node.js is installed: `bun --version` or `node --version`
 - Try reinstalling dependencies:
   ```bash
   cd ~/.claude/emergent-learning/dashboard-app/frontend
-  npm install   # or: bun install
+  rm -rf node_modules package-lock.json
+  bun install   # recommended
+  # or: npm install (may have issues on Windows)
   ```
+
+### "Cannot find module @rollup/rollup-win32-x64-msvc" (Windows)
+This is a known npm bug. **Use Bun instead:**
+```bash
+cd ~/.claude/emergent-learning/dashboard-app/frontend
+rm -rf node_modules package-lock.json
+bun install
+bun run dev
+```
+Install Bun: `irm bun.sh/install.ps1 | iex` (PowerShell) or https://bun.sh
 
 ### Hooks not working
 Check your settings file exists:
