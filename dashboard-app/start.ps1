@@ -77,9 +77,9 @@ Write-Host "========================================" -ForegroundColor Green
 Write-Host "  Dashboard is running!                 " -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Frontend: http://localhost:3000" -ForegroundColor Cyan
-Write-Host "  Backend:  http://localhost:8000" -ForegroundColor Cyan
-Write-Host "  API Docs: http://localhost:8000/docs" -ForegroundColor Cyan
+Write-Host "  Frontend: http://localhost:3001" -ForegroundColor Cyan
+Write-Host "  Backend:  http://localhost:8888" -ForegroundColor Cyan
+Write-Host "  API Docs: http://localhost:8888/docs" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Press Ctrl+C to stop" -ForegroundColor Yellow
 Write-Host ""
