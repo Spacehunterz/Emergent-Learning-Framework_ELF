@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { Command, Sparkles, LayoutGrid, Globe } from 'lucide-react'
 import { ConnectionStatus, CeoInboxDropdown, CeoItemModal, CeoItem } from './header-components'
 import { SettingsPanel } from './SettingsPanel'
+import AlertsPanel from './AlertsPanel'
 import { useCosmicSettings } from '../context/CosmicSettingsContext'
 import { useCosmicAudio } from '../context/CosmicAudioContext'
+import { useDataContext } from '../context/DataContext'
 
 interface HeaderProps {
   isConnected: boolean
@@ -18,6 +20,12 @@ export default function Header({ isConnected, onOpenCommandPalette }: HeaderProp
   const [loadingContent, setLoadingContent] = useState(false)
   const { viewMode, setViewMode } = useCosmicSettings()
   const { playHover, playClick } = useCosmicAudio()
+  const { anomalies, heuristics, setAnomalies } = useDataContext()
+
+  // Get golden rules for alerts panel
+  const goldenRules = heuristics
+    .filter(h => h.is_golden)
+    .map(h => ({ ...h, id: String(h.id) }))
 
   // Fetch CEO inbox items
   useEffect(() => {
@@ -61,13 +69,13 @@ export default function Header({ isConnected, onOpenCommandPalette }: HeaderProp
 
   return (
     <>
-      <header className="sticky top-4 z-50 pointer-events-none transition-all duration-300 bg-transparent">
+      <header className="sticky top-4 z-[9998] pointer-events-none transition-all duration-300 bg-transparent">
         {/* Pointer events on header container are none so clicks pass through to canvas on sides, 
             but we re-enable them on the actual content */}
 
         {/* Unified Pill Container */}
         <div className="container mx-auto px-4 flex justify-center pointer-events-auto">
-          <div className="glass-panel border border-white/10 rounded-[2rem] shadow-2xl bg-black/60 backdrop-blur-xl flex flex-col md:flex-row items-center p-2 gap-4 md:gap-8 min-w-[320px] max-w-full">
+          <div className="glass-panel border border-white/10 rounded-[2rem] shadow-2xl bg-black/60 backdrop-blur-xl flex flex-col md:flex-row items-center p-2 gap-4 md:gap-8 min-w-[320px] max-w-full overflow-visible">
 
             {/* Top Row (on Mobile) / Left Side (Desktop): Brand & View Toggle */}
             <div className="flex items-center gap-6 px-4">
@@ -140,6 +148,13 @@ export default function Header({ isConnected, onOpenCommandPalette }: HeaderProp
 
             {/* Right Side: Actions */}
             <div className="flex items-center gap-4 px-4 border-l border-white/5 pl-6 shrink-0">
+
+              <AlertsPanel
+                anomalies={anomalies}
+                goldenRules={goldenRules as any}
+                onDismissAnomaly={(index) => setAnomalies(prev => prev.filter((_, i) => i !== index))}
+                compact={true}
+              />
 
               <CeoInboxDropdown
                 items={ceoItems}

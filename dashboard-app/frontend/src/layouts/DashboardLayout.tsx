@@ -8,7 +8,6 @@ import SolarSystemView from '../components/solar-system/SolarSystemView'
 import { GridView } from '../components/overview/GridView'
 import { CosmicGraphView } from '../components/cosmic-view/CosmicGraphView'
 import { CosmicAnalyticsView } from '../components/cosmic-view/CosmicAnalyticsView'
-import AlertsPanel from '../components/AlertsPanel'
 import { useNotificationContext } from '../context/NotificationContext'
 import { useCosmicSettings } from '../context/CosmicSettingsContext'
 import { useDataContext } from '../context/DataContext'
@@ -37,12 +36,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 }) => {
     const notifications = useNotificationContext()
     const { viewMode } = useCosmicSettings()
-    const { anomalies, heuristics, setAnomalies } = useDataContext()
-
-    // Get golden rules for alerts panel
-    const goldenRules = heuristics
-        .filter(h => h.is_golden)
-        .map(h => ({ ...h, id: String(h.id) }))
 
     return (
         <div className="min-h-screen relative overflow-hidden transition-colors duration-500" style={{ backgroundColor: "var(--theme-bg-primary)" }}>
@@ -84,14 +77,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                                                 selectedDomain={selectedDomain}
                                             />
                                         </div>
-                                        {/* Alerts overlay for cosmic view */}
-                                        <div className="fixed top-24 right-6 z-20">
-                                            <AlertsPanel
-                                                anomalies={anomalies}
-                                                goldenRules={goldenRules as any}
-                                                onDismissAnomaly={(index) => setAnomalies(prev => prev.filter((_, i) => i !== index))}
-                                            />
-                                        </div>
                                     </>
                                 ) : (
                                     <GridView onDomainSelect={onDomainSelect} />
@@ -103,14 +88,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                                             <SolarSystemView
                                                 onDomainSelect={onDomainSelect}
                                                 selectedDomain={selectedDomain}
-                                            />
-                                        </div>
-                                        {/* Alerts overlay for cosmic view */}
-                                        <div className="fixed top-24 right-6 z-20">
-                                            <AlertsPanel
-                                                anomalies={anomalies}
-                                                goldenRules={goldenRules as any}
-                                                onDismissAnomaly={(index) => setAnomalies(prev => prev.filter((_, i) => i !== index))}
                                             />
                                         </div>
                                     </>

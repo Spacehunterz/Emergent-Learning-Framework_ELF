@@ -22,6 +22,7 @@ interface AlertsPanelProps {
   anomalies: ApiAnomaly[]
   goldenRules: GoldenRule[]
   onDismissAnomaly: (index: number) => void
+  compact?: boolean
 }
 
 type TabType = 'anomalies' | 'rules'
@@ -45,7 +46,7 @@ const severityColors: Record<string, string> = {
   critical: 'text-red-400',
 }
 
-export default function AlertsPanel({ anomalies, goldenRules, onDismissAnomaly }: AlertsPanelProps) {
+export default function AlertsPanel({ anomalies, goldenRules, onDismissAnomaly, compact = false }: AlertsPanelProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('anomalies')
 
@@ -58,20 +59,26 @@ export default function AlertsPanel({ anomalies, goldenRules, onDismissAnomaly }
       {/* Toggle Button - always visible */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-all ${
-          isOpen
-            ? 'bg-slate-700 text-white'
-            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
+        className={`flex items-center ${compact ? 'space-x-2 px-3 py-1.5 text-sm font-medium' : 'gap-2 px-4 py-3'} rounded-lg transition-all ${
+          compact
+            ? totalCount > 0
+              ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+              : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
+            : isOpen
+              ? 'bg-slate-700 text-white'
+              : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
         }`}
       >
-        <Bell className="w-5 h-5 text-amber-400" />
-        <span className="font-medium">Alerts</span>
+        <Bell className={compact ? "w-4 h-4" : "w-5 h-5 text-amber-400"} />
+        <span className={compact ? "" : "font-medium"}>Alerts</span>
         {totalCount > 0 && (
-          <span className="text-xs bg-amber-500/30 text-amber-300 px-2 py-0.5 rounded-full">
+          <span className={`${compact ? 'bg-amber-500 text-black text-xs font-bold px-1.5 py-0.5' : 'text-xs bg-amber-500/30 text-amber-300 px-2 py-0.5'} rounded-full`}>
             {totalCount}
           </span>
         )}
-        {isOpen ? (
+        {compact ? (
+          <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        ) : isOpen ? (
           <ChevronUp className="w-4 h-4 ml-1" />
         ) : (
           <ChevronDown className="w-4 h-4 ml-1" />
@@ -80,7 +87,7 @@ export default function AlertsPanel({ anomalies, goldenRules, onDismissAnomaly }
 
       {/* Slide-out Panel - slides down below button, aligned right */}
       <div
-        className={`absolute top-full right-0 mt-2 w-80 bg-slate-800 rounded-lg shadow-xl border border-slate-700 transition-all duration-300 ease-out origin-top z-50 ${
+        className={`absolute top-full right-0 mt-2 w-80 bg-slate-800 rounded-lg shadow-xl border border-slate-700 transition-all duration-300 ease-out origin-top z-[9999] ${
           isOpen
             ? 'opacity-100 scale-y-100 translate-y-0'
             : 'opacity-0 scale-y-0 -translate-y-4 pointer-events-none'
