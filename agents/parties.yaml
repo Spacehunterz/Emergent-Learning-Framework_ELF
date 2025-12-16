@@ -1,0 +1,164 @@
+# Party Definitions - Pre-configured agent team compositions
+#
+# Each party defines a team of agents optimized for specific task types.
+# Parties specify:
+#   - agents: List of agents in the party (order = sequence of involvement)
+#   - lead: The primary agent driving the task
+#   - description: When to use this party
+#   - workflow: How agents interact (parallel, sequential, iterative)
+#
+# Usage:
+#   python scripts/get-party.py --party code-review
+#   Or query: python query.py --party code-review
+
+parties:
+  # === Development Parties ===
+
+  code-review:
+    description: "Review code changes for quality, bugs, and design issues"
+    lead: skeptic
+    agents:
+      - skeptic      # Find bugs, edge cases, security issues
+      - architect    # Evaluate design, structure, patterns
+    workflow: sequential
+    triggers:
+      - "review this code"
+      - "PR review"
+      - "check my changes"
+
+  new-feature:
+    description: "Design and implement a new feature from scratch"
+    lead: architect
+    agents:
+      - researcher   # Understand requirements, find prior art
+      - architect    # Design the solution
+      - creative     # Propose alternatives, optimizations
+      - skeptic      # Validate before implementation
+    workflow: sequential
+    triggers:
+      - "add a new feature"
+      - "implement X"
+      - "build a system for"
+
+  bug-hunt:
+    description: "Investigate and fix a bug or unexpected behavior"
+    lead: researcher
+    agents:
+      - researcher   # Investigate root cause
+      - skeptic      # Verify the fix, find related issues
+    workflow: iterative
+    triggers:
+      - "debug this"
+      - "why is X broken"
+      - "fix the bug"
+
+  refactor:
+    description: "Restructure code without changing behavior"
+    lead: architect
+    agents:
+      - architect    # Plan the restructure
+      - skeptic      # Ensure behavior preserved
+    workflow: iterative
+    triggers:
+      - "refactor"
+      - "clean up this code"
+      - "restructure"
+
+  # === Research Parties ===
+
+  deep-dive:
+    description: "Thorough research on a topic or technology"
+    lead: researcher
+    agents:
+      - researcher   # Primary investigation
+      - creative     # Find unexpected connections
+    workflow: parallel
+    triggers:
+      - "research X"
+      - "investigate"
+      - "learn about"
+
+  spike:
+    description: "Time-boxed exploration of a technical question"
+    lead: researcher
+    agents:
+      - researcher   # Explore the question
+      - architect    # Evaluate findings for architecture fit
+      - skeptic      # Challenge assumptions
+    workflow: sequential
+    triggers:
+      - "spike on"
+      - "explore whether"
+      - "is it possible to"
+
+  # === Decision Parties ===
+
+  adr:
+    description: "Make and document an architecture decision"
+    lead: architect
+    agents:
+      - researcher   # Gather options and prior art
+      - architect    # Evaluate and decide
+      - skeptic      # Challenge the decision
+      - creative     # Propose alternatives
+    workflow: sequential
+    triggers:
+      - "decide on"
+      - "architecture decision"
+      - "ADR for"
+
+  brainstorm:
+    description: "Generate creative solutions to a problem"
+    lead: creative
+    agents:
+      - creative     # Generate wild ideas
+      - researcher   # Ground ideas in reality
+      - architect    # Evaluate feasibility
+    workflow: iterative
+    triggers:
+      - "brainstorm"
+      - "think of ways to"
+      - "creative solutions for"
+
+  # === Quality Parties ===
+
+  security-review:
+    description: "Audit code or design for security vulnerabilities"
+    lead: skeptic
+    agents:
+      - skeptic      # Find vulnerabilities
+      - researcher   # Check against known attack vectors
+    workflow: parallel
+    triggers:
+      - "security review"
+      - "audit for vulnerabilities"
+      - "is this secure"
+
+  pre-launch:
+    description: "Final checklist before deployment or release"
+    lead: skeptic
+    agents:
+      - skeptic      # Find blockers
+      - architect    # Verify architecture
+      - researcher   # Check documentation
+    workflow: sequential
+    triggers:
+      - "ready to ship"
+      - "pre-launch check"
+      - "release checklist"
+
+# === Custom Parties ===
+# Add your own parties below. They will not be overwritten by updates.
+#
+# Example:
+#   my-party:
+#     description: "My custom workflow"
+#     lead: researcher
+#     agents:
+#       - researcher
+#       - architect
+#     workflow: sequential
+#     triggers:
+#       - "my trigger phrase"
+
+custom: {}
