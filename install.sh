@@ -25,6 +25,12 @@ EMERGENT_LEARNING_DIR="$CLAUDE_DIR/emergent-learning"
 HOOKS_DIR="$CLAUDE_DIR/hooks"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 
+# Detect in-place installation (cloned directly to target)
+IN_PLACE_INSTALL=false
+if [ "$(cd "$SCRIPT_DIR" && pwd)" = "$(cd "$EMERGENT_LEARNING_DIR" 2>/dev/null && pwd)" ] 2>/dev/null; then
+    IN_PLACE_INSTALL=true
+fi
+
 # Default: install all
 INSTALL_CORE=true
 INSTALL_DASHBOARD=true
@@ -180,11 +186,13 @@ echo -e "${YELLOW}[Step 3/5]${NC} Installing core components..."
 SRC_DIR="$SCRIPT_DIR"
 
 # Copy core files
-# Copy all query Python files (query.py, models.py, exceptions.py, utils.py, validators.py, etc.)
-cp "$SRC_DIR/query/"*.py "$EMERGENT_LEARNING_DIR/query/" 2>/dev/null || true
-# Copy queries subdirectory with query mixins
-if [ -d "$SRC_DIR/query/queries" ]; then
-    cp -r "$SRC_DIR/query/queries" "$EMERGENT_LEARNING_DIR/query/" 2>/dev/null || true
+# Copy all query Python files (skip if in-place install)
+if [ "$IN_PLACE_INSTALL" = false ]; then
+    cp "$SRC_DIR/query/"*.py "$EMERGENT_LEARNING_DIR/query/" 2>/dev/null || true
+    # Copy queries subdirectory with query mixins
+    if [ -d "$SRC_DIR/query/queries" ]; then
+        cp -r "$SRC_DIR/query/queries" "$EMERGENT_LEARNING_DIR/query/" 2>/dev/null || true
+    fi
 fi
 cp "$SRC_DIR/templates/golden-rules.md" "$EMERGENT_LEARNING_DIR/memory/golden-rules.md"
 cp "$SRC_DIR/templates/init_db.sql" "$EMERGENT_LEARNING_DIR/memory/init_db.sql"
@@ -199,12 +207,15 @@ else
     echo -e "  ${GREEN}Installed Python dependencies (peewee)${NC}"
 fi
 
-# Copy hooks
-# Hooks stay in emergent-learning directory (not copied to ~/.claude/hooks/)
-if [ -d "$SRC_DIR/hooks" ]; then
-    cp -r "$SRC_DIR/hooks" "$EMERGENT_LEARNING_DIR/" 2>/dev/null || true
+# Copy hooks (skip if in-place install)
+if [ "$IN_PLACE_INSTALL" = false ]; then
+    if [ -d "$SRC_DIR/hooks" ]; then
+        cp -r "$SRC_DIR/hooks" "$EMERGENT_LEARNING_DIR/" 2>/dev/null || true
+    fi
+    echo -e "  ${GREEN}Copied learning hooks${NC}"
+else
+    echo -e "  ${GREEN}Hooks already in place (in-place install)${NC}"
 fi
-echo -e "  ${GREEN}Copied learning hooks${NC}"
 
 # Copy scripts
 mkdir -p "$EMERGENT_LEARNING_DIR/scripts"
