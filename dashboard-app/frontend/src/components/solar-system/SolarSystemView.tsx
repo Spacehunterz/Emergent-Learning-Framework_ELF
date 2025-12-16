@@ -4,6 +4,7 @@ import { OrbitControls, Stars, Text, Float, Billboard, Html, shaderMaterial } fr
 import { useDataContext } from '../../context/DataContext'
 import * as THREE from 'three'
 import { sunVertexShader, sunFragmentShader, planetVertexShader, planetFragmentShader } from './shaders'
+import { Floating3DParticles } from './Floating3DParticles'
 
 // Create custom shader materials
 const SunMaterial = shaderMaterial(
@@ -26,7 +27,7 @@ declare global {
     namespace JSX {
         interface IntrinsicElements {
             sunMaterial: ReactThreeFiber.Object3DNode<THREE.ShaderMaterial, typeof SunMaterial>
-            planetAtmosphereMaterial: ReactThreeFiber.Object3DNode<THREE.ShaderMaterial, typeof PlanetAtmosphereMaterial>
+            planetAtmosphereMaterial: ReactThreeFiber.Object3DNode<THREE.ShaderMaterial, typeof PlanetAtmosphereMaterial> & { baseColor?: THREE.Color }
         }
     }
 }
@@ -55,13 +56,27 @@ function CameraController({ target, defaultPosition, defaultTarget, isSelected, 
     const controlsRef = useRef<any>(null)
 
     // Store refs for animation
-    const currentTarget = useRef(new THREE.Vector3())
-    const currentPosition = useRef(new THREE.Vector3())
+    const savedView = useRef<{ position: THREE.Vector3, target: THREE.Vector3 } | null>(null)
+    const isRestoring = useRef(false)
 
+    // Handle selection state changes
     useEffect(() => {
-        currentPosition.current.copy(camera.position)
-        currentTarget.current.copy(defaultTarget)
-    }, [camera, defaultTarget])
+        if (isSelected) {
+            // About to zoom in: SAVE current state
+            if (controlsRef.current) {
+                savedView.current = {
+                    position: camera.position.clone(),
+                    target: controlsRef.current.target.clone()
+                }
+            }
+            isRestoring.current = false
+        } else {
+            // Just zoomed out: START restoring
+            if (savedView.current) {
+                isRestoring.current = true
+            }
+        }
+    }, [isSelected, camera])
 
     // ESC key handler
     useEffect(() => {
@@ -77,15 +92,16 @@ function CameraController({ target, defaultPosition, defaultTarget, isSelected, 
     useFrame(() => {
         if (!controlsRef.current) return
 
-        // If user is manually interacting (rotating/zooming), don't force camera position unless we are in a transition
+        // If user is manually interacting, cancel any restoration
         if (controlsRef.current.enableZoom) { // active "free look" mode
-            // Optional: Add some gentle drift or constraint if needed, but legal user control is priority
+            // We could check if user is actively dragging here, but OrbitControls doesn't expose 'isDragging' easily without events.
+            // For now, let the lerp fight smoothly or just override.
         }
 
-        const lerpFactor = 0.03
+        const lerpFactor = 0.05 // Slightly faster for responsiveness
 
         if (isSelected && target) {
-            // TARGETED MODE
+            // TARGETED MODE (Drill-down)
             const zoomDistance = planetSize * 6 + 4
             const targetPos = new THREE.Vector3(
                 target.x + zoomDistance * 0.5,
@@ -93,26 +109,32 @@ function CameraController({ target, defaultPosition, defaultTarget, isSelected, 
                 target.z + zoomDistance * 0.7
             )
 
-            // Look at the planet
             camera.position.lerp(targetPos, lerpFactor)
             controlsRef.current.target.lerp(target, lerpFactor)
-        } else if (!isSelected) {
-            // OVERVIEW MODE - Only gently pull back if we are way off, otherwise let user explore
-            // Actually, for "Overview", users expect to be able to rotate freely.
-            // Let's only enforce position if we just came back from a selection (transition logic could be more complex, 
-            // but for now, let's just default to a nice view if we are "resetting").
 
-            // To recover "lost" users, we can have a "Reset View" button, but for now, 
-            // let's just make the "default" lerp very weak or conditional.
+        } else if (isRestoring.current && savedView.current) {
+            // RESTORING MODE (Returning to previous view)
+            const destPos = savedView.current.position
+            const destTarget = savedView.current.target
 
-            // FIX: Don't fight the user. Only set target to center (sun).
-            controlsRef.current.target.lerp(defaultTarget, lerpFactor)
+            camera.position.lerp(destPos, lerpFactor)
+            controlsRef.current.target.lerp(destTarget, lerpFactor)
 
-            // Allow manual rotation to persist, only nudge position if needed
-            // Ensure camera is not stuck inside the sun
-            if (camera.position.length() < 10) {
-                camera.position.lerp(defaultPosition, lerpFactor)
+            // Check if we're close enough to stop forcing the restoration
+            if (camera.position.distanceTo(destPos) < 0.5 && controlsRef.current.target.distanceTo(destTarget) < 0.5) {
+                isRestoring.current = false
             }
+
+        } else {
+            // FREE ROAM / DEFAULT IDLE
+            // If we have no saved view (initial load), gently drift to default
+            if (!savedView.current) {
+                controlsRef.current.target.lerp(defaultTarget, lerpFactor * 0.1)
+                if (camera.position.length() < 10) {
+                    camera.position.lerp(defaultPosition, lerpFactor * 0.1)
+                }
+            }
+            // Otherwise, do nothing and let the user orbit freely
         }
 
         controlsRef.current.update()
@@ -183,6 +205,12 @@ function Planet({ label, color, size, speed, orbitRadius, onClick, selected, pau
     const angleRef = useRef(Math.random() * Math.PI * 2)
     const atmosphereRef = useRef<THREE.ShaderMaterial>(null)
     const [hovered, setHovered] = useState(false)
+    const [viewMode, setViewMode] = useState<'summary' | 'details'>('summary')
+
+    // Reset view mode when selection changes
+    useEffect(() => {
+        if (!selected) setViewMode('summary')
+    }, [selected])
 
     useFrame((state, delta) => {
         // Orbit Logic - pause when selected or globally paused
@@ -253,7 +281,6 @@ function Planet({ label, color, size, speed, orbitRadius, onClick, selected, pau
             <mesh scale={[1.2, 1.2, 1.2]}>
                 <sphereGeometry args={[size, 32, 32]} />
                 {/* @ts-ignore */}
-                {/* @ts-ignore */}
                 <planetAtmosphereMaterial
                     ref={atmosphereRef}
                     baseColor={new THREE.Color(color)}
@@ -280,10 +307,9 @@ function Planet({ label, color, size, speed, orbitRadius, onClick, selected, pau
 
             {/* Info Popup - Using HTML to overlay UI elements on 3D objects */}
             {hovered && !selected && (
-                <Html position={[0, size + 2, 0]} center transform style={{ pointerEvents: 'none' }}>
-                    <div className="w-48 p-3 rounded-lg transform transition-all duration-300 scale-100 opacity-100 glass-panel shadow-neon" style={{ borderColor: 'var(--theme-accent)' }}>
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20 rounded-lg pointer-events-none" />
-                        <div className="relative z-10">
+                <Html position={[0, size + 2, 0]} center style={{ pointerEvents: 'none' }}>
+                    <div className="w-48 p-3 rounded-lg bg-black/80 glass-panel shadow-neon backdrop-blur-md" style={{ borderColor: 'var(--theme-accent)' }}>
+                        <div className="relative z-10 text-center">
                             <div className="font-bold mb-1 uppercase tracking-wider text-xs" style={{ color: color }}>
                                 {label}
                             </div>
@@ -301,54 +327,103 @@ function Planet({ label, color, size, speed, orbitRadius, onClick, selected, pau
                 </Html>
             )}
 
-            {/* Expanded info panel when selected */}
+            {/* Expanded info panel when selected - SHARP TEXT MODE (No 3D Transform) */}
             {selected && (
-                <Html position={[size + 2, 0, 0]} center transform style={{ pointerEvents: 'auto' }}>
-                    <div className="w-72 p-4 rounded-xl glass-panel shadow-neon border border-white/20 transform transition-all duration-500 scale-100 opacity-100" style={{ borderColor: color }}>
-                        <div className="absolute inset-0 bg-gradient-to-br from-black/60 to-black/80 rounded-xl pointer-events-none" />
-                        <div className="relative z-10">
-                            {/* Header */}
-                            <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
-                                <div className="flex items-center gap-2">
-                                    <span className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: color }} />
-                                    <span className="font-bold uppercase tracking-wider text-sm" style={{ color: color }}>
-                                        {label}
-                                    </span>
-                                </div>
-                                <span className="text-[10px] text-cosmic-cyan font-mono px-2 py-1 bg-cosmic-cyan/10 rounded">
-                                    DOMAIN
-                                </span>
-                            </div>
+                <Html position={[0, 0, 0]} center zIndexRange={[100, 0]} style={{ pointerEvents: 'auto' }}>
+                    <div className="relative flex flex-col items-center justify-center">
+                        {/* Connecting Line (visual only) */}
+                        <div className="absolute top-0 w-px h-16 bg-gradient-to-t from-transparent via-white/50 to-transparent -translate-y-full" style={{ left: '50%' }} />
 
-                            {/* Stats Grid */}
-                            <div className="grid grid-cols-2 gap-3 mb-4">
-                                <div className="bg-white/5 rounded-lg p-2 text-center">
-                                    <div className="text-2xl font-bold text-white font-mono">{details.count}</div>
-                                    <div className="text-[10px] text-slate-400 uppercase tracking-wider">Heuristics</div>
+                        <div className={`w-80 p-4 rounded-xl glass-panel shadow-2xl border border-white/20 transition-all duration-300 ${viewMode === 'details' ? 'h-96' : 'h-auto'}`} style={{ borderColor: color, backgroundColor: 'rgba(10, 10, 20, 0.9)' }}>
+                            <div className="relative z-10 h-full flex flex-col">
+                                {/* Header */}
+                                <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10 shrink-0">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: color }} />
+                                        <span className="font-bold uppercase tracking-wider text-sm" style={{ color: color }}>
+                                            {label}
+                                        </span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {viewMode === 'details' && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setViewMode('summary') }}
+                                                className="text-[10px] font-mono px-2 py-1 bg-white/5 hover:bg-white/10 rounded transition-colors"
+                                            >
+                                                BACK
+                                            </button>
+                                        )}
+                                        <span className="text-[10px] text-cosmic-cyan font-mono px-2 py-1 bg-cosmic-cyan/10 rounded border border-cosmic-cyan/20">
+                                            DOMAIN
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="bg-white/5 rounded-lg p-2 text-center">
-                                    <div className="text-2xl font-bold text-white font-mono">{details.goldenCount || 0}</div>
-                                    <div className="text-[10px] text-amber-400 uppercase tracking-wider">Golden Rules</div>
-                                </div>
-                            </div>
 
-                            {/* Details */}
-                            <div className="space-y-2 text-xs">
-                                <div className="flex justify-between text-slate-400">
-                                    <span>Orbit Radius</span>
-                                    <span className="text-white font-mono">{orbitRadius.toFixed(1)} AU</span>
-                                </div>
-                                <div className="flex justify-between text-slate-400">
-                                    <span>Avg Confidence</span>
-                                    <span className="text-white font-mono">{((details.avgConfidence || 0.7) * 100).toFixed(0)}%</span>
-                                </div>
-                            </div>
+                                {viewMode === 'summary' ? (
+                                    <>
+                                        {/* Stats Grid */}
+                                        <div className="grid grid-cols-2 gap-3 mb-4">
+                                            <div className="bg-white/5 rounded-lg p-2 text-center border border-white/5 hover:border-white/10 transition-colors">
+                                                <div className="text-2xl font-bold text-white font-mono">{details.count}</div>
+                                                <div className="text-[10px] text-slate-400 uppercase tracking-wider">Heuristics</div>
+                                            </div>
+                                            <div className="bg-white/5 rounded-lg p-2 text-center border border-white/5 hover:border-white/10 transition-colors">
+                                                <div className="text-2xl font-bold text-white font-mono">{details.goldenCount || 0}</div>
+                                                <div className="text-[10px] text-amber-400 uppercase tracking-wider">Golden Rules</div>
+                                            </div>
+                                        </div>
 
-                            {/* Action hint */}
-                            <div className="mt-4 pt-3 border-t border-white/10 text-center">
-                                <span className="text-[10px] text-slate-500 font-mono">
-                                    Click elsewhere to return
-                                </span>
+                                        {/* Confidence Stat */}
+                                        <div className="mb-6 p-3 bg-white/5 rounded-lg border border-white/5">
+                                            <div className="flex justify-between items-end mb-2">
+                                                <span className="text-xs text-slate-400 uppercase tracking-wider">Avg Confidence</span>
+                                                <span className="text-lg font-mono font-bold" style={{ color: color }}>
+                                                    {((details.avgConfidence || 0) * 100).toFixed(0)}%
+                                                </span>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-black/50 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full rounded-full transition-all duration-1000 ease-out"
+                                                    style={{ width: `${(details.avgConfidence || 0) * 100}%`, backgroundColor: color }}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Action Button */}
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setViewMode('details') }}
+                                            className="w-full py-2.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/30 transition-all flex items-center justify-center gap-2 group"
+                                        >
+                                            <span className="text-xs font-bold tracking-wider uppercase text-white group-hover:text-cyan-300">View Insights</span>
+                                            <span className="text-white/50 group-hover:translate-x-1 transition-transform">→</span>
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="flex-1 overflow-hidden flex flex-col">
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 shrink-0">Top Heuristics</div>
+                                        <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar">
+                                            {details.topHeuristics && details.topHeuristics.length > 0 ? (
+                                                details.topHeuristics.map((h: any, i: number) => (
+                                                    <div key={i} className="p-2.5 rounded bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all group">
+                                                        <div className="text-xs text-slate-300 line-clamp-2 mb-2 group-hover:text-white transition-colors">
+                                                            "{h.rule}"
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <div className="flex items-center gap-1.5">
+                                                                {h.is_golden && <span className="text-[8px] px-1 bg-amber-500/20 text-amber-400 rounded border border-amber-500/30">GOLDEN</span>}
+                                                            </div>
+                                                            <div className="text-[10px] font-mono" style={{ color: h.confidence > 0.8 ? '#4ade80' : '#fbbf24' }}>
+                                                                {(h.confidence * 100).toFixed(0)}%
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-center py-8 text-slate-500 italic text-xs">No heuristics recorded yet</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -368,11 +443,22 @@ function BackgroundClickCatcher({ onClick }: { onClick: () => void }) {
     )
 }
 
-function SolarSystemScene({ onDomainSelect }: { onDomainSelect?: (domain: string) => void }) {
+function SolarSystemScene({ onDomainSelect, selectedDomainProp }: { onDomainSelect?: (domain: string) => void, selectedDomainProp?: string | null }) {
     const { stats, heuristics } = useDataContext()
     const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
     const [selectedPlanetPosition, setSelectedPlanetPosition] = useState<THREE.Vector3 | null>(null)
     const [selectedPlanetSize, setSelectedPlanetSize] = useState(1)
+
+    // Sync with global prop
+    useEffect(() => {
+        if (selectedDomainProp !== undefined) {
+            setSelectedDomain(selectedDomainProp)
+            // If cleared externally, clear position too
+            if (selectedDomainProp === null) {
+                setSelectedPlanetPosition(null)
+            }
+        }
+    }, [selectedDomainProp])
 
     // Default camera settings
     const defaultCameraPosition = useMemo(() => new THREE.Vector3(0, 30, 40), [])
@@ -397,7 +483,12 @@ function SolarSystemScene({ onDomainSelect }: { onDomainSelect?: (domain: string
             orbitRadius: 8 + idx * 3.5,
             speed: 0.02 + Math.random() * 0.03,
             color: `hsl(${idx * 45 + 200}, 80%, 60%)`,
-            size: Math.log(data.count + 1) * 0.3 + 0.8
+            size: Math.log(data.count + 1) * 0.3 + 0.8,
+            // Get top 5 heuristics by confidence
+            topHeuristics: heuristics
+                .filter(h => h.domain === name)
+                .sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+                .slice(0, 5)
         }))
     }, [heuristics])
 
@@ -446,7 +537,8 @@ function SolarSystemScene({ onDomainSelect }: { onDomainSelect?: (domain: string
                     details={{
                         count: domain.count,
                         goldenCount: domain.goldenCount,
-                        avgConfidence: domain.avgConfidence
+                        avgConfidence: domain.avgConfidence,
+                        topHeuristics: domain.topHeuristics
                     }}
                     onPositionUpdate={selectedDomain === domain.name ? handlePositionUpdate : undefined}
                 />
@@ -466,20 +558,12 @@ function SolarSystemScene({ onDomainSelect }: { onDomainSelect?: (domain: string
     )
 }
 
-export default function SolarSystemView({ onDomainSelect }: { onDomainSelect?: (domain: string) => void }) {
+export default function SolarSystemView({ onDomainSelect, selectedDomain }: { onDomainSelect?: (domain: string) => void, selectedDomain?: string | null }) {
     return (
         <div className="w-full h-full min-h-[600px] relative">
             {/* Overlay Title - pointer-events-none ensures we can click through to canvas */}
             {/* MOVED DOWN to avoid header overlap */}
-            <div className="absolute top-24 left-6 z-10 pointer-events-none select-none">
-                <h2 className="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500 drop-shadow-lg shadow-black">
-                    SYSTEM OVERVIEW
-                </h2>
-                <div className="flex items-center gap-2 mt-1">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    <p className="text-cosmic-cyan/70 text-sm font-mono tracking-widest">INTERACTIVE 3D KNOWLEDGE MAP</p>
-                </div>
-            </div>
+            {/* Overlay Title Removed */}
 
             {/* Controls hint */}
             <div className="absolute bottom-6 left-6 z-10 pointer-events-none select-none">
@@ -503,8 +587,9 @@ export default function SolarSystemView({ onDomainSelect }: { onDomainSelect?: (
                 </div>
             </div>
 
-            <Canvas camera={{ position: [0, 30, 40], fov: 45 }} className="w-full h-full">
-                <SolarSystemScene onDomainSelect={onDomainSelect} />
+            <Canvas camera={{ position: [0, 30, 40], fov: 45 }} className="w-full h-full" gl={{ alpha: true }}>
+                <SolarSystemScene onDomainSelect={onDomainSelect} selectedDomainProp={selectedDomain} />
+                <Floating3DParticles count={300} />
             </Canvas>
         </div>
     )

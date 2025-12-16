@@ -1,43 +1,83 @@
-import React from 'react'
+import React, { useRef, useEffect } from 'react';
+import { motion, useAnimation, useInView } from 'framer-motion';
 
-interface HolographicCardProps extends React.HTMLAttributes<HTMLDivElement> {
-    children: React.ReactNode
-    className?: string
-    title?: string
+interface HolographicCardProps {
+    children: React.ReactNode;
+    className?: string;
+    title?: string;
+    delay?: number;
+    featured?: boolean;
 }
 
-export default function HolographicCard({ children, className = '', title, ...props }: HolographicCardProps) {
+export const HolographicCard: React.FC<HolographicCardProps> = ({
+    children,
+    className = '',
+    title,
+    delay = 0,
+    featured = false
+}) => {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, margin: "0px 0px -50px 0px" });
+    const controls = useAnimation();
+
+    useEffect(() => {
+        if (isInView) {
+            controls.start("visible");
+        }
+    }, [isInView, controls]);
+
     return (
-        <div
-            className={`relative group ${className}`}
-            {...props}
+        <motion.div
+            ref={ref}
+            variants={{
+                hidden: { opacity: 0, y: 20, scale: 0.95 },
+                visible: {
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                    transition: {
+                        duration: 0.5,
+                        delay: delay,
+                        ease: "easeOut"
+                    }
+                }
+            }}
+            initial="hidden"
+            animate={controls}
+            className={`
+        relative group
+        glass-panel 
+        rounded-xl 
+        ${featured ? 'border-cyan-500/30' : 'border-slate-700/50'}
+        ${className}
+      `}
         >
-            {/* Animated Border Gradient - uses theme accent */}
-            <div className="absolute -inset-[1px] opacity-30 group-hover:opacity-60 transition-opacity duration-500 blur-sm rounded-xl animate-hologram"
-                style={{ background: 'linear-gradient(to right, var(--theme-accent), var(--neon-purple), var(--theme-accent))' }}
-            />
+            {/* Holographic Border Gradient */}
+            <div className={`absolute inset-0 rounded-xl bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`} />
 
-            {/* Main Glass Panel - uses theme variables */}
-            <div className="relative h-full backdrop-blur-md rounded-xl border border-white/10 overflow-hidden transition-colors duration-300"
-                style={{ backgroundColor: 'var(--theme-bg-card)' }}
-            >
-                {/* Scanline Effect */}
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent h-[100%] w-full animate-pulse-slow pointer-events-none" style={{ backgroundSize: '100% 3px' }} />
+            {/* Corner Accents - Futuristic Look */}
+            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-cyan-400 opacity-50 rounded-tl-sm" />
+            <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-cyan-400 opacity-50 rounded-tr-sm" />
+            <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-cyan-400 opacity-50 rounded-bl-sm" />
+            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-cyan-400 opacity-50 rounded-br-sm" />
 
-                {/* Content */}
-                <div className="relative z-10 p-6 h-full flex flex-col">
-                    {title && (
-                        <div className="mb-4 border-b border-white/10 pb-2">
-                            <h3 className="font-display text-lg tracking-widest text-transparent bg-clip-text font-bold uppercase"
-                                style={{ backgroundImage: 'linear-gradient(to right, var(--theme-accent), #fff)' }}
-                            >
-                                {title}
-                            </h3>
-                        </div>
-                    )}
-                    {children}
+            {/* Title Header */}
+            {title && (
+                <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold tracking-wider uppercase text-cyan-300/90 drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">
+                        {title}
+                    </h3>
+                    <div className="flex gap-1">
+                        <div className="w-1 h-1 rounded-full bg-cyan-500/50" />
+                        <div className="w-1 h-1 rounded-full bg-cyan-500/30" />
+                    </div>
                 </div>
+            )}
+
+            {/* Content */}
+            <div className={`${title ? 'p-5' : 'p-4'}`}>
+                {children}
             </div>
-        </div>
-    )
-}
+        </motion.div>
+    );
+};

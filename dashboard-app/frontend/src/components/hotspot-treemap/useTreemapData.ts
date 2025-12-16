@@ -57,9 +57,14 @@ export function useTreemapData(hotspots: ApiHotspot[], selectedDomain: string | 
   }, [hotspots])
 
   // Filter hotspots by scent (domain)
+  // Only filter if selectedDomain is an actual scent, not a GridView domain name
   const filteredHotspots = useMemo(() => {
     if (!hotspots || !Array.isArray(hotspots)) return []
     if (!selectedDomain) return hotspots
+    // Check if selectedDomain is a valid scent before filtering
+    const allScents = hotspots.flatMap(h => h.scents || [])
+    const validScents = new Set(allScents)
+    if (!validScents.has(selectedDomain)) return hotspots
     return hotspots.filter(h => h.scents?.includes(selectedDomain))
   }, [hotspots, selectedDomain])
 

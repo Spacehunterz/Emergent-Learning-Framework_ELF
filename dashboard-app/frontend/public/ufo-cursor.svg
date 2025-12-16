@@ -1,39 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer Glow -->
+  <circle cx="16" cy="16" r="14" fill="#06B6D4" fill-opacity="0.2" filter="url(#glow)"/>
+  
+  <!-- Metallic Ring -->
+  <ellipse cx="16" cy="20" rx="12" ry="4" fill="#1E293B" stroke="#38BDF8" stroke-width="1.5"/>
+  
+  <!-- Cockpit Dome -->
+  <path d="M16 8C19.3137 8 22 10.6863 22 14C22 17.3137 19.3137 18 16 18C12.6863 18 10 17.3137 10 14C10 10.6863 12.6863 8 16 8Z" fill="#7DD3FC" fill-opacity="0.8" stroke="#0EA5E9" stroke-width="1"/>
+  
+  <!-- Lights on Ring -->
+  <circle cx="8" cy="20" r="1.5" fill="#F472B6"/>
+  <circle cx="24" cy="20" r="1.5" fill="#F472B6"/>
+  <circle cx="16" cy="22" r="1.5" fill="#F472B6"/>
+  
+  <!-- Core Energy -->
+  <circle cx="16" cy="14" r="3" fill="#E0F2FE"/>
+  
   <defs>
-    <linearGradient id="dome" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#7dd3fc"/>
-      <stop offset="40%" stop-color="#0ea5e9"/>
-      <stop offset="100%" stop-color="#0369a1"/>
-    </linearGradient>
-    <linearGradient id="body" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#94a3b8"/>
-      <stop offset="30%" stop-color="#64748b"/>
-      <stop offset="70%" stop-color="#475569"/>
-      <stop offset="100%" stop-color="#334155"/>
-    </linearGradient>
-    <linearGradient id="rim" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#cbd5e1"/>
-      <stop offset="100%" stop-color="#475569"/>
-    </linearGradient>
+    <filter id="glow" x="0" y="0" width="32" height="32" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+      <feGaussianBlur stdDeviation="2" result="effect1_foregroundBlur_110_18"/>
+    </filter>
   </defs>
-
-  <!-- Main saucer body -->
-  <ellipse cx="16" cy="16" rx="14" ry="5" fill="url(#body)"/>
-
-  <!-- Top rim highlight -->
-  <ellipse cx="16" cy="14" rx="12" ry="3" fill="url(#rim)"/>
-
-  <!-- Glass dome -->
-  <ellipse cx="16" cy="12" rx="7" ry="6" fill="url(#dome)"/>
-
-  <!-- Dome reflection -->
-  <ellipse cx="13" cy="10" rx="3" ry="2" fill="rgba(255,255,255,0.35)"/>
-
-  <!-- Bottom detail line -->
-  <ellipse cx="16" cy="18" rx="10" ry="2" fill="#1e293b"/>
-
-  <!-- Lights -->
-  <circle cx="7" cy="16" r="1.5" fill="#22d3ee"/>
-  <circle cx="16" cy="18" r="1.5" fill="#22d3ee"/>
-  <circle cx="25" cy="16" r="1.5" fill="#22d3ee"/>
 </svg>

@@ -9,206 +9,186 @@
 
 /* Default theme (Black Hole) */
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  /* Black Hole - True black with orange/amber accretion disk */
-  color-scheme: dark;
-  --theme-bg-primary: #000000;
-  --theme-bg-secondary: #0a0a0a;
-  --theme-bg-card: #111111;
-  --theme-accent: #f59e0b;
-  --theme-accent-glow: rgba(245, 158, 11, 0.4);
-  --theme-accent-rgb: 245, 158, 11;
-  --theme-panel-rgb: 17, 17, 17;
-  --theme-text-primary: rgba(255, 255, 255, 0.95);
-  --theme-text-secondary: rgba(255, 255, 255, 0.60);
-  --theme-text-muted: rgba(255, 255, 255, 0.40);
-  --theme-particle-color: 245, 158, 11;
-  --glass-opacity: 0.2;
+  --theme-bg-primary: #030014;
+  --theme-bg-secondary: #0f0529;
+  --theme-bg-card: rgba(20, 10, 40, 0.6);
+  --neon-cyan: #00f3ff;
+  --neon-magenta: #bc13fe;
+  --neon-amber: #ffaa00;
+  --theme-accent: var(--neon-cyan);
+  --theme-accent-glow: rgba(0, 243, 255, 0.5);
+  --theme-accent-rgb: 0, 243, 255;
+  --theme-panel-rgb: 10, 5, 30;
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.05);
+  --theme-text-primary: #ffffff;
+  --theme-text-secondary: #b4abd4;
+  --theme-text-muted: #6c6390;
+  --theme-particle-color: 0, 243, 255;
+  --glass-opacity: 0.25;
 
   color: var(--theme-text-primary);
   background-color: var(--theme-bg-primary);
 }
 
-/* Black Hole (explicit) */
-[data-theme="black-hole"] {
-  color-scheme: dark;
-  --theme-bg-primary: #000000;
-  --theme-bg-secondary: #0a0a0a;
-  --theme-bg-card: #111111;
-  --theme-accent: #f59e0b;
-  --theme-accent-glow: rgba(245, 158, 11, 0.4);
-  --theme-accent-rgb: 245, 158, 11;
-  --theme-panel-rgb: 17, 17, 17;
-  --theme-text-primary: rgba(255, 255, 255, 0.95);
-  --theme-text-secondary: rgba(255, 255, 255, 0.60);
-  --theme-text-muted: rgba(255, 255, 255, 0.40);
-  --theme-particle-color: 245, 158, 11;
-  --glass-opacity: 0.2;
+/* Black Hole (Default) - Inherits :root values */
+
+/* White Dwarf (Light) */
+:root[data-theme='white-dwarf'] {
+  --theme-bg-primary: #f8fafc;
+  --theme-bg-secondary: #e2e8f0;
+  --theme-bg-card: rgba(255, 255, 255, 0.6);
+  --theme-accent: #0ea5e9;
+  --theme-accent-glow: rgba(14, 165, 233, 0.4);
+  --theme-accent-rgb: 14, 165, 233;
+  --theme-panel-rgb: 255, 255, 255;
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.8);
+  --theme-text-primary: #0f172a;
+  --theme-text-secondary: #475569;
+  --theme-text-muted: #94a3b8;
+  --theme-particle-color: 14, 165, 233;
 }
 
-/* White Dwarf - Light mode, clean whites with blue accent */
-[data-theme="white-dwarf"] {
-  color-scheme: light;
-  --theme-bg-primary: #f8fafc;
-  --theme-bg-secondary: #f1f5f9;
-  --theme-bg-card: #ffffff;
+/* Deep Space (Blue) */
+:root[data-theme='deep-space'] {
+  --theme-bg-primary: #020617;
+  --theme-bg-secondary: #0f172a;
+  --theme-bg-card: rgba(30, 41, 59, 0.6);
   --theme-accent: #3b82f6;
-  --theme-accent-glow: rgba(59, 130, 246, 0.3);
+  --theme-accent-glow: rgba(59, 130, 246, 0.5);
   --theme-accent-rgb: 59, 130, 246;
-  --theme-panel-rgb: 255, 255, 255;
-  --theme-text-primary: rgba(15, 23, 42, 0.95);
-  --theme-text-secondary: rgba(15, 23, 42, 0.60);
-  --theme-text-muted: rgba(15, 23, 42, 0.40);
+  --theme-panel-rgb: 15, 23, 42;
+  --theme-text-secondary: #94a3b8;
   --theme-particle-color: 59, 130, 246;
 }
 
-/* Deep Space - Deep navy blues */
-[data-theme="deep-space"] {
-  color-scheme: dark;
-  --theme-bg-primary: #030712;
-  --theme-bg-secondary: #0f172a;
-  --theme-bg-card: #1e293b;
-  --theme-accent: #38bdf8;
-  --theme-accent-glow: rgba(56, 189, 248, 0.4);
-  --theme-accent-rgb: 56, 189, 248;
-  --theme-panel-rgb: 30, 41, 59;
-  --theme-text-primary: rgba(255, 255, 255, 0.95);
-  --theme-text-secondary: rgba(255, 255, 255, 0.60);
-  --theme-text-muted: rgba(255, 255, 255, 0.40);
-  --theme-particle-color: 56, 189, 248;
-}
-
-/* Nebula - Rich purples */
-[data-theme="nebula"] {
-  color-scheme: dark;
-  --theme-bg-primary: #0c0015;
-  --theme-bg-secondary: #150025;
-  --theme-bg-card: #1f0035;
+/* Nebula (Purple) */
+:root[data-theme='nebula'] {
+  --theme-bg-primary: #1e1b4b;
+  /* Indigo 950 */
+  --theme-bg-secondary: #312e81;
+  --theme-bg-card: rgba(49, 46, 129, 0.6);
   --theme-accent: #a855f7;
-  --theme-accent-glow: rgba(168, 85, 247, 0.4);
+  --theme-accent-glow: rgba(168, 85, 247, 0.5);
   --theme-accent-rgb: 168, 85, 247;
-  --theme-panel-rgb: 31, 0, 53;
-  --theme-text-primary: rgba(255, 255, 255, 0.95);
-  --theme-text-secondary: rgba(255, 255, 255, 0.60);
-  --theme-text-muted: rgba(255, 255, 255, 0.40);
+  --theme-panel-rgb: 30, 27, 75;
+  --theme-text-secondary: #c7d2fe;
   --theme-particle-color: 168, 85, 247;
 }
 
-/* Supernova - Fiery oranges */
-[data-theme="supernova"] {
-  color-scheme: dark;
-  --theme-bg-primary: #0a0500;
-  --theme-bg-secondary: #151005;
-  --theme-bg-card: #1f150a;
+/* Supernova (Orange) */
+:root[data-theme='supernova'] {
+  --theme-bg-primary: #270606;
+  /* Dark Red/Orange */
+  --theme-bg-secondary: #450a0a;
+  --theme-bg-card: rgba(69, 10, 10, 0.6);
   --theme-accent: #f97316;
-  --theme-accent-glow: rgba(249, 115, 22, 0.4);
+  --theme-accent-glow: rgba(249, 115, 22, 0.5);
   --theme-accent-rgb: 249, 115, 22;
-  --theme-panel-rgb: 50, 30, 15;
-  --theme-text-primary: rgba(255, 255, 255, 0.95);
-  --theme-text-secondary: rgba(255, 255, 255, 0.60);
-  --theme-text-muted: rgba(255, 255, 255, 0.40);
-  --theme-particle-color: 251, 146, 60;
+  --theme-panel-rgb: 40, 5, 5;
+  --theme-text-secondary: #fdba74;
+  --theme-particle-color: 249, 115, 22;
 }
 
-/* Aurora - Northern lights greens */
-[data-theme="aurora"] {
-  color-scheme: dark;
-  --theme-bg-primary: #00100a;
-  --theme-bg-secondary: #001a10;
-  --theme-bg-card: #002818;
-  --theme-accent: #10b981;
-  --theme-accent-glow: rgba(16, 185, 129, 0.4);
-  --theme-accent-rgb: 16, 185, 129;
-  --theme-panel-rgb: 0, 40, 24;
-  --theme-text-primary: rgba(255, 255, 255, 0.95);
-  --theme-text-secondary: rgba(255, 255, 255, 0.60);
-  --theme-text-muted: rgba(255, 255, 255, 0.40);
+/* Aurora (Green) */
+:root[data-theme='aurora'] {
+  --theme-bg-primary: #022c22;
+  /* Emerald 950 */
+  --theme-bg-secondary: #064e3b;
+  --theme-bg-card: rgba(6, 78, 59, 0.6);
+  --theme-accent: #34d399;
+  --theme-accent-glow: rgba(52, 211, 153, 0.5);
+  --theme-accent-rgb: 52, 211, 153;
+  --theme-panel-rgb: 2, 44, 34;
+  --theme-text-secondary: #a7f3d0;
   --theme-particle-color: 52, 211, 153;
 }
 
-/* Solar - Golden yellows */
-[data-theme="solar"] {
-  color-scheme: dark;
-  --theme-bg-primary: #0a0800;
-  --theme-bg-secondary: #151000;
-  --theme-bg-card: #1f1800;
-  --theme-accent: #eab308;
-  --theme-accent-glow: rgba(234, 179, 8, 0.4);
-  --theme-accent-rgb: 234, 179, 8;
-  --theme-panel-rgb: 31, 24, 0;
-  --theme-text-primary: rgba(255, 255, 255, 0.95);
-  --theme-text-secondary: rgba(255, 255, 255, 0.60);
-  --theme-text-muted: rgba(255, 255, 255, 0.40);
-  --theme-particle-color: 250, 204, 21;
+/* Solar (Yellow) */
+:root[data-theme='solar'] {
+  --theme-bg-primary: #282003;
+  /* Yellow 950-ish */
+  --theme-bg-secondary: #422006;
+  --theme-bg-card: rgba(66, 32, 6, 0.6);
+  --theme-accent: #fbbf24;
+  --theme-accent-glow: rgba(251, 191, 36, 0.5);
+  --theme-accent-rgb: 251, 191, 36;
+  --theme-panel-rgb: 35, 25, 5;
+  --theme-text-secondary: #fde68a;
+  --theme-particle-color: 251, 191, 36;
 }
 
-/* Crimson - Deep reds */
-[data-theme="crimson"] {
-  color-scheme: dark;
-  --theme-bg-primary: #0f0000;
-  --theme-bg-secondary: #1a0505;
-  --theme-bg-card: #250a0a;
-  --theme-accent: #dc2626;
-  --theme-accent-glow: rgba(220, 38, 38, 0.4);
-  --theme-accent-rgb: 220, 38, 38;
-  --theme-panel-rgb: 37, 10, 10;
-  --theme-text-primary: rgba(255, 255, 255, 0.95);
-  --theme-text-secondary: rgba(255, 255, 255, 0.60);
-  --theme-text-muted: rgba(255, 255, 255, 0.40);
+/* Crimson (Red) */
+:root[data-theme='crimson'] {
+  --theme-bg-primary: #250303;
+  --theme-bg-secondary: #450a0a;
+  --theme-bg-card: rgba(69, 10, 10, 0.6);
+  --theme-accent: #f87171;
+  --theme-accent-glow: rgba(248, 113, 113, 0.5);
+  --theme-accent-rgb: 248, 113, 113;
+  --theme-panel-rgb: 40, 5, 5;
+  --theme-text-secondary: #fecaca;
   --theme-particle-color: 248, 113, 113;
 }
 
-/* Cyan - Teals and cyans */
-[data-theme="cyan"] {
-  color-scheme: dark;
-  --theme-bg-primary: #00080a;
-  --theme-bg-secondary: #001015;
-  --theme-bg-card: #00181f;
-  --theme-accent: #06b6d4;
-  --theme-accent-glow: rgba(6, 182, 212, 0.4);
-  --theme-accent-rgb: 6, 182, 212;
-  --theme-panel-rgb: 0, 24, 31;
-  --theme-text-primary: rgba(255, 255, 255, 0.95);
-  --theme-text-secondary: rgba(255, 255, 255, 0.60);
-  --theme-text-muted: rgba(255, 255, 255, 0.40);
+/* Cyan (Teal) */
+:root[data-theme='cyan'] {
+  --theme-bg-primary: #042f2e;
+  --theme-bg-secondary: #115e59;
+  --theme-bg-card: rgba(17, 94, 89, 0.6);
+  --theme-accent: #22d3ee;
+  --theme-accent-glow: rgba(34, 211, 238, 0.5);
+  --theme-accent-rgb: 34, 211, 238;
+  --theme-panel-rgb: 4, 47, 46;
+  --theme-text-secondary: #a5f3fc;
   --theme-particle-color: 34, 211, 238;
 }
 
-/* Rose - Pinks and magentas */
-[data-theme="rose"] {
-  color-scheme: dark;
-  --theme-bg-primary: #0f0008;
-  --theme-bg-secondary: #1a0510;
-  --theme-bg-card: #250a18;
-  --theme-accent: #ec4899;
-  --theme-accent-glow: rgba(236, 72, 153, 0.4);
-  --theme-accent-rgb: 236, 72, 153;
-  --theme-panel-rgb: 37, 10, 24;
-  --theme-text-primary: rgba(255, 255, 255, 0.95);
-  --theme-text-secondary: rgba(255, 255, 255, 0.60);
-  --theme-text-muted: rgba(255, 255, 255, 0.40);
-  --theme-particle-color: 244, 114, 182;
+/* Rose (Pink) */
+:root[data-theme='rose'] {
+  --theme-bg-primary: #2d0416;
+  /* Rose 950 */
+  --theme-bg-secondary: #4c0519;
+  --theme-bg-card: rgba(76, 5, 25, 0.6);
+  --theme-accent: #fb7185;
+  --theme-accent-glow: rgba(251, 113, 133, 0.5);
+  --theme-accent-rgb: 251, 113, 133;
+  --theme-panel-rgb: 45, 4, 22;
+  --theme-text-secondary: #fecdd3;
+  --theme-particle-color: 251, 113, 133;
 }
 
-/* ============================================
-   END THEME COLOR PALETTES
-   ============================================ */
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
 
 body {
-  cursor: url("/ufo-cursor.svg") 16 16, auto;
+  cursor: none;
+  /* Hide default cursor, we use UfoCursor */
   background-color: var(--theme-bg-primary);
+  background-image:
+    radial-gradient(circle at 50% 50%, var(--theme-bg-secondary) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, var(--theme-bg-secondary) 0%, transparent 30%);
   color: var(--theme-text-primary);
-  transition: background-color 0.5s ease, color 0.5s ease;
-  margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow: hidden;
+  /* Prevent scroll on body for full-screen apps */
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* Prevent text selection on header and footer */
+header,
+footer,
+nav,
+header *,
+footer *,
+nav * {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* ============================================
@@ -239,9 +219,12 @@ body {
    ============================================ */
 
 @keyframes live-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -256,14 +239,86 @@ body {
     transform: translateY(10px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
   }
 }
 
+.animate-spin-slow {
+  animation: spin 8s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-wave {
+  animation: wave 1s ease-in-out infinite alternate;
+}
+
+@keyframes wave {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(30deg);
+  }
+}
+
+.animate-bounce-slight {
+  animation: bounceSlight 2s ease-in-out infinite;
+}
+
+@keyframes bounceSlight {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
 .animate-fade-in {
-  animation: fade-in 0.3s ease-out;
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Force hide cursor when UFO is active */
+.cosmic-cursor-hidden,
+.cosmic-cursor-hidden * {
+  cursor: none !important;
+}
+
+@keyframes lightChase {
+  0% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+}
+
+.animate-light-chase {
+  animation: lightChase 1s linear infinite;
 }
 
 /* ============================================
@@ -295,16 +350,38 @@ body {
    ============================================ */
 
 /* Glass Panel Effect */
+/* Glass Panel Effect - Enhanced */
 .glass-panel {
   background: rgba(var(--theme-panel-rgb), var(--glass-opacity)) !important;
-  backdrop-filter: blur(calc(var(--glass-opacity) * 20px));
-  -webkit-backdrop-filter: blur(calc(var(--glass-opacity) * 20px));
-  border: 1px solid rgba(var(--theme-panel-rgb), calc(var(--glass-opacity) + 0.1));
-  transition: all 0.3s ease;
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glass-highlight), transparent);
+  opacity: 0.5;
 }
 
 .glass-panel:hover {
-  background: rgba(var(--theme-panel-rgb), calc(var(--glass-opacity) + 0.05)) !important;
+  background: rgba(var(--theme-panel-rgb), 0.5) !important;
+  border-color: var(--theme-accent-glow);
+  box-shadow: 0 0 20px var(--theme-accent-glow);
+}
+
+/* Neon Text */
+.text-neon {
+  color: var(--theme-text-primary);
+  text-shadow: 0 0 10px var(--theme-accent-glow), 0 0 20px var(--theme-accent-glow);
 }
 
 /* Override Tailwind slate backgrounds */
@@ -403,40 +480,25 @@ body {
   backdrop-filter: blur(4px);
 }
 
-/* UFO Cursor - ALWAYS use UFO cursor everywhere */
-*, *::before, *::after {
-  cursor: url("/ufo-cursor.svg") 16 16, auto !important;
-}
-
-/* Beam on click for everything */
-*:active {
-  cursor: url("/ufo-beam.svg") 16 16, auto !important;
-}
-
-/* Canvas elements need inline style override */
-canvas {
-  cursor: url("/ufo-cursor.svg") 16 16, auto !important;
-}
+/* UFO Cursor is handled by React UfoCursor component */
 
 /* Shimmer animation for cosmic title */
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .cosmic-title {
-  animation: shimmer 12s ease-in-out infinite;
-}
-
-/* Cosmic title - gradient shimmer */
-.cosmic-title {
-  background: linear-gradient(
-    120deg,
-    var(--theme-accent) 0%,
-    #ccc 45%,
-    #ccc 55%,
-    var(--theme-accent) 100%
-  );
+  background: linear-gradient(120deg,
+      var(--theme-accent) 0%,
+      #ccc 45%,
+      #ccc 55%,
+      var(--theme-accent) 100%);
   background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;

@@ -58,7 +58,7 @@ export function CosmicDetailPanel({ body, onClose }: CosmicDetailPanelProps) {
   }
 
   return (
-    <div className="bg-slate-800/80 backdrop-blur-sm rounded-lg p-4 animate-in slide-in-from-bottom-2 duration-200">
+    <div className="bg-slate-800/80 backdrop-blur-sm rounded-lg p-4 animate-in slide-in-from-bottom-2 duration-200 max-h-[80vh] overflow-y-auto custom-scrollbar">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
