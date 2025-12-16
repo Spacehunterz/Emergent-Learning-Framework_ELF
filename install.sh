@@ -153,7 +153,7 @@ pip install -q peewee 2>&1 || pip3 install -q peewee 2>&1
 echo -e "  ${GREEN}Installed Python dependencies (peewee)${NC}"
 
 # Copy hooks
-cp "$SCRIPT_DIR/hooks/learning-loop/"*.py "$HOOKS_DIR/learning-loop/"
+# Hooks stay in emergent-learning directory (not copied to ~/.claude/hooks/)
 echo -e "  ${GREEN}Copied learning hooks${NC}"
 
 # Copy scripts
@@ -275,8 +275,8 @@ echo -e "  - Preserving your existing hooks (if any)"
 echo -e "  - Creating backup at settings.json.backup${NC}"
 echo ""
 
-PRE_HOOK="$HOOKS_DIR/learning-loop/pre_tool_learning.py"
-POST_HOOK="$HOOKS_DIR/learning-loop/post_tool_learning.py"
+PRE_HOOK="$EMERGENT_LEARNING_DIR/hooks/learning-loop/pre_tool_learning.py"
+POST_HOOK="$EMERGENT_LEARNING_DIR/hooks/learning-loop/post_tool_learning.py"
 
 # Backup existing settings if present
 if [ -f "$SETTINGS_FILE" ]; then
