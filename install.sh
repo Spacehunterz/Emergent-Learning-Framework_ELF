@@ -231,9 +231,16 @@ if [ "$INSTALL_DASHBOARD" = true ]; then
     DASHBOARD_DST="$EMERGENT_LEARNING_DIR/dashboard-app"
 
     if [ -d "$DASHBOARD_SRC" ]; then
-        rm -rf "$DASHBOARD_DST"
-        cp -r "$DASHBOARD_SRC" "$DASHBOARD_DST"
-        echo -e "  ${GREEN}Copied dashboard${NC}"
+        # Guard: Don't rm -rf if source == destination (running from install dir)
+        DASHBOARD_SRC_REAL=$(cd "$DASHBOARD_SRC" 2>/dev/null && pwd)
+        DASHBOARD_DST_REAL=$(cd "$DASHBOARD_DST" 2>/dev/null && pwd)
+        if [ "$DASHBOARD_SRC_REAL" = "$DASHBOARD_DST_REAL" ]; then
+            echo -e "  ${YELLOW}Dashboard already in place (source == destination)${NC}"
+        else
+            rm -rf "$DASHBOARD_DST"
+            cp -r "$DASHBOARD_SRC" "$DASHBOARD_DST"
+            echo -e "  ${GREEN}Copied dashboard${NC}"
+        fi
 
         # Install dependencies
         FRONTEND_DIR="$DASHBOARD_DST/frontend"
