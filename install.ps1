@@ -284,18 +284,19 @@ Write-Host "  Copied query system" -ForegroundColor Green
 
 # Install core Python dependencies
 $requirementsFile = Join-Path $srcDir "requirements.txt"
+$pipCmd = if ($pythonCmd -eq "python3") { "pip3" } else { "pip" }
 if (Test-Path $requirementsFile) {
-    Invoke-NativeCommand -Command "pip" -Arguments "install -q -r $requirementsFile" -SuccessMessage "Installed Python dependencies (from requirements.txt)" -ContinueOnError
+    Invoke-NativeCommand -Command $pipCmd -Arguments "install -q -r $requirementsFile" -SuccessMessage "Installed Python dependencies (from requirements.txt)" -ContinueOnError
 } else {
     # Fallback: install peewee-aio directly (the core dependency)
-    Invoke-NativeCommand -Command "pip" -Arguments "install -q peewee-aio[aiosqlite]" -SuccessMessage "Installed Python dependencies (peewee-aio)" -ContinueOnError
+    Invoke-NativeCommand -Command $pipCmd -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed Python dependencies (peewee-aio)" -ContinueOnError
 }
 
 # Verify peewee-aio is available (critical for query system)
 $verifyResult = & $pythonCmd -c "import peewee_aio; print('ok')" 2>&1
 if ($verifyResult -ne "ok") {
     Write-Host "  Installing peewee-aio (required dependency)..." -ForegroundColor Yellow
-    Invoke-NativeCommand -Command "pip" -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed peewee-aio" -ContinueOnError
+    Invoke-NativeCommand -Command $pipCmd -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed peewee-aio" -ContinueOnError
 }
 
 # Copy hooks to emergent-learning directory (skip if in-place install)
@@ -434,21 +435,25 @@ if ($InstallDashboard) {
             Write-Host "  Dashboard already in place (in-place install)" -ForegroundColor Cyan
         }
 
-        # Install frontend dependencies
+        # Install frontend dependencies (only if node_modules missing)
         $frontendDir = Join-Path $dashboardDst "frontend"
-        if (Test-Path $frontendDir) {
+        $nodeModulesPath = Join-Path $frontendDir "node_modules"
+        if ((Test-Path $frontendDir) -and (-not (Test-Path $nodeModulesPath))) {
+            Write-Host "  [Installing] Frontend dependencies (node_modules not found)..." -ForegroundColor Yellow
             Set-Location $frontendDir
             if ($hasBun) {
                 Invoke-NativeCommand -Command "bun" -Arguments "install" -SuccessMessage "Installed frontend dependencies (bun)" -ContinueOnError
             } else {
                 Invoke-NativeCommand -Command "npm" -Arguments "install" -SuccessMessage "Installed frontend dependencies (npm)" -ContinueOnError
             }
+        } elseif ((Test-Path $frontendDir) -and (Test-Path $nodeModulesPath)) {
+            Write-Host "  Frontend dependencies already installed" -ForegroundColor Green
         }
 
         # Install backend dependencies
         $backendDir = Join-Path $dashboardDst "backend"
         if (Test-Path $backendDir) {
-            Invoke-NativeCommand -Command "pip" -Arguments "install -q fastapi uvicorn aiofiles websockets peewee" -SuccessMessage "Installed backend dependencies" -ContinueOnError
+            Invoke-NativeCommand -Command $pipCmd -Arguments "install -q fastapi uvicorn aiofiles websockets peewee" -SuccessMessage "Installed backend dependencies" -ContinueOnError
         }
 
         Set-Location $ScriptDir
