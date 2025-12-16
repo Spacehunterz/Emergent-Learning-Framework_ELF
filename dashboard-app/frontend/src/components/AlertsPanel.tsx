@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, Star, X, TrendingDown, Repeat, Target, AlertCircle, Zap, Bell, ChevronDown, ChevronUp } from 'lucide-react'
+import { AlertTriangle, Star, X, TrendingDown, Repeat, Target, AlertCircle, Zap, Bell, ChevronUp, ChevronDown } from 'lucide-react'
 
 // API anomaly format
 interface ApiAnomaly {
@@ -78,12 +78,12 @@ export default function AlertsPanel({ anomalies, goldenRules, onDismissAnomaly }
         )}
       </button>
 
-      {/* Slide-out Panel - slides down below button, aligned right */}
+      {/* Slide-out Panel */}
       <div
-        className={`absolute top-full right-0 mt-2 w-80 bg-slate-800 rounded-lg shadow-xl border border-slate-700 transition-all duration-300 ease-out origin-top z-50 ${
+        className={`absolute top-full left-0 mt-2 w-80 bg-slate-800 rounded-lg shadow-xl border border-slate-700 transition-all duration-300 ease-out origin-top z-50 ${
           isOpen
             ? 'opacity-100 scale-y-100 translate-y-0'
-            : 'opacity-0 scale-y-0 -translate-y-4 pointer-events-none'
+            : 'opacity-0 scale-y-0 -translate-y-2 pointer-events-none'
         }`}
       >
         {/* Panel Header */}
