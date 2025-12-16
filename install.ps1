@@ -319,15 +319,20 @@ $dbPath = Join-Path $MemoryDir "index.db"
 $sqlFile = Join-Path $MemoryDir "init_db.sql"
 
 if (-not (Test-Path $dbPath)) {
-    try {
-        sqlite3 $dbPath ".read $sqlFile" 2>&1 | Out-Null
-        Write-Host "  Initialized database" -ForegroundColor Green
-    } catch {
-        & $pythonCmd (Join-Path $dstQueryDir "query.py") --validate 2>&1 | Out-Null
-        Write-Host "  Initialized database via Python" -ForegroundColor Green
+    # Initialize database using Python (most reliable cross-platform)
+    $queryScript = Join-Path $dstQueryDir "query.py"
+    if (Test-Path $queryScript) {
+        $initResult = & $pythonCmd $queryScript --validate 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "  Initialized database" -ForegroundColor Green
+        } else {
+            Write-Host "  Database initialization skipped (will init on first use)" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "  Database will be initialized on first use" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "  Database already exists (kept existing)" -ForegroundColor Yellow
+    Write-Host "  Database already exists" -ForegroundColor Green
 }
 
 # === SWARM INSTALLATION ===
