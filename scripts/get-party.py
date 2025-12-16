@@ -40,7 +40,16 @@ PARTIES_PATH = AGENTS_DIR / "parties.yaml"
 
 
 def load_parties() -> Dict[str, Any]:
-    """Load party definitions from YAML file."""
+    """Load party definitions from YAML file (with custom merge)."""
+    # Try to use config_loader for merged parties
+    try:
+        sys.path.insert(0, str(BASE_DIR / 'query'))
+        from config_loader import load_all_parties
+        return load_all_parties()
+    except ImportError:
+        pass
+
+    # Fallback to direct loading
     if not PARTIES_PATH.exists():
         print(f"ERROR: Parties file not found: {PARTIES_PATH}", file=sys.stderr)
         return {}

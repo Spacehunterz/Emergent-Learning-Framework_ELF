@@ -9,10 +9,12 @@ try:
     from query.models import Heuristic, Learning, get_manager
     from query.utils import AsyncTimeoutHandler
     from query.exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
+    from query.config_loader import get_config, load_custom_golden_rules, get_always_load_categories
 except ImportError:
     from models import Heuristic, Learning, get_manager
     from utils import AsyncTimeoutHandler
     from exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
+    from config_loader import get_config, load_custom_golden_rules, get_always_load_categories
 
 # MetaObserver is optional
 META_OBSERVER_AVAILABLE = False
@@ -98,13 +100,21 @@ class ContextBuilderMixin:
                 max_chars = max_tokens * 4  # Rough approximation
 
                 # Tier 1: Golden Rules
-                # For minimal depth, only load 'core' category rules
+                # For minimal depth, only load configured always_load_categories
                 if depth == 'minimal':
-                    golden_rules = await self.get_golden_rules(categories=['core'])
-                    context_parts.append("# TIER 1: [93mGolden Rules[0m (core only)\n")
+                    always_cats = get_always_load_categories()
+                    golden_rules = await self.get_golden_rules(categories=always_cats)
+                    context_parts.append(f"# TIER 1: [93mGolden Rules[0m ({', '.join(always_cats)})\n")
                 else:
                     golden_rules = await self.get_golden_rules()
                     context_parts.append("# TIER 1: [93mGolden Rules[0m\n")
+
+                # Append custom golden rules if they exist
+                custom_rules = load_custom_golden_rules()
+                if custom_rules:
+                    context_parts.append("\n# Custom Golden Rules\n")
+                    context_parts.append(custom_rules)
+                    context_parts.append("\n")
 
                 context_parts.append(golden_rules)
                 context_parts.append("\n")

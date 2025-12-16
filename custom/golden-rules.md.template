@@ -1,0 +1,18 @@
+# Custom Golden Rules
+
+Your personal golden rules that extend the main ruleset.
+Use "C" prefix (C1, C2, etc.) to distinguish from framework rules.
+
+---
+
+## C1. [Your Rule Title]
+> [Your rule statement in imperative form]
+
+**Category:** [your-category]
+**Why:** [Explanation of why this rule matters to you]
+**Promoted:** [Date] (personal rule)
+**Validations:** N/A
+
+---
+
+<!-- Add more rules below following the same format -->

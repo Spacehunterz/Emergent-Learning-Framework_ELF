@@ -12,6 +12,12 @@ ceo-inbox/
 logs/
 failure-analysis/
 
+# Custom user configurations (keep templates, ignore actual configs)
+custom/config.yaml
+custom/golden-rules.md
+custom/parties.yaml
+custom/agents/
+
 # Wiki clone
 wiki-repo/
 

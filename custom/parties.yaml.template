@@ -1,0 +1,19 @@
+# Custom Party Definitions
+# Your personal agent team compositions.
+# These are loaded IN ADDITION to the default parties.
+
+parties:
+  # Example custom party:
+  #
+  # my-review:
+  #   description: "My personal code review process"
+  #   lead: skeptic
+  #   agents:
+  #     - researcher
+  #     - skeptic
+  #   workflow: sequential
+  #   triggers:
+  #     - "my review"
+  #     - "check my code"
+
+  # Add your parties below:

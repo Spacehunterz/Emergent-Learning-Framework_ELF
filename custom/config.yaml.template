@@ -1,0 +1,65 @@
+# ELF Custom Configuration
+# Copy this file to config.yaml and modify as needed.
+# These settings override framework defaults.
+
+# Your preferences
+preferences:
+  # Default context depth: minimal | standard | deep
+  default_depth: standard
+
+  # Default output format: text | json | csv
+  default_format: text
+
+  # Query timeout in seconds
+  default_timeout: 30
+
+# Query behavior
+query:
+  # Default result limit
+  max_results: 10
+
+  # Include challenged/invalidated assumptions in context
+  include_challenged: true
+
+  # Show similar failures warning
+  show_similar_failures: true
+
+# Categories to ALWAYS load (even in minimal depth)
+# Add categories here that are critical for your workflow
+always_load_categories:
+  - core
+  # - git
+  # - your-category
+
+# Your primary domains (helps with suggestions and filtering)
+# These are used for better party suggestions and heuristic matching
+my_domains: []
+  # - react
+  # - python
+  # - api-design
+  # - devops
+
+# Dashboard preferences
+dashboard:
+  # Auto-start dashboard on checkin
+  auto_start: false
+
+  # Default ports
+  backend_port: 8888
+  frontend_port: 3001
+
+# Agent preferences
+agents:
+  # Default party for code review
+  default_review_party: code-review
+
+  # Default party for new features
+  default_feature_party: new-feature
+
+# Notification preferences
+notifications:
+  # Show bootstrap mode progress
+  show_bootstrap_progress: true
+
+  # Alert on violated invariants
+  alert_on_violations: true
