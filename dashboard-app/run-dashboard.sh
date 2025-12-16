@@ -84,6 +84,15 @@ fi
 if curl -s "http://localhost:$FRONTEND_PORT" >/dev/null 2>&1; then
     echo "[OK] Frontend already running on port $FRONTEND_PORT"
 else
+    # Auto-install dependencies if node_modules missing (Issue #36)
+    if [ ! -d "$FRONTEND_PATH/node_modules" ]; then
+        echo "[Installing] Frontend dependencies (node_modules not found)..."
+        cd "$FRONTEND_PATH" && $PKG_MGR install
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to install frontend dependencies"
+            exit 1
+        fi
+    fi
     echo "[Starting] Frontend dev server (using $PKG_MGR)..."
     cd "$FRONTEND_PATH" && $PKG_MGR run dev &
     STARTED_SERVERS=true
