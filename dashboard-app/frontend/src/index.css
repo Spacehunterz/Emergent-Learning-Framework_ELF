@@ -9,23 +9,23 @@
 
 /* Default theme (Black Hole) */
 :root {
-  --theme-bg-primary: #030014;
-  --theme-bg-secondary: #0f0529;
-  --theme-bg-card: rgba(20, 10, 40, 0.6);
+  --theme-bg-primary: #000000;
+  --theme-bg-secondary: #0a0a0a;
+  --theme-bg-card: rgba(0, 0, 0, 0.7);
   --neon-cyan: #00f3ff;
   --neon-magenta: #bc13fe;
   --neon-amber: #ffaa00;
   --theme-accent: var(--neon-cyan);
   --theme-accent-glow: rgba(0, 243, 255, 0.5);
   --theme-accent-rgb: 0, 243, 255;
-  --theme-panel-rgb: 10, 5, 30;
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-highlight: rgba(255, 255, 255, 0.05);
+  --theme-panel-rgb: 0, 0, 0;
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.03);
   --theme-text-primary: #ffffff;
-  --theme-text-secondary: #b4abd4;
-  --theme-text-muted: #6c6390;
+  --theme-text-secondary: #a0a0a0;
+  --theme-text-muted: #606060;
   --theme-particle-color: 0, 243, 255;
-  --glass-opacity: 0.25;
+  --glass-opacity: 0.15;
 
   color: var(--theme-text-primary);
   background-color: var(--theme-bg-primary);
