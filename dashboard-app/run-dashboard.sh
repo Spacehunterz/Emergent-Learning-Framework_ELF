@@ -57,12 +57,16 @@ echo "        Agent Intelligence System                       "
 echo "========================================================"
 echo ""
 
+# Track if we started any servers
+STARTED_SERVERS=false
+
 # Check if backend already running
 if curl -s "http://localhost:$BACKEND_PORT/api/stats" >/dev/null 2>&1; then
     echo "[OK] Backend already running on port $BACKEND_PORT"
 else
     echo "[Starting] Backend API server..."
     cd "$BACKEND_PATH" && $PYTHON_CMD -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT &
+    STARTED_SERVERS=true
     sleep 3
 fi
 
@@ -82,6 +86,7 @@ if curl -s "http://localhost:$FRONTEND_PORT" >/dev/null 2>&1; then
 else
     echo "[Starting] Frontend dev server (using $PKG_MGR)..."
     cd "$FRONTEND_PATH" && $PKG_MGR run dev &
+    STARTED_SERVERS=true
     sleep 4
 fi
 
@@ -106,6 +111,11 @@ echo ""
 echo "  Press Ctrl+C to stop servers"
 echo "========================================================"
 echo ""
+
+# If both servers were already running, exit cleanly
+if [ "$STARTED_SERVERS" = false ]; then
+    exit 0
+fi
 
 # Keep script running to allow Ctrl+C to kill background jobs
 trap "echo 'Shutting down...'; kill 0" EXIT
