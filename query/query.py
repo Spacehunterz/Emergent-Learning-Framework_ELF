@@ -1720,7 +1720,7 @@ class QuerySystem:
 
                 # Tier 1: Golden Rules (always loaded)
                 golden_rules = self.get_golden_rules()
-                context_parts.append("# TIER 1: [93mGolden Rules[0m\n")
+                context_parts.append("# TIER 1: Golden Rules\n")
                 context_parts.append(golden_rules)
                 context_parts.append("\n")
                 approx_tokens += len(golden_rules) // 4
@@ -2044,7 +2044,7 @@ class QuerySystem:
                     ceo_reviews_count = len(ceo_reviews)
 
                 # Task context with building header
-                building_header = "🏢 [94mBuilding Status[0m\n━━━━━━━━━━━━━━━━━━\n\n"
+                building_header = "🏢 Building Status\n━━━━━━━━━━━━━━━━━━\n\n"
                 context_parts.insert(0, f"{building_header}# Task Context\n\n{task}\n\n---\n\n")
 
             result = "".join(context_parts)
@@ -2289,7 +2289,7 @@ Error Codes:
                 print("ERROR: Meta-observer not available. Cannot run health check.", file=sys.stderr)
                 return 1
 
-            print("🏥 [94mSystem Health Check[0m")
+            print("🏥 System Health Check")
             print("━" * 40)
 
             # Check alerts
@@ -2314,7 +2314,7 @@ Error Codes:
                                 print(f"   {alert['message']}")
 
             # Show recent metrics
-            print("\n📊 [94mRecent Metrics[0m")
+            print("\n📊 Recent Metrics")
             print("━" * 40)
             try:
                 from meta_observer import MetaObserver

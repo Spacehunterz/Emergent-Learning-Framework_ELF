@@ -161,10 +161,10 @@ class ContextBuilderMixin:
                 if depth == 'minimal':
                     always_cats = get_always_load_categories()
                     golden_rules = await self.get_golden_rules(categories=always_cats)
-                    context_parts.append(f"# TIER 1: [93mGolden Rules[0m ({', '.join(always_cats)})\n")
+                    context_parts.append(f"# TIER 1: Golden Rules ({', '.join(always_cats)})\n")
                 else:
                     golden_rules = await self.get_golden_rules()
-                    context_parts.append("# TIER 1: [93mGolden Rules[0m\n")
+                    context_parts.append("# TIER 1: Golden Rules\n")
 
                 # Append custom golden rules if they exist
                 custom_rules = load_custom_golden_rules()
@@ -180,7 +180,7 @@ class ContextBuilderMixin:
 
                 # For minimal depth, return just core golden rules (~300 tokens)
                 if depth == 'minimal':
-                    building_header = "🏢 [94mBuilding Status[0m (minimal)\n━━━━━━━━━━━━━━━━━━\n\n"
+                    building_header = "🏢 Building Status (minimal)\n━━━━━━━━━━━━━━━━━━\n\n"
                     context_parts.insert(0, f"{building_header}# Task Context\n\n{task}\n\n---\n\n")
                     result = "".join(context_parts)
                     self._log_debug(f"Built minimal context with ~{len(result)//4} tokens")
@@ -496,7 +496,7 @@ class ContextBuilderMixin:
 
                 # Task context with building header (show depth level)
                 depth_label = f" ({depth})" if depth != 'standard' else ""
-                building_header = f"🏢 [94mBuilding Status[0m{depth_label}\n━━━━━━━━━━━━━━━━━━\n\n"
+                building_header = f"🏢 Building Status{depth_label}\n━━━━━━━━━━━━━━━━━━\n\n"
                 context_parts.insert(0, f"{building_header}# Task Context\n\n{task}\n\n---\n\n")
 
             result = "".join(context_parts)

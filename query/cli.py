@@ -86,7 +86,7 @@ async def _async_main(args: argparse.Namespace) -> int:
                 print("ERROR: Meta-observer not available. Cannot run health check.", file=sys.stderr)
                 return 1
 
-            print("🏥 [94mSystem Health Check[0m")
+            print("🏥 System Health Check")
             print("━" * 40)
 
             # Check alerts
@@ -111,7 +111,7 @@ async def _async_main(args: argparse.Namespace) -> int:
                                 print(f"   {alert['message']}")
 
             # Show recent metrics
-            print("\n📊 [94mRecent Metrics[0m")
+            print("\n📊 Recent Metrics")
             print("━" * 40)
             try:
                 observer = MetaObserver(db_path=query_system.db_path)
