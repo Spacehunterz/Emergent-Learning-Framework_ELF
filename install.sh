@@ -207,10 +207,11 @@ if [ "$INSTALL_SWARM" = true ]; then
     done
     echo -e "  ${GREEN}Copied agent personas${NC}"
 
-    # Copy swarm command
+    # Copy all slash commands (/checkin, /search, /swarm, etc.)
     mkdir -p "$CLAUDE_DIR/commands"
-    cp "$SCRIPT_DIR/commands/swarm.md" "$CLAUDE_DIR/commands/" 2>&1 || echo -e "  ${YELLOW}Warning: swarm.md not copied${NC}"
-    echo -e "  ${GREEN}Copied /swarm command${NC}"
+    cp "$SCRIPT_DIR/commands/"*.md "$CLAUDE_DIR/commands/" 2>/dev/null || true
+    cp "$SCRIPT_DIR/commands/"*.py "$CLAUDE_DIR/commands/" 2>/dev/null || true
+    echo -e "  ${GREEN}Copied slash commands (/checkin, /search, /swarm)${NC}"
 
     # Copy agent coordination plugin
     mkdir -p "$CLAUDE_DIR/plugins/agent-coordination/utils"

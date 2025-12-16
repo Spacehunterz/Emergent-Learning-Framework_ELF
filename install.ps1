@@ -303,15 +303,19 @@ if ($InstallSwarm) {
     }
     Write-Host "  Copied agent personas" -ForegroundColor Green
 
-    # Copy swarm command (goes to different location, always safe)
+    # Copy all slash commands (/checkin, /search, /swarm, etc.)
     $commandsDir = Join-Path $ClaudeDir "commands"
     New-Item -ItemType Directory -Path $commandsDir -Force | Out-Null
     $srcCommandsDir = Join-Path $ScriptDir "commands"
-    $swarmCmd = Join-Path $srcCommandsDir "swarm.md"
-    if (Test-Path $swarmCmd) {
-        Copy-Item -Path $swarmCmd -Destination $commandsDir -Force
+    if (Test-Path $srcCommandsDir) {
+        Get-ChildItem -Path $srcCommandsDir -Filter "*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination $commandsDir -Force
+        }
+        Get-ChildItem -Path $srcCommandsDir -Filter "*.py" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination $commandsDir -Force
+        }
     }
-    Write-Host "  Copied /swarm command" -ForegroundColor Green
+    Write-Host "  Copied slash commands (/checkin, /search, /swarm)" -ForegroundColor Green
 
     # Copy agent coordination plugin (goes to different location, always safe)
     $claudePluginsDir = Join-Path $ClaudeDir "plugins"
