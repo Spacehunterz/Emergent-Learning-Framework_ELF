@@ -692,3 +692,72 @@ async def elf_search(params: SearchInput) -> str:
 
 if __name__ == "__main__":
     mcp.run()
+
+
+# ============================================================================
+# Plan-Postmortem Tools (imported from extension module)
+# ============================================================================
+
+from plan_postmortem_tools import (
+    RecordPlanInput, RecordPostmortemInput,
+    record_plan_impl, record_postmortem_impl
+)
+
+
+@mcp.tool(
+    name="elf_record_plan",
+    annotations={
+        "title": "Record ELF Plan",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": False
+    }
+)
+async def elf_record_plan(params: RecordPlanInput) -> str:
+    """
+    Record a plan before starting a task.
+
+    Part of the plan-postmortem learning system that enables higher-quality
+    learning by comparing intent vs. outcome.
+
+    Workflow:
+      1. Record plan (this tool)
+      2. Execute the work
+      3. Record postmortem (elf_record_postmortem) with plan_id
+      4. System compares expected vs actual for insights
+
+    Args:
+        params: Plan details including title, approach, risks, expected outcome
+
+    Returns:
+        Success message with plan_id to use when creating postmortem
+    """
+    return await record_plan_impl(params)
+
+
+@mcp.tool(
+    name="elf_record_postmortem",
+    annotations={
+        "title": "Record ELF Postmortem",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": False
+    }
+)
+async def elf_record_postmortem(params: RecordPostmortemInput) -> str:
+    """
+    Record a postmortem after completing a task.
+
+    When linked to a plan (recommended), enables higher-quality learning by
+    comparing expected vs. actual outcomes. Divergences reveal valuable insights.
+
+    Args:
+        params: Postmortem details including plan_id (recommended), outcome,
+                divergences, what went well/wrong, and lessons learned
+
+    Returns:
+        Success message with analysis of plan vs. outcome if linked
+    """
+    return await record_postmortem_impl(params)
