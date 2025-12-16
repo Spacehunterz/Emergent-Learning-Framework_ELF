@@ -110,53 +110,26 @@ if [ "$INSTALL_DASHBOARD" = true ]; then
     elif command -v node &> /dev/null; then
         echo -e "  Node: ${GREEN}$(node --version)${NC}"
     else
-        echo ""
-        echo -e "  ${YELLOW}[!] Node.js or Bun not found (needed for dashboard)${NC}"
-        echo ""
-        echo -e "  ${CYAN}Options:${NC}"
-        echo -e "    ${GREEN}[I]${NC} Install Bun now (recommended, ~30 seconds)"
-        echo -e "    [S] Skip dashboard (install core only)"
-        echo -e "    [Q] Quit and install manually"
-        echo ""
-        read -p "  Your choice (I/S/Q): " choice
-        
-        case "${choice^^}" in
-            I|i)
-                echo ""
-                echo -e "  ${CYAN}Installing Bun...${NC}"
-                if curl -fsSL https://bun.sh/install | bash; then
-                    # Source the updated profile to get bun in PATH
-                    export BUN_INSTALL="$HOME/.bun"
-                    export PATH="$BUN_INSTALL/bin:$PATH"
-                    
-                    if command -v bun &> /dev/null; then
-                        echo -e "  ${GREEN}Bun $(bun --version) installed successfully!${NC}"
-                        HAS_BUN=true
-                    else
-                        echo -e "  ${YELLOW}Bun installed. Please restart your terminal and run installer again.${NC}"
-                        exit 1
-                    fi
-                else
-                    echo -e "  ${RED}Failed to install Bun${NC}"
-                    echo -e "  ${YELLOW}Please install manually from https://bun.sh${NC}"
-                    exit 1
-                fi
-                ;;
-            S|s)
-                echo -e "  ${YELLOW}Continuing without dashboard...${NC}"
-                INSTALL_DASHBOARD=false
-                ;;
-            *)
-                echo -e "  ${YELLOW}Please install Node.js or Bun and run the installer again.${NC}"
-                echo -e "  ${CYAN}Bun: https://bun.sh${NC}"
-                echo -e "  ${CYAN}Node: https://nodejs.org${NC}"
-                exit 1
-                ;;
-        esac
+        # Auto-install Bun without prompting
+        echo -e "  ${CYAN}Bun/Node not found - auto-installing Bun...${NC}"
+        if curl -fsSL https://bun.sh/install 2>/dev/null | bash -s -- --no-modify-path >/dev/null 2>&1; then
+            # Add to PATH for current session
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
+            
+            if command -v bun &> /dev/null; then
+                echo -e "  Bun: ${GREEN}$(bun --version) (auto-installed)${NC}"
+                HAS_BUN=true
+            else
+                echo -e "  ${YELLOW}Bun installed - restart terminal and run again to continue${NC}"
+                exit 0
+            fi
+        else
+            echo -e "  ${YELLOW}Could not auto-install Bun, skipping dashboard...${NC}"
+            INSTALL_DASHBOARD=false
+        fi
     fi
 fi
-
-echo ""
 echo -e "${GREEN}[OK] Prerequisites met${NC}"
 echo ""
 echo -e "${YELLOW}[Step 2/5]${NC} Creating directory structure..."
