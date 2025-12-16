@@ -200,6 +200,7 @@ if ($InstallDashboard) {
         Write-Host ""
         $choice = Read-Host "  Your choice (I/S/Q)"
         
+        if ([string]::IsNullOrEmpty($choice)) { $choice = "Q" }
         switch ($choice.ToUpper()) {
             "I" {
                 Write-Host ""
