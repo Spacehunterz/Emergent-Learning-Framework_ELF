@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ThemeProvider, NotificationProvider, useNotificationContext, DataProvider, useDataContext } from './context'
+import { ThemeProvider, NotificationProvider, useNotificationContext, DataProvider, useDataContext, CosmicSettingsProvider, CosmicAudioProvider, useCosmicSettings, useTheme } from './context'
+import { DashboardLayout } from './layouts/DashboardLayout'
 import { useWebSocket, useAPI } from './hooks'
+import CosmicIntro from './components/CosmicIntro'
 import {
-  SettingsPanel,
-  ParticleBackground,
-  Header,
   StatsBar,
   HotspotVisualization,
   HeuristicPanel,
@@ -13,8 +12,6 @@ import {
   QueryInterface,
   AlertsPanel,
   KnowledgeGraph,
-  CommandPalette,
-  NotificationPanel,
   LearningVelocity,
   SessionHistoryPanel,
   AssumptionsPanel,
@@ -24,13 +21,6 @@ import {
 } from './components'
 import {
   TimelineEvent,
-  Stats,
-  Heuristic,
-  Hotspot,
-  ApiRun,
-  ApiAnomaly,
-  TimelineData,
-  RawEvent
 } from './types'
 
 function AppContent() {
@@ -38,6 +28,9 @@ function AppContent() {
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  // Intro disabled - set to true to re-enable
+  const [showIntro, setShowIntro] = useState(false)
+  const [introMode, setIntroMode] = useState<'full' | 'short'>('full')
 
   const api = useAPI()
   const notifications = useNotificationContext()
@@ -127,14 +120,26 @@ function AppContent() {
   // Command Palette keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Command Palette
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         setCommandPaletteOpen(true)
       }
+
+      // Escape to clear selection / navigate back
+      if (e.key === 'Escape') {
+        if (selectedDomain) {
+          e.preventDefault()
+          setSelectedDomain(null)
+        } else if (activeTab !== 'overview') {
+          // Optional: Esc from other tabs could go back to overview?
+          // user only mentioned "drill down into a card... cant esc key out"
+        }
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [selectedDomain, activeTab])
 
   const handleRetryRun = async (runId: string) => {
     try {
@@ -152,22 +157,33 @@ function AppContent() {
     }
   }
 
+  const { performanceMode } = useCosmicSettings()
+  const { setParticleCount } = useTheme()
+
+  // Performance Mode Logic
+  useEffect(() => {
+    switch (performanceMode) {
+      case 'low': setParticleCount(50); break;
+      case 'medium': setParticleCount(100); break;
+      case 'high': setParticleCount(200); break;
+    }
+  }, [performanceMode, setParticleCount])
+
   // Convert stats to expected format for StatsBar
   // FIX: Use successful_runs/failed_runs from backend (actual workflow runs), not successes/failures (learnings)
   const statsForBar = stats ? {
     total_runs: stats.total_runs,
-    successful_runs: stats.successful_runs,  // FIXED: was stats.successes (learning count)
-    failed_runs: stats.failed_runs,          // FIXED: was stats.failures (learning count)
-    success_rate: stats.total_runs > 0 ? stats.successful_runs / stats.total_runs : 0,  // FIXED: use run counts
+    successful_runs: stats.successful_runs,
+    failed_runs: stats.failed_runs,
+    success_rate: stats.total_runs > 0 ? stats.successful_runs / stats.total_runs : 0,
     total_heuristics: stats.total_heuristics,
     golden_rules: stats.golden_rules,
     total_learnings: stats.total_learnings,
     hotspot_count: hotspots.length,
     avg_confidence: stats.avg_confidence,
     total_validations: stats.total_validations,
-    runs_today: stats.runs_today || 0,       // FIXED: use runs_today from backend
+    runs_today: stats.runs_today || 0,
     active_domains: new Set(heuristics.map(h => h.domain)).size,
-    // Query stats
     queries_today: stats.queries_today || 0,
     total_queries: stats.total_queries || 0,
     avg_query_duration_ms: stats.avg_query_duration_ms || 0,
@@ -182,70 +198,65 @@ function AppContent() {
   // Command palette commands
   const commands = [
     { id: 'overview', label: 'Go to Overview', category: 'Navigation', action: () => setActiveTab('overview') },
+    { id: 'graph', label: 'View Knowledge Graph', category: 'Navigation', action: () => setActiveTab('graph') },
+    { id: 'analytics', label: 'View Learning Analytics', category: 'Navigation', action: () => setActiveTab('analytics') },
+    { id: 'runs', label: 'View Runs', category: 'Navigation', action: () => setActiveTab('runs') },
+    { id: 'timeline', label: 'View Timeline', category: 'Navigation', action: () => setActiveTab('timeline') },
     { id: 'heuristics', label: 'View Heuristics', category: 'Navigation', action: () => setActiveTab('heuristics') },
     { id: 'assumptions', label: 'View Assumptions', category: 'Navigation', action: () => setActiveTab('assumptions') },
     { id: 'spikes', label: 'View Spike Reports', category: 'Navigation', action: () => setActiveTab('spikes') },
     { id: 'invariants', label: 'View Invariants', category: 'Navigation', action: () => setActiveTab('invariants') },
     { id: 'fraud', label: 'Review Fraud Reports', category: 'Navigation', action: () => setActiveTab('fraud') },
-    { id: 'graph', label: 'View Knowledge Graph', category: 'Navigation', action: () => setActiveTab('graph') },
-    { id: 'runs', label: 'View Runs', category: 'Navigation', action: () => setActiveTab('runs') },
-    { id: 'timeline', label: 'View Timeline', category: 'Navigation', action: () => setActiveTab('timeline') },
-    { id: 'analytics', label: 'View Learning Analytics', category: 'Navigation', action: () => setActiveTab('analytics') },
     { id: 'query', label: 'Query the Building', shortcut: '⌘Q', category: 'Actions', action: () => setActiveTab('query') },
     { id: 'refresh', label: 'Refresh Data', shortcut: '⌘R', category: 'Actions', action: () => { loadStats(); reloadHeuristics() } },
     { id: 'clearDomain', label: 'Clear Domain Filter', category: 'Actions', action: () => setSelectedDomain(null) },
     { id: 'toggleNotificationSound', label: notifications.soundEnabled ? 'Mute Notifications' : 'Unmute Notifications', category: 'Settings', action: notifications.toggleSound },
     { id: 'clearNotifications', label: 'Clear All Notifications', category: 'Actions', action: notifications.clearAll },
+    { id: 'playIntroFull', label: 'Play Intro (Full)', category: 'System', action: () => { setIntroMode('full'); setShowIntro(true); setCommandPaletteOpen(false); } },
+    { id: 'playIntroShort', label: 'Play Intro (Short)', category: 'System', action: () => { setIntroMode('short'); setShowIntro(true); setCommandPaletteOpen(false); } },
   ]
 
   return (
-    <div className="min-h-screen relative overflow-hidden transition-colors duration-500" style={{ backgroundColor: "var(--theme-bg-primary)" }}>
-      <ParticleBackground />
-      <SettingsPanel />
-      <CommandPalette
-        isOpen={commandPaletteOpen}
-        onClose={() => setCommandPaletteOpen(false)}
+    <>
+      <DashboardLayout
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab as any)}
+        isConnected={isConnected}
+        commandPaletteOpen={commandPaletteOpen}
+        setCommandPaletteOpen={setCommandPaletteOpen}
         commands={commands}
-      />
-      <NotificationPanel
-        notifications={notifications.notifications}
-        onDismiss={notifications.removeNotification}
-        onClearAll={notifications.clearAll}
-        soundEnabled={notifications.soundEnabled}
-        onToggleSound={notifications.toggleSound}
-      />
-      <div className="relative z-10">
-        <Header
-          isConnected={isConnected}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onOpenCommandPalette={() => setCommandPaletteOpen(true)}
-        />
+        onDomainSelect={setSelectedDomain}
+        selectedDomain={selectedDomain}
+      >
+        {/* Intro Layer */}
+        {showIntro && (
+          <div className="fixed inset-0 z-[100000] bg-black">
+            <CosmicIntro
+              mode={introMode}
+              onComplete={() => setShowIntro(false)}
+            />
+          </div>
+        )}
 
-      <main className="container mx-auto px-4 py-6">
-        {/* Stats Bar - Always visible */}
-        <StatsBar stats={statsForBar} />
+        <div className="space-y-6">
+          {/* Stats Bar */}
+          <StatsBar stats={statsForBar} />
 
-        {/* Tab Content */}
-        <div className="mt-6">
+          {/* Tab Content */}
           {activeTab === 'overview' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Main area - Hotspot Visualization (Grid/Cosmic toggle) */}
               <div className="lg:col-span-2">
                 <HotspotVisualization
                   hotspots={hotspots}
-                  onSelect={() => {}} // Selection handled by cosmic store, editor opened via detail panel
-                  onOpenInEditor={handleOpenInEditor}
+                  onSelect={(path) => handleOpenInEditor(path)}
                   selectedDomain={selectedDomain}
                   onDomainFilter={setSelectedDomain}
                 />
               </div>
-
-              {/* Sidebar - Unified Alerts Panel */}
               <div className="space-y-6">
                 <AlertsPanel
                   anomalies={anomalies}
-                  goldenRules={normalizedHeuristics.filter(h => h.is_golden)}
+                  goldenRules={normalizedHeuristics.filter(h => h.is_golden).map(h => ({ ...h, id: String(h.id) })) as any}
                   onDismissAnomaly={(index) => setAnomalies(prev => prev.filter((_, i) => i !== index))}
                 />
               </div>
@@ -267,7 +278,6 @@ function AppContent() {
           {activeTab === 'graph' && (
             <KnowledgeGraph
               onNodeClick={(node) => {
-                // Optionally switch to heuristics tab and filter by domain
                 setSelectedDomain(node.domain)
               }}
             />
@@ -295,13 +305,9 @@ function AppContent() {
           )}
 
           {activeTab === 'sessions' && <SessionHistoryPanel />}
-
           {activeTab === 'assumptions' && <AssumptionsPanel />}
-
           {activeTab === 'spikes' && <SpikeReportsPanel />}
-
           {activeTab === 'invariants' && <InvariantsPanel />}
-
           {activeTab === 'fraud' && <FraudReviewPanel />}
 
           {activeTab === 'timeline' && (
@@ -317,21 +323,17 @@ function AppContent() {
                 domain: e.domain,
               }))}
               heuristics={normalizedHeuristics}
-              onEventClick={() => {}}
+              onEventClick={() => { }}
             />
           )}
 
-          {activeTab === 'query' && (
-            <QueryInterface />
-          )}
+          {activeTab === 'query' && <QueryInterface />}
 
-          {activeTab === 'analytics' && (
-            <LearningVelocity days={30} />
-          )}
+          {/* Analytics is handled by DashboardLayout for Cosmic mode, but we keep this for grid mode */}
+          {activeTab === 'analytics' && <LearningVelocity days={30} />}
         </div>
-      </main>
-      </div>
-    </div>
+      </DashboardLayout>
+    </>
   )
 }
 
@@ -340,7 +342,11 @@ function App() {
     <ThemeProvider>
       <NotificationProvider>
         <DataProvider>
-          <AppContent />
+          <CosmicSettingsProvider>
+            <CosmicAudioProvider>
+              <AppContent />
+            </CosmicAudioProvider>
+          </CosmicSettingsProvider>
         </DataProvider>
       </NotificationProvider>
     </ThemeProvider>

@@ -133,7 +133,6 @@ export interface CosmicHierarchy {
 export interface CosmicViewProps {
   hotspots: ApiHotspot[]
   onSelect: (path: string, line?: number) => void
-  onOpenInEditor?: (path: string, line?: number) => void
   selectedDomain: string | null
   onDomainFilter: (domain: string | null) => void
 }
@@ -144,7 +143,6 @@ export interface CosmicViewProps {
 export interface HotspotVisualizationProps {
   hotspots: ApiHotspot[]
   onSelect: (path: string, line?: number) => void
-  onOpenInEditor?: (path: string, line?: number) => void
   selectedDomain: string | null
   onDomainFilter: (domain: string | null) => void
 }
