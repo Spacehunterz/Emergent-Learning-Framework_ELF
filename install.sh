@@ -15,6 +15,45 @@ echo -e "${CYAN}============================================${NC}"
 echo -e "${CYAN}  Emergent Learning Framework Installer${NC}"
 echo -e "${CYAN}============================================${NC}"
 echo ""
+
+# Check for existing installation
+EXISTING_VERSION_FILE="$HOME/.claude/emergent-learning/VERSION"
+if [ -f "$EXISTING_VERSION_FILE" ]; then
+    INSTALLED_VERSION=$(cat "$EXISTING_VERSION_FILE")
+    echo -e "${YELLOW}⚠️  ELF is already installed (version $INSTALLED_VERSION)${NC}"
+    echo ""
+    echo "Running install.sh again will overwrite your existing installation,"
+    echo "including any customizations you've made."
+    echo ""
+    echo -e "To safely update, use: ${GREEN}./update.sh${NC}"
+    echo ""
+    echo -e "${YELLOW}┌─────────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${YELLOW}│${NC} [U] Use update.sh instead (recommended)"
+    echo -e "${YELLOW}│${NC} [R] Reinstall anyway (will overwrite customizations)"
+    echo -e "${YELLOW}│${NC} [Q] Quit"
+    echo -e "${YELLOW}└─────────────────────────────────────────────────────────────┘${NC}"
+    read -p "Choice [U/R/Q]: " choice
+    case "$choice" in
+        [Uu]*)
+            if [ -f "$(dirname "${BASH_SOURCE[0]}")/update.sh" ]; then
+                exec "$(dirname "${BASH_SOURCE[0]}")/update.sh"
+            else
+                echo -e "${RED}update.sh not found. Please download it or run update manually.${NC}"
+                exit 1
+            fi
+            ;;
+        [Rr]*)
+            echo ""
+            echo -e "${YELLOW}Proceeding with reinstall...${NC}"
+            echo ""
+            ;;
+        *)
+            echo "Aborted."
+            exit 0
+            ;;
+    esac
+fi
+
 echo -e "${CYAN}Estimated installation time: ~2 minutes${NC}"
 echo ""
 
