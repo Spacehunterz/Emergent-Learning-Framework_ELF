@@ -69,6 +69,42 @@ function Test-InPlaceInstall {
     return $normalizedScript -eq $normalizedTarget
 }
 
+# Helper function: Run native commands silently, only report actual failures
+function Invoke-NativeCommand {
+    param(
+        [string]$Command,
+        [string]$Arguments,
+        [string]$SuccessMessage,
+        [switch]$ContinueOnError
+    )
+    
+    $oldPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    
+    try {
+        # Run command and capture all output
+        $output = cmd /c "$Command $Arguments 2>&1"
+        $exitCode = $LASTEXITCODE
+        
+        if ($exitCode -eq 0) {
+            if ($SuccessMessage) {
+                Write-Host "  $SuccessMessage" -ForegroundColor Green
+            }
+            return $true
+        } else {
+            if ($ContinueOnError) {
+                Write-Host "  Warning: $Command had issues (exit code $exitCode)" -ForegroundColor Yellow
+                return $false
+            } else {
+                throw "Command failed with exit code $exitCode"
+            }
+        }
+    } finally {
+        $ErrorActionPreference = $oldPreference
+    }
+}
+
+
 if ($Help) {
     Write-Host "Usage: install.ps1 [OPTIONS]"
     Write-Host ""
@@ -230,11 +266,9 @@ Write-Host "  Copied query system" -ForegroundColor Green
 # Install core Python dependencies
 $requirementsFile = Join-Path $srcDir "requirements.txt"
 if (Test-Path $requirementsFile) {
-    pip install -q -r $requirementsFile 2>&1 | Out-Null
-    Write-Host "  Installed Python dependencies (from requirements.txt)" -ForegroundColor Green
+    Invoke-NativeCommand -Command "pip" -Arguments "install -q -r $requirementsFile" -SuccessMessage "Installed Python dependencies (from requirements.txt)" -ContinueOnError
 } else {
-    pip install -q peewee 2>&1 | Out-Null
-    Write-Host "  Installed Python dependencies (peewee)" -ForegroundColor Green
+    Invoke-NativeCommand -Command "pip" -Arguments "install -q peewee" -SuccessMessage "Installed Python dependencies (peewee)" -ContinueOnError
 }
 
 # Copy hooks to emergent-learning directory
@@ -368,18 +402,16 @@ if ($InstallDashboard) {
         if (Test-Path $frontendDir) {
             Set-Location $frontendDir
             if ($hasBun) {
-                bun install 2>&1 | Out-Null
+                Invoke-NativeCommand -Command "bun" -Arguments "install" -SuccessMessage "Installed frontend dependencies (bun)" -ContinueOnError
             } else {
-                npm install 2>&1 | Out-Null
+                Invoke-NativeCommand -Command "npm" -Arguments "install" -SuccessMessage "Installed frontend dependencies (npm)" -ContinueOnError
             }
-            Write-Host "  Installed frontend dependencies" -ForegroundColor Green
         }
 
         # Install backend dependencies
         $backendDir = Join-Path $dashboardDst "backend"
         if (Test-Path $backendDir) {
-            pip install -q fastapi uvicorn aiofiles websockets peewee 2>&1 | Out-Null
-            Write-Host "  Installed backend dependencies" -ForegroundColor Green
+            Invoke-NativeCommand -Command "pip" -Arguments "install -q fastapi uvicorn aiofiles websockets peewee" -SuccessMessage "Installed backend dependencies" -ContinueOnError
         }
 
         Set-Location $ScriptDir
