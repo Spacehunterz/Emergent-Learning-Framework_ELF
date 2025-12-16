@@ -104,11 +104,49 @@ if [ "$INSTALL_DASHBOARD" = true ]; then
     elif command -v node &> /dev/null; then
         echo -e "  Node: ${GREEN}$(node --version)${NC}"
     else
-        echo -e "  ${RED}ERROR: Neither Bun nor Node.js found (needed for dashboard)${NC}"
-        echo -e "  ${YELLOW}Fix option 1: Run with --no-dashboard to skip dashboard${NC}"
-        echo -e "  ${YELLOW}Fix option 2: Install Bun (https://bun.sh) or Node.js (https://nodejs.org)${NC}"
-        echo -e "  ${YELLOW}Then: Run this installer again${NC}"
-        exit 1
+        echo ""
+        echo -e "  ${YELLOW}[!] Node.js or Bun not found (needed for dashboard)${NC}"
+        echo ""
+        echo -e "  ${CYAN}Options:${NC}"
+        echo -e "    ${GREEN}[I]${NC} Install Bun now (recommended, ~30 seconds)"
+        echo -e "    [S] Skip dashboard (install core only)"
+        echo -e "    [Q] Quit and install manually"
+        echo ""
+        read -p "  Your choice (I/S/Q): " choice
+        
+        case "${choice^^}" in
+            I|i)
+                echo ""
+                echo -e "  ${CYAN}Installing Bun...${NC}"
+                if curl -fsSL https://bun.sh/install | bash; then
+                    # Source the updated profile to get bun in PATH
+                    export BUN_INSTALL="$HOME/.bun"
+                    export PATH="$BUN_INSTALL/bin:$PATH"
+                    
+                    if command -v bun &> /dev/null; then
+                        echo -e "  ${GREEN}Bun $(bun --version) installed successfully!${NC}"
+                        HAS_BUN=true
+                    else
+                        echo -e "  ${YELLOW}Bun installed. Please restart your terminal and run installer again.${NC}"
+                        exit 1
+                    fi
+                else
+                    echo -e "  ${RED}Failed to install Bun${NC}"
+                    echo -e "  ${YELLOW}Please install manually from https://bun.sh${NC}"
+                    exit 1
+                fi
+                ;;
+            S|s)
+                echo -e "  ${YELLOW}Continuing without dashboard...${NC}"
+                INSTALL_DASHBOARD=false
+                ;;
+            *)
+                echo -e "  ${YELLOW}Please install Node.js or Bun and run the installer again.${NC}"
+                echo -e "  ${CYAN}Bun: https://bun.sh${NC}"
+                echo -e "  ${CYAN}Node: https://nodejs.org${NC}"
+                exit 1
+                ;;
+        esac
     fi
 fi
 
