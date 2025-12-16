@@ -266,3 +266,5 @@ MIT License
 ## Development Status
 
 ELF is under heavy active development. Rapid commits reflect live experimentation, architectural refinement, and real-world usage. The main branch represents active research and may change frequently. Stable checkpoints will be published as versioned GitHub releases; users who prefer stability should rely on tagged releases rather than the latest commit.
+
+**Not accepting pull requests. Feature requests and bug reports welcome via issues.**
