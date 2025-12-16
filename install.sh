@@ -394,6 +394,14 @@ else
     esac
 fi
 
+# === VERSION FILE ===
+# Create VERSION file for update tracking
+VERSION_FILE="$EMERGENT_LEARNING_DIR/VERSION"
+if [ ! -f "$VERSION_FILE" ]; then
+    echo "1.0.0" > "$VERSION_FILE"
+    echo -e "  ${GREEN}✓${NC} Created VERSION file (1.0.0)"
+fi
+
 # === DONE ===
 echo ""
 echo -e "${GREEN}============================================${NC}"
