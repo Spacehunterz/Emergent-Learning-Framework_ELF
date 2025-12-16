@@ -24,27 +24,38 @@ export class Particle implements ParticleInterface {
   }
 
   update(mouse: Mouse, width: number, height: number) {
-    // Attraction to cursor when clicked
-    if (mouse.isClicked && mouse.x > 0) {
-      const dx = mouse.x - this.x
-      const dy = mouse.y - this.y
-      const dist = Math.sqrt(dx * dx + dy * dy)
+    const dx = mouse.x - this.x
+    const dy = mouse.y - this.y
+    const dist = Math.sqrt(dx * dx + dy * dy)
 
-      if (dist < mouse.radius * 2) {
-        const force = (1 - dist / (mouse.radius * 2)) * 0.08
+    // Attraction to cursor when clicked (Gravity Well)
+    if (mouse.isClicked && mouse.x > 0) {
+      if (dist < mouse.radius * 3) {
+        const force = (1 - dist / (mouse.radius * 3)) * 0.15
         this.vx += (dx / dist) * force
         this.vy += (dy / dist) * force
       }
     }
+    // Gentle Repulsion when hovering (UFO Displacement)
+    else if (mouse.x > 0 && dist < mouse.radius * 1.5) {
+      // Move AWAY from cursor
+      const force = (1 - dist / (mouse.radius * 1.5)) * 0.05
+      this.vx -= (dx / dist) * force
+      this.vy -= (dy / dist) * force
+    }
 
     // Apply velocity with friction
-    this.vx *= 0.98
-    this.vy *= 0.98
+    this.vx *= 0.96 // Slightly more drag for floaty feel
+    this.vy *= 0.96
 
-    // Slowly return to base velocity when not attracted
+    // Slowly return to base drift velocity
     if (!mouse.isClicked) {
-      this.vx += (this.baseVx - this.vx) * 0.01
-      this.vy += (this.baseVy - this.vy) * 0.01
+      // Random wandering force
+      this.vx += (Math.random() - 0.5) * 0.002
+      this.vy += (Math.random() - 0.5) * 0.002
+
+      this.vx += (this.baseVx - this.vx) * 0.005
+      this.vy += (this.baseVy - this.vy) * 0.005
     }
 
     this.x += this.vx
@@ -55,8 +66,9 @@ export class Particle implements ParticleInterface {
     if (this.y < 0) this.y = height
     if (this.y > height) this.y = 0
 
+    // Twinkle effect
     if (Math.abs(this.alpha - this.targetAlpha) < 0.01) {
-      this.targetAlpha = Math.random()
+      this.targetAlpha = Math.random() * 0.8 + 0.2 // Keep them somewhat visible
     } else {
       this.alpha += (this.targetAlpha - this.alpha) * 0.02
     }

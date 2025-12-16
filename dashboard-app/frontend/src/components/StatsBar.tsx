@@ -1,11 +1,28 @@
 import { useState, useEffect } from 'react'
 import { TrendingUp, CheckCircle, XCircle, Brain, Star, Target, BarChart3, MessageSquare } from 'lucide-react'
-import { Stats } from '../types'
 import { useAPI } from '../hooks/useAPI'
 import { DrillDownModal, DrillDownView } from './drilldowns'
 
+export interface DashboardStats {
+  total_runs: number
+  successful_runs: number
+  failed_runs: number
+  success_rate: number
+  total_heuristics: number
+  golden_rules: number
+  total_learnings: number
+  hotspot_count: number
+  avg_confidence: number
+  total_validations: number
+  runs_today: number
+  active_domains: number
+  queries_today: number
+  total_queries: number
+  avg_query_duration_ms: number
+}
+
 interface StatsBarProps {
-  stats: Stats | null
+  stats: DashboardStats | null
 }
 
 interface StatCardData {

@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react'
-import { Command, Sparkles } from 'lucide-react'
-import { TabNav, ConnectionStatus, CeoInboxDropdown, CeoItemModal, CeoItem, TabId } from './header-components'
+import { Command, Sparkles, LayoutGrid, Globe } from 'lucide-react'
+import { ConnectionStatus, CeoInboxDropdown, CeoItemModal, CeoItem } from './header-components'
+import { SettingsPanel } from './SettingsPanel'
+import { useCosmicSettings } from '../context/CosmicSettingsContext'
+import { useCosmicAudio } from '../context/CosmicAudioContext'
 
 interface HeaderProps {
   isConnected: boolean
-  activeTab: string
-  onTabChange: (tab: TabId) => void
   onOpenCommandPalette?: () => void
 }
 
-export default function Header({ isConnected, activeTab, onTabChange, onOpenCommandPalette }: HeaderProps) {
+export default function Header({ isConnected, onOpenCommandPalette }: HeaderProps) {
   const [ceoItems, setCeoItems] = useState<CeoItem[]>([])
   const [showCeoDropdown, setShowCeoDropdown] = useState(false)
   const [selectedItem, setSelectedItem] = useState<CeoItem | null>(null)
   const [itemContent, setItemContent] = useState<string>('')
   const [loadingContent, setLoadingContent] = useState(false)
+  const { viewMode, setViewMode } = useCosmicSettings()
+  const { playHover, playClick } = useCosmicAudio()
 
   // Fetch CEO inbox items
   useEffect(() => {
@@ -37,6 +40,7 @@ export default function Header({ isConnected, activeTab, onTabChange, onOpenComm
   const handleItemClick = async (item: CeoItem) => {
     setSelectedItem(item)
     setLoadingContent(true)
+    playClick()
     try {
       const res = await fetch(`/api/ceo-inbox/${item.filename}`)
       if (res.ok) {
@@ -57,76 +61,114 @@ export default function Header({ isConnected, activeTab, onTabChange, onOpenComm
 
   return (
     <>
-      <header className="sticky top-0 z-50">
-        {/* Top Bar - Branding & Actions */}
-        <div className="glass-panel border-b border-white/5">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between h-14">
+      <header className="sticky top-4 z-50 pointer-events-none transition-all duration-300 bg-transparent">
+        {/* Pointer events on header container are none so clicks pass through to canvas on sides, 
+            but we re-enable them on the actual content */}
+
+        {/* Unified Pill Container */}
+        <div className="container mx-auto px-4 flex justify-center pointer-events-auto">
+          <div className="glass-panel border border-white/10 rounded-[2rem] shadow-2xl bg-black/60 backdrop-blur-xl flex flex-col md:flex-row items-center p-2 gap-4 md:gap-8 min-w-[320px] max-w-full">
+
+            {/* Top Row (on Mobile) / Left Side (Desktop): Brand & View Toggle */}
+            <div className="flex items-center gap-6 px-4">
               {/* Logo & Brand */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 shrink-0">
                 <div className="relative">
-                  <Sparkles className="w-7 h-7 text-violet-400" />
+                  <Sparkles className="w-6 h-6 text-violet-400" />
                   <div className="absolute inset-0 blur-lg bg-violet-500/30 animate-pulse" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-violet-200 to-violet-400 bg-clip-text text-transparent">
+                  <h1 className="text-sm font-bold tracking-tight bg-gradient-to-r from-white via-violet-200 to-violet-400 bg-clip-text text-transparent">
                     EMERGENT LEARNING
                   </h1>
-                  <p className="text-[10px] text-white/40 tracking-widest uppercase -mt-0.5">
-                    Knowledge Framework
+                  <p className="text-[8px] text-white/40 tracking-[0.2em] uppercase -mt-0.5">
+                    FRAMEWORK
                   </p>
                 </div>
               </div>
 
-              {/* Command Palette Trigger */}
-              <button
-                onClick={onOpenCommandPalette}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg
-                  bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20
-                  text-white/50 hover:text-white/80 transition-all duration-200 group"
-              >
-                <Command className="w-3.5 h-3.5" />
-                <span className="text-xs">Search...</span>
-                <kbd className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-white/10 border border-white/10
-                  group-hover:bg-white/15 group-hover:border-white/20">
-                  Ctrl+K
-                </kbd>
-              </button>
-
-              {/* Right side: CEO Inbox + Connection Status */}
-              <div className="flex items-center gap-3">
-                <CeoInboxDropdown
-                  items={ceoItems}
-                  isOpen={showCeoDropdown}
-                  onToggle={() => setShowCeoDropdown(!showCeoDropdown)}
-                  onClose={() => setShowCeoDropdown(false)}
-                  onItemClick={handleItemClick}
-                />
-                <ConnectionStatus isConnected={isConnected} />
+              {/* View Toggle */}
+              <div className="hidden md:flex bg-white/5 rounded-full p-1 border border-white/5 mx-2">
+                <button
+                  onClick={() => {
+                    setViewMode('cosmic');
+                    playClick();
+                  }}
+                  onMouseEnter={() => playHover()}
+                  className={`p-1.5 rounded-full transition-all ${viewMode === 'cosmic' ? 'bg-violet-500 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
+                  title="Cosmic View (3D)"
+                >
+                  <Globe className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setViewMode('grid');
+                    playClick();
+                  }}
+                  onMouseEnter={() => playHover()}
+                  className={`p-1.5 rounded-full transition-all ${viewMode === 'grid' ? 'bg-cyan-500 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
+                  title="Grid View (2D)"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Bottom Bar - Navigation */}
-        <div className="bg-gradient-to-r from-slate-900/80 via-slate-800/80 to-slate-900/80 backdrop-blur-md border-b border-white/5">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-center h-12 overflow-x-auto scrollbar-hide">
-              <TabNav activeTab={activeTab} onTabChange={onTabChange} />
+            {/* Middle: Cosmic Navigation / Search */}
+            <div className="flex-1 w-full md:w-auto flex justify-center px-4">
+              <button
+                onClick={() => {
+                  if (onOpenCommandPalette) onOpenCommandPalette();
+                  playClick();
+                }}
+                onMouseEnter={() => playHover()}
+                className="group relative flex items-center gap-3 px-8 py-3 w-full max-w-xl bg-white/5 border border-white/10 rounded-full hover:bg-white/10 hover:border-white/20 transition-all duration-300 shadow-inner"
+              >
+                <Command className="w-5 h-5 text-violet-400 group-hover:text-violet-300 transition-colors" />
+                <span className="text-white/40 group-hover:text-white/70 text-sm font-medium tracking-wide transition-colors">
+                  Search System...
+                </span>
+                <div className="ml-auto flex items-center gap-1">
+                  <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded text-white/30 border border-white/5">Example: "Overview"</span>
+                  <span className="text-[10px] bg-white/5 px-1.5 py-0.5 rounded text-white/30 border border-white/5 hidden md:block">⌘K</span>
+                </div>
+
+                {/* Glow Effect */}
+                <div className="absolute inset-0 rounded-full ring-1 ring-white/10 group-hover:ring-white/30 transition-all" />
+              </button>
+            </div>
+
+            {/* Right Side: Actions */}
+            <div className="flex items-center gap-4 px-4 border-l border-white/5 pl-6 shrink-0">
+
+              <CeoInboxDropdown
+                items={ceoItems}
+                isOpen={showCeoDropdown}
+                onToggle={() => setShowCeoDropdown(!showCeoDropdown)}
+                onClose={() => setShowCeoDropdown(false)}
+                onItemClick={handleItemClick}
+              />
+
+              <SettingsPanel />
+
+              <div className="w-px h-6 bg-white/10 mx-1" />
+              <ConnectionStatus isConnected={isConnected} />
             </div>
           </div>
         </div>
       </header>
 
       {/* CEO Item Detail Modal */}
-      {selectedItem && (
-        <CeoItemModal
-          item={selectedItem}
-          content={itemContent}
-          loading={loadingContent}
-          onClose={closeModal}
-        />
-      )}
+      {
+        selectedItem && (
+          <CeoItemModal
+            item={selectedItem}
+            content={itemContent}
+            loading={loadingContent}
+            onClose={closeModal}
+          />
+        )
+      }
     </>
   )
 }

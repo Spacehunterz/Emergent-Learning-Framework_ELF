@@ -2,9 +2,10 @@ import { useRef, useState, useEffect } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useCosmicAudio } from '../context/CosmicAudioContext'
 
-function WarpStars() {
-    const count = 2000
+function WarpStars({ speedMultiplier = 1 }: { speedMultiplier?: number }) {
+    const count = 3000
     const mesh = useRef<THREE.InstancedMesh>(null)
 
     const [dummy] = useState(() => new THREE.Object3D())
@@ -18,12 +19,19 @@ function WarpStars() {
         return pos
     })
 
+    // Non-uniform scales for variety
+    const [scales] = useState(() => {
+        const s = new Float32Array(count)
+        for (let i = 0; i < count; i++) s[i] = Math.random()
+        return s
+    })
+
     useFrame((state) => {
         if (!mesh.current) return
 
-        // Move stars towards camera (z-axis)
-        // Speed increases with time for "warp" effect
-        const speed = 2 + state.clock.elapsedTime * 5
+        // Accelerate over time + base multiplier
+        const time = state.clock.elapsedTime
+        const speed = (2 + time * 8) * speedMultiplier
 
         for (let i = 0; i < count; i++) {
             let x = positions[i * 3]
@@ -37,8 +45,9 @@ function WarpStars() {
 
             dummy.position.set(x, y, z)
 
-            // Streak effect: Scale z based on speed
-            dummy.scale.z = 1 + speed * 2
+            // Stretch stars based on speed for warp effect
+            const scale = scales[i]
+            dummy.scale.set(scale, scale, scale * (1 + speed * 1.5))
             dummy.updateMatrix()
 
             mesh.current.setMatrixAt(i, dummy.matrix)
@@ -48,56 +57,110 @@ function WarpStars() {
 
     return (
         <instancedMesh ref={mesh} args={[undefined, undefined, count]}>
-            <boxGeometry args={[0.1, 0.1, 0.5]} />
-            <meshBasicMaterial color="#a78bfa" transparent opacity={0.8} />
+            <sphereGeometry args={[0.08, 8, 8]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.9} />
         </instancedMesh>
     )
 }
 
 interface CosmicIntroProps {
     onComplete: () => void
+    mode?: 'full' | 'short'
 }
 
-export default function CosmicIntro({ onComplete }: CosmicIntroProps) {
+export default function CosmicIntro({ onComplete, mode = 'full' }: CosmicIntroProps) {
     const [finished, setFinished] = useState(false)
+    const { playToggle, playTransition } = useCosmicAudio()
 
-    // Auto-complete after 3.5 seconds
+    // Configuration based on mode
+    const config = mode === 'full' ? {
+        duration: 3500,
+        text: 'System Online',
+        startDelay: 0,
+        audioConfirmDelay: 500,
+        exitDelay: 800
+    } : {
+        duration: 1000,
+        text: 'Warp Engaged',
+        startDelay: 0,
+        audioConfirmDelay: 50,
+        exitDelay: 200
+    }
+
     useEffect(() => {
+        // Start Sound
+        setTimeout(() => playToggle(true), config.audioConfirmDelay)
+
         const timer = setTimeout(() => {
+            // Exit Sequence
+            playTransition()
             setFinished(true)
-            setTimeout(onComplete, 1000) // Wait for exit animation
-        }, 3500)
+            setTimeout(onComplete, config.exitDelay)
+        }, config.duration)
+
         return () => clearTimeout(timer)
-    }, [onComplete])
+    }, [onComplete, mode, playToggle, playTransition])
 
     return (
         <AnimatePresence>
             {!finished && (
                 <motion.div
-                    className="fixed inset-0 z-[100] bg-black"
+                    className="fixed inset-0 z-[100] bg-black overflow-hidden"
                     initial={{ opacity: 1 }}
-                    exit={{ opacity: 0, scale: 1.5, filter: 'blur(20px)' }} // "Hyperspace exit" blur
-                    transition={{ duration: 1.0, ease: "easeInOut" }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5, ease: "easeIn" }}
                 >
+                    {/* White Flash Overlay on Exit */}
+                    <motion.div
+                        className="absolute inset-0 bg-white pointer-events-none z-50"
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: [0, 1, 0], transition: { duration: 0.4, times: [0, 0.1, 1] } }}
+                    />
+
+                    {/* Centered Text */}
                     <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                        <motion.h1
-                            initial={{ opacity: 0, scale: 0.5, letterSpacing: '0em' }}
-                            animate={{ opacity: 1, scale: 1, letterSpacing: '0.5em' }}
-                            exit={{ opacity: 0, scale: 2 }}
-                            transition={{ duration: 2 }}
-                            className="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 uppercase tracking-widest"
-                            style={{ textShadow: '0 0 30px rgba(59, 130, 246, 0.5)' }}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 3, filter: 'blur(10px)' }}
+                            transition={{ duration: config.duration / 1500 }}
+                            className="text-center"
                         >
-                            System
-                            <br />
-                            Online
-                        </motion.h1>
+                            <h1
+                                className="text-6xl md:text-8xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-200 to-white"
+                                style={{
+                                    textShadow: '0 0 40px rgba(6, 182, 212, 0.8)',
+                                    fontFamily: '"Orbitron", "Inter", sans-serif' // Fallback to Inter
+                                }}
+                            >
+                                {mode === 'full' ? (
+                                    <>
+                                        System<br />
+                                        <span className="text-cyan-400">Online</span>
+                                    </>
+                                ) : (
+                                    <span className="text-4xl md:text-6xl italic text-cyan-400">
+                                        WARP<span className="text-white">SPEED</span>
+                                    </span>
+                                )}
+                            </h1>
+                            {mode === 'full' && (
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: '100%' }}
+                                    transition={{ duration: 2, ease: "circOut" }}
+                                    className="h-1 bg-cyan-500 mt-4 mx-auto rounded-full shadow-[0_0_20px_rgba(6,182,212,1)]"
+                                    style={{ maxWidth: '300px' }}
+                                />
+                            )}
+                        </motion.div>
                     </div>
 
+                    {/* 3D Background */}
                     <Canvas camera={{ position: [0, 0, 50], fov: 75 }}>
-                        <color attach="background" args={['#000000']} />
-                        <fog attach="fog" args={['#000000', 30, 60]} />
-                        <WarpStars />
+                        <color attach="background" args={['#050510'] as any} />
+                        <fog attach="fog" args={['#050510', 20, 90] as any} />
+                        <WarpStars speedMultiplier={mode === 'short' ? 3 : 1} />
                     </Canvas>
                 </motion.div>
             )}

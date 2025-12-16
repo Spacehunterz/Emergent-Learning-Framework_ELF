@@ -15,6 +15,6 @@ export interface ParticleInterface {
   targetAlpha: number
   baseVx: number
   baseVy: number
-  update: (mouse: Mouse) => void
+  update(mouse: Mouse, width: number, height: number): void
   draw: (ctx: CanvasRenderingContext2D, particleColor: string) => void
 }

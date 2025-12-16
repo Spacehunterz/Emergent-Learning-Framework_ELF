@@ -99,12 +99,7 @@ function calculateVolatility(hotspot: ApiHotspot): number {
  * Calculate visual radius based on celestial type and weighted score.
  */
 function calculateRadius(type: CelestialType, weightedScore: number): number {
-  const constraints =
-    type === 'sun'
-      ? SIZE_CONSTRAINTS
-      : type === 'planet'
-        ? SIZE_CONSTRAINTS
-        : SIZE_CONSTRAINTS
+
 
   const min =
     type === 'sun'
@@ -186,7 +181,7 @@ function transformHotspotToBody(hotspot: ApiHotspot): CelestialBody {
     radius: calculateRadius(type, weightedScore),
     glowIntensity: calculateRecency(hotspot.last_activity),
     orbitRadius: 0, // Set later during hierarchy building
-    orbitSpeed: ORBIT_SPEEDS.PLANET_BASE + calculateVolatility(hotspot) * ORBIT_SPEEDS.PLANET_VARIANCE, // Slow base + volatility
+    orbitSpeed: ORBIT_SPEEDS.PLANET_BASE + calculateVolatility(hotspot) * 0.1, // Slow base + volatility
     orbitPhase: Math.random() * Math.PI * 2, // Random starting angle
     heuristicCategories: extractHeuristicCategories(hotspot.related_heuristics),
     agents: hotspot.agents || [],
@@ -347,10 +342,33 @@ export function useCosmicData(
       }
     }
 
+    // Domain to Scent mapping for looser filtering
+    const DOMAIN_SCENT_MAPPING: Record<string, string[]> = {
+      'System Core': ['system', 'core', 'security', 'backend', 'api', 'performance', 'blocker'],
+      'Agents': ['agent', 'agents', 'model', 'llm', 'ai'],
+      'Knowledge': ['knowledge', 'data', 'database', 'store', 'memory', 'rag'],
+      'User Ops': ['user', 'ui', 'frontend', 'interface', 'ux', 'interaction'],
+    }
+
     // Filter by domain/scent if specified
-    const filtered = selectedDomain
-      ? hotspots.filter((h) => h.scents?.includes(selectedDomain))
-      : hotspots
+    // Removed nested useMemo to fix "Rendered more hooks than during the previous render" error
+    let filtered = hotspots
+    if (selectedDomain) {
+      const mappedScents = DOMAIN_SCENT_MAPPING[selectedDomain]
+
+      filtered = hotspots.filter((h) => {
+        // Direct match
+        if (h.scents?.includes(selectedDomain)) return true
+
+        // Case-insensitive match
+        if (h.scents?.some(s => s.toLowerCase() === selectedDomain.toLowerCase())) return true
+
+        // Mapped match
+        if (mappedScents && h.scents?.some(s => mappedScents.includes(s.toLowerCase()))) return true
+
+        return false
+      })
+    }
 
     // Transform hotspots to celestial bodies
     const bodies = filtered.map(transformHotspotToBody)
