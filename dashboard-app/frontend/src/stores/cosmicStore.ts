@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { subscribeWithSelector } from 'zustand/middleware'
+import { subscribeWithSelector, persist } from 'zustand/middleware'
 
 export type ViewMode = 'cosmic' | 'grid'
 export type Severity = 'blocker' | 'warning' | 'discovery'
@@ -58,7 +58,7 @@ export interface CosmicActions {
 }
 
 const initialState: CosmicState = {
-  viewMode: 'grid',
+  viewMode: 'cosmic',
   cameraTarget: [0, 0, 0],
   cameraDistance: 50,
   autoRotate: true,
@@ -73,11 +73,12 @@ const initialState: CosmicState = {
 }
 
 export const useCosmicStore = create<CosmicState & CosmicActions>()(
-  subscribeWithSelector((set, get) => ({
-    ...initialState,
+  persist(
+    subscribeWithSelector((set, get) => ({
+      ...initialState,
 
-    // View actions
-    setViewMode: (mode) => set({ viewMode: mode }),
+      // View actions
+      setViewMode: (mode) => set({ viewMode: mode }),
     toggleViewMode: () =>
       set((state) => ({
         viewMode: state.viewMode === 'cosmic' ? 'grid' : 'cosmic',
@@ -134,7 +135,17 @@ export const useCosmicStore = create<CosmicState & CosmicActions>()(
     setOrbitSpeedMultiplier: (multiplier) =>
       set({ orbitSpeedMultiplier: multiplier }),
     setGlowIntensity: (intensity) => set({ glowIntensity: intensity }),
-  }))
+  })),
+  {
+    name: 'cosmic-store',
+    partialize: (state) => ({
+      viewMode: state.viewMode,
+      autoRotate: state.autoRotate,
+      orbitSpeedMultiplier: state.orbitSpeedMultiplier,
+      glowIntensity: state.glowIntensity,
+    }),
+  }
+  )
 )
 
 // Selector hooks for optimized subscriptions
