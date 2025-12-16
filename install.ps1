@@ -193,18 +193,50 @@ if ($InstallDashboard) {
         Write-Host ""
         Write-Host "  [!] Node.js or Bun not found (needed for dashboard)" -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "  Choose an option:" -ForegroundColor Cyan
-        Write-Host "    1. Install Node.js from https://nodejs.org (LTS recommended)" -ForegroundColor White
-        Write-Host "    2. Install Bun from https://bun.sh (faster alternative)" -ForegroundColor White
-        Write-Host "    3. Skip dashboard: Run with -NoDashboard flag" -ForegroundColor White
+        Write-Host "  Options:" -ForegroundColor Cyan
+        Write-Host "    [I] Install Bun now (recommended, ~30 seconds)" -ForegroundColor Green
+        Write-Host "    [S] Skip dashboard (install core only)" -ForegroundColor White
+        Write-Host "    [Q] Quit and install manually" -ForegroundColor White
         Write-Host ""
-        $choice = Read-Host "  Continue without dashboard? (y/n)"
-        if ($choice -eq "y" -or $choice -eq "Y") {
-            Write-Host "  Continuing without dashboard..." -ForegroundColor Yellow
-            $script:InstallDashboard = $false
-        } else {
-            Write-Host "  Please install Node.js or Bun and run the installer again." -ForegroundColor Red
-            exit 1
+        $choice = Read-Host "  Your choice (I/S/Q)"
+        
+        switch ($choice.ToUpper()) {
+            "I" {
+                Write-Host ""
+                Write-Host "  Installing Bun..." -ForegroundColor Cyan
+                try {
+                    # Install Bun using official installer
+                    irm bun.sh/install.ps1 | iex
+                    
+                    # Refresh PATH for current session
+                    $env:BUN_INSTALL = "$env:USERPROFILE\.bun"
+                    $env:PATH = "$env:BUN_INSTALL\bin;$env:PATH"
+                    
+                    # Verify installation
+                    if (Get-Command bun -ErrorAction SilentlyContinue) {
+                        $bunVersion = bun --version 2>&1
+                        Write-Host "  Bun $bunVersion installed successfully!" -ForegroundColor Green
+                        $hasBun = $true
+                    } else {
+                        Write-Host "  Bun installed but not in PATH. Please restart PowerShell and run installer again." -ForegroundColor Yellow
+                        exit 1
+                    }
+                } catch {
+                    Write-Host "  Failed to install Bun: $_" -ForegroundColor Red
+                    Write-Host "  Please install manually from https://bun.sh" -ForegroundColor Yellow
+                    exit 1
+                }
+            }
+            "S" {
+                Write-Host "  Continuing without dashboard..." -ForegroundColor Yellow
+                $script:InstallDashboard = $false
+            }
+            default {
+                Write-Host "  Please install Node.js or Bun and run the installer again." -ForegroundColor Yellow
+                Write-Host "  Bun: https://bun.sh" -ForegroundColor Cyan
+                Write-Host "  Node: https://nodejs.org" -ForegroundColor Cyan
+                exit 1
+            }
         }
     }
 }
