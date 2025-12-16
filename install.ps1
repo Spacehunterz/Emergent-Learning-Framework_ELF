@@ -277,7 +277,20 @@ $dstHooksDir = Join-Path $EmergentLearningDir "hooks"
 if (Test-Path $srcHooksDir) {
     Copy-Item -Path $srcHooksDir -Destination $EmergentLearningDir -Recurse -Force
 }
-Write-Host "  Copied learning hooks" -ForegroundColor Green
+Write-Host "  Copied learning hooks to emergent-learning" -ForegroundColor Green
+
+# Also copy learning-loop hooks to ~/.claude/hooks/ for Claude Code integration
+$srcLearningLoop = Join-Path $srcHooksDir "learning-loop"
+$dstLearningLoop = Join-Path $HooksDir "learning-loop"
+if (Test-Path $srcLearningLoop) {
+    # Ensure destination exists
+    New-Item -ItemType Directory -Path $dstLearningLoop -Force | Out-Null
+    # Copy all Python files and required modules
+    Get-ChildItem -Path $srcLearningLoop -Filter "*.py" | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination $dstLearningLoop -Force
+    }
+    Write-Host "  Copied learning-loop hooks to ~/.claude/hooks/" -ForegroundColor Green
+}
 
 # Copy scripts (using safe copy)
 $scriptsDst = Join-Path $EmergentLearningDir "scripts"
