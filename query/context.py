@@ -25,6 +25,43 @@ except ImportError:
     pass
 
 
+def get_depth_limits(depth: str) -> dict:
+    """Get query limits based on depth level."""
+    if depth == 'deep':
+        return {
+            'heuristics': 25,
+            'learnings': 25,
+            'decisions': 10,
+            'invariants': 10,
+            'assumptions': 10,
+            'spikes': 10,
+            'recent_context': 10,
+            'summary_truncate': 200,  # More detail in summaries
+        }
+    elif depth == 'minimal':
+        return {
+            'heuristics': 0,
+            'learnings': 0,
+            'decisions': 0,
+            'invariants': 0,
+            'assumptions': 0,
+            'spikes': 0,
+            'recent_context': 0,
+            'summary_truncate': 50,
+        }
+    else:  # standard
+        return {
+            'heuristics': 10,
+            'learnings': 10,
+            'decisions': 5,
+            'invariants': 5,
+            'assumptions': 5,
+            'spikes': 5,
+            'recent_context': 5,
+            'summary_truncate': 100,
+        }
+
+
 class ContextBuilderMixin:
     """Mixin for building agent context from the knowledge base (async)."""
 
@@ -93,6 +130,9 @@ class ContextBuilderMixin:
             if depth not in ('minimal', 'standard', 'deep'):
                 depth = 'standard'
 
+            # Get depth-aware limits
+            limits = get_depth_limits(depth)
+
             self._log_debug(f"Building context (domain={domain}, tags={tags}, max_tokens={max_tokens}, depth={depth})")
             async with AsyncTimeoutHandler(timeout):
                 context_parts = []
@@ -148,7 +188,7 @@ class ContextBuilderMixin:
 
                 if domain:
                     context_parts.append(f"## Domain: {domain}\n\n")
-                    domain_data = await self.query_by_domain(domain, limit=5, timeout=timeout)
+                    domain_data = await self.query_by_domain(domain, limit=limits['heuristics'], timeout=timeout)
 
                     if domain_data['heuristics']:
                         context_parts.append("### Heuristics:\n")
@@ -195,7 +235,7 @@ class ContextBuilderMixin:
                                     .select()
                                     .where((Heuristic.is_golden == False) | (Heuristic.is_golden.is_null()))
                                     .order_by(Heuristic.created_at.desc(), Heuristic.confidence.desc())
-                                    .limit(10))
+                                    .limit(limits['heuristics']))
 
                                 recent_heuristics = []
                                 async for h in recent_heuristics_query:
@@ -223,7 +263,7 @@ class ContextBuilderMixin:
                                 recent_learnings_query = (Learning
                                     .select()
                                     .order_by(Learning.created_at.desc())
-                                    .limit(10))
+                                    .limit(limits['learnings']))
 
                                 recent_learnings = []
                                 async for l in recent_learnings_query:
@@ -252,7 +292,7 @@ class ContextBuilderMixin:
 
                 if tags:
                     context_parts.append(f"## Tag Matches: {', '.join(tags)}\n\n")
-                    tag_results = await self.query_by_tags(tags, limit=5, timeout=timeout)
+                    tag_results = await self.query_by_tags(tags, limit=limits['learnings'], timeout=timeout)
 
                     # Apply relevance scoring to tag results
                     tag_results_with_scores = []
@@ -271,7 +311,7 @@ class ContextBuilderMixin:
                     learnings_count += len(tag_results)
 
                 # Add decisions (ADRs) in Tier 2
-                decisions = await self.get_decisions(domain=domain, status='accepted', limit=5, timeout=timeout)
+                decisions = await self.get_decisions(domain=domain, status='accepted', limit=limits['decisions'], timeout=timeout)
                 if decisions:
                     context_parts.append("\n## Decisions (ADRs)\n\n")
                     for dec in decisions:
@@ -292,8 +332,8 @@ class ContextBuilderMixin:
 
 
                 # Add invariants (what must always be true)
-                invariants = await self.get_invariants(domain=domain, status='active', limit=5, timeout=timeout)
-                violated_invariants = await self.get_invariants(domain=domain, status='violated', limit=3, timeout=timeout)
+                invariants = await self.get_invariants(domain=domain, status='active', limit=limits['invariants'], timeout=timeout)
+                violated_invariants = await self.get_invariants(domain=domain, status='violated', limit=limits['invariants'] // 2 + 1, timeout=timeout)
 
                 if violated_invariants:
                     context_parts.append("\n## VIOLATED INVARIANTS\n\n")
@@ -321,7 +361,7 @@ class ContextBuilderMixin:
                         approx_tokens += len(entry) // 4
 
                 # Add high-confidence active assumptions
-                assumptions = await self.get_assumptions(domain=domain, status='active', min_confidence=0.6, limit=5, timeout=timeout)
+                assumptions = await self.get_assumptions(domain=domain, status='active', min_confidence=0.6, limit=limits['assumptions'], timeout=timeout)
                 if assumptions:
                     context_parts.append("\n## Active Assumptions (High Confidence)\n\n")
                     for assum in assumptions:
@@ -340,7 +380,7 @@ class ContextBuilderMixin:
                         approx_tokens += len(entry) // 4
 
                 # Show challenged/invalidated assumptions as warnings
-                challenged = await self.get_challenged_assumptions(domain=domain, limit=3, timeout=timeout)
+                challenged = await self.get_challenged_assumptions(domain=domain, limit=limits['assumptions'] // 2 + 1, timeout=timeout)
                 if challenged:
                     context_parts.append("\n## Challenged/Invalidated Assumptions\n\n")
                     for assum in challenged:
@@ -359,7 +399,7 @@ class ContextBuilderMixin:
 
 
                 # Add relevant spike reports (hard-won research knowledge)
-                spike_reports = await self.get_spike_reports(domain=domain, limit=5, timeout=timeout)
+                spike_reports = await self.get_spike_reports(domain=domain, limit=limits['spikes'], timeout=timeout)
                 if spike_reports:
                     context_parts.append("\n## Spike Reports (Research Knowledge)\n\n")
                     for spike in spike_reports:
@@ -422,8 +462,9 @@ class ContextBuilderMixin:
                         context_parts.append(entry)
                     ceo_reviews_count = len(ceo_reviews)
 
-                # Task context with building header
-                building_header = "🏢 [94mBuilding Status[0m\n━━━━━━━━━━━━━━━━━━\n\n"
+                # Task context with building header (show depth level)
+                depth_label = f" ({depth})" if depth != 'standard' else ""
+                building_header = f"🏢 [94mBuilding Status[0m{depth_label}\n━━━━━━━━━━━━━━━━━━\n\n"
                 context_parts.insert(0, f"{building_header}# Task Context\n\n{task}\n\n---\n\n")
 
             result = "".join(context_parts)
