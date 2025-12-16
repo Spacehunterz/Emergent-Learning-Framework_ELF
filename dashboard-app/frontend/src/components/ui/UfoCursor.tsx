@@ -91,8 +91,15 @@ export const UfoCursor: React.FC = () => {
 
             // Update trail SVG path directly
             if (svgPathRef.current) {
-                if (!trailsEnabled || trailRef.current.length === 0) {
+                if (!trailsEnabled) {
                     svgPathRef.current.setAttribute('points', '');
+                    return; // Stop animation loop when trails disabled
+                }
+
+                if (trailRef.current.length === 0) {
+                    svgPathRef.current.setAttribute('points', '');
+                    // Keep animation loop alive - waiting for first mouse movement
+                    requestRef.current = requestAnimationFrame(animate);
                     return;
                 }
 
