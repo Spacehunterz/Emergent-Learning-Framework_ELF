@@ -20,7 +20,6 @@ ROBUSTNESS SCORE: 10/10
 - Full test coverage support
 """
 
-import sqlite3
 import os
 import sys
 import io
@@ -30,9 +29,61 @@ import re
 import csv
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 from contextlib import contextmanager
 import json
+
+# Peewee ORM imports - full migration complete
+try:
+    from query.models import (
+        db as peewee_db,
+        initialize_database as init_peewee_db,
+        Heuristic,
+        Learning,
+        Experiment,
+        CeoReview,
+        Decision,
+        Invariant,
+        Violation,
+        SpikeReport,
+        Assumption,
+        BuildingQuery,
+        Workflow,
+        WorkflowRun,
+        NodeExecution,
+        Trail,
+        SessionSummary,
+        Metric,
+        SystemHealth,
+    )
+    PEEWEE_AVAILABLE = True
+except ImportError:
+    # Try alternate import path when running as script
+    try:
+        from models import (
+            db as peewee_db,
+            initialize_database as init_peewee_db,
+            Heuristic,
+            Learning,
+            Experiment,
+            CeoReview,
+            Decision,
+            Invariant,
+            Violation,
+            SpikeReport,
+            Assumption,
+            BuildingQuery,
+            Workflow,
+            WorkflowRun,
+            NodeExecution,
+            Trail,
+            SessionSummary,
+            Metric,
+            SystemHealth,
+        )
+        PEEWEE_AVAILABLE = True
+    except ImportError:
+        PEEWEE_AVAILABLE = False
 
 # Meta-observer for system health monitoring
 try:
@@ -43,8 +94,22 @@ except ImportError:
 
 # Fix Windows console encoding for Unicode characters
 if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    # Wrap with line_buffering and ensure the wrapper doesn't close the underlying stream
+    import atexit
+    _original_stdout = sys.stdout
+    _original_stderr = sys.stderr
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+    # Restore original streams on exit to prevent "lost sys.stderr" errors
+    def _restore_streams():
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+        except:
+            pass
+        sys.stdout = _original_stdout
+        sys.stderr = _original_stderr
+    atexit.register(_restore_streams)
 
 # Custom error classes for better error handling
 class QuerySystemError(Exception):
@@ -120,7 +185,6 @@ class QuerySystem:
     MIN_LIMIT = 1
     MAX_LIMIT = 1000
     DEFAULT_TIMEOUT = 30
-    MAX_CONNECTION_POOL_SIZE = 5  # Maximum pooled SQLite connections for efficiency
     MAX_TOKENS = 50000
 
     def __init__(self, base_path: Optional[str] = None, debug: bool = False,
@@ -136,7 +200,6 @@ class QuerySystem:
             agent_id: Optional agent ID for query logging (fallback to CLAUDE_AGENT_ID env var)
         """
         self.debug = debug
-        self._connection_pool: List[sqlite3.Connection] = []
 
         # Set session_id and agent_id with fallbacks
         self.session_id = session_id or os.environ.get('CLAUDE_SESSION_ID')
@@ -161,7 +224,12 @@ class QuerySystem:
                 f"Check permissions. Error: {e} [QS004]"
             )
 
-        # Initialize database
+        # Initialize Peewee ORM first (required for _init_database)
+        if PEEWEE_AVAILABLE:
+            init_peewee_db(str(self.db_path))
+            self._log_debug("Peewee ORM initialized")
+
+        # Initialize database tables (now uses Peewee)
         self._init_database()
 
         self._log_debug(f"QuerySystem initialized with base_path: {self.base_path}")
@@ -220,28 +288,30 @@ class QuerySystem:
             query_summary: Brief summary of the query
         """
         try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    INSERT INTO building_queries (
-                        query_type, session_id, agent_id, domain, tags,
-                        limit_requested, max_tokens_requested,
-                        results_returned, tokens_approximated, duration_ms,
-                        status, error_message, error_code,
-                        golden_rules_returned, heuristics_count, learnings_count,
-                        experiments_count, ceo_reviews_count, query_summary,
-                        completed_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                """, (
-                    query_type, self.session_id, self.agent_id, domain, tags,
-                    limit_requested, max_tokens_requested,
-                    results_returned, tokens_approximated, duration_ms,
-                    status, error_message, error_code,
-                    golden_rules_returned, heuristics_count, learnings_count,
-                    experiments_count, ceo_reviews_count, query_summary
-                ))
-                conn.commit()
-                self._log_debug(f"Logged query: {query_type} (status={status}, duration={duration_ms}ms)")
+            # Peewee ORM insert (migrated from raw sqlite3)
+            BuildingQuery.create(
+                query_type=query_type,
+                session_id=self.session_id,
+                agent_id=self.agent_id,
+                domain=domain,
+                tags=tags,
+                limit_requested=limit_requested,
+                max_tokens_requested=max_tokens_requested,
+                results_returned=results_returned,
+                tokens_approximated=tokens_approximated,
+                duration_ms=duration_ms,
+                status=status,
+                error_message=error_message,
+                error_code=error_code,
+                golden_rules_returned=golden_rules_returned,
+                heuristics_count=heuristics_count,
+                learnings_count=learnings_count,
+                experiments_count=experiments_count,
+                ceo_reviews_count=ceo_reviews_count,
+                query_summary=query_summary,
+                completed_at=datetime.now(timezone.utc).replace(tzinfo=None)
+            )
+            self._log_debug(f"Logged query: {query_type} (status={status}, duration={duration_ms}ms)")
         except Exception as e:
             # Non-blocking: log the error but don't raise
             self._log_debug(f"Failed to log query to building_queries: {e}")
@@ -264,52 +334,45 @@ class QuerySystem:
         try:
             observer = MetaObserver(db_path=self.db_path)
 
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
+            from peewee import fn
 
-                # 1. Average confidence of active heuristics
-                if domain:
-                    cursor.execute("""
-                        SELECT AVG(confidence), COUNT(*) FROM heuristics
-                        WHERE status = 'active' AND domain = ?
-                    """, (domain,))
-                else:
-                    cursor.execute("""
-                        SELECT AVG(confidence), COUNT(*) FROM heuristics
-                        WHERE status = 'active'
-                    """)
-                row = cursor.fetchone()
-                avg_conf = row[0] if row[0] else 0.5
-                heuristic_count = row[1] if row[1] else 0
+            # 1. Average confidence of heuristics (no 'status' column in actual schema)
+            query = Heuristic.select(fn.AVG(Heuristic.confidence), fn.COUNT(Heuristic.id))
+            if domain:
+                query = query.where(Heuristic.domain == domain)
 
-                if heuristic_count > 0:
-                    observer.record_metric('avg_confidence', avg_conf, domain=domain,
-                                          metadata={'heuristic_count': heuristic_count})
+            result = query.tuples().first()
+            avg_conf = result[0] if result and result[0] else 0.5
+            heuristic_count = result[1] if result and result[1] else 0
 
-                # 2. Validation velocity (last 24 hours)
-                cursor.execute("""
-                    SELECT COUNT(*) FROM confidence_updates
-                    WHERE update_type = 'validation'
-                      AND created_at > datetime('now', '-24 hours')
-                """)
-                validation_count = cursor.fetchone()[0] or 0
-                observer.record_metric('validation_velocity', validation_count, domain=domain)
+            if heuristic_count > 0:
+                observer.record_metric('avg_confidence', avg_conf, domain=domain,
+                                      metadata={'heuristic_count': heuristic_count})
 
-                # 3. Contradiction rate (if we have enough data)
-                cursor.execute("""
-                    SELECT
-                        SUM(times_contradicted) as contradictions,
-                        SUM(times_validated + times_violated + COALESCE(times_contradicted, 0)) as total
-                    FROM heuristics
-                    WHERE status = 'active'
-                """)
-                row = cursor.fetchone()
-                if row and row[1] and row[1] > 0:
-                    contradiction_rate = (row[0] or 0) / row[1]
-                    observer.record_metric('contradiction_rate', contradiction_rate, domain=domain)
+            # 2. Validation velocity - sum of times_validated in last 24 hours
+            # (confidence_updates table doesn't exist, use heuristics.times_validated instead)
+            from datetime import timedelta
+            cutoff_24h = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24)
+            validation_query = Heuristic.select(fn.SUM(Heuristic.times_validated))
+            if domain:
+                validation_query = validation_query.where(Heuristic.domain == domain)
+            validation_result = validation_query.tuples().first()
+            validation_count = validation_result[0] if validation_result and validation_result[0] else 0
+            observer.record_metric('validation_velocity', validation_count, domain=domain)
 
-                # 4. Query count (simple increment)
-                observer.record_metric('query_count', 1, domain=domain)
+            # 3. Violation rate (times_contradicted doesn't exist, use times_violated instead)
+            violation_query = (Heuristic
+                .select(
+                    fn.SUM(Heuristic.times_violated),
+                    fn.SUM(Heuristic.times_validated + Heuristic.times_violated)
+                ))
+            violation_result = violation_query.tuples().first()
+            if violation_result and violation_result[1] and violation_result[1] > 0:
+                violation_rate = (violation_result[0] or 0) / violation_result[1]
+                observer.record_metric('violation_rate', violation_rate, domain=domain)
+
+            # 4. Query count (simple increment)
+            observer.record_metric('query_count', 1, domain=domain)
 
             self._log_debug("Recorded system metrics to meta_observer")
 
@@ -334,107 +397,22 @@ class QuerySystem:
             self._log_debug(f"Failed to check system alerts: {e}")
             return []
 
-    def _validate_connection(self, conn: sqlite3.Connection) -> bool:
-        """
-        Validate that a connection is still alive and usable (S8 FIX).
-
-        Args:
-            conn: Connection to validate
-
-        Returns:
-            True if connection is valid, False otherwise
-        """
-        try:
-            # Simple query to check if connection is alive
-            conn.execute("SELECT 1")
-            return True
-        except (sqlite3.Error, sqlite3.ProgrammingError):
-            return False
-
-    @contextmanager
-    def _get_connection(self):
-        """
-        Get a database connection from the pool or create a new one.
-        Implements connection pooling for efficiency.
-        """
-        conn = None
-        try:
-            # Try to reuse an existing connection
-            if self._connection_pool:
-                conn = self._connection_pool.pop()
-                # S8 FIX: Validate connection before reuse
-                if not self._validate_connection(conn):
-                    self._log_debug("Pooled connection invalid, creating new one")
-                    conn.close()
-                    conn = self._create_connection()
-                else:
-                    self._log_debug("Reusing connection from pool")
-            else:
-                conn = self._create_connection()
-                self._log_debug("Created new connection")
-
-            yield conn
-
-            # Return connection to pool if it's still valid
-            # Connection pool size limit: 5 connections
-            # This prevents resource exhaustion while allowing reasonable concurrency.
-            # Adjust this value based on your system's SQLite connection limits.
-            if len(self._connection_pool) < self.MAX_CONNECTION_POOL_SIZE:  # Max 5 pooled connections
-                self._connection_pool.append(conn)
-                self._log_debug("Returned connection to pool")
-            else:
-                conn.close()
-                self._log_debug("Closed excess connection")
-
-        except sqlite3.Error as e:
-            if conn:
-                try:
-                    conn.rollback()
-                except Exception:
-                    pass
-                conn.close()
-            raise DatabaseError(
-                f"Database operation failed: {e}. "
-                f"Check database integrity with --validate. [QS002]"
-            )
-        except Exception as e:
-            if conn:
-                try:
-                    conn.rollback()
-                except Exception:
-                    pass
-                conn.close()
-            raise
-
-    def _create_connection(self) -> sqlite3.Connection:
-        """Create a new database connection with proper settings."""
-        try:
-            conn = sqlite3.connect(str(self.db_path), timeout=10.0)
-            conn.execute("PRAGMA busy_timeout=10000")
-            conn.execute("PRAGMA foreign_keys=ON")
-            # Performance pragmas for better concurrency and durability
-            conn.execute("PRAGMA journal_mode=WAL")  # Write-Ahead Logging for better concurrency
-            conn.execute("PRAGMA synchronous=NORMAL")  # Balanced durability/performance
-            return conn
-        except sqlite3.Error as e:
-            raise DatabaseError(
-                f"Failed to connect to database at {self.db_path}. "
-                f"Database may be locked or corrupted. Error: {e} [QS002]"
-            )
-
     def cleanup(self):
-        """Clean up connection pool. Call this when done with the query system."""
-        self._log_debug(f"Cleaning up {len(self._connection_pool)} pooled connections")
-        for conn in self._connection_pool:
-            try:
-                conn.close()
-            except Exception:
-                pass
-        self._connection_pool.clear()
+        """Clean up resources. Call this when done with the query system."""
+        try:
+            # Close Peewee database if it's open
+            if PEEWEE_AVAILABLE and peewee_db and not peewee_db.is_closed():
+                peewee_db.close()
+        except Exception:
+            pass  # Ignore errors during cleanup
+        self._log_debug("QuerySystem cleanup complete")
 
     def __del__(self):
         """Ensure cleanup on deletion."""
-        self.cleanup()
+        try:
+            self.cleanup()
+        except Exception:
+            pass  # Ignore errors during garbage collection
 
     # ========== VALIDATION METHODS ==========
 
@@ -585,230 +563,22 @@ class QuerySystem:
         # SECURITY: Check if database file was just created, set secure permissions
         db_just_created = not self.db_path.exists()
 
-        with self._get_connection() as conn:
-            cursor = conn.cursor()
+        # Create core tables using Peewee models (includes indexes defined in Meta)
+        core_models = [
+            Learning,
+            Heuristic,
+            Experiment,
+            CeoReview,
+            Decision,
+            Violation,
+            Invariant,
+        ]
+        peewee_db.create_tables(core_models, safe=True)
 
-            # Create learnings table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS learnings (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    type TEXT NOT NULL,
-                    filepath TEXT NOT NULL,
-                    title TEXT NOT NULL,
-                    summary TEXT,
-                    tags TEXT,
-                    domain TEXT,
-                    severity INTEGER DEFAULT 1,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
+        # Run ANALYZE for query planner
+        peewee_db.execute_sql("ANALYZE")
 
-            # Create heuristics table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS heuristics (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    domain TEXT NOT NULL,
-                    rule TEXT NOT NULL,
-                    explanation TEXT,
-                    source_type TEXT,
-                    source_id INTEGER,
-                    confidence REAL DEFAULT 0.5,
-                    times_validated INTEGER DEFAULT 0,
-                    times_violated INTEGER DEFAULT 0,
-                    is_golden BOOLEAN DEFAULT FALSE,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-
-            # Create experiments table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS experiments (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL UNIQUE,
-                    hypothesis TEXT,
-                    status TEXT DEFAULT 'active',
-                    cycles_run INTEGER DEFAULT 0,
-                    folder_path TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-
-            # Create ceo_reviews table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS ceo_reviews (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    title TEXT NOT NULL,
-                    context TEXT,
-                    recommendation TEXT,
-                    status TEXT DEFAULT 'pending',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    reviewed_at TIMESTAMP
-                )
-            """)
-
-            # Create decisions table (ADR - Architecture Decision Records)
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS decisions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    title TEXT NOT NULL,
-                    context TEXT NOT NULL,
-                    options_considered TEXT,
-                    decision TEXT NOT NULL,
-                    rationale TEXT NOT NULL,
-                    files_touched TEXT,
-                    tests_added TEXT,
-                    status TEXT DEFAULT 'accepted',
-                    domain TEXT,
-                    superseded_by INTEGER,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (superseded_by) REFERENCES decisions(id)
-                )
-            """)
-
-            # Create violations table (for accountability tracking)
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS violations (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    rule_id INTEGER NOT NULL,
-                    rule_name TEXT NOT NULL,
-                    violation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    description TEXT,
-                    session_id TEXT,
-                    acknowledged BOOLEAN DEFAULT 0
-                )
-            """)
-
-
-            # Create invariants table (statements about what must always be true)
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS invariants (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    statement TEXT NOT NULL,
-                    rationale TEXT NOT NULL,
-                    domain TEXT,
-                    scope TEXT DEFAULT 'codebase',
-                    validation_type TEXT,
-                    validation_code TEXT,
-                    severity TEXT DEFAULT 'error',
-                    status TEXT DEFAULT 'active',
-                    violation_count INTEGER DEFAULT 0,
-                    last_validated_at DATETIME,
-                    last_violated_at DATETIME,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-
-            # Create indexes for efficient querying
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_learnings_domain
-                ON learnings(domain)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_learnings_type
-                ON learnings(type)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_learnings_created_at
-                ON learnings(created_at DESC)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_learnings_domain_created
-                ON learnings(domain, created_at DESC)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_heuristics_domain
-                ON heuristics(domain)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_heuristics_golden
-                ON heuristics(is_golden)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_heuristics_created_at
-                ON heuristics(created_at DESC)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_heuristics_domain_confidence
-                ON heuristics(domain, confidence DESC)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_experiments_status
-                ON experiments(status)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_ceo_reviews_status
-                ON ceo_reviews(status)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_violations_date
-                ON violations(violation_date DESC)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_violations_rule
-                ON violations(rule_id)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_violations_acknowledged
-                ON violations(acknowledged)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_decisions_domain
-                ON decisions(domain)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_decisions_status
-                ON decisions(status)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_decisions_created_at
-                ON decisions(created_at DESC)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_decisions_superseded_by
-                ON decisions(superseded_by)
-            """)
-
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_invariants_domain
-                ON invariants(domain)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_invariants_status
-                ON invariants(status)
-            """)
-
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_invariants_severity
-                ON invariants(severity)
-            """)
-
-            # Update query planner statistics
-            cursor.execute("ANALYZE")
-
-            conn.commit()
+        self._log_debug("Database tables created/verified via Peewee")
 
         # SECURITY: Set secure file permissions on database file (owner read/write only)
         # This prevents other users from reading sensitive learning data
@@ -861,51 +631,55 @@ class QuerySystem:
         }
 
         try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
+            # Use Peewee's database connection for PRAGMA commands
 
-                # Check PRAGMA integrity
-                cursor.execute("PRAGMA integrity_check")
-                integrity = cursor.fetchone()[0]
-                results['checks']['integrity'] = integrity
-                if integrity != 'ok':
+            # Check PRAGMA integrity
+            integrity_result = peewee_db.execute_sql("PRAGMA integrity_check").fetchone()
+            integrity = integrity_result[0] if integrity_result else 'unknown'
+            results['checks']['integrity'] = integrity
+            if integrity != 'ok':
+                results['valid'] = False
+                results['errors'].append(f"Database integrity check failed: {integrity}")
+
+            # Check foreign keys
+            fk_result = peewee_db.execute_sql("PRAGMA foreign_key_check").fetchall()
+            if fk_result:
+                results['valid'] = False
+                results['errors'].append(f"Foreign key violations: {len(fk_result)}")
+                results['checks']['foreign_keys'] = fk_result
+
+            # Check table existence using Peewee
+            required_tables = ['learnings', 'heuristics', 'experiments', 'ceo_reviews']
+            existing_tables = peewee_db.get_tables()
+
+            for table in required_tables:
+                if table not in existing_tables:
                     results['valid'] = False
-                    results['errors'].append(f"Database integrity check failed: {integrity}")
+                    results['errors'].append(f"Required table '{table}' is missing")
 
-                # Check foreign keys
-                cursor.execute("PRAGMA foreign_key_check")
-                fk_violations = cursor.fetchall()
-                if fk_violations:
-                    results['valid'] = False
-                    results['errors'].append(f"Foreign key violations: {len(fk_violations)}")
-                    results['checks']['foreign_keys'] = fk_violations
+            results['checks']['tables'] = existing_tables
 
-                # Check table existence
-                required_tables = ['learnings', 'heuristics', 'experiments', 'ceo_reviews']
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-                existing_tables = [row[0] for row in cursor.fetchall()]
+            # Check index existence
+            indexes_result = peewee_db.execute_sql(
+                "SELECT name FROM sqlite_master WHERE type='index'"
+            ).fetchall()
+            indexes = [row[0] for row in indexes_result]
+            results['checks']['indexes'] = indexes
 
-                for table in required_tables:
-                    if table not in existing_tables:
-                        results['valid'] = False
-                        results['errors'].append(f"Required table '{table}' is missing")
+            if not any('idx_learnings_domain' in idx for idx in indexes):
+                results['warnings'].append("Some indexes may be missing")
 
-                results['checks']['tables'] = existing_tables
-
-                # Check index existence
-                cursor.execute("SELECT name FROM sqlite_master WHERE type='index'")
-                indexes = [row[0] for row in cursor.fetchall()]
-                results['checks']['indexes'] = indexes
-
-                if not any('idx_learnings_domain' in idx for idx in indexes):
-                    results['warnings'].append("Some indexes may be missing")
-
-                # Get table row counts
-                for table in required_tables:
-                    if table in existing_tables:
-                        cursor.execute(f"SELECT COUNT(*) FROM {table}")
-                        count = cursor.fetchone()[0]
-                        results['checks'][f'{table}_count'] = count
+            # Get table row counts using Peewee models
+            model_map = {
+                'learnings': Learning,
+                'heuristics': Heuristic,
+                'experiments': Experiment,
+                'ceo_reviews': CeoReview
+            }
+            for table in required_tables:
+                if table in existing_tables and table in model_map:
+                    count = model_map[table].select().count()
+                    results['checks'][f'{table}_count'] = count
 
         except Exception as e:
             results['valid'] = False
@@ -966,27 +740,21 @@ class QuerySystem:
 
             self._log_debug(f"Querying domain '{domain}' with limit {limit}")
             with TimeoutHandler(timeout):
-                with self._get_connection() as conn:
-                    conn.row_factory = sqlite3.Row
-                    cursor = conn.cursor()
+                # Get heuristics for domain
+                heuristics_query = (Heuristic
+                    .select()
+                    .where(Heuristic.domain == domain)
+                    .order_by(Heuristic.confidence.desc(), Heuristic.times_validated.desc())
+                    .limit(limit))
+                heuristics = [h.__data__.copy() for h in heuristics_query]
 
-                    # Get heuristics for domain
-                    cursor.execute("""
-                        SELECT * FROM heuristics
-                        WHERE domain = ?
-                        ORDER BY confidence DESC, times_validated DESC
-                        LIMIT ?
-                    """, (domain, limit))
-                    heuristics = [dict(row) for row in cursor.fetchall()]
-
-                    # Get learnings for domain
-                    cursor.execute("""
-                        SELECT * FROM learnings
-                        WHERE domain = ?
-                        ORDER BY created_at DESC
-                        LIMIT ?
-                    """, (domain, limit))
-                    learnings = [dict(row) for row in cursor.fetchall()]
+                # Get learnings for domain
+                learnings_query = (Learning
+                    .select()
+                    .where(Learning.domain == domain)
+                    .order_by(Learning.created_at.desc())
+                    .limit(limit))
+                learnings = [l.__data__.copy() for l in learnings_query]
 
             result = {
                 'domain': domain,
@@ -1068,25 +836,20 @@ class QuerySystem:
 
             self._log_debug(f"Querying tags {tags} with limit {limit}")
             with TimeoutHandler(timeout):
-                with self._get_connection() as conn:
-                    conn.row_factory = sqlite3.Row
-                    cursor = conn.cursor()
+                # Build OR conditions for tag matching (tags stored as comma-separated string)
+                from functools import reduce
+                from operator import or_
 
-                    # Build query for tag matching (tags stored as comma-separated string)
-                    tag_conditions = " OR ".join(["tags LIKE ?" for _ in tags])
-                    query = f"""
-                        SELECT * FROM learnings
-                        WHERE {tag_conditions}
-                        ORDER BY created_at DESC
-                        LIMIT ?
-                    """
+                # Each tag gets a LIKE condition: tags LIKE '%tag%'
+                conditions = [Learning.tags.contains(escape_like(tag)) for tag in tags]
+                combined_conditions = reduce(or_, conditions)
 
-                    # Prepare parameters with wildcards for LIKE queries
-                    # Escape SQL wildcards to prevent wildcard injection
-                    params = [f"%{escape_like(tag)}%" for tag in tags] + [limit]
-
-                    cursor.execute(query, params)
-                    results = [dict(row) for row in cursor.fetchall()]
+                query = (Learning
+                    .select()
+                    .where(combined_conditions)
+                    .order_by(Learning.created_at.desc())
+                    .limit(limit))
+                results = [l.__data__.copy() for l in query]
 
             self._log_debug(f"Found {len(results)} results for tags")
             return results
@@ -1159,27 +922,22 @@ class QuerySystem:
 
             self._log_debug(f"Querying recent learnings (type={type_filter}, limit={limit}, days={days})")
             with TimeoutHandler(timeout):
-                with self._get_connection() as conn:
-                    conn.row_factory = sqlite3.Row
-                    cursor = conn.cursor()
+                from datetime import timedelta
 
-                    if type_filter:
-                        cursor.execute("""
-                            SELECT * FROM learnings
-                            WHERE type = ?
-                            AND created_at >= datetime('now', ? || ' days')
-                            ORDER BY created_at DESC
-                            LIMIT ?
-                        """, (type_filter, f'-{days}', limit))
-                    else:
-                        cursor.execute("""
-                            SELECT * FROM learnings
-                            WHERE created_at >= datetime('now', ? || ' days')
-                            ORDER BY created_at DESC
-                            LIMIT ?
-                        """, (f'-{days}', limit))
+                # Calculate cutoff date in Python (SQLite datetime() equivalent)
+                cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
 
-                    results = [dict(row) for row in cursor.fetchall()]
+                query = Learning.select()
+                if type_filter:
+                    query = query.where(
+                        (Learning.type == type_filter) &
+                        (Learning.created_at >= cutoff)
+                    )
+                else:
+                    query = query.where(Learning.created_at >= cutoff)
+
+                query = query.order_by(Learning.created_at.desc()).limit(limit)
+                results = [l.__data__.copy() for l in query]
 
             self._log_debug(f"Found {len(results)} recent learnings")
             return results
@@ -1241,17 +999,11 @@ class QuerySystem:
 
         try:
             with TimeoutHandler(timeout):
-                with self._get_connection() as conn:
-                    conn.row_factory = sqlite3.Row
-                    cursor = conn.cursor()
-
-                    cursor.execute("""
-                        SELECT * FROM experiments
-                        WHERE status = 'active'
-                        ORDER BY updated_at DESC
-                    """)
-
-                    results = [dict(row) for row in cursor.fetchall()]
+                query = (Experiment
+                    .select()
+                    .where(Experiment.status == 'active')
+                    .order_by(Experiment.updated_at.desc()))
+                results = [exp.__data__.copy() for exp in query]
 
             self._log_debug(f"Found {len(results)} active experiments")
             return results
@@ -1312,17 +1064,11 @@ class QuerySystem:
 
         try:
             with TimeoutHandler(timeout):
-                with self._get_connection() as conn:
-                    conn.row_factory = sqlite3.Row
-                    cursor = conn.cursor()
-
-                    cursor.execute("""
-                        SELECT * FROM ceo_reviews
-                        WHERE status = 'pending'
-                        ORDER BY created_at ASC
-                    """)
-
-                    results = [dict(row) for row in cursor.fetchall()]
+                query = (CeoReview
+                    .select()
+                    .where(CeoReview.status == 'pending')
+                    .order_by(CeoReview.created_at.asc()))
+                results = [review.__data__.copy() for review in query]
 
             self._log_debug(f"Found {len(results)} pending CEO reviews")
             return results
@@ -1379,26 +1125,16 @@ class QuerySystem:
         self._log_debug(f"Querying violations (days={days}, acknowledged={acknowledged})")
 
         with TimeoutHandler(timeout):
-            with self._get_connection() as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
+            from datetime import timedelta
 
-                if acknowledged is None:
-                    cursor.execute("""
-                        SELECT * FROM violations
-                        WHERE violation_date >= datetime('now', ? || ' days')
-                        ORDER BY violation_date DESC
-                    """, (f'-{days}',))
-                else:
-                    ack_val = 1 if acknowledged else 0
-                    cursor.execute("""
-                        SELECT * FROM violations
-                        WHERE violation_date >= datetime('now', ? || ' days')
-                        AND acknowledged = ?
-                        ORDER BY violation_date DESC
-                    """, (f'-{days}', ack_val))
+            cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+            query = Violation.select().where(Violation.violation_date >= cutoff)
 
-                results = [dict(row) for row in cursor.fetchall()]
+            if acknowledged is not None:
+                query = query.where(Violation.acknowledged == acknowledged)
+
+            query = query.order_by(Violation.violation_date.desc())
+            results = [v.__data__.copy() for v in query]
 
         self._log_debug(f"Found {len(results)} violations")
         return results
@@ -1519,46 +1255,38 @@ class QuerySystem:
         self._log_debug(f"Querying violation summary (days={days})")
 
         with TimeoutHandler(timeout):
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
+            from datetime import timedelta
+            from peewee import fn
 
-                # Total count
-                cursor.execute("""
-                    SELECT COUNT(*) FROM violations
-                    WHERE violation_date >= datetime('now', ? || ' days')
-                """, (f'-{days}',))
-                total = cursor.fetchone()[0]
+            cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
 
-                # By rule
-                cursor.execute("""
-                    SELECT rule_id, rule_name, COUNT(*) as count
-                    FROM violations
-                    WHERE violation_date >= datetime('now', ? || ' days')
-                    GROUP BY rule_id, rule_name
-                    ORDER BY count DESC
-                """, (f'-{days}',))
-                by_rule = [{'rule_id': r[0], 'rule_name': r[1], 'count': r[2]}
-                          for r in cursor.fetchall()]
+            # Total count
+            total = Violation.select().where(Violation.violation_date >= cutoff).count()
 
-                # Acknowledged count
-                cursor.execute("""
-                    SELECT COUNT(*) FROM violations
-                    WHERE violation_date >= datetime('now', ? || ' days')
-                    AND acknowledged = 1
-                """, (f'-{days}',))
-                acknowledged = cursor.fetchone()[0]
+            # By rule (group by)
+            by_rule_query = (Violation
+                .select(Violation.rule_id, Violation.rule_name, fn.COUNT(Violation.id).alias('count'))
+                .where(Violation.violation_date >= cutoff)
+                .group_by(Violation.rule_id, Violation.rule_name)
+                .order_by(fn.COUNT(Violation.id).desc()))
+            by_rule = [{'rule_id': r.rule_id, 'rule_name': r.rule_name, 'count': r.count}
+                      for r in by_rule_query]
 
-                # Recent violations (last 5)
-                cursor.execute("""
-                    SELECT rule_id, rule_name, description, violation_date
-                    FROM violations
-                    WHERE violation_date >= datetime('now', ? || ' days')
-                    ORDER BY violation_date DESC
-                    LIMIT 5
-                """, (f'-{days}',))
-                recent = [{'rule_id': r[0], 'rule_name': r[1],
-                          'description': r[2], 'date': r[3]}
-                         for r in cursor.fetchall()]
+            # Acknowledged count
+            acknowledged = (Violation
+                .select()
+                .where((Violation.violation_date >= cutoff) & (Violation.acknowledged == True))
+                .count())
+
+            # Recent violations (last 5)
+            recent_query = (Violation
+                .select(Violation.rule_id, Violation.rule_name, Violation.description, Violation.violation_date)
+                .where(Violation.violation_date >= cutoff)
+                .order_by(Violation.violation_date.desc())
+                .limit(5))
+            recent = [{'rule_id': r.rule_id, 'rule_name': r.rule_name,
+                      'description': r.description, 'date': str(r.violation_date) if r.violation_date else None}
+                     for r in recent_query]
 
         summary = {
             'total': total,
@@ -1608,39 +1336,19 @@ class QuerySystem:
             limit = self._validate_limit(limit)
 
             with TimeoutHandler(timeout):
-                with self._get_connection() as conn:
-                    # Check if decisions table exists (backwards compatibility)
-                    cursor = conn.cursor()
-                    cursor.execute("""
-                        SELECT name FROM sqlite_master
-                        WHERE type='table' AND name='decisions'
-                    """)
-                    if not cursor.fetchone():
-                        self._log_debug("Decisions table does not exist yet - returning empty list")
-                        return []
+                # Table existence check not needed - Peewee handles gracefully
+                query = Decision.select(
+                    Decision.id, Decision.title, Decision.context,
+                    Decision.decision, Decision.rationale, Decision.domain,
+                    Decision.status, Decision.created_at
+                ).where(Decision.status == status)
 
-                    conn.row_factory = sqlite3.Row
-                    cursor = conn.cursor()
+                if domain:
+                    domain = self._validate_domain(domain)
+                    query = query.where((Decision.domain == domain) | (Decision.domain.is_null()))
 
-                    if domain:
-                        domain = self._validate_domain(domain)
-                        cursor.execute("""
-                            SELECT id, title, context, decision, rationale, domain, status, created_at
-                            FROM decisions
-                            WHERE (domain = ? OR domain IS NULL) AND status = ?
-                            ORDER BY created_at DESC
-                            LIMIT ?
-                        """, (domain, status, limit))
-                    else:
-                        cursor.execute("""
-                            SELECT id, title, context, decision, rationale, domain, status, created_at
-                            FROM decisions
-                            WHERE status = ?
-                            ORDER BY created_at DESC
-                            LIMIT ?
-                        """, (status, limit))
-
-                    results = [dict(row) for row in cursor.fetchall()]
+                query = query.order_by(Decision.created_at.desc()).limit(limit)
+                results = [d.__data__.copy() for d in query]
 
             self._log_debug(f"Found {len(results)} decisions")
             return results
@@ -1721,51 +1429,42 @@ class QuerySystem:
             limit = self._validate_limit(limit)
 
             with TimeoutHandler(timeout):
-                with self._get_connection() as conn:
-                    # Check if invariants table exists (backwards compatibility)
-                    cursor = conn.cursor()
-                    cursor.execute("""
-                        SELECT name FROM sqlite_master
-                        WHERE type='table' AND name='invariants'
-                    """)
-                    if not cursor.fetchone():
-                        self._log_debug("Invariants table does not exist yet - returning empty list")
-                        return []
-
-                    conn.row_factory = sqlite3.Row
-                    cursor = conn.cursor()
-
-                    query = """
-                        SELECT id, statement, rationale, domain, scope, validation_type,
-                               validation_code, severity, status, violation_count,
-                               last_validated_at, last_violated_at, created_at
-                        FROM invariants
-                        WHERE 1=1
-                    """
-                    params = []
+                try:
+                    query = Invariant.select()
 
                     if status:
-                        query += " AND status = ?"
-                        params.append(status)
+                        query = query.where(Invariant.status == status)
 
                     if domain:
                         domain = self._validate_domain(domain)
-                        query += " AND (domain = ? OR domain IS NULL)"
-                        params.append(domain)
+                        query = query.where(
+                            (Invariant.domain == domain) | (Invariant.domain.is_null())
+                        )
 
                     if scope:
-                        query += " AND scope = ?"
-                        params.append(scope)
+                        query = query.where(Invariant.scope == scope)
 
                     if severity:
-                        query += " AND severity = ?"
-                        params.append(severity)
+                        query = query.where(Invariant.severity == severity)
 
-                    query += " ORDER BY created_at DESC LIMIT ?"
-                    params.append(limit)
+                    query = query.order_by(Invariant.created_at.desc()).limit(limit)
 
-                    cursor.execute(query, params)
-                    results = [dict(row) for row in cursor.fetchall()]
+                    results = [{
+                        'id': inv.id,
+                        'statement': inv.statement,
+                        'rationale': inv.rationale,
+                        'domain': inv.domain,
+                        'scope': inv.scope,
+                        'severity': inv.severity,
+                        'status': inv.status,
+                        'created_at': inv.created_at
+                    } for inv in query]
+                except Exception as e:
+                    # Table might not exist yet
+                    if 'no such table' in str(e).lower():
+                        self._log_debug("Invariants table does not exist yet - returning empty list")
+                        return []
+                    raise
 
             self._log_debug(f"Found {len(results)} invariants")
             return results
@@ -1840,38 +1539,44 @@ class QuerySystem:
             limit = self._validate_limit(limit)
 
             with TimeoutHandler(timeout):
-                with self._get_connection() as conn:
-                    # Check if assumptions table exists (backwards compatibility)
-                    cursor = conn.cursor()
-                    cursor.execute("""
-                        SELECT name FROM sqlite_master
-                        WHERE type='table' AND name='assumptions'
-                    """)
-                    if not cursor.fetchone():
-                        self._log_debug("Assumptions table does not exist yet - returning empty list")
-                        return []
-
-                    conn.row_factory = sqlite3.Row
-                    cursor = conn.cursor()
-
-                    query = """
-                        SELECT id, assumption, context, source, confidence, status, domain,
-                               verified_count, challenged_count, last_verified_at, created_at
-                        FROM assumptions
-                        WHERE status = ? AND confidence >= ?
-                    """
-                    params = [status, min_confidence]
+                try:
+                    query = (Assumption
+                        .select()
+                        .where(
+                            (Assumption.status == status) &
+                            (Assumption.confidence >= min_confidence)
+                        ))
 
                     if domain:
                         domain = self._validate_domain(domain)
-                        query += " AND (domain = ? OR domain IS NULL)"
-                        params.append(domain)
+                        query = query.where(
+                            (Assumption.domain == domain) | (Assumption.domain.is_null())
+                        )
 
-                    query += " ORDER BY confidence DESC, created_at DESC LIMIT ?"
-                    params.append(limit)
+                    query = query.order_by(
+                        Assumption.confidence.desc(),
+                        Assumption.created_at.desc()
+                    ).limit(limit)
 
-                    cursor.execute(query, params)
-                    results = [dict(row) for row in cursor.fetchall()]
+                    results = [{
+                        'id': a.id,
+                        'assumption': a.assumption,
+                        'context': a.context,
+                        'source': a.source,
+                        'confidence': a.confidence,
+                        'status': a.status,
+                        'domain': a.domain,
+                        'verified_count': a.verified_count,
+                        'challenged_count': a.challenged_count,
+                        'last_verified_at': a.last_verified_at,
+                        'created_at': a.created_at
+                    } for a in query]
+                except Exception as e:
+                    # Table might not exist yet
+                    if 'no such table' in str(e).lower():
+                        self._log_debug("Assumptions table does not exist yet - returning empty list")
+                        return []
+                    raise
 
             self._log_debug(f"Found {len(results)} assumptions")
             return results
@@ -1932,37 +1637,39 @@ class QuerySystem:
         self._log_debug(f"Querying challenged assumptions (domain={domain}, limit={limit})")
 
         with TimeoutHandler(timeout):
-            with self._get_connection() as conn:
-                # Check if assumptions table exists
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT name FROM sqlite_master
-                    WHERE type='table' AND name='assumptions'
-                """)
-                if not cursor.fetchone():
-                    return []
-
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-
-                query = """
-                    SELECT id, assumption, context, source, confidence, status, domain,
-                           verified_count, challenged_count, created_at
-                    FROM assumptions
-                    WHERE status IN ('challenged', 'invalidated')
-                """
-                params = []
+            try:
+                query = (Assumption
+                    .select()
+                    .where(Assumption.status.in_(['challenged', 'invalidated'])))
 
                 if domain:
                     domain = self._validate_domain(domain)
-                    query += " AND (domain = ? OR domain IS NULL)"
-                    params.append(domain)
+                    query = query.where(
+                        (Assumption.domain == domain) | (Assumption.domain.is_null())
+                    )
 
-                query += " ORDER BY challenged_count DESC, created_at DESC LIMIT ?"
-                params.append(limit)
+                query = query.order_by(
+                    Assumption.challenged_count.desc(),
+                    Assumption.created_at.desc()
+                ).limit(limit)
 
-                cursor.execute(query, params)
-                results = [dict(row) for row in cursor.fetchall()]
+                results = [{
+                    'id': a.id,
+                    'assumption': a.assumption,
+                    'context': a.context,
+                    'source': a.source,
+                    'confidence': a.confidence,
+                    'status': a.status,
+                    'domain': a.domain,
+                    'verified_count': a.verified_count,
+                    'challenged_count': a.challenged_count,
+                    'created_at': a.created_at
+                } for a in query]
+            except Exception as e:
+                # Table might not exist yet
+                if 'no such table' in str(e).lower():
+                    return []
+                raise
 
         self._log_debug(f"Found {len(results)} challenged/invalidated assumptions")
         return results
@@ -2008,52 +1715,61 @@ class QuerySystem:
             limit = self._validate_limit(limit)
 
             with TimeoutHandler(timeout):
-                with self._get_connection() as conn:
-                    # Check if spike_reports table exists (backwards compatibility)
-                    cursor = conn.cursor()
-                    cursor.execute("""
-                        SELECT name FROM sqlite_master
-                        WHERE type='table' AND name='spike_reports'
-                    """)
-                    if not cursor.fetchone():
-                        self._log_debug("spike_reports table does not exist yet - returning empty list")
-                        return []
-
-                    conn.row_factory = sqlite3.Row
-                    cursor = conn.cursor()
-
-                    # Build query dynamically
-                    query = """
-                        SELECT id, title, topic, question, findings, gotchas, resources,
-                               time_invested_minutes, domain, tags, usefulness_score,
-                               access_count, created_at, updated_at
-                        FROM spike_reports
-                        WHERE 1=1
-                    """
-                    params = []
+                try:
+                    query = SpikeReport.select()
 
                     if domain:
                         domain = self._validate_domain(domain)
-                        query += " AND (domain = ? OR domain IS NULL)"
-                        params.append(domain)
+                        query = query.where(
+                            (SpikeReport.domain == domain) | (SpikeReport.domain.is_null())
+                        )
 
                     if tags:
                         tags = self._validate_tags(tags)
-                        tag_conditions = " OR ".join(["tags LIKE ?" for _ in tags])
-                        query += f" AND ({tag_conditions})"
-                        params.extend([f"%{escape_like(tag)}%" for tag in tags])
+                        from functools import reduce
+                        from operator import or_
+                        tag_conditions = reduce(
+                            or_,
+                            [SpikeReport.tags.contains(tag) for tag in tags]
+                        )
+                        query = query.where(tag_conditions)
 
                     if search:
-                        escaped_search = escape_like(search)
-                        query += " AND (title LIKE ? OR topic LIKE ? OR question LIKE ? OR findings LIKE ?)"
-                        params.extend([f"%{escaped_search}%"] * 4)
+                        escaped_search = f"%{search}%"
+                        query = query.where(
+                            (SpikeReport.title.contains(search)) |
+                            (SpikeReport.topic.contains(search)) |
+                            (SpikeReport.question.contains(search)) |
+                            (SpikeReport.findings.contains(search))
+                        )
 
-                    # Order by usefulness then recency
-                    query += " ORDER BY usefulness_score DESC, created_at DESC LIMIT ?"
-                    params.append(limit)
+                    query = query.order_by(
+                        SpikeReport.usefulness_score.desc(),
+                        SpikeReport.created_at.desc()
+                    ).limit(limit)
 
-                    cursor.execute(query, params)
-                    results = [dict(row) for row in cursor.fetchall()]
+                    results = [{
+                        'id': sr.id,
+                        'title': sr.title,
+                        'topic': sr.topic,
+                        'question': sr.question,
+                        'findings': sr.findings,
+                        'gotchas': sr.gotchas,
+                        'resources': sr.resources,
+                        'time_invested_minutes': sr.time_invested_minutes,
+                        'domain': sr.domain,
+                        'tags': sr.tags,
+                        'usefulness_score': sr.usefulness_score,
+                        'access_count': sr.access_count,
+                        'created_at': sr.created_at,
+                        'updated_at': sr.updated_at
+                    } for sr in query]
+                except Exception as e:
+                    # Table might not exist yet
+                    if 'no such table' in str(e).lower():
+                        self._log_debug("spike_reports table does not exist yet - returning empty list")
+                        return []
+                    raise
 
             self._log_debug(f"Found {len(results)} spike reports")
             return results
@@ -2215,52 +1931,58 @@ class QuerySystem:
                 else:
                     # No domain specified - show recent heuristics across all domains
                     try:
-                        with self._get_connection() as conn:
-                            conn.row_factory = sqlite3.Row
-                            cursor = conn.cursor()
+                        # Get recent non-golden heuristics (golden are in TIER 1)
+                        recent_heuristics_query = (Heuristic
+                            .select()
+                            .where((Heuristic.is_golden == False) | (Heuristic.is_golden.is_null()))
+                            .order_by(Heuristic.created_at.desc(), Heuristic.confidence.desc())
+                            .limit(10))
 
-                            # Get recent non-golden heuristics (golden are in TIER 1)
-                            cursor.execute("""
-                                SELECT * FROM heuristics
-                                WHERE is_golden = 0 OR is_golden IS NULL
-                                ORDER BY created_at DESC, confidence DESC
-                                LIMIT 10
-                            """)
-                            recent_heuristics = [dict(row) for row in cursor.fetchall()]
+                        recent_heuristics = [{
+                            'rule': h.rule,
+                            'domain': h.domain,
+                            'confidence': h.confidence,
+                            'explanation': h.explanation
+                        } for h in recent_heuristics_query]
 
-                            if recent_heuristics:
-                                context_parts.append("## Recent Heuristics (all domains)\n\n")
-                                for h in recent_heuristics:
-                                    h_domain = h.get('domain', 'general')
-                                    entry = f"- **{h['rule']}** (domain: {h_domain}, confidence: {h['confidence']:.2f})\n"
-                                    if h.get('explanation'):
-                                        expl = h['explanation'][:100] + '...' if len(h['explanation']) > 100 else h['explanation']
-                                        entry += f"  {expl}\n"
-                                    entry += "\n"
-                                    context_parts.append(entry)
-                                    approx_tokens += len(entry) // 4
-                                heuristics_count += len(recent_heuristics)
+                        if recent_heuristics:
+                            context_parts.append("## Recent Heuristics (all domains)\n\n")
+                            for h in recent_heuristics:
+                                h_domain = h.get('domain', 'general')
+                                entry = f"- **{h['rule']}** (domain: {h_domain}, confidence: {h['confidence']:.2f})\n"
+                                if h.get('explanation'):
+                                    expl = h['explanation'][:100] + '...' if len(h['explanation']) > 100 else h['explanation']
+                                    entry += f"  {expl}\n"
+                                entry += "\n"
+                                context_parts.append(entry)
+                                approx_tokens += len(entry) // 4
+                            heuristics_count += len(recent_heuristics)
 
-                            # Get recent learnings across all domains
-                            cursor.execute("""
-                                SELECT * FROM learnings
-                                ORDER BY created_at DESC
-                                LIMIT 10
-                            """)
-                            recent_learnings = [dict(row) for row in cursor.fetchall()]
+                        # Get recent learnings across all domains
+                        recent_learnings_query = (Learning
+                            .select()
+                            .order_by(Learning.created_at.desc())
+                            .limit(10))
 
-                            if recent_learnings:
-                                context_parts.append("## Recent Learnings (all domains)\n\n")
-                                for l in recent_learnings:
-                                    l_domain = l.get('domain', 'general')
-                                    entry = f"- **{l['title']}** ({l['type']}, domain: {l_domain})\n"
-                                    if l.get('summary'):
-                                        summary = l['summary'][:100] + '...' if len(l['summary']) > 100 else l['summary']
-                                        entry += f"  {summary}\n"
-                                    entry += "\n"
-                                    context_parts.append(entry)
-                                    approx_tokens += len(entry) // 4
-                                learnings_count += len(recent_learnings)
+                        recent_learnings = [{
+                            'title': l.title,
+                            'type': l.type,
+                            'domain': l.domain,
+                            'summary': l.summary
+                        } for l in recent_learnings_query]
+
+                        if recent_learnings:
+                            context_parts.append("## Recent Learnings (all domains)\n\n")
+                            for l in recent_learnings:
+                                l_domain = l.get('domain', 'general')
+                                entry = f"- **{l['title']}** ({l['type']}, domain: {l_domain})\n"
+                                if l.get('summary'):
+                                    summary = l['summary'][:100] + '...' if len(l['summary']) > 100 else l['summary']
+                                    entry += f"  {summary}\n"
+                                entry += "\n"
+                                context_parts.append(entry)
+                                approx_tokens += len(entry) // 4
+                            learnings_count += len(recent_learnings)
 
                     except Exception as e:
                         self._log_debug(f"Failed to fetch recent heuristics/learnings: {e}")
@@ -2506,64 +2228,61 @@ class QuerySystem:
         self._log_debug("Gathering statistics")
 
         with TimeoutHandler(timeout):
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
+            from datetime import timedelta
+            from peewee import fn
 
-                stats = {}
+            stats = {}
 
-                # Count learnings by type
-                cursor.execute("SELECT type, COUNT(*) as count FROM learnings GROUP BY type")
-                stats['learnings_by_type'] = dict(cursor.fetchall())
+            # Count learnings by type
+            learnings_type_query = (Learning
+                .select(Learning.type, fn.COUNT(Learning.id).alias('count'))
+                .group_by(Learning.type))
+            stats['learnings_by_type'] = {r.type: r.count for r in learnings_type_query}
 
-                # Count learnings by domain
-                cursor.execute("SELECT domain, COUNT(*) as count FROM learnings GROUP BY domain")
-                stats['learnings_by_domain'] = dict(cursor.fetchall())
+            # Count learnings by domain
+            learnings_domain_query = (Learning
+                .select(Learning.domain, fn.COUNT(Learning.id).alias('count'))
+                .group_by(Learning.domain))
+            stats['learnings_by_domain'] = {r.domain: r.count for r in learnings_domain_query}
 
-                # Count heuristics by domain
-                cursor.execute("SELECT domain, COUNT(*) as count FROM heuristics GROUP BY domain")
-                stats['heuristics_by_domain'] = dict(cursor.fetchall())
+            # Count heuristics by domain
+            heuristics_domain_query = (Heuristic
+                .select(Heuristic.domain, fn.COUNT(Heuristic.id).alias('count'))
+                .group_by(Heuristic.domain))
+            stats['heuristics_by_domain'] = {r.domain: r.count for r in heuristics_domain_query}
 
-                # Count golden heuristics
-                cursor.execute("SELECT COUNT(*) FROM heuristics WHERE is_golden = 1")
-                stats['golden_heuristics'] = cursor.fetchone()[0]
+            # Count golden heuristics
+            stats['golden_heuristics'] = Heuristic.select().where(Heuristic.is_golden == True).count()
 
-                # Count experiments by status
-                cursor.execute("SELECT status, COUNT(*) as count FROM experiments GROUP BY status")
-                stats['experiments_by_status'] = dict(cursor.fetchall())
+            # Count experiments by status
+            experiments_status_query = (Experiment
+                .select(Experiment.status, fn.COUNT(Experiment.id).alias('count'))
+                .group_by(Experiment.status))
+            stats['experiments_by_status'] = {r.status: r.count for r in experiments_status_query}
 
-                # Count CEO reviews by status
-                cursor.execute("SELECT status, COUNT(*) as count FROM ceo_reviews GROUP BY status")
-                stats['ceo_reviews_by_status'] = dict(cursor.fetchall())
+            # Count CEO reviews by status
+            ceo_status_query = (CeoReview
+                .select(CeoReview.status, fn.COUNT(CeoReview.id).alias('count'))
+                .group_by(CeoReview.status))
+            stats['ceo_reviews_by_status'] = {r.status: r.count for r in ceo_status_query}
 
-                # Total counts
-                cursor.execute("SELECT COUNT(*) FROM learnings")
-                stats['total_learnings'] = cursor.fetchone()[0]
+            # Total counts
+            stats['total_learnings'] = Learning.select().count()
+            stats['total_heuristics'] = Heuristic.select().count()
+            stats['total_experiments'] = Experiment.select().count()
+            stats['total_ceo_reviews'] = CeoReview.select().count()
 
-                cursor.execute("SELECT COUNT(*) FROM heuristics")
-                stats['total_heuristics'] = cursor.fetchone()[0]
+            # Violation statistics (last 7 days)
+            cutoff_7d = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
+            stats['violations_7d'] = Violation.select().where(Violation.violation_date >= cutoff_7d).count()
 
-                cursor.execute("SELECT COUNT(*) FROM experiments")
-                stats['total_experiments'] = cursor.fetchone()[0]
-
-                cursor.execute("SELECT COUNT(*) FROM ceo_reviews")
-                stats['total_ceo_reviews'] = cursor.fetchone()[0]
-
-                # Violation statistics (last 7 days)
-                cursor.execute("""
-                    SELECT COUNT(*) FROM violations
-                    WHERE violation_date >= datetime('now', '-7 days')
-                """)
-                stats['violations_7d'] = cursor.fetchone()[0]
-
-                cursor.execute("""
-                    SELECT rule_id, rule_name, COUNT(*) as count
-                    FROM violations
-                    WHERE violation_date >= datetime('now', '-7 days')
-                    GROUP BY rule_id, rule_name
-                    ORDER BY count DESC
-                """)
-                stats['violations_by_rule_7d'] = dict((f"Rule {r[0]}: {r[1]}", r[2])
-                                                      for r in cursor.fetchall())
+            violations_rule_query = (Violation
+                .select(Violation.rule_id, Violation.rule_name, fn.COUNT(Violation.id).alias('count'))
+                .where(Violation.violation_date >= cutoff_7d)
+                .group_by(Violation.rule_id, Violation.rule_name)
+                .order_by(fn.COUNT(Violation.id).desc()))
+            stats['violations_by_rule_7d'] = {f"Rule {r.rule_id}: {r.rule_name}": r.count
+                                              for r in violations_rule_query}
 
         self._log_debug(f"Statistics gathered: {stats['total_learnings']} learnings total")
         return stats
