@@ -58,6 +58,22 @@ At the START of every conversation, before responding to the user:
 
    **NEVER ask again during the same conversation.** No port checks, no prompts on subsequent check-ins.
 
+   **ELF Banner (MUST show on first checkin):**
+   ```
+┌────────────────────────────────────┐
+│    Emergent Learning Framework     │
+├────────────────────────────────────┤
+│                                    │
+│      █████▒  █▒     █████▒         │
+│      █▒      █▒     █▒             │
+│      ████▒   █▒     ████▒          │
+│      █▒      █▒     █▒             │
+│      █████▒  █████▒ █▒             │
+│                                    │
+└────────────────────────────────────┘
+
+Start Dashboard? [Y/n]
+   ```
    Start command (handles port detection, skips if already running):
    ```bash
    bash ~/.claude/emergent-learning/dashboard-app/run-dashboard.sh
