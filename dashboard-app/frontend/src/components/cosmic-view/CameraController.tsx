@@ -18,10 +18,18 @@ export function CameraController() {
   const targetRef = useRef(new THREE.Vector3(...cameraTarget))
   const currentTarget = useRef(new THREE.Vector3(...cameraTarget))
   const targetDistance = useRef(cameraDistance)
+  const isAnimating = useRef(false)
+  const animationTimer = useRef<number | null>(null)
 
   // Update target when store changes
   useEffect(() => {
     targetRef.current.set(...cameraTarget)
+    // Start animating toward new target
+    isAnimating.current = true
+    if (animationTimer.current) clearTimeout(animationTimer.current)
+    animationTimer.current = window.setTimeout(() => {
+      isAnimating.current = false
+    }, 1500) // Stop auto-animation after 1.5s
   }, [cameraTarget])
 
   // Update target distance when selection changes
@@ -31,24 +39,33 @@ export function CameraController() {
     } else {
       targetDistance.current = 80 // Default view of central system
     }
+    // Start animating toward new distance
+    isAnimating.current = true
+    if (animationTimer.current) clearTimeout(animationTimer.current)
+    animationTimer.current = window.setTimeout(() => {
+      isAnimating.current = false
+    }, 1500) // Stop auto-animation after 1.5s
   }, [selectedBody])
 
-  // Smooth camera movement
+  // Smooth camera movement - only when animating (selection change), not during user interaction
   useFrame((_, delta) => {
     if (!controlsRef.current) return
 
-    // Lerp current target toward desired target
-    currentTarget.current.lerp(targetRef.current, delta * 2)
+    // Only animate camera position/target when triggered by selection change
+    if (isAnimating.current) {
+      // Lerp current target toward desired target
+      currentTarget.current.lerp(targetRef.current, delta * 2)
 
-    // Update controls target
-    controlsRef.current.target.copy(currentTarget.current)
+      // Update controls target
+      controlsRef.current.target.copy(currentTarget.current)
 
-    // Smooth zoom in/out
-    const currentDist = camera.position.distanceTo(currentTarget.current)
-    if (Math.abs(currentDist - targetDistance.current) > 1) {
-      const direction = camera.position.clone().sub(currentTarget.current).normalize()
-      const newDist = THREE.MathUtils.lerp(currentDist, targetDistance.current, delta * 2)
-      camera.position.copy(currentTarget.current).add(direction.multiplyScalar(newDist))
+      // Smooth zoom in/out
+      const currentDist = camera.position.distanceTo(currentTarget.current)
+      if (Math.abs(currentDist - targetDistance.current) > 1) {
+        const direction = camera.position.clone().sub(currentTarget.current).normalize()
+        const newDist = THREE.MathUtils.lerp(currentDist, targetDistance.current, delta * 2)
+        camera.position.copy(currentTarget.current).add(direction.multiplyScalar(newDist))
+      }
     }
   })
 

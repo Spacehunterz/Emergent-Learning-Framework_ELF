@@ -12,6 +12,7 @@ import type { CosmicViewProps } from './types'
 export function CosmicView({
   hotspots,
   onSelect,
+  onOpenInEditor,
   selectedDomain,
   onDomainFilter,
 }: CosmicViewProps) {
@@ -54,7 +55,7 @@ export function CosmicView({
   // No data state
   if (cosmicData.totalBodies === 0) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-slate-900/30">
+      <div className="relative h-[600px] flex items-center justify-center bg-slate-900/30 rounded-lg border border-slate-700">
         <div className="text-center">
           <div className="mb-2 text-4xl">🌌</div>
           <p className="text-slate-400">No hotspots to visualize</p>
@@ -67,8 +68,8 @@ export function CosmicView({
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col">
-      {/* Full screen 3D canvas */}
+    <div className="relative h-[600px] flex flex-col rounded-lg overflow-hidden border border-slate-700">
+      {/* 3D canvas container */}
       <div className="relative flex-1">
         <CosmicCanvas cosmicData={cosmicData} onSelectBody={handleSelectBody} />
 
@@ -106,7 +107,11 @@ export function CosmicView({
       {selectedBodyData && (
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 to-transparent">
           <div className="max-w-4xl mx-auto">
-            <CosmicDetailPanel body={selectedBodyData} onClose={clearSelection} />
+            <CosmicDetailPanel
+              body={selectedBodyData}
+              onClose={clearSelection}
+              onOpenInEditor={onOpenInEditor}
+            />
           </div>
         </div>
       )}
