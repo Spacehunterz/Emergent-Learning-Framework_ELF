@@ -1,5 +1,58 @@
 # Migration Guide
 
+## v0.2.0 Async Migration (Breaking Change)
+
+**v0.2.0** migrates QuerySystem to async using `peewee-aio` + `aiosqlite`.
+
+### What Changed
+
+| Before (v0.1.x) | After (v0.2.0) |
+|-----------------|----------------|
+| `qs = QuerySystem()` | `qs = await QuerySystem.create()` |
+| `qs.query_by_domain(...)` | `await qs.query_by_domain(...)` |
+| `qs.cleanup()` | `await qs.cleanup()` |
+
+### Quick Migration
+
+```python
+# Before (v0.1.x)
+from query import QuerySystem
+qs = QuerySystem()
+result = qs.build_context("task")
+
+# After (v0.2.0)
+import asyncio
+from query import QuerySystem
+
+async def main():
+    qs = await QuerySystem.create()
+    try:
+        result = await qs.build_context("task")
+    finally:
+        await qs.cleanup()
+
+asyncio.run(main())
+```
+
+### CLI Unchanged
+
+The CLI handles async internally - no changes needed:
+```bash
+python -m query --context
+python -m query --stats
+```
+
+### Performance
+
+| Workload | Speedup |
+|----------|---------|
+| Pure DB queries | ~1.3x |
+| Mixed I/O (DB + network) | ~2.9x |
+
+See [query/MIGRATION.md](../query/MIGRATION.md) for detailed migration guide.
+
+---
+
 ## From Plain Claude Code
 
 **Step 1: Backup**

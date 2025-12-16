@@ -4,26 +4,71 @@
 
 ```bash
 # Build full context (what agents see)
-python ~/.claude/emergent-learning/query/query.py --context
+python -m query --context
 
 # Query by domain
-python ~/.claude/emergent-learning/query/query.py --domain testing
+python -m query --domain testing
 
 # Query by tags
-python ~/.claude/emergent-learning/query/query.py --tags api,error
+python -m query --tags api,error
 
 # Get recent learnings
-python ~/.claude/emergent-learning/query/query.py --recent 10
+python -m query --recent 10
 
 # View statistics
-python ~/.claude/emergent-learning/query/query.py --stats
+python -m query --stats
 
 # Validate database
-python ~/.claude/emergent-learning/query/query.py --validate
+python -m query --validate
 
-# Export learnings
-python ~/.claude/emergent-learning/query/query.py --export > backup.json
+# Health check (meta-observer)
+python -m query --health-check
+
+# Output formats
+python -m query --stats --format json
+python -m query --recent 20 --format csv
 ```
+
+## Programmatic Usage (v0.2.0+)
+
+QuerySystem uses async/await for non-blocking operations:
+
+```python
+import asyncio
+from query import QuerySystem
+
+async def main():
+    qs = await QuerySystem.create()
+    try:
+        # Single query
+        context = await qs.build_context("My task", domain="debugging")
+
+        # Concurrent queries (2.9x faster for mixed workloads)
+        context, stats, recent = await asyncio.gather(
+            qs.build_context("task"),
+            qs.get_statistics(),
+            qs.query_recent(limit=5)
+        )
+    finally:
+        await qs.cleanup()
+
+asyncio.run(main())
+```
+
+### Available Methods
+
+| Method | Description |
+|--------|-------------|
+| `await qs.build_context(task, domain, tags)` | Build full agent context |
+| `await qs.get_golden_rules()` | Get constitutional rules |
+| `await qs.query_by_domain(domain, limit)` | Query by domain |
+| `await qs.query_by_tags(tags, limit)` | Query by tags |
+| `await qs.query_recent(limit)` | Get recent learnings |
+| `await qs.get_statistics()` | Get knowledge base stats |
+| `await qs.get_decisions(domain)` | Get architecture decisions |
+| `await qs.get_assumptions(domain)` | Get assumptions |
+| `await qs.get_invariants(domain)` | Get invariants |
+| `await qs.validate_database()` | Validate DB integrity |
 
 ## Session Search
 
