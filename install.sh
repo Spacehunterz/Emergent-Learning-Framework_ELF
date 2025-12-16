@@ -142,18 +142,30 @@ echo -e "${YELLOW}[Step 3/5]${NC} Installing core components..."
 SRC_DIR="$SCRIPT_DIR"
 
 # Copy core files
-cp "$SRC_DIR/query/query.py" "$EMERGENT_LEARNING_DIR/query/query.py"
-cp "$SRC_DIR/query/models.py" "$EMERGENT_LEARNING_DIR/query/models.py" 2>/dev/null || true
+# Copy all query Python files (query.py, models.py, exceptions.py, utils.py, validators.py, etc.)
+cp "$SRC_DIR/query/"*.py "$EMERGENT_LEARNING_DIR/query/" 2>/dev/null || true
+# Copy queries subdirectory with query mixins
+if [ -d "$SRC_DIR/query/queries" ]; then
+    cp -r "$SRC_DIR/query/queries" "$EMERGENT_LEARNING_DIR/query/" 2>/dev/null || true
+fi
 cp "$SRC_DIR/templates/golden-rules.md" "$EMERGENT_LEARNING_DIR/memory/golden-rules.md"
 cp "$SRC_DIR/templates/init_db.sql" "$EMERGENT_LEARNING_DIR/memory/init_db.sql"
 echo -e "  ${GREEN}Copied query system${NC}"
 
 # Install core Python dependencies
-pip install -q peewee 2>&1 || pip3 install -q peewee 2>&1
-echo -e "  ${GREEN}Installed Python dependencies (peewee)${NC}"
+if [ -f "$SRC_DIR/requirements.txt" ]; then
+    pip install -q -r "$SRC_DIR/requirements.txt" 2>&1 || pip3 install -q -r "$SRC_DIR/requirements.txt" 2>&1
+    echo -e "  ${GREEN}Installed Python dependencies (from requirements.txt)${NC}"
+else
+    pip install -q peewee 2>&1 || pip3 install -q peewee 2>&1
+    echo -e "  ${GREEN}Installed Python dependencies (peewee)${NC}"
+fi
 
 # Copy hooks
 # Hooks stay in emergent-learning directory (not copied to ~/.claude/hooks/)
+if [ -d "$SRC_DIR/hooks" ]; then
+    cp -r "$SRC_DIR/hooks" "$EMERGENT_LEARNING_DIR/" 2>/dev/null || true
+fi
 echo -e "  ${GREEN}Copied learning hooks${NC}"
 
 # Copy scripts
