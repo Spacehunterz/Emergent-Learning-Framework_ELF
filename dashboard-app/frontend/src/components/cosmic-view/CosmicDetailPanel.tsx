@@ -4,9 +4,10 @@ import type { CelestialBody } from './types'
 interface CosmicDetailPanelProps {
   body: CelestialBody
   onClose: () => void
+  onOpenInEditor?: (path: string, line?: number) => void
 }
 
-export function CosmicDetailPanel({ body, onClose }: CosmicDetailPanelProps) {
+export function CosmicDetailPanel({ body, onClose, onOpenInEditor }: CosmicDetailPanelProps) {
   // Format recency as human readable
   const getRecencyLabel = (recency: number) => {
     if (recency > 0.8) return 'Very Recent'
@@ -58,7 +59,7 @@ export function CosmicDetailPanel({ body, onClose }: CosmicDetailPanelProps) {
   }
 
   return (
-    <div className="bg-slate-800/80 backdrop-blur-sm rounded-lg p-4 animate-in slide-in-from-bottom-2 duration-200 max-h-[80vh] overflow-y-auto custom-scrollbar">
+    <div className="bg-slate-800/80 backdrop-blur-sm rounded-lg p-4 animate-in slide-in-from-bottom-2 duration-200">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
@@ -140,7 +141,10 @@ export function CosmicDetailPanel({ body, onClose }: CosmicDetailPanelProps) {
         <div className="text-xs text-slate-500">
           Directory: <span className="text-slate-400">{body.directory}</span>
         </div>
-        <button className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors">
+        <button
+          onClick={() => onOpenInEditor?.(body.location)}
+          className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors"
+        >
           <ExternalLink className="w-3 h-3" />
           Open in Editor
         </button>
