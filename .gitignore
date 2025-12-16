@@ -28,3 +28,4 @@ wiki-repo/
 .claude/
 desktop.ini
 sessions/.processed
+workflows/*/output/

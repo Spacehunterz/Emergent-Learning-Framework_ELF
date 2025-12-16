@@ -1,0 +1,32 @@
+name: deep-research
+description: Multi-step deep research workflow for complex topics
+author: ELF
+
+# Step configuration
+steps_dir: steps
+output_dir: output
+output_file: research-output.md
+
+# Workflow metadata
+category: research
+estimated_steps: 5
+resumable: true
+
+# Variables available in steps
+variables:
+  topic: null  # Set at runtime
+  depth: thorough
+  sources: ["web", "codebase", "knowledge-base"]
+
+# Agent recommendations
+suggested_agents:
+  lead: researcher
+  support: [architect, skeptic]
+
+# Triggers for auto-suggestion
+triggers:
+  - "deep dive"
+  - "research"
+  - "investigate"
+  - "understand how"
+  - "analyze"
