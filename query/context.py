@@ -24,6 +24,23 @@ try:
 except ImportError:
     pass
 
+# Plan-postmortem is optional
+PLAN_POSTMORTEM_AVAILABLE = False
+try:
+    try:
+        from query.plan_postmortem import (
+            get_active_plans, get_recent_postmortems,
+            format_plans_for_context, format_postmortems_for_context
+        )
+    except ImportError:
+        from plan_postmortem import (
+            get_active_plans, get_recent_postmortems,
+            format_plans_for_context, format_postmortems_for_context
+        )
+    PLAN_POSTMORTEM_AVAILABLE = True
+except ImportError:
+    pass
+
 
 def get_depth_limits(depth: str) -> dict:
     """Get query limits based on depth level."""
@@ -330,6 +347,21 @@ class ContextBuilderMixin:
                         approx_tokens += len(entry) // 4
                     decisions_count = len(decisions)
 
+                # Add active plans and recent postmortems (plan-postmortem learning)
+                if PLAN_POSTMORTEM_AVAILABLE:
+                    try:
+                        active_plans = get_active_plans(domain=domain, limit=3)
+                        if active_plans:
+                            plans_output = format_plans_for_context(active_plans)
+                            context_parts.append("\n" + plans_output)
+                            approx_tokens += len(plans_output) // 4
+                        recent_postmortems = get_recent_postmortems(domain=domain, limit=3)
+                        if recent_postmortems:
+                            postmortems_output = format_postmortems_for_context(recent_postmortems)
+                            context_parts.append("\n" + postmortems_output)
+                            approx_tokens += len(postmortems_output) // 4
+                    except Exception as e:
+                        self._log_debug(f"Failed to fetch plans/postmortems: {e}")
 
                 # Add invariants (what must always be true)
                 invariants = await self.get_invariants(domain=domain, status='active', limit=limits['invariants'], timeout=timeout)
