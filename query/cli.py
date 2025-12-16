@@ -144,7 +144,9 @@ async def _async_main(args: argparse.Namespace) -> int:
             task = "Agent task context generation"
             domain = args.domain
             tags = args.tags.split(',') if args.tags else None
-            result = await query_system.build_context(task, domain, tags, args.max_tokens, args.timeout)
+            result = await query_system.build_context(
+                task, domain, tags, args.max_tokens, args.timeout, depth=args.depth
+            )
             print(result)
             return exit_code
 
@@ -298,6 +300,10 @@ Error Codes:
     # Basic arguments
     parser.add_argument('--base-path', type=str, help='Base path to emergent-learning directory')
     parser.add_argument('--context', action='store_true', help='Build full context for agents')
+    parser.add_argument('--depth', choices=['minimal', 'standard', 'deep'], default='standard',
+                       help='Context depth: minimal (golden rules only ~500 tokens), '
+                            'standard (+ domain heuristics, default), '
+                            'deep (+ experiments, ADRs, all learnings ~5k tokens)')
     parser.add_argument('--domain', type=str, help='Query by domain')
     parser.add_argument('--tags', type=str, help='Query by tags (comma-separated)')
     parser.add_argument('--recent', type=int, metavar='N', help='Get N recent learnings')

@@ -32,7 +32,8 @@ class ContextBuilderMixin:
         domain: Optional[str] = None,
         tags: Optional[List[str]] = None,
         max_tokens: int = 5000,
-        timeout: int = None
+        timeout: int = None,
+        depth: str = 'standard'
     ) -> str:
         """
         Build a context string for agents with tiered retrieval (async).
@@ -41,12 +42,18 @@ class ContextBuilderMixin:
         Tier 2: Domain-specific heuristics and tag-matched learnings
         Tier 3: Recent context if tokens remain
 
+        Depth levels control how much context is loaded:
+        - minimal: Golden rules only (~500 tokens) - for quick tasks
+        - standard: + domain heuristics and learnings (default)
+        - deep: + experiments, ADRs, all recent learnings (~5k tokens)
+
         Args:
             task: Description of the task for context
             domain: Optional domain to focus on
             tags: Optional tags to match
             max_tokens: Maximum tokens to use (approximate, based on ~4 chars/token)
             timeout: Query timeout in seconds (default: 30)
+            depth: Context depth level ('minimal', 'standard', 'deep')
 
         Returns:
             Formatted context string for agent consumption
@@ -80,7 +87,11 @@ class ContextBuilderMixin:
                 max_tokens = self.MAX_TOKENS
             timeout = timeout or self.DEFAULT_TIMEOUT * 2  # Context building may take longer
 
-            self._log_debug(f"Building context (domain={domain}, tags={tags}, max_tokens={max_tokens})")
+            # Validate depth parameter
+            if depth not in ('minimal', 'standard', 'deep'):
+                depth = 'standard'
+
+            self._log_debug(f"Building context (domain={domain}, tags={tags}, max_tokens={max_tokens}, depth={depth})")
             async with AsyncTimeoutHandler(timeout):
                 context_parts = []
                 approx_tokens = 0
@@ -93,6 +104,14 @@ class ContextBuilderMixin:
                 context_parts.append("\n")
                 approx_tokens += len(golden_rules) // 4
                 golden_rules_returned = 1  # Flag that golden rules were included
+
+                # For minimal depth, return just golden rules (~500 tokens)
+                if depth == 'minimal':
+                    building_header = "🏢 [94mBuilding Status[0m (minimal)\n━━━━━━━━━━━━━━━━━━\n\n"
+                    context_parts.insert(0, f"{building_header}# Task Context\n\n{task}\n\n---\n\n")
+                    result = "".join(context_parts)
+                    self._log_debug(f"Built minimal context with ~{len(result)//4} tokens")
+                    return result
 
                 # Check for similar failures (early warning system)
                 similar_failures = await self.find_similar_failures(task)

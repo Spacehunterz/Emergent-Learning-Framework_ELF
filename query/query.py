@@ -1640,7 +1640,8 @@ class QuerySystem:
         domain: Optional[str] = None,
         tags: Optional[List[str]] = None,
         max_tokens: int = 5000,
-        timeout: int = None
+        timeout: int = None,
+        depth: str = 'standard'
     ) -> str:
         """
         Build a context string for agents with tiered retrieval.
@@ -1649,12 +1650,18 @@ class QuerySystem:
         Tier 2: Domain-specific heuristics and tag-matched learnings
         Tier 3: Recent context if tokens remain
 
+        Depth levels control how much context is loaded:
+        - minimal: Golden rules only (~500 tokens) - for quick tasks
+        - standard: + domain heuristics and learnings (default)
+        - deep: + experiments, ADRs, all recent learnings (~5k tokens)
+
         Args:
             task: Description of the task for context
             domain: Optional domain to focus on
             tags: Optional tags to match
             max_tokens: Maximum tokens to use (approximate, based on ~4 chars/token)
             timeout: Query timeout in seconds (default: 30)
+            depth: Context depth level ('minimal', 'standard', 'deep')
 
         Returns:
             Formatted context string for agent consumption
@@ -1688,7 +1695,11 @@ class QuerySystem:
                 max_tokens = self.MAX_TOKENS
             timeout = timeout or self.DEFAULT_TIMEOUT * 2  # Context building may take longer
 
-            self._log_debug(f"Building context (domain={domain}, tags={tags}, max_tokens={max_tokens})")
+            # Validate depth parameter
+            if depth not in ('minimal', 'standard', 'deep'):
+                depth = 'standard'
+
+            self._log_debug(f"Building context (domain={domain}, tags={tags}, max_tokens={max_tokens}, depth={depth})")
             with TimeoutHandler(timeout):
                 context_parts = []
                 approx_tokens = 0
@@ -1702,7 +1713,24 @@ class QuerySystem:
                 approx_tokens += len(golden_rules) // 4
                 golden_rules_returned = 1  # Flag that golden rules were included
 
-                # Check for similar failures (early warning system)
+                # For minimal depth, return just golden rules
+                if depth == 'minimal':
+                    result = "".join(context_parts)
+                    duration_ms = self._get_current_time_ms() - start_time
+                    self._log_query(
+                        query_type='build_context',
+                        domain=domain,
+                        tags=','.join(tags) if tags else None,
+                        max_tokens_requested=max_tokens,
+                        tokens_approximated=approx_tokens,
+                        duration_ms=duration_ms,
+                        status='success',
+                        golden_rules_returned=golden_rules_returned,
+                        query_summary=f"Minimal depth context (golden rules only)"
+                    )
+                    return result
+
+                # Check for similar failures (early warning system) - standard/deep only
                 similar_failures = self.find_similar_failures(task)
                 if similar_failures:
                     context_parts.append("\n## ⚠️ Similar Failures Detected\n\n")
@@ -2160,6 +2188,10 @@ Error Codes:
     # Basic arguments
     parser.add_argument('--base-path', type=str, help='Base path to emergent-learning directory')
     parser.add_argument('--context', action='store_true', help='Build full context for agents')
+    parser.add_argument('--depth', choices=['minimal', 'standard', 'deep'], default='standard',
+                       help='Context depth: minimal (golden rules only ~500 tokens), '
+                            'standard (+ domain heuristics, default), '
+                            'deep (+ experiments, ADRs, all learnings ~5k tokens)')
     parser.add_argument('--domain', type=str, help='Query by domain')
     parser.add_argument('--tags', type=str, help='Query by tags (comma-separated)')
     parser.add_argument('--recent', type=int, metavar='N', help='Get N recent learnings')
@@ -2288,7 +2320,9 @@ Error Codes:
             task = "Agent task context generation"
             domain = args.domain
             tags = args.tags.split(',') if args.tags else None
-            result = query_system.build_context(task, domain, tags, args.max_tokens, args.timeout)
+            result = query_system.build_context(
+                task, domain, tags, args.max_tokens, args.timeout, depth=args.depth
+            )
             print(result)
             return exit_code
 

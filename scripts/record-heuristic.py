@@ -193,15 +193,113 @@ def preflight_check() -> bool:
     return True
 
 
+def check_similar_heuristics(domain: str, rule: str) -> list:
+    """
+    Check for existing similar heuristics in the same domain.
+
+    Returns list of similar heuristics (id, rule, confidence).
+    """
+    query = """
+        SELECT id, rule, confidence
+        FROM heuristics
+        WHERE domain = ?
+        ORDER BY confidence DESC
+    """
+    success, results = sqlite_with_retry(DB_PATH, query, (domain,))
+
+    if not success or not results:
+        return []
+
+    # Simple word overlap check for similarity
+    rule_words = set(rule.lower().split())
+    similar = []
+
+    for row in results:
+        existing_words = set(row['rule'].lower().split())
+        overlap = len(rule_words & existing_words)
+        total = len(rule_words | existing_words)
+
+        if total > 0 and (overlap / total) > 0.5:  # >50% word overlap
+            similar.append({
+                'id': row['id'],
+                'rule': row['rule'],
+                'confidence': row['confidence'],
+                'similarity': overlap / total
+            })
+
+    return sorted(similar, key=lambda x: x['similarity'], reverse=True)[:3]
+
+
+def validate_heuristic_quality(rule: str, explanation: str) -> dict:
+    """
+    Validate heuristic quality against checklist criteria.
+
+    Returns dict with 'passed', 'warnings', and 'suggestions'.
+    """
+    warnings = []
+    suggestions = []
+
+    # Check 1: Is it actionable? (Should contain action verbs)
+    action_verbs = ['always', 'never', 'use', 'avoid', 'check', 'ensure',
+                    'prefer', 'validate', 'test', 'verify', 'before', 'after',
+                    'when', 'if', 'do', 'dont', "don't", 'should', 'must']
+    rule_lower = rule.lower()
+    has_action = any(verb in rule_lower for verb in action_verbs)
+
+    if not has_action:
+        warnings.append("Rule may not be actionable (no action verbs found)")
+        suggestions.append("Consider rephrasing as 'Always X', 'Never Y', or 'When Z, do W'")
+
+    # Check 2: Is it specific enough? (Not too short)
+    if len(rule.split()) < 4:
+        warnings.append("Rule is very short - may be too vague")
+        suggestions.append("Add context: when does this apply? what's the scope?")
+
+    # Check 3: Is it too long? (Should be memorable)
+    if len(rule.split()) > 20:
+        warnings.append("Rule is long - may be hard to remember")
+        suggestions.append("Consider splitting into multiple rules or shortening")
+
+    # Check 4: Does it have an explanation?
+    if not explanation or len(explanation.strip()) < 10:
+        warnings.append("No explanation provided")
+        suggestions.append("Add WHY this heuristic works - future agents need context")
+
+    # Check 5: Is it testable? (Contains conditions or measurable outcomes)
+    testable_indicators = ['if', 'when', 'before', 'after', 'until', 'unless',
+                          'error', 'fail', 'success', 'works', 'breaks']
+    has_testable = any(ind in rule_lower for ind in testable_indicators)
+
+    if not has_testable:
+        warnings.append("May be hard to validate (no clear conditions)")
+        suggestions.append("Consider adding: 'When X happens...' or 'To prevent Y...'")
+
+    return {
+        'passed': len(warnings) == 0,
+        'warnings': warnings,
+        'suggestions': suggestions,
+        'score': max(0, 5 - len(warnings))  # Quality score out of 5
+    }
+
+
 def record_heuristic(
     domain: str,
     rule: str,
     explanation: str = "",
     source_type: str = "observation",
-    confidence: float = 0.7
+    confidence: float = 0.7,
+    skip_validation: bool = False
 ) -> Optional[int]:
     """
     Record a heuristic to the database and markdown file.
+
+    Args:
+        domain: Domain for the heuristic
+        rule: The heuristic rule/statement
+        explanation: Why this heuristic works
+        source_type: failure|success|observation
+        confidence: 0.0-1.0 confidence level
+        skip_validation: Skip quality checks (use with caution)
 
     Returns: heuristic ID if successful, None otherwise
     """
@@ -233,6 +331,38 @@ def record_heuristic(
     # Validate confidence
     if not (0.0 <= confidence <= 1.0):
         confidence = 0.7
+
+    # === QUALITY VALIDATION CHECKLIST ===
+    if not skip_validation:
+        print("\n--- Quality Validation ---")
+
+        # Check for similar existing heuristics
+        similar = check_similar_heuristics(domain, rule)
+        if similar:
+            print(f"\nSimilar heuristics found in '{domain}':")
+            for s in similar:
+                print(f"  [{s['id']}] {s['rule'][:60]}... ({s['similarity']*100:.0f}% similar)")
+            print("  Consider updating existing heuristic instead of adding duplicate.")
+            log("WARN", f"Similar heuristics found: {[s['id'] for s in similar]}")
+
+        # Run quality checks
+        quality = validate_heuristic_quality(rule, explanation)
+        print(f"\nQuality Score: {quality['score']}/5")
+
+        if quality['warnings']:
+            print("\nWarnings:")
+            for w in quality['warnings']:
+                print(f"  - {w}")
+
+        if quality['suggestions']:
+            print("\nSuggestions:")
+            for s in quality['suggestions']:
+                print(f"  - {s}")
+
+        if not quality['passed']:
+            log("WARN", f"Quality validation warnings: {quality['warnings']}")
+
+        print("--- End Validation ---\n")
 
     log("INFO", f"Recording heuristic: {rule} (domain: {domain}, confidence: {confidence})")
 
@@ -365,6 +495,8 @@ Examples:
                        help='Source type (default: observation)')
     parser.add_argument('--confidence', type=str, default='0.7',
                        help='Confidence level 0.0-1.0 or low/medium/high (default: 0.7)')
+    parser.add_argument('--skip-validation', action='store_true',
+                       help='Skip quality validation checks (use with caution)')
 
     args = parser.parse_args()
 
@@ -414,6 +546,7 @@ Examples:
         explanation=data['explanation'],
         source_type=data['source_type'],
         confidence=data['confidence'],
+        skip_validation=args.skip_validation,
     )
 
     if heuristic_id is None:
