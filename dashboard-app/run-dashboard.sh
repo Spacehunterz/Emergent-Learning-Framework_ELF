@@ -67,7 +67,20 @@ else
     echo "[Starting] Backend API server..."
     cd "$BACKEND_PATH" && $PYTHON_CMD -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT &
     STARTED_SERVERS=true
-    sleep 3
+
+    # Wait for backend to be ready (polls until healthy, max 60s)
+    echo -n "[Waiting] Backend initializing"
+    for i in {1..60}; do
+        if curl -s "http://localhost:$BACKEND_PORT/api/stats" >/dev/null 2>&1; then
+            echo " ready!"
+            break
+        fi
+        echo -n "."
+        sleep 1
+        if [ $i -eq 60 ]; then
+            echo " timeout (continuing anyway)"
+        fi
+    done
 fi
 
 # Detect package manager
@@ -96,7 +109,7 @@ else
     echo "[Starting] Frontend dev server (using $PKG_MGR)..."
     cd "$FRONTEND_PATH" && $PKG_MGR run dev &
     STARTED_SERVERS=true
-    sleep 4
+    sleep 2
 fi
 
 # Open browser
