@@ -30,12 +30,23 @@ try:
 except ImportError:
     YAML_AVAILABLE = False
 
-from frontmatter import (
-    parse_frontmatter,
-    format_frontmatter,
-    read_file_with_frontmatter,
-    update_file_frontmatter,
-)
+# Import from local frontmatter module (not third-party package)
+try:
+    # Try relative import first (when used as package)
+    from .frontmatter import (
+        parse_frontmatter,
+        format_frontmatter,
+        read_file_with_frontmatter,
+        update_file_frontmatter,
+    )
+except ImportError:
+    # Fall back to direct import (when query dir is in sys.path)
+    from frontmatter import (
+        parse_frontmatter,
+        format_frontmatter,
+        read_file_with_frontmatter,
+        update_file_frontmatter,
+    )
 
 
 class WorkflowStep:
