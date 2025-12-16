@@ -97,15 +97,21 @@ class ContextBuilderMixin:
                 approx_tokens = 0
                 max_chars = max_tokens * 4  # Rough approximation
 
-                # Tier 1: Golden Rules (always loaded)
-                golden_rules = await self.get_golden_rules()
-                context_parts.append("# TIER 1: [93mGolden Rules[0m\n")
+                # Tier 1: Golden Rules
+                # For minimal depth, only load 'core' category rules
+                if depth == 'minimal':
+                    golden_rules = await self.get_golden_rules(categories=['core'])
+                    context_parts.append("# TIER 1: [93mGolden Rules[0m (core only)\n")
+                else:
+                    golden_rules = await self.get_golden_rules()
+                    context_parts.append("# TIER 1: [93mGolden Rules[0m\n")
+
                 context_parts.append(golden_rules)
                 context_parts.append("\n")
                 approx_tokens += len(golden_rules) // 4
                 golden_rules_returned = 1  # Flag that golden rules were included
 
-                # For minimal depth, return just golden rules (~500 tokens)
+                # For minimal depth, return just core golden rules (~300 tokens)
                 if depth == 'minimal':
                     building_header = "🏢 [94mBuilding Status[0m (minimal)\n━━━━━━━━━━━━━━━━━━\n\n"
                     context_parts.insert(0, f"{building_header}# Task Context\n\n{task}\n\n---\n\n")

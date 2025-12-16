@@ -23,12 +23,17 @@ from .base import BaseQueryMixin
 class HeuristicQueryMixin(BaseQueryMixin):
     """Mixin for heuristic and golden rule queries (async)."""
 
-    async def get_golden_rules(self) -> str:
+    async def get_golden_rules(self, categories: Optional[List[str]] = None) -> str:
         """
         Read and return golden rules from memory/golden-rules.md (async).
 
+        Args:
+            categories: Optional list of categories to filter by (e.g., ['core', 'git']).
+                       If None, returns all rules.
+
         Returns:
-            Content of golden rules file, or empty string if file does not exist.
+            Content of golden rules file (filtered by category if specified),
+            or empty string if file does not exist.
         """
         if not self.golden_rules_path.exists():
             return "# Golden Rules\n\nNo golden rules have been established yet."
@@ -36,12 +41,83 @@ class HeuristicQueryMixin(BaseQueryMixin):
         try:
             async with aiofiles.open(self.golden_rules_path, 'r', encoding='utf-8') as f:
                 content = await f.read()
-            self._log_debug(f"Loaded golden rules ({len(content)} chars)")
-            return content
+
+            # If no category filter, return everything
+            if not categories:
+                self._log_debug(f"Loaded golden rules ({len(content)} chars)")
+                return content
+
+            # Parse and filter by category
+            filtered = self._filter_golden_rules_by_category(content, categories)
+            self._log_debug(f"Loaded golden rules filtered by {categories} ({len(filtered)} chars)")
+            return filtered
+
         except Exception as e:
             error_msg = f"# Error Reading Golden Rules\n\nError: {str(e)}"
             self._log_debug(f"Failed to read golden rules: {e}")
             return error_msg
+
+    def _filter_golden_rules_by_category(self, content: str, categories: List[str]) -> str:
+        """
+        Filter golden rules markdown content by category.
+
+        Args:
+            content: Full golden rules markdown content
+            categories: List of categories to include
+
+        Returns:
+            Filtered markdown with only rules matching categories
+        """
+        import re
+
+        # Normalize categories to lowercase for comparison
+        categories_lower = [c.lower() for c in categories]
+
+        lines = content.split('\n')
+        result_lines = []
+        in_rule = False
+        current_rule_lines = []
+        include_current = False
+
+        # Always include header
+        header_ended = False
+
+        for line in lines:
+            # Check for rule header (## N. Title)
+            if re.match(r'^## \d+\.', line):
+                # Save previous rule if it should be included
+                if in_rule and include_current:
+                    result_lines.extend(current_rule_lines)
+
+                # Start new rule
+                in_rule = True
+                current_rule_lines = [line]
+                include_current = False
+                header_ended = True
+
+            elif in_rule:
+                current_rule_lines.append(line)
+
+                # Check for category line
+                if line.startswith('**Category:**'):
+                    category_match = re.search(r'\*\*Category:\*\*\s*(.+)', line)
+                    if category_match:
+                        rule_category = category_match.group(1).strip().lower()
+                        if rule_category in categories_lower:
+                            include_current = True
+
+            elif not header_ended:
+                # Include file header (before first rule)
+                result_lines.append(line)
+
+        # Don't forget the last rule
+        if in_rule and include_current:
+            result_lines.extend(current_rule_lines)
+
+        # Add category filter note
+        filter_note = f"\n*[Filtered to categories: {', '.join(categories)}]*\n"
+
+        return '\n'.join(result_lines) + filter_note
 
     async def query_by_domain(self, domain: str, limit: int = 10, timeout: int = None) -> Dict[str, Any]:
         """
