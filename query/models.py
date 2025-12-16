@@ -1,57 +1,48 @@
 """
-Peewee ORM models for the Emergent Learning Framework.
+Peewee-AIO async ORM models for the Emergent Learning Framework.
 
-This module defines all database models using Peewee ORM, matching the existing
-SQLite schema exactly. Designed for incremental migration from raw sqlite3.
+This module defines all database models using peewee-aio for async support,
+matching the existing SQLite schema exactly.
 
 Usage:
-    from models import db, initialize_database, Learning, Heuristic, ...
+    from models import manager, initialize_database, Learning, Heuristic, ...
 
-    # Initialize with path
-    initialize_database('~/.claude/emergent-learning/memory/index.db')
+    # Initialize with path (async)
+    await initialize_database('~/.claude/emergent-learning/memory/index.db')
 
-    # Query examples
-    recent = Heuristic.select().where(Heuristic.is_golden == True).limit(10)
-    learning = Learning.get_by_id(1)
+    # Query examples (async)
+    async with manager:
+        async for h in Heuristic.select().where(Heuristic.is_golden == True).limit(10):
+            print(h.rule)
 """
 
-from peewee import (
-    SqliteDatabase,
-    Model,
-    AutoField,
-    TextField,
-    IntegerField,
-    FloatField,
-    DateTimeField,
-    BooleanField,
-    ForeignKeyField,
-    Check,
-    SQL,
-)
+from peewee_aio import Manager, AIOModel, fields
+from peewee import Check
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 import os
 
 # -----------------------------------------------------------------------------
 # Database Configuration
 # -----------------------------------------------------------------------------
 
-# Deferred database - bound at runtime via initialize_database()
-db = SqliteDatabase(None)
+# Global manager - initialized at runtime via initialize_database()
+manager: Optional[Manager] = None
 
 
-def initialize_database(db_path: Optional[str] = None, pragmas: Optional[Dict] = None) -> SqliteDatabase:
+async def initialize_database(db_path: Optional[str] = None) -> Manager:
     """
-    Initialize the database connection.
+    Initialize the async database connection.
 
     Args:
         db_path: Path to SQLite database file. Defaults to ~/.claude/emergent-learning/memory/index.db
-        pragmas: Optional dict of SQLite pragmas to set
 
     Returns:
-        Configured SqliteDatabase instance
+        Configured Manager instance
     """
+    global manager
+
     if db_path is None:
         db_path = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
     else:
@@ -60,59 +51,125 @@ def initialize_database(db_path: Optional[str] = None, pragmas: Optional[Dict] =
     # Ensure parent directory exists
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Default pragmas for performance and safety
-    default_pragmas = {
-        'journal_mode': 'wal',
-        'cache_size': -64000,  # 64MB cache
-        'foreign_keys': 1,
-        'synchronous': 1,  # NORMAL - good balance of safety and speed
-    }
+    # Create manager with aiosqlite URL
+    # Note: aiosqlite uses file path directly (not traditional URL format for file DBs)
+    manager = Manager(f'aiosqlite:///{db_path}')
 
-    if pragmas:
-        default_pragmas.update(pragmas)
+    # Register all models with the manager
+    _register_all_models(manager)
 
-    db.init(str(db_path), pragmas=default_pragmas)
-    return db
+    return manager
 
 
-def create_tables():
-    """Create all tables if they don't exist."""
-    with db:
-        db.create_tables([
-            Learning,
-            Heuristic,
-            Experiment,
-            CeoReview,
-            Cycle,
-            Metric,
-            SystemHealth,
-            Violation,
-            SchemaVersion,
-            DbOperations,
-            Workflow,
-            WorkflowEdge,
-            WorkflowRun,
-            NodeExecution,
-            Trail,
-            ConductorDecision,
-            BuildingQuery,
-            SpikeReport,
-            Assumption,
-            SessionSummary,
-            Decision,
-            Invariant,
-        ])
+def _register_all_models(m: Manager):
+    """Register all model classes with the given manager."""
+    # Import models at function level to ensure they're defined
+    models_to_register = [
+        Learning,
+        Heuristic,
+        Experiment,
+        CeoReview,
+        Cycle,
+        Decision,
+        Invariant,
+        Violation,
+        SpikeReport,
+        Assumption,
+        Metric,
+        SystemHealth,
+        SchemaVersion,
+        DbOperations,
+        Workflow,
+        WorkflowEdge,
+        WorkflowRun,
+        NodeExecution,
+        Trail,
+        ConductorDecision,
+        BuildingQuery,
+        SessionSummary,
+    ]
+    for model in models_to_register:
+        m.register(model)
+
+
+def get_manager() -> Manager:
+    """Get the current manager instance. Raises if not initialized."""
+    if manager is None:
+        raise RuntimeError("Database not initialized. Call initialize_database() first.")
+    return manager
+
+
+async def create_tables():
+    """Create all tables if they don't exist (async)."""
+    m = get_manager()
+    async with m:
+        async with m.connection():
+            # Create all registered models' tables
+            for model in [
+                Learning,
+                Heuristic,
+                Experiment,
+                CeoReview,
+                Cycle,
+                Metric,
+                SystemHealth,
+                Violation,
+                SchemaVersion,
+                DbOperations,
+                Workflow,
+                WorkflowEdge,
+                WorkflowRun,
+                NodeExecution,
+                Trail,
+                ConductorDecision,
+                BuildingQuery,
+                SpikeReport,
+                Assumption,
+                SessionSummary,
+                Decision,
+                Invariant,
+            ]:
+                await model.create_table(safe=True)
+
+
+# Synchronous initialization for backward compatibility / CLI bootstrap
+def initialize_database_sync(db_path: Optional[str] = None) -> Manager:
+    """
+    Initialize database synchronously (for CLI bootstrap).
+
+    Args:
+        db_path: Path to SQLite database file.
+
+    Returns:
+        Configured Manager instance
+    """
+    global manager
+
+    if db_path is None:
+        db_path = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
+    else:
+        db_path = Path(db_path).expanduser()
+
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    manager = Manager(f'aiosqlite:///{db_path}')
+
+    # Register all models with the manager
+    _register_all_models(manager)
+
+    return manager
 
 
 # -----------------------------------------------------------------------------
 # Base Model
 # -----------------------------------------------------------------------------
 
-class BaseModel(Model):
+class BaseModel(AIOModel):
     """Base model class with common configuration."""
 
     class Meta:
-        database = db
+        # Manager will be set when @manager.register is called
+        pass
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert model instance to dictionary."""
@@ -128,22 +185,22 @@ class Learning(BaseModel):
 
     VALID_TYPES = ('failure', 'success', 'heuristic', 'experiment', 'observation')
 
-    id = AutoField()
-    type = TextField(
+    id = fields.AutoField()
+    type = fields.TextField(
         null=False,
         constraints=[Check("type IN ('failure', 'success', 'heuristic', 'experiment', 'observation')")]
     )
-    filepath = TextField(null=False)
-    title = TextField(null=False)
-    summary = TextField(null=True)
-    tags = TextField(null=True)  # Comma-separated
-    domain = TextField(null=True)
-    severity = IntegerField(
+    filepath = fields.TextField(null=False)
+    title = fields.TextField(null=False)
+    summary = fields.TextField(null=True)
+    tags = fields.TextField(null=True)  # Comma-separated
+    domain = fields.TextField(null=True)
+    severity = fields.IntegerField(
         default=3,
         constraints=[Check("severity >= 1 AND severity <= 5")]
     )
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
 
     class Meta:
         table_name = 'learnings'
@@ -159,27 +216,27 @@ class Learning(BaseModel):
 class Heuristic(BaseModel):
     """Extracted heuristics (learned patterns)."""
 
-    id = AutoField()
-    domain = TextField(null=False)
-    rule = TextField(null=False)
-    explanation = TextField(null=True)
-    source_type = TextField(null=True)
-    source_id = IntegerField(null=True)
-    confidence = FloatField(
+    id = fields.AutoField()
+    domain = fields.TextField(null=False)
+    rule = fields.TextField(null=False)
+    explanation = fields.TextField(null=True)
+    source_type = fields.TextField(null=True)
+    source_id = fields.IntegerField(null=True)
+    confidence = fields.FloatField(
         default=0.5,
         constraints=[Check("confidence >= 0.0 AND confidence <= 1.0")]
     )
-    times_validated = IntegerField(
+    times_validated = fields.IntegerField(
         default=0,
         constraints=[Check("times_validated >= 0")]
     )
-    times_violated = IntegerField(
+    times_violated = fields.IntegerField(
         default=0,
         constraints=[Check("times_violated >= 0")]
     )
-    is_golden = BooleanField(default=False)
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
+    is_golden = fields.BooleanField(default=False)
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
 
     class Meta:
         table_name = 'heuristics'
@@ -195,14 +252,14 @@ class Heuristic(BaseModel):
 class Experiment(BaseModel):
     """Active experiments."""
 
-    id = AutoField()
-    name = TextField(null=False, unique=True)
-    hypothesis = TextField(null=True)
-    status = TextField(default='active')
-    cycles_run = IntegerField(default=0)
-    folder_path = TextField(null=True)
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
+    id = fields.AutoField()
+    name = fields.TextField(null=False, unique=True)
+    hypothesis = fields.TextField(null=True)
+    status = fields.TextField(default='active')
+    cycles_run = fields.IntegerField(default=0)
+    folder_path = fields.TextField(null=True)
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
 
     class Meta:
         table_name = 'experiments'
@@ -214,13 +271,13 @@ class Experiment(BaseModel):
 class CeoReview(BaseModel):
     """CEO escalation requests."""
 
-    id = AutoField()
-    title = TextField(null=False)
-    context = TextField(null=True)
-    recommendation = TextField(null=True)
-    status = TextField(default='pending')
-    created_at = DateTimeField(default=datetime.utcnow)
-    reviewed_at = DateTimeField(null=True)
+    id = fields.AutoField()
+    title = fields.TextField(null=False)
+    context = fields.TextField(null=True)
+    recommendation = fields.TextField(null=True)
+    status = fields.TextField(default='pending')
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    reviewed_at = fields.DateTimeField(null=True)
 
     class Meta:
         table_name = 'ceo_reviews'
@@ -232,15 +289,15 @@ class CeoReview(BaseModel):
 class Cycle(BaseModel):
     """Experiment cycles."""
 
-    id = AutoField()
-    experiment = ForeignKeyField(Experiment, backref='cycles', null=True, on_delete='SET NULL')
-    cycle_number = IntegerField(null=True)
-    try_summary = TextField(null=True)
-    break_summary = TextField(null=True)
-    analysis = TextField(null=True)
-    learning_extracted = TextField(null=True)
-    heuristic = ForeignKeyField(Heuristic, backref='cycles', null=True, on_delete='SET NULL')
-    created_at = DateTimeField(default=datetime.utcnow)
+    id = fields.AutoField()
+    experiment = fields.AIODeferredForeignKey('Experiment', backref='cycles', null=True, on_delete='SET NULL')
+    cycle_number = fields.IntegerField(null=True)
+    try_summary = fields.TextField(null=True)
+    break_summary = fields.TextField(null=True)
+    analysis = fields.TextField(null=True)
+    learning_extracted = fields.TextField(null=True)
+    heuristic = fields.AIODeferredForeignKey('Heuristic', backref='cycles', null=True, on_delete='SET NULL')
+    created_at = fields.DateTimeField(default=datetime.utcnow)
 
     class Meta:
         table_name = 'cycles'
@@ -249,19 +306,19 @@ class Cycle(BaseModel):
 class Decision(BaseModel):
     """Architecture Decision Records (ADRs)."""
 
-    id = AutoField()
-    title = TextField(null=False)
-    context = TextField(null=False)
-    options_considered = TextField(null=True)
-    decision = TextField(null=False)
-    rationale = TextField(null=False)
-    files_touched = TextField(null=True)
-    tests_added = TextField(null=True)
-    status = TextField(default='accepted')
-    domain = TextField(null=True)
-    superseded_by = ForeignKeyField('self', backref='supersedes', null=True, on_delete='SET NULL')
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
+    id = fields.AutoField()
+    title = fields.TextField(null=False)
+    context = fields.TextField(null=False)
+    options_considered = fields.TextField(null=True)
+    decision = fields.TextField(null=False)
+    rationale = fields.TextField(null=False)
+    files_touched = fields.TextField(null=True)
+    tests_added = fields.TextField(null=True)
+    status = fields.TextField(default='accepted')
+    domain = fields.TextField(null=True)
+    superseded_by = fields.AIODeferredForeignKey('self', backref='supersedes', null=True, on_delete='SET NULL')
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
 
     class Meta:
         table_name = 'decisions'
@@ -276,20 +333,20 @@ class Decision(BaseModel):
 class Invariant(BaseModel):
     """Invariants - statements about what must always be true."""
 
-    id = AutoField()
-    statement = TextField(null=False)
-    rationale = TextField(null=False)
-    domain = TextField(null=True)
-    scope = TextField(default='codebase')  # codebase, module, function, runtime
-    validation_type = TextField(null=True)  # manual, automated, test
-    validation_code = TextField(null=True)
-    severity = TextField(default='error')  # error, warning, info
-    status = TextField(default='active')
-    violation_count = IntegerField(default=0)
-    last_validated_at = DateTimeField(null=True)
-    last_violated_at = DateTimeField(null=True)
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
+    id = fields.AutoField()
+    statement = fields.TextField(null=False)
+    rationale = fields.TextField(null=False)
+    domain = fields.TextField(null=True)
+    scope = fields.TextField(default='codebase')  # codebase, module, function, runtime
+    validation_type = fields.TextField(null=True)  # manual, automated, test
+    validation_code = fields.TextField(null=True)
+    severity = fields.TextField(default='error')  # error, warning, info
+    status = fields.TextField(default='active')
+    violation_count = fields.IntegerField(default=0)
+    last_validated_at = fields.DateTimeField(null=True)
+    last_violated_at = fields.DateTimeField(null=True)
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
 
     class Meta:
         table_name = 'invariants'
@@ -303,13 +360,13 @@ class Invariant(BaseModel):
 class Violation(BaseModel):
     """Golden rule violations (accountability tracking)."""
 
-    id = AutoField()
-    rule_id = IntegerField(null=False)
-    rule_name = TextField(null=False)
-    violation_date = DateTimeField(default=datetime.utcnow)
-    description = TextField(null=True)
-    session_id = TextField(null=True)
-    acknowledged = BooleanField(default=False)
+    id = fields.AutoField()
+    rule_id = fields.IntegerField(null=False)
+    rule_name = fields.TextField(null=False)
+    violation_date = fields.DateTimeField(default=datetime.utcnow)
+    description = fields.TextField(null=True)
+    session_id = fields.TextField(null=True)
+    acknowledged = fields.BooleanField(default=False)
 
     class Meta:
         table_name = 'violations'
@@ -323,20 +380,20 @@ class Violation(BaseModel):
 class SpikeReport(BaseModel):
     """Time-boxed research investigations."""
 
-    id = AutoField()
-    title = TextField(null=False)
-    topic = TextField(null=True)
-    question = TextField(null=True)
-    findings = TextField(null=True)
-    gotchas = TextField(null=True)
-    resources = TextField(null=True)
-    time_invested_minutes = IntegerField(null=True)
-    domain = TextField(null=True)
-    tags = TextField(null=True)
-    usefulness_score = FloatField(default=0)
-    access_count = IntegerField(default=0)
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
+    id = fields.AutoField()
+    title = fields.TextField(null=False)
+    topic = fields.TextField(null=True)
+    question = fields.TextField(null=True)
+    findings = fields.TextField(null=True)
+    gotchas = fields.TextField(null=True)
+    resources = fields.TextField(null=True)
+    time_invested_minutes = fields.IntegerField(null=True)
+    domain = fields.TextField(null=True)
+    tags = fields.TextField(null=True)
+    usefulness_score = fields.FloatField(default=0)
+    access_count = fields.IntegerField(default=0)
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
 
     class Meta:
         table_name = 'spike_reports'
@@ -353,24 +410,24 @@ class Assumption(BaseModel):
 
     VALID_STATUSES = ('active', 'verified', 'challenged', 'invalidated')
 
-    id = AutoField()
-    assumption = TextField(null=False)
-    context = TextField(null=True)
-    source = TextField(null=True)
-    confidence = FloatField(
+    id = fields.AutoField()
+    assumption = fields.TextField(null=False)
+    context = fields.TextField(null=True)
+    source = fields.TextField(null=True)
+    confidence = fields.FloatField(
         default=0.5,
         constraints=[Check("confidence >= 0.0 AND confidence <= 1.0")]
     )
-    status = TextField(
+    status = fields.TextField(
         default='active',
         constraints=[Check("status IN ('active', 'verified', 'challenged', 'invalidated')")]
     )
-    domain = TextField(null=True)
-    verified_count = IntegerField(default=0)
-    challenged_count = IntegerField(default=0)
-    last_verified_at = DateTimeField(null=True)
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
+    domain = fields.TextField(null=True)
+    verified_count = fields.IntegerField(default=0)
+    challenged_count = fields.IntegerField(default=0)
+    last_verified_at = fields.DateTimeField(null=True)
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
 
     class Meta:
         table_name = 'assumptions'
@@ -389,13 +446,13 @@ class Assumption(BaseModel):
 class Metric(BaseModel):
     """Real-time metrics."""
 
-    id = AutoField()
-    timestamp = DateTimeField(default=datetime.utcnow)
-    metric_type = TextField(null=False)
-    metric_name = TextField(null=False)
-    metric_value = FloatField(null=False)
-    tags = TextField(null=True)
-    context = TextField(null=True)
+    id = fields.AutoField()
+    timestamp = fields.DateTimeField(default=datetime.utcnow)
+    metric_type = fields.TextField(null=False)
+    metric_name = fields.TextField(null=False)
+    metric_value = fields.FloatField(null=False)
+    tags = fields.TextField(null=True)
+    context = fields.TextField(null=True)
 
     class Meta:
         table_name = 'metrics'
@@ -410,15 +467,15 @@ class Metric(BaseModel):
 class SystemHealth(BaseModel):
     """System health snapshots."""
 
-    id = AutoField()
-    timestamp = DateTimeField(default=datetime.utcnow)
-    status = TextField(null=False)
-    db_integrity = TextField(null=True)
-    db_size_mb = FloatField(null=True)
-    disk_free_mb = FloatField(null=True)
-    git_status = TextField(null=True)
-    stale_locks = IntegerField(default=0)
-    details = TextField(null=True)
+    id = fields.AutoField()
+    timestamp = fields.DateTimeField(default=datetime.utcnow)
+    status = fields.TextField(null=False)
+    db_integrity = fields.TextField(null=True)
+    db_size_mb = fields.FloatField(null=True)
+    disk_free_mb = fields.FloatField(null=True)
+    git_status = fields.TextField(null=True)
+    stale_locks = fields.IntegerField(default=0)
+    details = fields.TextField(null=True)
 
     class Meta:
         table_name = 'system_health'
@@ -431,9 +488,9 @@ class SystemHealth(BaseModel):
 class SchemaVersion(BaseModel):
     """Schema version tracking."""
 
-    version = IntegerField(primary_key=True)
-    applied_at = DateTimeField(default=datetime.utcnow)
-    description = TextField(null=True)
+    version = fields.IntegerField(primary_key=True)
+    applied_at = fields.DateTimeField(default=datetime.utcnow)
+    description = fields.TextField(null=True)
 
     class Meta:
         table_name = 'schema_version'
@@ -442,12 +499,12 @@ class SchemaVersion(BaseModel):
 class DbOperations(BaseModel):
     """Database operation tracking (singleton)."""
 
-    id = IntegerField(primary_key=True, constraints=[Check("id = 1")])
-    operation_count = IntegerField(default=0)
-    last_vacuum = DateTimeField(null=True)
-    last_analyze = DateTimeField(null=True)
-    total_vacuums = IntegerField(default=0)
-    total_analyzes = IntegerField(default=0)
+    id = fields.IntegerField(primary_key=True, constraints=[Check("id = 1")])
+    operation_count = fields.IntegerField(default=0)
+    last_vacuum = fields.DateTimeField(null=True)
+    last_analyze = fields.DateTimeField(null=True)
+    total_vacuums = fields.IntegerField(default=0)
+    total_analyzes = fields.IntegerField(default=0)
 
     class Meta:
         table_name = 'db_operations'
@@ -460,13 +517,13 @@ class DbOperations(BaseModel):
 class Workflow(BaseModel):
     """Workflow definitions."""
 
-    id = AutoField()
-    name = TextField(null=False, unique=True)
-    description = TextField(null=True)
-    nodes_json = TextField(default='[]')
-    config_json = TextField(default='{}')
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
+    id = fields.AutoField()
+    name = fields.TextField(null=False, unique=True)
+    description = fields.TextField(null=True)
+    nodes_json = fields.TextField(default='[]')
+    config_json = fields.TextField(default='{}')
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
 
     class Meta:
         table_name = 'workflows'
@@ -478,13 +535,13 @@ class Workflow(BaseModel):
 class WorkflowEdge(BaseModel):
     """Workflow edges (transitions between nodes)."""
 
-    id = AutoField()
-    workflow = ForeignKeyField(Workflow, backref='edges', null=False, on_delete='CASCADE')
-    from_node = TextField(null=False)
-    to_node = TextField(null=False)
-    condition = TextField(default='')
-    priority = IntegerField(default=100)
-    created_at = DateTimeField(default=datetime.utcnow)
+    id = fields.AutoField()
+    workflow = fields.AIODeferredForeignKey('Workflow', backref='edges', null=False, on_delete='CASCADE')
+    from_node = fields.TextField(null=False)
+    to_node = fields.TextField(null=False)
+    condition = fields.TextField(default='')
+    priority = fields.IntegerField(default=100)
+    created_at = fields.DateTimeField(default=datetime.utcnow)
 
     class Meta:
         table_name = 'workflow_edges'
@@ -498,21 +555,21 @@ class WorkflowEdge(BaseModel):
 class WorkflowRun(BaseModel):
     """Workflow execution runs."""
 
-    id = AutoField()
-    workflow = ForeignKeyField(Workflow, backref='runs', null=True, on_delete='SET NULL')
-    workflow_name = TextField(null=True)
-    status = TextField(null=False, default='pending')
-    phase = TextField(default='init')
-    input_json = TextField(default='{}')
-    output_json = TextField(default='{}')
-    context_json = TextField(default='{}')
-    total_nodes = IntegerField(default=0)
-    completed_nodes = IntegerField(default=0)
-    failed_nodes = IntegerField(default=0)
-    started_at = DateTimeField(null=True)
-    completed_at = DateTimeField(null=True)
-    created_at = DateTimeField(default=datetime.utcnow)
-    error_message = TextField(null=True)
+    id = fields.AutoField()
+    workflow = fields.AIODeferredForeignKey('Workflow', backref='runs', null=True, on_delete='SET NULL')
+    workflow_name = fields.TextField(null=True)
+    status = fields.TextField(null=False, default='pending')
+    phase = fields.TextField(default='init')
+    input_json = fields.TextField(default='{}')
+    output_json = fields.TextField(default='{}')
+    context_json = fields.TextField(default='{}')
+    total_nodes = fields.IntegerField(default=0)
+    completed_nodes = fields.IntegerField(default=0)
+    failed_nodes = fields.IntegerField(default=0)
+    started_at = fields.DateTimeField(null=True)
+    completed_at = fields.DateTimeField(null=True)
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    error_message = fields.TextField(null=True)
 
     class Meta:
         table_name = 'workflow_runs'
@@ -526,28 +583,28 @@ class WorkflowRun(BaseModel):
 class NodeExecution(BaseModel):
     """Individual node executions within a workflow run."""
 
-    id = AutoField()
-    run = ForeignKeyField(WorkflowRun, backref='node_executions', null=False, on_delete='CASCADE')
-    node_id = TextField(null=False)
-    node_name = TextField(null=True)
-    node_type = TextField(null=False, default='single')
-    agent_id = TextField(null=True)
-    session_id = TextField(null=True)
-    prompt = TextField(null=True)
-    prompt_hash = TextField(null=True)
-    status = TextField(null=False, default='pending')
-    result_json = TextField(default='{}')
-    result_text = TextField(null=True)
-    findings_json = TextField(default='[]')
-    files_modified = TextField(default='[]')
-    duration_ms = IntegerField(null=True)
-    token_count = IntegerField(null=True)
-    retry_count = IntegerField(default=0)
-    started_at = DateTimeField(null=True)
-    completed_at = DateTimeField(null=True)
-    created_at = DateTimeField(default=datetime.utcnow)
-    error_message = TextField(null=True)
-    error_type = TextField(null=True)
+    id = fields.AutoField()
+    run = fields.AIODeferredForeignKey('WorkflowRun', backref='node_executions', null=False, on_delete='CASCADE')
+    node_id = fields.TextField(null=False)
+    node_name = fields.TextField(null=True)
+    node_type = fields.TextField(null=False, default='single')
+    agent_id = fields.TextField(null=True)
+    session_id = fields.TextField(null=True)
+    prompt = fields.TextField(null=True)
+    prompt_hash = fields.TextField(null=True)
+    status = fields.TextField(null=False, default='pending')
+    result_json = fields.TextField(default='{}')
+    result_text = fields.TextField(null=True)
+    findings_json = fields.TextField(default='[]')
+    files_modified = fields.TextField(default='[]')
+    duration_ms = fields.IntegerField(null=True)
+    token_count = fields.IntegerField(null=True)
+    retry_count = fields.IntegerField(default=0)
+    started_at = fields.DateTimeField(null=True)
+    completed_at = fields.DateTimeField(null=True)
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    error_message = fields.TextField(null=True)
+    error_type = fields.TextField(null=True)
 
     class Meta:
         table_name = 'node_executions'
@@ -564,18 +621,18 @@ class NodeExecution(BaseModel):
 class Trail(BaseModel):
     """Pheromone trails (agent breadcrumbs)."""
 
-    id = AutoField()
-    run = ForeignKeyField(WorkflowRun, backref='trails', null=True, on_delete='SET NULL')
-    location = TextField(null=False)
-    location_type = TextField(default='file')
-    scent = TextField(null=False)
-    strength = FloatField(default=1.0)
-    agent_id = TextField(null=True)
-    node_id = TextField(null=True)
-    message = TextField(null=True)
-    tags = TextField(null=True)
-    created_at = DateTimeField(default=datetime.utcnow)
-    expires_at = DateTimeField(null=True)
+    id = fields.AutoField()
+    run = fields.AIODeferredForeignKey('WorkflowRun', backref='trails', null=True, on_delete='SET NULL')
+    location = fields.TextField(null=False)
+    location_type = fields.TextField(default='file')
+    scent = fields.TextField(null=False)
+    strength = fields.FloatField(default=1.0)
+    agent_id = fields.TextField(null=True)
+    node_id = fields.TextField(null=True)
+    message = fields.TextField(null=True)
+    tags = fields.TextField(null=True)
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    expires_at = fields.DateTimeField(null=True)
 
     class Meta:
         table_name = 'trails'
@@ -592,12 +649,12 @@ class Trail(BaseModel):
 class ConductorDecision(BaseModel):
     """Conductor decisions log."""
 
-    id = AutoField()
-    run = ForeignKeyField(WorkflowRun, backref='conductor_decisions', null=False, on_delete='CASCADE')
-    decision_type = TextField(null=False)
-    decision_data = TextField(default='{}')
-    reason = TextField(null=True)
-    created_at = DateTimeField(default=datetime.utcnow)
+    id = fields.AutoField()
+    run = fields.AIODeferredForeignKey('WorkflowRun', backref='conductor_decisions', null=False, on_delete='CASCADE')
+    decision_type = fields.TextField(null=False)
+    decision_data = fields.TextField(default='{}')
+    reason = fields.TextField(null=True)
+    created_at = fields.DateTimeField(default=datetime.utcnow)
 
     class Meta:
         table_name = 'conductor_decisions'
@@ -614,28 +671,28 @@ class ConductorDecision(BaseModel):
 class BuildingQuery(BaseModel):
     """Building query logging - tracks all queries to the framework."""
 
-    id = AutoField()
-    query_type = TextField(null=False)
-    session_id = TextField(null=True)
-    agent_id = TextField(null=True)
-    domain = TextField(null=True)
-    tags = TextField(null=True)
-    limit_requested = IntegerField(null=True)
-    max_tokens_requested = IntegerField(null=True)
-    results_returned = IntegerField(null=True)
-    tokens_approximated = IntegerField(null=True)
-    duration_ms = IntegerField(null=True)
-    status = TextField(default='success')
-    error_message = TextField(null=True)
-    error_code = TextField(null=True)
-    golden_rules_returned = IntegerField(default=0)
-    heuristics_count = IntegerField(default=0)
-    learnings_count = IntegerField(default=0)
-    experiments_count = IntegerField(default=0)
-    ceo_reviews_count = IntegerField(default=0)
-    query_summary = TextField(null=True)
-    created_at = DateTimeField(default=datetime.utcnow)
-    completed_at = DateTimeField(null=True)
+    id = fields.AutoField()
+    query_type = fields.TextField(null=False)
+    session_id = fields.TextField(null=True)
+    agent_id = fields.TextField(null=True)
+    domain = fields.TextField(null=True)
+    tags = fields.TextField(null=True)
+    limit_requested = fields.IntegerField(null=True)
+    max_tokens_requested = fields.IntegerField(null=True)
+    results_returned = fields.IntegerField(null=True)
+    tokens_approximated = fields.IntegerField(null=True)
+    duration_ms = fields.IntegerField(null=True)
+    status = fields.TextField(default='success')
+    error_message = fields.TextField(null=True)
+    error_code = fields.TextField(null=True)
+    golden_rules_returned = fields.IntegerField(default=0)
+    heuristics_count = fields.IntegerField(default=0)
+    learnings_count = fields.IntegerField(default=0)
+    experiments_count = fields.IntegerField(default=0)
+    ceo_reviews_count = fields.IntegerField(default=0)
+    query_summary = fields.TextField(null=True)
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    completed_at = fields.DateTimeField(null=True)
 
     class Meta:
         table_name = 'building_queries'
@@ -650,23 +707,23 @@ class BuildingQuery(BaseModel):
 class SessionSummary(BaseModel):
     """Haiku-generated summaries of Claude sessions."""
 
-    id = AutoField()
-    session_id = TextField(null=False, unique=True)
-    project = TextField(null=False)
-    tool_summary = TextField(null=True)
-    content_summary = TextField(null=True)
-    conversation_summary = TextField(null=True)
-    files_touched = TextField(default='[]')
-    tool_counts = TextField(default='{}')
-    message_count = IntegerField(default=0)
-    session_file_path = TextField(null=True)
-    session_file_size = IntegerField(null=True)
-    session_last_modified = DateTimeField(null=True)
-    summarized_at = DateTimeField(default=datetime.utcnow)
-    summarizer_model = TextField(default='haiku')
-    summary_version = IntegerField(default=1)
-    is_stale = BooleanField(default=False)
-    needs_resummarize = BooleanField(default=False)
+    id = fields.AutoField()
+    session_id = fields.TextField(null=False, unique=True)
+    project = fields.TextField(null=False)
+    tool_summary = fields.TextField(null=True)
+    content_summary = fields.TextField(null=True)
+    conversation_summary = fields.TextField(null=True)
+    files_touched = fields.TextField(default='[]')
+    tool_counts = fields.TextField(default='{}')
+    message_count = fields.IntegerField(default=0)
+    session_file_path = fields.TextField(null=True)
+    session_file_size = fields.IntegerField(null=True)
+    session_last_modified = fields.DateTimeField(null=True)
+    summarized_at = fields.DateTimeField(default=datetime.utcnow)
+    summarizer_model = fields.TextField(default='haiku')
+    summary_version = fields.IntegerField(default=1)
+    is_stale = fields.BooleanField(default=False)
+    needs_resummarize = fields.BooleanField(default=False)
 
     class Meta:
         table_name = 'session_summaries'
@@ -682,19 +739,22 @@ class SessionSummary(BaseModel):
 # Utility Functions
 # -----------------------------------------------------------------------------
 
-def get_or_create_db_operations() -> DbOperations:
-    """Get or create the singleton DbOperations record."""
-    try:
-        return DbOperations.get_by_id(1)
-    except DbOperations.DoesNotExist:
-        return DbOperations.create(id=1)
+async def get_or_create_db_operations() -> DbOperations:
+    """Get or create the singleton DbOperations record (async)."""
+    m = get_manager()
+    async with m:
+        async with m.connection():
+            try:
+                return await DbOperations.aio_get(DbOperations.id == 1)
+            except DbOperations.DoesNotExist:
+                return await DbOperations.aio_create(id=1)
 
 
-def increment_operation_count() -> int:
-    """Increment and return the operation count."""
-    ops = get_or_create_db_operations()
+async def increment_operation_count() -> int:
+    """Increment and return the operation count (async)."""
+    ops = await get_or_create_db_operations()
     ops.operation_count += 1
-    ops.save()
+    await ops.aio_save()
     return ops.operation_count
 
 
@@ -704,8 +764,10 @@ def increment_operation_count() -> int:
 
 __all__ = [
     # Database
-    'db',
+    'manager',
+    'get_manager',
     'initialize_database',
+    'initialize_database_sync',
     'create_tables',
 
     # Core models

@@ -1,25 +1,25 @@
 """
-Invariant query mixin - statements about what must ALWAYS be true.
+Invariant query mixin - statements about what must ALWAYS be true (async).
 """
 
 from typing import Dict, List, Any, Optional
 
 try:
-    from query.models import Invariant
-    from query.utils import TimeoutHandler
+    from query.models import Invariant, get_manager
+    from query.utils import AsyncTimeoutHandler
     from query.exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 except ImportError:
-    from models import Invariant
-    from utils import TimeoutHandler
+    from models import Invariant, get_manager
+    from utils import AsyncTimeoutHandler
     from exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 
 from .base import BaseQueryMixin
 
 
 class InvariantQueryMixin(BaseQueryMixin):
-    """Mixin for invariant-related queries."""
+    """Mixin for invariant-related queries (async)."""
 
-    def get_invariants(
+    async def get_invariants(
         self,
         domain: Optional[str] = None,
         status: str = 'active',
@@ -29,7 +29,7 @@ class InvariantQueryMixin(BaseQueryMixin):
         timeout: int = None
     ) -> List[Dict[str, Any]]:
         """
-        Get invariants, optionally filtered by domain, status, scope, or severity.
+        Get invariants, optionally filtered by domain, status, scope, or severity (async).
 
         Invariants are statements about what must ALWAYS be true, different from
         Golden Rules which say "don't do X". Invariants can be validated automatically.
@@ -61,37 +61,42 @@ class InvariantQueryMixin(BaseQueryMixin):
         try:
             limit = self._validate_limit(limit)
 
-            with TimeoutHandler(timeout):
+            async with AsyncTimeoutHandler(timeout):
                 try:
-                    query = Invariant.select()
+                    m = get_manager()
+                    async with m:
+                        async with m.connection():
+                            query = Invariant.select()
 
-                    if status:
-                        query = query.where(Invariant.status == status)
+                            if status:
+                                query = query.where(Invariant.status == status)
 
-                    if domain:
-                        domain = self._validate_domain(domain)
-                        query = query.where(
-                            (Invariant.domain == domain) | (Invariant.domain.is_null())
-                        )
+                            if domain:
+                                domain = self._validate_domain(domain)
+                                query = query.where(
+                                    (Invariant.domain == domain) | (Invariant.domain.is_null())
+                                )
 
-                    if scope:
-                        query = query.where(Invariant.scope == scope)
+                            if scope:
+                                query = query.where(Invariant.scope == scope)
 
-                    if severity:
-                        query = query.where(Invariant.severity == severity)
+                            if severity:
+                                query = query.where(Invariant.severity == severity)
 
-                    query = query.order_by(Invariant.created_at.desc()).limit(limit)
+                            query = query.order_by(Invariant.created_at.desc()).limit(limit)
 
-                    results = [{
-                        'id': inv.id,
-                        'statement': inv.statement,
-                        'rationale': inv.rationale,
-                        'domain': inv.domain,
-                        'scope': inv.scope,
-                        'severity': inv.severity,
-                        'status': inv.status,
-                        'created_at': inv.created_at
-                    } for inv in query]
+                            results = []
+                            async for inv in query:
+                                results.append({
+                                    'id': inv.id,
+                                    'statement': inv.statement,
+                                    'rationale': inv.rationale,
+                                    'domain': inv.domain,
+                                    'scope': inv.scope,
+                                    'severity': inv.severity,
+                                    'status': inv.status,
+                                    'created_at': inv.created_at
+                                })
                 except Exception as e:
                     # Table might not exist yet
                     if 'no such table' in str(e).lower():
@@ -122,7 +127,7 @@ class InvariantQueryMixin(BaseQueryMixin):
             duration_ms = self._get_current_time_ms() - start_time
             invariants_count = len(results) if results else 0
 
-            self._log_query(
+            await self._log_query(
                 query_type='get_invariants',
                 domain=domain,
                 limit_requested=limit,

@@ -1,5 +1,5 @@
 """
-Violation query mixin - golden rule violations and summaries.
+Violation query mixin - golden rule violations and summaries (async).
 """
 
 import re
@@ -7,12 +7,12 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional
 
 try:
-    from query.models import Violation
-    from query.utils import TimeoutHandler
+    from query.models import Violation, get_manager
+    from query.utils import AsyncTimeoutHandler
     from query.exceptions import TimeoutError, DatabaseError
 except ImportError:
-    from models import Violation
-    from utils import TimeoutHandler
+    from models import Violation, get_manager
+    from utils import AsyncTimeoutHandler
     from exceptions import TimeoutError, DatabaseError
 
 from peewee import fn
@@ -20,12 +20,12 @@ from .base import BaseQueryMixin
 
 
 class ViolationQueryMixin(BaseQueryMixin):
-    """Mixin for violation-related queries."""
+    """Mixin for violation-related queries (async)."""
 
-    def get_violations(self, days: int = 7, acknowledged: Optional[bool] = None,
+    async def get_violations(self, days: int = 7, acknowledged: Optional[bool] = None,
                       timeout: int = None) -> List[Dict[str, Any]]:
         """
-        Get Golden Rule violations from the specified time period.
+        Get Golden Rule violations from the specified time period (async).
 
         Args:
             days: Number of days to look back (default: 7)
@@ -38,22 +38,28 @@ class ViolationQueryMixin(BaseQueryMixin):
         timeout = timeout or self.DEFAULT_TIMEOUT
         self._log_debug(f"Querying violations (days={days}, acknowledged={acknowledged})")
 
-        with TimeoutHandler(timeout):
+        async with AsyncTimeoutHandler(timeout):
             cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
-            query = Violation.select().where(Violation.violation_date >= cutoff)
 
-            if acknowledged is not None:
-                query = query.where(Violation.acknowledged == acknowledged)
+            m = get_manager()
+            async with m:
+                async with m.connection():
+                    query = Violation.select().where(Violation.violation_date >= cutoff)
 
-            query = query.order_by(Violation.violation_date.desc())
-            results = [v.__data__.copy() for v in query]
+                    if acknowledged is not None:
+                        query = query.where(Violation.acknowledged == acknowledged)
+
+                    query = query.order_by(Violation.violation_date.desc())
+                    results = []
+                    async for v in query:
+                        results.append(v.__data__.copy())
 
         self._log_debug(f"Found {len(results)} violations")
         return results
 
-    def get_violation_summary(self, days: int = 7, timeout: int = None) -> Dict[str, Any]:
+    async def get_violation_summary(self, days: int = 7, timeout: int = None) -> Dict[str, Any]:
         """
-        Get summary statistics of Golden Rule violations.
+        Get summary statistics of Golden Rule violations (async).
 
         Args:
             days: Number of days to look back (default: 7)
@@ -65,36 +71,47 @@ class ViolationQueryMixin(BaseQueryMixin):
         timeout = timeout or self.DEFAULT_TIMEOUT
         self._log_debug(f"Querying violation summary (days={days})")
 
-        with TimeoutHandler(timeout):
+        async with AsyncTimeoutHandler(timeout):
             cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
 
-            # Total count
-            total = Violation.select().where(Violation.violation_date >= cutoff).count()
+            m = get_manager()
+            async with m:
+                async with m.connection():
+                    # Total count
+                    total = 0
+                    async for _ in Violation.select().where(Violation.violation_date >= cutoff):
+                        total += 1
 
-            # By rule (group by)
-            by_rule_query = (Violation
-                .select(Violation.rule_id, Violation.rule_name, fn.COUNT(Violation.id).alias('count'))
-                .where(Violation.violation_date >= cutoff)
-                .group_by(Violation.rule_id, Violation.rule_name)
-                .order_by(fn.COUNT(Violation.id).desc()))
-            by_rule = [{'rule_id': r.rule_id, 'rule_name': r.rule_name, 'count': r.count}
-                      for r in by_rule_query]
+                    # By rule (group by) - need to aggregate manually for async
+                    by_rule_dict = {}
+                    async for v in Violation.select().where(Violation.violation_date >= cutoff):
+                        key = (v.rule_id, v.rule_name)
+                        by_rule_dict[key] = by_rule_dict.get(key, 0) + 1
 
-            # Acknowledged count
-            acknowledged = (Violation
-                .select()
-                .where((Violation.violation_date >= cutoff) & (Violation.acknowledged == True))
-                .count())
+                    by_rule = [{'rule_id': k[0], 'rule_name': k[1], 'count': v}
+                              for k, v in sorted(by_rule_dict.items(), key=lambda x: -x[1])]
 
-            # Recent violations (last 5)
-            recent_query = (Violation
-                .select(Violation.rule_id, Violation.rule_name, Violation.description, Violation.violation_date)
-                .where(Violation.violation_date >= cutoff)
-                .order_by(Violation.violation_date.desc())
-                .limit(5))
-            recent = [{'rule_id': r.rule_id, 'rule_name': r.rule_name,
-                      'description': r.description, 'date': str(r.violation_date) if r.violation_date else None}
-                     for r in recent_query]
+                    # Acknowledged count
+                    acknowledged = 0
+                    async for _ in Violation.select().where(
+                        (Violation.violation_date >= cutoff) & (Violation.acknowledged == True)
+                    ):
+                        acknowledged += 1
+
+                    # Recent violations (last 5)
+                    recent_query = (Violation
+                        .select()
+                        .where(Violation.violation_date >= cutoff)
+                        .order_by(Violation.violation_date.desc())
+                        .limit(5))
+                    recent = []
+                    async for r in recent_query:
+                        recent.append({
+                            'rule_id': r.rule_id,
+                            'rule_name': r.rule_name,
+                            'description': r.description,
+                            'date': str(r.violation_date) if r.violation_date else None
+                        })
 
         summary = {
             'total': total,

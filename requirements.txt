@@ -1,7 +1,10 @@
 # Emergent Learning Framework - Core Dependencies
 # Install with: pip install -r requirements.txt
 
-# Database ORM
-peewee>=3.17.0
+# Database ORM (async)
+peewee-aio[aiosqlite]>=1.0.0
+
+# Async file I/O
+aiofiles>=23.0.0
 
 # Note: The dashboard has additional dependencies in dashboard-app/backend/requirements.txt

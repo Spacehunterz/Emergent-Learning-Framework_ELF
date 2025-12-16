@@ -1,17 +1,17 @@
 """
-Context builder mixin - builds agent context from the knowledge base.
+Context builder mixin - builds agent context from the knowledge base (async).
 """
 
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional
 
 try:
-    from query.models import Heuristic, Learning
-    from query.utils import TimeoutHandler
+    from query.models import Heuristic, Learning, get_manager
+    from query.utils import AsyncTimeoutHandler
     from query.exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 except ImportError:
-    from models import Heuristic, Learning
-    from utils import TimeoutHandler
+    from models import Heuristic, Learning, get_manager
+    from utils import AsyncTimeoutHandler
     from exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 
 # MetaObserver is optional
@@ -24,9 +24,9 @@ except ImportError:
 
 
 class ContextBuilderMixin:
-    """Mixin for building agent context from the knowledge base."""
+    """Mixin for building agent context from the knowledge base (async)."""
 
-    def build_context(
+    async def build_context(
         self,
         task: str,
         domain: Optional[str] = None,
@@ -35,7 +35,7 @@ class ContextBuilderMixin:
         timeout: int = None
     ) -> str:
         """
-        Build a context string for agents with tiered retrieval.
+        Build a context string for agents with tiered retrieval (async).
 
         Tier 1: Golden rules (always included)
         Tier 2: Domain-specific heuristics and tag-matched learnings
@@ -81,13 +81,13 @@ class ContextBuilderMixin:
             timeout = timeout or self.DEFAULT_TIMEOUT * 2  # Context building may take longer
 
             self._log_debug(f"Building context (domain={domain}, tags={tags}, max_tokens={max_tokens})")
-            with TimeoutHandler(timeout):
+            async with AsyncTimeoutHandler(timeout):
                 context_parts = []
                 approx_tokens = 0
                 max_chars = max_tokens * 4  # Rough approximation
 
                 # Tier 1: Golden Rules (always loaded)
-                golden_rules = self.get_golden_rules()
+                golden_rules = await self.get_golden_rules()
                 context_parts.append("# TIER 1: [93mGolden Rules[0m\n")
                 context_parts.append(golden_rules)
                 context_parts.append("\n")
@@ -95,15 +95,16 @@ class ContextBuilderMixin:
                 golden_rules_returned = 1  # Flag that golden rules were included
 
                 # Check for similar failures (early warning system)
-                similar_failures = self.find_similar_failures(task)
+                similar_failures = await self.find_similar_failures(task)
                 if similar_failures:
                     context_parts.append("\n## Similar Failures Detected\n\n")
                     for sf in similar_failures[:3]:  # Top 3 most similar
-                        context_parts.append(f"- **[{sf['similarity']*100:.0f}% match] {sf['title']}**\n")
-                        if sf.get('matched_keywords'):
-                            context_parts.append(f"  Keywords: {', '.join(sf['matched_keywords'])}\n")
-                        if sf.get('summary'):
-                            summary = sf['summary'][:100] + '...' if len(sf['summary']) > 100 else sf['summary']
+                        context_parts.append(f"- **[{sf['relevance_score']*100:.0f}% match] {sf['learning'].get('title', 'Unknown')}**\n")
+                        if sf.get('matching_words'):
+                            context_parts.append(f"  Matching keywords: {sf['matching_words']}\n")
+                        summary = sf['learning'].get('summary', '')
+                        if summary:
+                            summary = summary[:100] + '...' if len(summary) > 100 else summary
                             context_parts.append(f"  Lesson: {summary}\n")
                         context_parts.append("\n")
 
@@ -112,7 +113,7 @@ class ContextBuilderMixin:
 
                 if domain:
                     context_parts.append(f"## Domain: {domain}\n\n")
-                    domain_data = self.query_by_domain(domain, limit=5, timeout=timeout)
+                    domain_data = await self.query_by_domain(domain, limit=5, timeout=timeout)
 
                     if domain_data['heuristics']:
                         context_parts.append("### Heuristics:\n")
@@ -151,65 +152,72 @@ class ContextBuilderMixin:
                 else:
                     # No domain specified - show recent heuristics across all domains
                     try:
-                        # Get recent non-golden heuristics (golden are in TIER 1)
-                        recent_heuristics_query = (Heuristic
-                            .select()
-                            .where((Heuristic.is_golden == False) | (Heuristic.is_golden.is_null()))
-                            .order_by(Heuristic.created_at.desc(), Heuristic.confidence.desc())
-                            .limit(10))
+                        m = get_manager()
+                        async with m:
+                            async with m.connection():
+                                # Get recent non-golden heuristics (golden are in TIER 1)
+                                recent_heuristics_query = (Heuristic
+                                    .select()
+                                    .where((Heuristic.is_golden == False) | (Heuristic.is_golden.is_null()))
+                                    .order_by(Heuristic.created_at.desc(), Heuristic.confidence.desc())
+                                    .limit(10))
 
-                        recent_heuristics = [{
-                            'rule': h.rule,
-                            'domain': h.domain,
-                            'confidence': h.confidence,
-                            'explanation': h.explanation
-                        } for h in recent_heuristics_query]
+                                recent_heuristics = []
+                                async for h in recent_heuristics_query:
+                                    recent_heuristics.append({
+                                        'rule': h.rule,
+                                        'domain': h.domain,
+                                        'confidence': h.confidence,
+                                        'explanation': h.explanation
+                                    })
 
-                        if recent_heuristics:
-                            context_parts.append("## Recent Heuristics (all domains)\n\n")
-                            for h in recent_heuristics:
-                                h_domain = h.get('domain', 'general')
-                                entry = f"- **{h['rule']}** (domain: {h_domain}, confidence: {h['confidence']:.2f})\n"
-                                if h.get('explanation'):
-                                    expl = h['explanation'][:100] + '...' if len(h['explanation']) > 100 else h['explanation']
-                                    entry += f"  {expl}\n"
-                                entry += "\n"
-                                context_parts.append(entry)
-                                approx_tokens += len(entry) // 4
-                            heuristics_count += len(recent_heuristics)
+                                if recent_heuristics:
+                                    context_parts.append("## Recent Heuristics (all domains)\n\n")
+                                    for h in recent_heuristics:
+                                        h_domain = h.get('domain', 'general')
+                                        entry = f"- **{h['rule']}** (domain: {h_domain}, confidence: {h['confidence']:.2f})\n"
+                                        if h.get('explanation'):
+                                            expl = h['explanation'][:100] + '...' if len(h['explanation']) > 100 else h['explanation']
+                                            entry += f"  {expl}\n"
+                                        entry += "\n"
+                                        context_parts.append(entry)
+                                        approx_tokens += len(entry) // 4
+                                    heuristics_count += len(recent_heuristics)
 
-                        # Get recent learnings across all domains
-                        recent_learnings_query = (Learning
-                            .select()
-                            .order_by(Learning.created_at.desc())
-                            .limit(10))
+                                # Get recent learnings across all domains
+                                recent_learnings_query = (Learning
+                                    .select()
+                                    .order_by(Learning.created_at.desc())
+                                    .limit(10))
 
-                        recent_learnings = [{
-                            'title': l.title,
-                            'type': l.type,
-                            'domain': l.domain,
-                            'summary': l.summary
-                        } for l in recent_learnings_query]
+                                recent_learnings = []
+                                async for l in recent_learnings_query:
+                                    recent_learnings.append({
+                                        'title': l.title,
+                                        'type': l.type,
+                                        'domain': l.domain,
+                                        'summary': l.summary
+                                    })
 
-                        if recent_learnings:
-                            context_parts.append("## Recent Learnings (all domains)\n\n")
-                            for l in recent_learnings:
-                                l_domain = l.get('domain', 'general')
-                                entry = f"- **{l['title']}** ({l['type']}, domain: {l_domain})\n"
-                                if l.get('summary'):
-                                    summary = l['summary'][:100] + '...' if len(l['summary']) > 100 else l['summary']
-                                    entry += f"  {summary}\n"
-                                entry += "\n"
-                                context_parts.append(entry)
-                                approx_tokens += len(entry) // 4
-                            learnings_count += len(recent_learnings)
+                                if recent_learnings:
+                                    context_parts.append("## Recent Learnings (all domains)\n\n")
+                                    for l in recent_learnings:
+                                        l_domain = l.get('domain', 'general')
+                                        entry = f"- **{l['title']}** ({l['type']}, domain: {l_domain})\n"
+                                        if l.get('summary'):
+                                            summary = l['summary'][:100] + '...' if len(l['summary']) > 100 else l['summary']
+                                            entry += f"  {summary}\n"
+                                        entry += "\n"
+                                        context_parts.append(entry)
+                                        approx_tokens += len(entry) // 4
+                                    learnings_count += len(recent_learnings)
 
                     except Exception as e:
                         self._log_debug(f"Failed to fetch recent heuristics/learnings: {e}")
 
                 if tags:
                     context_parts.append(f"## Tag Matches: {', '.join(tags)}\n\n")
-                    tag_results = self.query_by_tags(tags, limit=5, timeout=timeout)
+                    tag_results = await self.query_by_tags(tags, limit=5, timeout=timeout)
 
                     # Apply relevance scoring to tag results
                     tag_results_with_scores = []
@@ -228,7 +236,7 @@ class ContextBuilderMixin:
                     learnings_count += len(tag_results)
 
                 # Add decisions (ADRs) in Tier 2
-                decisions = self.get_decisions(domain=domain, status='accepted', limit=5, timeout=timeout)
+                decisions = await self.get_decisions(domain=domain, status='accepted', limit=5, timeout=timeout)
                 if decisions:
                     context_parts.append("\n## Decisions (ADRs)\n\n")
                     for dec in decisions:
@@ -249,8 +257,8 @@ class ContextBuilderMixin:
 
 
                 # Add invariants (what must always be true)
-                invariants = self.get_invariants(domain=domain, status='active', limit=5, timeout=timeout)
-                violated_invariants = self.get_invariants(domain=domain, status='violated', limit=3, timeout=timeout)
+                invariants = await self.get_invariants(domain=domain, status='active', limit=5, timeout=timeout)
+                violated_invariants = await self.get_invariants(domain=domain, status='violated', limit=3, timeout=timeout)
 
                 if violated_invariants:
                     context_parts.append("\n## VIOLATED INVARIANTS\n\n")
@@ -278,7 +286,7 @@ class ContextBuilderMixin:
                         approx_tokens += len(entry) // 4
 
                 # Add high-confidence active assumptions
-                assumptions = self.get_assumptions(domain=domain, status='active', min_confidence=0.6, limit=5, timeout=timeout)
+                assumptions = await self.get_assumptions(domain=domain, status='active', min_confidence=0.6, limit=5, timeout=timeout)
                 if assumptions:
                     context_parts.append("\n## Active Assumptions (High Confidence)\n\n")
                     for assum in assumptions:
@@ -297,7 +305,7 @@ class ContextBuilderMixin:
                         approx_tokens += len(entry) // 4
 
                 # Show challenged/invalidated assumptions as warnings
-                challenged = self.get_challenged_assumptions(domain=domain, limit=3, timeout=timeout)
+                challenged = await self.get_challenged_assumptions(domain=domain, limit=3, timeout=timeout)
                 if challenged:
                     context_parts.append("\n## Challenged/Invalidated Assumptions\n\n")
                     for assum in challenged:
@@ -316,7 +324,7 @@ class ContextBuilderMixin:
 
 
                 # Add relevant spike reports (hard-won research knowledge)
-                spike_reports = self.get_spike_reports(domain=domain, limit=5, timeout=timeout)
+                spike_reports = await self.get_spike_reports(domain=domain, limit=5, timeout=timeout)
                 if spike_reports:
                     context_parts.append("\n## Spike Reports (Research Knowledge)\n\n")
                     for spike in spike_reports:
@@ -342,7 +350,7 @@ class ContextBuilderMixin:
                 remaining_tokens = max_tokens - approx_tokens
                 if remaining_tokens > 500:
                     context_parts.append("# TIER 3: Recent Context\n\n")
-                    recent = self.query_recent(limit=3, timeout=timeout)
+                    recent = await self.query_recent(limit=3, timeout=timeout)
 
                     for l in recent:
                         entry = f"- **{l['title']}** ({l['type']}, {l['created_at']})\n"
@@ -356,7 +364,7 @@ class ContextBuilderMixin:
                     learnings_count += len(recent)
 
                 # Add active experiments
-                experiments = self.get_active_experiments(timeout=timeout)
+                experiments = await self.get_active_experiments(timeout=timeout)
                 if experiments:
                     context_parts.append("\n# Active Experiments\n\n")
                     for exp in experiments:
@@ -367,7 +375,7 @@ class ContextBuilderMixin:
                     experiments_count = len(experiments)
 
                 # Add pending CEO reviews
-                ceo_reviews = self.get_pending_ceo_reviews(timeout=timeout)
+                ceo_reviews = await self.get_pending_ceo_reviews(timeout=timeout)
                 if ceo_reviews:
                     context_parts.append("\n# Pending CEO Reviews\n\n")
                     for review in ceo_reviews:
@@ -408,7 +416,7 @@ class ContextBuilderMixin:
             tokens_approx = len(result) // 4 if result else 0
             total_results = heuristics_count + learnings_count + experiments_count + ceo_reviews_count + decisions_count
 
-            self._log_query(
+            await self._log_query(
                 query_type='build_context',
                 domain=domain,
                 tags=','.join(tags) if tags else None,
@@ -428,11 +436,11 @@ class ContextBuilderMixin:
             )
 
             # Record system metrics for monitoring (non-blocking)
-            self._record_system_metrics(domain=domain)
+            await self._record_system_metrics(domain=domain)
 
-    def _record_system_metrics(self, domain: Optional[str] = None):
+    async def _record_system_metrics(self, domain: Optional[str] = None):
         """
-        Record system health metrics via MetaObserver.
+        Record system health metrics via MetaObserver (async).
 
         Called after each query to track:
         - avg_confidence: Average confidence of active heuristics
@@ -446,46 +454,45 @@ class ContextBuilderMixin:
             return
 
         try:
-            from peewee import fn
-
             observer = MetaObserver(db_path=self.db_path)
 
-            # 1. Average confidence of heuristics (no 'status' column in actual schema)
-            query = Heuristic.select(fn.AVG(Heuristic.confidence), fn.COUNT(Heuristic.id))
-            if domain:
-                query = query.where(Heuristic.domain == domain)
+            # Calculate avg confidence using async queries
+            m = get_manager()
+            async with m:
+                async with m.connection():
+                    total_confidence = 0.0
+                    heuristic_count = 0
+                    async for h in Heuristic.select():
+                        if domain is None or h.domain == domain:
+                            total_confidence += h.confidence or 0.5
+                            heuristic_count += 1
 
-            result = query.tuples().first()
-            avg_conf = result[0] if result and result[0] else 0.5
-            heuristic_count = result[1] if result and result[1] else 0
+                    avg_conf = total_confidence / heuristic_count if heuristic_count > 0 else 0.5
 
-            if heuristic_count > 0:
-                observer.record_metric('avg_confidence', avg_conf, domain=domain,
-                                      metadata={'heuristic_count': heuristic_count})
+                    if heuristic_count > 0:
+                        observer.record_metric('avg_confidence', avg_conf, domain=domain,
+                                              metadata={'heuristic_count': heuristic_count})
 
-            # 2. Validation velocity - sum of times_validated in last 24 hours
-            # (confidence_updates table doesn't exist, use heuristics.times_validated instead)
-            cutoff_24h = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24)
-            validation_query = Heuristic.select(fn.SUM(Heuristic.times_validated))
-            if domain:
-                validation_query = validation_query.where(Heuristic.domain == domain)
-            validation_result = validation_query.tuples().first()
-            validation_count = validation_result[0] if validation_result and validation_result[0] else 0
-            observer.record_metric('validation_velocity', validation_count, domain=domain)
+                    # Validation velocity - sum of times_validated
+                    validation_count = 0
+                    async for h in Heuristic.select():
+                        if domain is None or h.domain == domain:
+                            validation_count += h.times_validated or 0
+                    observer.record_metric('validation_velocity', validation_count, domain=domain)
 
-            # 3. Violation rate (times_contradicted doesn't exist, use times_violated instead)
-            violation_query = (Heuristic
-                .select(
-                    fn.SUM(Heuristic.times_violated),
-                    fn.SUM(Heuristic.times_validated + Heuristic.times_violated)
-                ))
-            violation_result = violation_query.tuples().first()
-            if violation_result and violation_result[1] and violation_result[1] > 0:
-                violation_rate = (violation_result[0] or 0) / violation_result[1]
-                observer.record_metric('violation_rate', violation_rate, domain=domain)
+                    # Violation rate
+                    total_violations = 0
+                    total_applications = 0
+                    async for h in Heuristic.select():
+                        total_violations += h.times_violated or 0
+                        total_applications += (h.times_validated or 0) + (h.times_violated or 0)
 
-            # 4. Query count (simple increment)
-            observer.record_metric('query_count', 1, domain=domain)
+                    if total_applications > 0:
+                        violation_rate = total_violations / total_applications
+                        observer.record_metric('violation_rate', violation_rate, domain=domain)
+
+                    # Query count (simple increment)
+                    observer.record_metric('query_count', 1, domain=domain)
 
             self._log_debug("Recorded system metrics to meta_observer")
 

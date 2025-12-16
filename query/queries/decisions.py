@@ -1,25 +1,25 @@
 """
-Decision (ADR) query mixin.
+Decision (ADR) query mixin (async).
 """
 
 from typing import Dict, List, Any, Optional
 
 try:
-    from query.models import Decision
-    from query.utils import TimeoutHandler
+    from query.models import Decision, get_manager
+    from query.utils import AsyncTimeoutHandler
     from query.exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 except ImportError:
-    from models import Decision
-    from utils import TimeoutHandler
+    from models import Decision, get_manager
+    from utils import AsyncTimeoutHandler
     from exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 
 from .base import BaseQueryMixin
 
 
 class DecisionQueryMixin(BaseQueryMixin):
-    """Mixin for architecture decision record (ADR) queries."""
+    """Mixin for architecture decision record (ADR) queries (async)."""
 
-    def get_decisions(
+    async def get_decisions(
         self,
         domain: Optional[str] = None,
         status: str = 'accepted',
@@ -27,7 +27,7 @@ class DecisionQueryMixin(BaseQueryMixin):
         timeout: int = None
     ) -> List[Dict[str, Any]]:
         """
-        Get architecture decisions (ADRs), optionally filtered by domain.
+        Get architecture decisions (ADRs), optionally filtered by domain (async).
 
         Args:
             domain: Optional domain filter
@@ -50,19 +50,20 @@ class DecisionQueryMixin(BaseQueryMixin):
         try:
             limit = self._validate_limit(limit)
 
-            with TimeoutHandler(timeout):
-                query = Decision.select(
-                    Decision.id, Decision.title, Decision.context,
-                    Decision.decision, Decision.rationale, Decision.domain,
-                    Decision.status, Decision.created_at
-                ).where(Decision.status == status)
+            async with AsyncTimeoutHandler(timeout):
+                m = get_manager()
+                async with m:
+                    async with m.connection():
+                        query = Decision.select().where(Decision.status == status)
 
-                if domain:
-                    domain = self._validate_domain(domain)
-                    query = query.where((Decision.domain == domain) | (Decision.domain.is_null()))
+                        if domain:
+                            domain = self._validate_domain(domain)
+                            query = query.where((Decision.domain == domain) | (Decision.domain.is_null()))
 
-                query = query.order_by(Decision.created_at.desc()).limit(limit)
-                results = [d.__data__.copy() for d in query]
+                        query = query.order_by(Decision.created_at.desc()).limit(limit)
+                        results = []
+                        async for d in query:
+                            results.append(d.__data__.copy())
 
             self._log_debug(f"Found {len(results)} decisions")
             return results
@@ -86,7 +87,7 @@ class DecisionQueryMixin(BaseQueryMixin):
             duration_ms = self._get_current_time_ms() - start_time
             decisions_count = len(results) if results else 0
 
-            self._log_query(
+            await self._log_query(
                 query_type='get_decisions',
                 domain=domain,
                 limit_requested=limit,

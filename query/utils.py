@@ -2,7 +2,8 @@
 Utility functions and classes for the Query System.
 
 Contains:
-- TimeoutHandler: Context manager for query timeout enforcement
+- AsyncTimeoutHandler: Async context manager for query timeout enforcement
+- TimeoutHandler: Sync context manager (legacy, for CLI bootstrap)
 - escape_like: SQL LIKE wildcard escaping
 - Windows console encoding fix
 - Time utilities
@@ -11,6 +12,7 @@ Contains:
 import sys
 import io
 import signal
+import asyncio
 import atexit
 from datetime import datetime
 
@@ -60,13 +62,89 @@ def setup_windows_console():
     atexit.register(_restore_streams)
 
 
+class AsyncTimeoutHandler:
+    """
+    Async timeout handler using asyncio.timeout (Python 3.11+).
+
+    Usage:
+        async with AsyncTimeoutHandler(seconds=30):
+            result = await execute_query()
+
+    Raises:
+        TimeoutError: If the operation exceeds the specified timeout.
+    """
+
+    def __init__(self, seconds: int = 30):
+        """
+        Initialize async timeout handler.
+
+        Args:
+            seconds: Timeout duration in seconds (default: 30)
+        """
+        self.seconds = seconds
+        self._timeout_context = None
+
+    async def __aenter__(self):
+        # Python 3.11+ has asyncio.timeout(), earlier versions use wait_for()
+        if hasattr(asyncio, 'timeout'):
+            self._timeout_context = asyncio.timeout(self.seconds)
+            return await self._timeout_context.__aenter__()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self._timeout_context:
+            try:
+                return await self._timeout_context.__aexit__(exc_type, exc_val, exc_tb)
+            except asyncio.TimeoutError:
+                raise TimeoutError(
+                    f"Query timed out after {self.seconds} seconds. "
+                    f"Try reducing --limit or increasing --timeout. [QS003]"
+                )
+        if exc_type is asyncio.TimeoutError:
+            raise TimeoutError(
+                f"Query timed out after {self.seconds} seconds. "
+                f"Try reducing --limit or increasing --timeout. [QS003]"
+            )
+        return False
+
+
+async def async_timeout(coro, seconds: int = 30):
+    """
+    Execute a coroutine with a timeout.
+
+    Args:
+        coro: The coroutine to execute
+        seconds: Timeout duration in seconds (default: 30)
+
+    Returns:
+        The result of the coroutine
+
+    Raises:
+        TimeoutError: If the operation exceeds the specified timeout.
+    """
+    try:
+        if hasattr(asyncio, 'timeout'):
+            async with asyncio.timeout(seconds):
+                return await coro
+        else:
+            return await asyncio.wait_for(coro, timeout=seconds)
+    except asyncio.TimeoutError:
+        raise TimeoutError(
+            f"Query timed out after {seconds} seconds. "
+            f"Try reducing --limit or increasing --timeout. [QS003]"
+        )
+
+
 class TimeoutHandler:
     """
-    Handles query timeouts using signal alarms (Unix) or threading (Windows).
+    Sync timeout handler using signal alarms (Unix) or no-op (Windows).
+
+    Legacy handler for CLI bootstrap operations. Use AsyncTimeoutHandler
+    for async query operations.
 
     Usage:
         with TimeoutHandler(seconds=30):
-            # Long-running query
+            # Long-running operation
             result = execute_query()
     """
 

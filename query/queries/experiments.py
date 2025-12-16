@@ -1,27 +1,27 @@
 """
-Experiment and CEO review query mixin.
+Experiment and CEO review query mixin (async).
 """
 
 from typing import Dict, List, Any, Optional
 
 try:
-    from query.models import Experiment, CeoReview
-    from query.utils import TimeoutHandler
+    from query.models import Experiment, CeoReview, get_manager
+    from query.utils import AsyncTimeoutHandler
     from query.exceptions import TimeoutError, DatabaseError, QuerySystemError
 except ImportError:
-    from models import Experiment, CeoReview
-    from utils import TimeoutHandler
+    from models import Experiment, CeoReview, get_manager
+    from utils import AsyncTimeoutHandler
     from exceptions import TimeoutError, DatabaseError, QuerySystemError
 
 from .base import BaseQueryMixin
 
 
 class ExperimentQueryMixin(BaseQueryMixin):
-    """Mixin for experiment and CEO review queries."""
+    """Mixin for experiment and CEO review queries (async)."""
 
-    def get_active_experiments(self, timeout: int = None) -> List[Dict[str, Any]]:
+    async def get_active_experiments(self, timeout: int = None) -> List[Dict[str, Any]]:
         """
-        List all active experiments.
+        List all active experiments (async).
 
         Args:
             timeout: Query timeout in seconds (default: 30)
@@ -39,12 +39,17 @@ class ExperimentQueryMixin(BaseQueryMixin):
         results = None
 
         try:
-            with TimeoutHandler(timeout):
-                query = (Experiment
-                    .select()
-                    .where(Experiment.status == 'active')
-                    .order_by(Experiment.created_at.desc()))
-                results = [e.__data__.copy() for e in query]
+            async with AsyncTimeoutHandler(timeout):
+                m = get_manager()
+                async with m:
+                    async with m.connection():
+                        query = (Experiment
+                            .select()
+                            .where(Experiment.status == 'active')
+                            .order_by(Experiment.created_at.desc()))
+                        results = []
+                        async for e in query:
+                            results.append(e.__data__.copy())
 
             self._log_debug(f"Found {len(results)} active experiments")
             return results
@@ -63,7 +68,7 @@ class ExperimentQueryMixin(BaseQueryMixin):
             duration_ms = self._get_current_time_ms() - start_time
             experiments_count = len(results) if results else 0
 
-            self._log_query(
+            await self._log_query(
                 query_type='get_active_experiments',
                 results_returned=experiments_count,
                 duration_ms=duration_ms,
@@ -74,9 +79,9 @@ class ExperimentQueryMixin(BaseQueryMixin):
                 query_summary="Active experiments query"
             )
 
-    def get_pending_ceo_reviews(self, timeout: int = None) -> List[Dict[str, Any]]:
+    async def get_pending_ceo_reviews(self, timeout: int = None) -> List[Dict[str, Any]]:
         """
-        List all pending CEO reviews.
+        List all pending CEO reviews (async).
 
         Args:
             timeout: Query timeout in seconds (default: 30)
@@ -94,12 +99,17 @@ class ExperimentQueryMixin(BaseQueryMixin):
         results = None
 
         try:
-            with TimeoutHandler(timeout):
-                query = (CeoReview
-                    .select()
-                    .where(CeoReview.status == 'pending')
-                    .order_by(CeoReview.created_at.desc()))
-                results = [r.__data__.copy() for r in query]
+            async with AsyncTimeoutHandler(timeout):
+                m = get_manager()
+                async with m:
+                    async with m.connection():
+                        query = (CeoReview
+                            .select()
+                            .where(CeoReview.status == 'pending')
+                            .order_by(CeoReview.created_at.desc()))
+                        results = []
+                        async for r in query:
+                            results.append(r.__data__.copy())
 
             self._log_debug(f"Found {len(results)} pending CEO reviews")
             return results
@@ -118,7 +128,7 @@ class ExperimentQueryMixin(BaseQueryMixin):
             duration_ms = self._get_current_time_ms() - start_time
             ceo_reviews_count = len(results) if results else 0
 
-            self._log_query(
+            await self._log_query(
                 query_type='get_pending_ceo_reviews',
                 results_returned=ceo_reviews_count,
                 duration_ms=duration_ms,

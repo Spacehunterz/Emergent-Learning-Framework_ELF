@@ -1,30 +1,28 @@
 """
-Statistics query mixin - knowledge base statistics.
+Statistics query mixin - knowledge base statistics (async).
 """
 
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any
 
-from peewee import fn
-
 try:
-    from query.models import Learning, Heuristic, Experiment, CeoReview, Violation
-    from query.utils import TimeoutHandler
+    from query.models import Learning, Heuristic, Experiment, CeoReview, Violation, get_manager
+    from query.utils import AsyncTimeoutHandler
     from query.exceptions import TimeoutError, DatabaseError
 except ImportError:
-    from models import Learning, Heuristic, Experiment, CeoReview, Violation
-    from utils import TimeoutHandler
+    from models import Learning, Heuristic, Experiment, CeoReview, Violation, get_manager
+    from utils import AsyncTimeoutHandler
     from exceptions import TimeoutError, DatabaseError
 
 from .base import BaseQueryMixin
 
 
 class StatisticsQueryMixin(BaseQueryMixin):
-    """Mixin for statistics queries."""
+    """Mixin for statistics queries (async)."""
 
-    def get_statistics(self, timeout: int = None) -> Dict[str, Any]:
+    async def get_statistics(self, timeout: int = None) -> Dict[str, Any]:
         """
-        Get statistics about the knowledge base.
+        Get statistics about the knowledge base (async).
 
         Args:
             timeout: Query timeout in seconds (default: 30)
@@ -39,59 +37,86 @@ class StatisticsQueryMixin(BaseQueryMixin):
         timeout = timeout or self.DEFAULT_TIMEOUT
         self._log_debug("Gathering statistics")
 
-        with TimeoutHandler(timeout):
+        async with AsyncTimeoutHandler(timeout):
             stats = {}
 
-            # Count learnings by type
-            learnings_type_query = (Learning
-                .select(Learning.type, fn.COUNT(Learning.id).alias('count'))
-                .group_by(Learning.type))
-            stats['learnings_by_type'] = {r.type: r.count for r in learnings_type_query}
+            m = get_manager()
+            async with m:
+                async with m.connection():
+                    # Count learnings by type (aggregate manually for async)
+                    learnings_by_type = {}
+                    async for l in Learning.select():
+                        t = l.type
+                        learnings_by_type[t] = learnings_by_type.get(t, 0) + 1
+                    stats['learnings_by_type'] = learnings_by_type
 
-            # Count learnings by domain
-            learnings_domain_query = (Learning
-                .select(Learning.domain, fn.COUNT(Learning.id).alias('count'))
-                .group_by(Learning.domain))
-            stats['learnings_by_domain'] = {r.domain: r.count for r in learnings_domain_query}
+                    # Count learnings by domain
+                    learnings_by_domain = {}
+                    async for l in Learning.select():
+                        d = l.domain
+                        learnings_by_domain[d] = learnings_by_domain.get(d, 0) + 1
+                    stats['learnings_by_domain'] = learnings_by_domain
 
-            # Count heuristics by domain
-            heuristics_domain_query = (Heuristic
-                .select(Heuristic.domain, fn.COUNT(Heuristic.id).alias('count'))
-                .group_by(Heuristic.domain))
-            stats['heuristics_by_domain'] = {r.domain: r.count for r in heuristics_domain_query}
+                    # Count heuristics by domain
+                    heuristics_by_domain = {}
+                    async for h in Heuristic.select():
+                        d = h.domain
+                        heuristics_by_domain[d] = heuristics_by_domain.get(d, 0) + 1
+                    stats['heuristics_by_domain'] = heuristics_by_domain
 
-            # Count golden heuristics
-            stats['golden_heuristics'] = Heuristic.select().where(Heuristic.is_golden == True).count()
+                    # Count golden heuristics
+                    golden_count = 0
+                    async for h in Heuristic.select().where(Heuristic.is_golden == True):
+                        golden_count += 1
+                    stats['golden_heuristics'] = golden_count
 
-            # Count experiments by status
-            experiments_status_query = (Experiment
-                .select(Experiment.status, fn.COUNT(Experiment.id).alias('count'))
-                .group_by(Experiment.status))
-            stats['experiments_by_status'] = {r.status: r.count for r in experiments_status_query}
+                    # Count experiments by status
+                    experiments_by_status = {}
+                    async for e in Experiment.select():
+                        s = e.status
+                        experiments_by_status[s] = experiments_by_status.get(s, 0) + 1
+                    stats['experiments_by_status'] = experiments_by_status
 
-            # Count CEO reviews by status
-            ceo_status_query = (CeoReview
-                .select(CeoReview.status, fn.COUNT(CeoReview.id).alias('count'))
-                .group_by(CeoReview.status))
-            stats['ceo_reviews_by_status'] = {r.status: r.count for r in ceo_status_query}
+                    # Count CEO reviews by status
+                    ceo_by_status = {}
+                    async for c in CeoReview.select():
+                        s = c.status
+                        ceo_by_status[s] = ceo_by_status.get(s, 0) + 1
+                    stats['ceo_reviews_by_status'] = ceo_by_status
 
-            # Total counts
-            stats['total_learnings'] = Learning.select().count()
-            stats['total_heuristics'] = Heuristic.select().count()
-            stats['total_experiments'] = Experiment.select().count()
-            stats['total_ceo_reviews'] = CeoReview.select().count()
+                    # Total counts
+                    total_learnings = 0
+                    async for _ in Learning.select():
+                        total_learnings += 1
+                    stats['total_learnings'] = total_learnings
 
-            # Violation statistics (last 7 days)
-            cutoff_7d = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
-            stats['violations_7d'] = Violation.select().where(Violation.violation_date >= cutoff_7d).count()
+                    total_heuristics = 0
+                    async for _ in Heuristic.select():
+                        total_heuristics += 1
+                    stats['total_heuristics'] = total_heuristics
 
-            violations_rule_query = (Violation
-                .select(Violation.rule_id, Violation.rule_name, fn.COUNT(Violation.id).alias('count'))
-                .where(Violation.violation_date >= cutoff_7d)
-                .group_by(Violation.rule_id, Violation.rule_name)
-                .order_by(fn.COUNT(Violation.id).desc()))
-            stats['violations_by_rule_7d'] = {f"Rule {r.rule_id}: {r.rule_name}": r.count
-                                              for r in violations_rule_query}
+                    total_experiments = 0
+                    async for _ in Experiment.select():
+                        total_experiments += 1
+                    stats['total_experiments'] = total_experiments
+
+                    total_ceo_reviews = 0
+                    async for _ in CeoReview.select():
+                        total_ceo_reviews += 1
+                    stats['total_ceo_reviews'] = total_ceo_reviews
+
+                    # Violation statistics (last 7 days)
+                    cutoff_7d = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
+                    violations_7d = 0
+                    async for _ in Violation.select().where(Violation.violation_date >= cutoff_7d):
+                        violations_7d += 1
+                    stats['violations_7d'] = violations_7d
+
+                    violations_by_rule = {}
+                    async for v in Violation.select().where(Violation.violation_date >= cutoff_7d):
+                        key = f"Rule {v.rule_id}: {v.rule_name}"
+                        violations_by_rule[key] = violations_by_rule.get(key, 0) + 1
+                    stats['violations_by_rule_7d'] = violations_by_rule
 
         self._log_debug(f"Statistics gathered: {stats['total_learnings']} learnings total")
         return stats

@@ -4,6 +4,7 @@ Edge Case Testing Suite for Emergent Learning Framework Database
 Tests novel database edge cases to verify robustness
 """
 
+import asyncio
 import sqlite3
 import os
 import sys
@@ -57,7 +58,7 @@ class EdgeCaseTester:
 
     # ========== TEST 1: Corrupted WAL file ==========
 
-    def test_corrupted_wal_file(self):
+    async def test_corrupted_wal_file(self):
         """Test behavior with corrupted WAL file"""
         test_name = "Corrupted WAL File"
 
@@ -87,9 +88,9 @@ class EdgeCaseTester:
 
             # Try to open and query
             try:
-                qs = QuerySystem(debug=True)
-                result = qs.query_recent(limit=1)
-                qs.cleanup()
+                qs = await QuerySystem.create(debug=True)
+                result = await qs.query_recent(limit=1)
+                await qs.cleanup()
 
                 # Restore WAL
                 shutil.copy2(wal_backup, wal_path)
@@ -116,7 +117,7 @@ class EdgeCaseTester:
 
     # ========== TEST 2: Missing SHM file ==========
 
-    def test_missing_shm_file(self):
+    async def test_missing_shm_file(self):
         """Test deletion of SHM file while DB is in use"""
         test_name = "Missing SHM File"
 
@@ -160,7 +161,7 @@ class EdgeCaseTester:
 
     # ========== TEST 3: Schema mismatch ==========
 
-    def test_schema_mismatch(self):
+    async def test_schema_mismatch(self):
         """Test adding/removing columns from schema"""
         test_name = "Schema Mismatch"
         backup = self.backup_database()
@@ -174,9 +175,9 @@ class EdgeCaseTester:
 
             # Try query.py with modified schema
             try:
-                qs = QuerySystem(debug=True)
-                result = qs.query_recent(limit=1)
-                qs.cleanup()
+                qs = await QuerySystem.create(debug=True)
+                result = await qs.query_recent(limit=1)
+                await qs.cleanup()
 
                 self.log_result(test_name + " (Add Column)", "LOW", "PASS",
                     "Query system works with additional column")
@@ -196,9 +197,9 @@ class EdgeCaseTester:
             conn.close()
 
             try:
-                qs = QuerySystem(debug=True)
-                result = qs.query_recent(limit=1)
-                qs.cleanup()
+                qs = await QuerySystem.create(debug=True)
+                result = await qs.query_recent(limit=1)
+                await qs.cleanup()
                 self.log_result(test_name + " (Remove Column)", "MEDIUM", "FAIL",
                     "Should have failed with missing columns but didn't")
             except Exception as e:
@@ -219,7 +220,7 @@ class EdgeCaseTester:
 
     # ========== TEST 4: Integer overflow ==========
 
-    def test_integer_overflow(self):
+    async def test_integer_overflow(self):
         """Test ID at max integer value"""
         test_name = "Integer Overflow"
         backup = self.backup_database()
@@ -274,7 +275,7 @@ class EdgeCaseTester:
 
     # ========== TEST 5: Very large blob ==========
 
-    def test_large_blob(self):
+    async def test_large_blob(self):
         """Test inserting 10MB summary and query performance"""
         test_name = "Very Large Blob (10MB)"
         backup = self.backup_database()
@@ -310,10 +311,10 @@ class EdgeCaseTester:
             # Test with QuerySystem
             try:
                 start = time.time()
-                qs = QuerySystem(debug=True)
-                recent = qs.query_recent(limit=1, timeout=60)
+                qs = await QuerySystem.create(debug=True)
+                recent = await qs.query_recent(limit=1, timeout=60)
                 qs_time = time.time() - start
-                qs.cleanup()
+                await qs.cleanup()
 
                 self.restore_database(backup)
 
@@ -336,7 +337,7 @@ class EdgeCaseTester:
 
     # ========== TEST 6: Malformed dates ==========
 
-    def test_malformed_dates(self):
+    async def test_malformed_dates(self):
         """Test invalid date values in created_at"""
         test_name = "Malformed Dates"
         backup = self.backup_database()
@@ -371,9 +372,9 @@ class EdgeCaseTester:
 
             # Test if query.py handles these gracefully
             try:
-                qs = QuerySystem(debug=True)
-                result = qs.query_recent(limit=10)
-                qs.cleanup()
+                qs = await QuerySystem.create(debug=True)
+                result = await qs.query_recent(limit=10)
+                await qs.cleanup()
 
                 self.restore_database(backup)
 
@@ -396,7 +397,7 @@ class EdgeCaseTester:
 
     # ========== TEST 7: SQL reserved words ==========
 
-    def test_sql_reserved_words(self):
+    async def test_sql_reserved_words(self):
         """Test using SQL reserved words as data values"""
         test_name = "SQL Reserved Words"
         backup = self.backup_database()
@@ -430,15 +431,15 @@ class EdgeCaseTester:
 
             # Test if query.py can retrieve these
             try:
-                qs = QuerySystem(debug=True)
+                qs = await QuerySystem.create(debug=True)
 
                 # Test domain query with reserved word
-                result = qs.query_by_domain("SELECT", limit=5)
+                result = await qs.query_by_domain("SELECT", limit=5)
 
                 # Test tag query
-                result2 = qs.query_by_tags(["DROP TABLE"], limit=5)
+                result2 = await qs.query_by_tags(["DROP TABLE"], limit=5)
 
-                qs.cleanup()
+                await qs.cleanup()
 
                 self.restore_database(backup)
 
@@ -467,7 +468,7 @@ class EdgeCaseTester:
 
     # ========== TEST 8: Unicode encoding in LIKE ==========
 
-    def test_unicode_like_patterns(self):
+    async def test_unicode_like_patterns(self):
         """Test searching for Unicode patterns with query.py"""
         test_name = "Unicode Encoding in LIKE"
         backup = self.backup_database()
@@ -507,12 +508,12 @@ class EdgeCaseTester:
 
             for test_id, ustr in test_ids:
                 try:
-                    qs = QuerySystem(debug=False)
+                    qs = await QuerySystem.create(debug=False)
                     # Search by domain
-                    result = qs.query_by_domain("unicode-testing", limit=20)
+                    result = await qs.query_by_domain("unicode-testing", limit=20)
                     # Search by tags
-                    result2 = qs.query_by_tags([ustr], limit=5)
-                    qs.cleanup()
+                    result2 = await qs.query_by_tags([ustr], limit=5)
+                    await qs.cleanup()
                     passed_tests += 1
                 except Exception as e:
                     failed_tests += 1
@@ -537,7 +538,7 @@ class EdgeCaseTester:
 
     # ========== EXECUTION AND REPORTING ==========
 
-    def run_all_tests(self):
+    async def run_all_tests(self):
         """Run all edge case tests"""
         print("\n" + "="*70)
         print("EMERGENT LEARNING FRAMEWORK - DATABASE EDGE CASE TESTING")
@@ -556,7 +557,7 @@ class EdgeCaseTester:
 
         for test_func in tests:
             try:
-                test_func()
+                await test_func()
             except Exception as e:
                 print(f"\n[!] FATAL ERROR in {test_func.__name__}: {e}")
                 traceback.print_exc()
@@ -606,7 +607,7 @@ class EdgeCaseTester:
 
 if __name__ == '__main__':
     tester = EdgeCaseTester()
-    results = tester.run_all_tests()
+    results = asyncio.run(tester.run_all_tests())
 
     # Exit with non-zero if critical or high failures
     critical_or_high_fails = [r for r in results if r['severity'] in ['CRITICAL', 'HIGH'] and r['status'] == 'FAIL']

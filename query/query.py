@@ -2403,4 +2403,11 @@ Error Codes:
 
 
 if __name__ == '__main__':
-    exit(main())
+    # Redirect to async CLI (v2.0.0)
+    # The legacy synchronous code above is preserved for import compatibility
+    # but CLI execution now uses the fully async implementation
+    try:
+        from query.cli import main as async_main
+    except ImportError:
+        from cli import main as async_main
+    exit(async_main())

@@ -1,29 +1,29 @@
 """
-Learning query mixin - recent learnings and similar failure search.
+Learning query mixin - recent learnings and similar failure search (async).
 """
 
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional
 
 try:
-    from query.models import Learning
-    from query.utils import TimeoutHandler
+    from query.models import Learning, get_manager
+    from query.utils import AsyncTimeoutHandler
     from query.exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 except ImportError:
-    from models import Learning
-    from utils import TimeoutHandler
+    from models import Learning, get_manager
+    from utils import AsyncTimeoutHandler
     from exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 
 from .base import BaseQueryMixin
 
 
 class LearningQueryMixin(BaseQueryMixin):
-    """Mixin for learning-related queries."""
+    """Mixin for learning-related queries (async)."""
 
-    def query_recent(self, type_filter: Optional[str] = None, limit: int = 10,
+    async def query_recent(self, type_filter: Optional[str] = None, limit: int = 10,
                     timeout: int = None, days: int = 2) -> List[Dict[str, Any]]:
         """
-        Get recent learnings, optionally filtered by type.
+        Get recent learnings, optionally filtered by type (async).
 
         Args:
             type_filter: Optional type filter (e.g., 'incident', 'success')
@@ -48,20 +48,25 @@ class LearningQueryMixin(BaseQueryMixin):
                 type_filter = self._validate_query(type_filter)
 
             self._log_debug(f"Querying recent learnings (type={type_filter}, limit={limit}, days={days})")
-            with TimeoutHandler(timeout):
+            async with AsyncTimeoutHandler(timeout):
                 cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
 
-                query = Learning.select()
-                if type_filter:
-                    query = query.where(
-                        (Learning.type == type_filter) &
-                        (Learning.created_at >= cutoff)
-                    )
-                else:
-                    query = query.where(Learning.created_at >= cutoff)
+                m = get_manager()
+                async with m:
+                    async with m.connection():
+                        query = Learning.select()
+                        if type_filter:
+                            query = query.where(
+                                (Learning.type == type_filter) &
+                                (Learning.created_at >= cutoff)
+                            )
+                        else:
+                            query = query.where(Learning.created_at >= cutoff)
 
-                query = query.order_by(Learning.created_at.desc()).limit(limit)
-                results = [l.__data__.copy() for l in query]
+                        query = query.order_by(Learning.created_at.desc()).limit(limit)
+                        results = []
+                        async for l in query:
+                            results.append(l.__data__.copy())
 
             self._log_debug(f"Found {len(results)} recent learnings")
             return results
@@ -85,7 +90,7 @@ class LearningQueryMixin(BaseQueryMixin):
             duration_ms = self._get_current_time_ms() - start_time
             learnings_count = len(results) if results else 0
 
-            self._log_query(
+            await self._log_query(
                 query_type='query_recent',
                 limit_requested=limit,
                 results_returned=learnings_count,
@@ -97,10 +102,10 @@ class LearningQueryMixin(BaseQueryMixin):
                 query_summary=f"Recent learnings query{' (type=' + type_filter + ')' if type_filter else ''}"
             )
 
-    def find_similar_failures(self, task_description: str, limit: int = 5,
+    async def find_similar_failures(self, task_description: str, limit: int = 5,
                              timeout: int = None) -> List[Dict[str, Any]]:
         """
-        Find failures similar to a task description using keyword matching.
+        Find failures similar to a task description using keyword matching (async).
 
         Args:
             task_description: Description of the current task
@@ -113,15 +118,20 @@ class LearningQueryMixin(BaseQueryMixin):
         timeout = timeout or self.DEFAULT_TIMEOUT
         self._log_debug(f"Finding similar failures for: {task_description[:50]}...")
 
-        with TimeoutHandler(timeout):
-            # Get failure learnings
-            query = (Learning
-                .select()
-                .where(Learning.type == 'failure')
-                .order_by(Learning.created_at.desc())
-                .limit(100))  # Get recent failures to score
+        async with AsyncTimeoutHandler(timeout):
+            m = get_manager()
+            async with m:
+                async with m.connection():
+                    # Get failure learnings
+                    query = (Learning
+                        .select()
+                        .where(Learning.type == 'failure')
+                        .order_by(Learning.created_at.desc())
+                        .limit(100))  # Get recent failures to score
 
-            failures = list(query)
+                    failures = []
+                    async for f in query:
+                        failures.append(f)
 
             # Score each failure by keyword overlap
             task_words = set(task_description.lower().split())

@@ -1,18 +1,25 @@
 """
-Emergent Learning Framework - Query System
+Emergent Learning Framework - Query System (v0.2.0 - Async)
 
-This module provides the query interface for the Emergent Learning Framework,
+This module provides the async query interface for the Emergent Learning Framework,
 allowing agents to query the knowledge base for golden rules, heuristics,
 learnings, experiments, and more.
 
-Usage:
+Usage (async):
+    import asyncio
     from query import QuerySystem
 
-    qs = QuerySystem()
-    context = qs.build_context("My task", domain="debugging")
-    print(context)
+    async def main():
+        qs = await QuerySystem.create()
+        try:
+            context = await qs.build_context("My task", domain="debugging")
+            print(context)
+        finally:
+            await qs.cleanup()
 
-CLI Usage:
+    asyncio.run(main())
+
+CLI Usage (unchanged):
     python -m query --context --domain debugging
     python query/query.py --validate
 """
@@ -38,4 +45,4 @@ __all__ = [
     'main',
 ]
 
-__version__ = '2.1.0'
+__version__ = '0.2.0'

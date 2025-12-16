@@ -1,25 +1,25 @@
 """
-Assumption query mixin - tracking assumptions and their validation status.
+Assumption query mixin - tracking assumptions and their validation status (async).
 """
 
 from typing import Dict, List, Any, Optional
 
 try:
-    from query.models import Assumption
-    from query.utils import TimeoutHandler
+    from query.models import Assumption, get_manager
+    from query.utils import AsyncTimeoutHandler
     from query.exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 except ImportError:
-    from models import Assumption
-    from utils import TimeoutHandler
+    from models import Assumption, get_manager
+    from utils import AsyncTimeoutHandler
     from exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 
 from .base import BaseQueryMixin
 
 
 class AssumptionQueryMixin(BaseQueryMixin):
-    """Mixin for assumption-related queries."""
+    """Mixin for assumption-related queries (async)."""
 
-    def get_assumptions(
+    async def get_assumptions(
         self,
         domain: Optional[str] = None,
         status: str = 'active',
@@ -28,7 +28,7 @@ class AssumptionQueryMixin(BaseQueryMixin):
         timeout: int = None
     ) -> List[Dict[str, Any]]:
         """
-        Get assumptions, optionally filtered by domain and status.
+        Get assumptions, optionally filtered by domain and status (async).
 
         Args:
             domain: Optional domain filter
@@ -56,39 +56,44 @@ class AssumptionQueryMixin(BaseQueryMixin):
         try:
             limit = self._validate_limit(limit)
 
-            with TimeoutHandler(timeout):
+            async with AsyncTimeoutHandler(timeout):
                 try:
-                    query = (Assumption
-                        .select()
-                        .where(
-                            (Assumption.status == status) &
-                            (Assumption.confidence >= min_confidence)
-                        ))
+                    m = get_manager()
+                    async with m:
+                        async with m.connection():
+                            query = (Assumption
+                                .select()
+                                .where(
+                                    (Assumption.status == status) &
+                                    (Assumption.confidence >= min_confidence)
+                                ))
 
-                    if domain:
-                        domain = self._validate_domain(domain)
-                        query = query.where(
-                            (Assumption.domain == domain) | (Assumption.domain.is_null())
-                        )
+                            if domain:
+                                domain = self._validate_domain(domain)
+                                query = query.where(
+                                    (Assumption.domain == domain) | (Assumption.domain.is_null())
+                                )
 
-                    query = query.order_by(
-                        Assumption.confidence.desc(),
-                        Assumption.created_at.desc()
-                    ).limit(limit)
+                            query = query.order_by(
+                                Assumption.confidence.desc(),
+                                Assumption.created_at.desc()
+                            ).limit(limit)
 
-                    results = [{
-                        'id': a.id,
-                        'assumption': a.assumption,
-                        'context': a.context,
-                        'source': a.source,
-                        'confidence': a.confidence,
-                        'status': a.status,
-                        'domain': a.domain,
-                        'verified_count': a.verified_count,
-                        'challenged_count': a.challenged_count,
-                        'last_verified_at': a.last_verified_at,
-                        'created_at': a.created_at
-                    } for a in query]
+                            results = []
+                            async for a in query:
+                                results.append({
+                                    'id': a.id,
+                                    'assumption': a.assumption,
+                                    'context': a.context,
+                                    'source': a.source,
+                                    'confidence': a.confidence,
+                                    'status': a.status,
+                                    'domain': a.domain,
+                                    'verified_count': a.verified_count,
+                                    'challenged_count': a.challenged_count,
+                                    'last_verified_at': a.last_verified_at,
+                                    'created_at': a.created_at
+                                })
                 except Exception as e:
                     # Table might not exist yet
                     if 'no such table' in str(e).lower():
@@ -119,7 +124,7 @@ class AssumptionQueryMixin(BaseQueryMixin):
             duration_ms = self._get_current_time_ms() - start_time
             assumptions_count = len(results) if results else 0
 
-            self._log_query(
+            await self._log_query(
                 query_type='get_assumptions',
                 domain=domain,
                 limit_requested=limit,
@@ -131,14 +136,14 @@ class AssumptionQueryMixin(BaseQueryMixin):
                 query_summary=f"Assumptions query (status={status}, min_confidence={min_confidence})"
             )
 
-    def get_challenged_assumptions(
+    async def get_challenged_assumptions(
         self,
         domain: Optional[str] = None,
         limit: int = 10,
         timeout: int = None
     ) -> List[Dict[str, Any]]:
         """
-        Get challenged or invalidated assumptions as warnings.
+        Get challenged or invalidated assumptions as warnings (async).
 
         These are assumptions that have been found to be incorrect or questionable.
         Future sessions should be aware of these to avoid repeating mistakes.
@@ -154,35 +159,40 @@ class AssumptionQueryMixin(BaseQueryMixin):
         timeout = timeout or self.DEFAULT_TIMEOUT
         self._log_debug(f"Querying challenged assumptions (domain={domain}, limit={limit})")
 
-        with TimeoutHandler(timeout):
+        async with AsyncTimeoutHandler(timeout):
             try:
-                query = (Assumption
-                    .select()
-                    .where(Assumption.status.in_(['challenged', 'invalidated'])))
+                m = get_manager()
+                async with m:
+                    async with m.connection():
+                        query = (Assumption
+                            .select()
+                            .where(Assumption.status.in_(['challenged', 'invalidated'])))
 
-                if domain:
-                    domain = self._validate_domain(domain)
-                    query = query.where(
-                        (Assumption.domain == domain) | (Assumption.domain.is_null())
-                    )
+                        if domain:
+                            domain = self._validate_domain(domain)
+                            query = query.where(
+                                (Assumption.domain == domain) | (Assumption.domain.is_null())
+                            )
 
-                query = query.order_by(
-                    Assumption.challenged_count.desc(),
-                    Assumption.created_at.desc()
-                ).limit(limit)
+                        query = query.order_by(
+                            Assumption.challenged_count.desc(),
+                            Assumption.created_at.desc()
+                        ).limit(limit)
 
-                results = [{
-                    'id': a.id,
-                    'assumption': a.assumption,
-                    'context': a.context,
-                    'source': a.source,
-                    'confidence': a.confidence,
-                    'status': a.status,
-                    'domain': a.domain,
-                    'verified_count': a.verified_count,
-                    'challenged_count': a.challenged_count,
-                    'created_at': a.created_at
-                } for a in query]
+                        results = []
+                        async for a in query:
+                            results.append({
+                                'id': a.id,
+                                'assumption': a.assumption,
+                                'context': a.context,
+                                'source': a.source,
+                                'confidence': a.confidence,
+                                'status': a.status,
+                                'domain': a.domain,
+                                'verified_count': a.verified_count,
+                                'challenged_count': a.challenged_count,
+                                'created_at': a.created_at
+                            })
             except Exception as e:
                 # Table might not exist yet
                 if 'no such table' in str(e).lower():

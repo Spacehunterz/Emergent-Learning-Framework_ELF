@@ -13,6 +13,7 @@ from datetime import datetime
 import traceback
 import json
 import time
+import asyncio
 
 # Add query directory to path
 sys.path.insert(0, str(Path(__file__).parent / "query"))
@@ -65,7 +66,7 @@ class DestructiveEdgeTester:
 
     # ========== TEST 1: Corrupted WAL file ==========
 
-    def test_corrupted_wal(self):
+    async def test_corrupted_wal(self):
         """Test behavior with corrupted WAL file"""
         test_name = "Corrupted WAL File Recovery"
 
@@ -105,9 +106,9 @@ class DestructiveEdgeTester:
 
             # Try to query with corrupted WAL
             try:
-                qs = QuerySystem(debug=True)
-                result = qs.query_recent(limit=1, timeout=10)
-                qs.cleanup()
+                qs = await QuerySystem.create(debug=True)
+                result = await qs.query_recent(limit=1, timeout=10)
+                await qs.cleanup()
 
                 # Recovery successful
                 self.log_result(test_name, "HIGH", "PASS",
@@ -142,7 +143,7 @@ class DestructiveEdgeTester:
 
     # ========== TEST 2: Insert with malformed dates ==========
 
-    def test_insert_malformed_dates(self):
+    async def test_insert_malformed_dates(self):
         """Test inserting records with malformed dates"""
         test_name = "Malformed Date Insertion & Query"
 
@@ -173,9 +174,9 @@ class DestructiveEdgeTester:
 
             # Now try to query these
             try:
-                qs = QuerySystem(debug=False)
-                result = qs.query_by_domain("testing", limit=20, timeout=10)
-                qs.cleanup()
+                qs = await QuerySystem.create(debug=False)
+                result = await qs.query_by_domain("testing", limit=20, timeout=10)
+                await qs.cleanup()
 
                 # Clean up test data
                 for test_id, _ in inserted_ids:
@@ -205,7 +206,7 @@ class DestructiveEdgeTester:
 
     # ========== TEST 3: Very large summary ==========
 
-    def test_large_summary_insertion(self):
+    async def test_large_summary_insertion(self):
         """Test inserting and querying 10MB summary"""
         test_name = "10MB Summary Performance"
 
@@ -241,10 +242,10 @@ class DestructiveEdgeTester:
             # Test with query.py
             start = time.time()
             try:
-                qs = QuerySystem(debug=False)
-                result = qs.query_recent(limit=5, timeout=30)
+                qs = await QuerySystem.create(debug=False)
+                result = await qs.query_recent(limit=5, timeout=30)
                 qs_time = time.time() - start
-                qs.cleanup()
+                await qs.cleanup()
 
                 if insert_time > 5.0:
                     self.log_result(test_name, "MEDIUM", "FAIL",
@@ -455,7 +456,7 @@ class DestructiveEdgeTester:
 
     # ========== EXECUTION ==========
 
-    def run_all_tests(self):
+    async def run_all_tests(self):
         """Run all destructive tests"""
         print("\n" + "="*70)
         print("DESTRUCTIVE EDGE CASE TESTING - EMERGENT LEARNING FRAMEWORK")
@@ -476,7 +477,11 @@ class DestructiveEdgeTester:
 
         for test_func in tests:
             try:
-                test_func()
+                # Check if test is async
+                if asyncio.iscoroutinefunction(test_func):
+                    await test_func()
+                else:
+                    test_func()
                 time.sleep(1)  # Pause between tests
                 self.restore_master_backup()  # Restore after each test
             except Exception as e:
@@ -527,7 +532,7 @@ class DestructiveEdgeTester:
 
 if __name__ == '__main__':
     tester = DestructiveEdgeTester()
-    results = tester.run_all_tests()
+    results = asyncio.run(tester.run_all_tests())
 
     critical_or_high_fails = [r for r in results if r['severity'] in ['CRITICAL', 'HIGH'] and r['status'] == 'FAIL']
     sys.exit(1 if critical_or_high_fails else 0)

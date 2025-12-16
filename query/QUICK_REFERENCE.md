@@ -84,53 +84,64 @@ python query.py --recent 50 --type failure --format csv > failures.csv
 python query.py --domain large_domain --debug --timeout 60
 ```
 
-### Programmatic Usage
+### Programmatic Usage (v0.2.0 - Async)
 
 ```python
+import asyncio
 from query import QuerySystem
 
-# Initialize
-qs = QuerySystem(debug=True)
+async def main():
+    # Initialize with factory method
+    qs = await QuerySystem.create(debug=True)
 
-try:
-    # Query by domain
-    result = qs.query_by_domain("coordination", limit=10, timeout=30)
+    try:
+        # Query by domain
+        result = await qs.query_by_domain("coordination", limit=10, timeout=30)
 
-    # Query by tags
-    learnings = qs.query_by_tags(["error", "fix"], limit=20)
+        # Query by tags
+        learnings = await qs.query_by_tags(["error", "fix"], limit=20)
 
-    # Build context
-    context = qs.build_context("My task", domain="test", max_tokens=5000)
+        # Build context
+        context = await qs.build_context("My task", domain="test", max_tokens=5000)
 
-    # Get statistics
-    stats = qs.get_statistics()
+        # Get statistics
+        stats = await qs.get_statistics()
 
-    # Validate database
-    validation = qs.validate_database()
+        # Validate database
+        validation = await qs.validate_database()
 
-finally:
-    # Always cleanup
-    qs.cleanup()
+    finally:
+        # Always cleanup
+        await qs.cleanup()
+
+asyncio.run(main())
 ```
 
 ### Error Handling
 
 ```python
-from query import ValidationError, DatabaseError, TimeoutError
+import asyncio
+from query import QuerySystem, ValidationError, DatabaseError, TimeoutError
 
-try:
-    result = qs.query_by_domain("invalid@domain")
-except ValidationError as e:
-    print(f"Invalid input: {e}")
-except DatabaseError as e:
-    print(f"Database issue: {e}")
-except TimeoutError as e:
-    print(f"Query too slow: {e}")
+async def example():
+    qs = await QuerySystem.create()
+    try:
+        result = await qs.query_by_domain("invalid@domain")
+    except ValidationError as e:
+        print(f"Invalid input: {e}")
+    except DatabaseError as e:
+        print(f"Database issue: {e}")
+    except TimeoutError as e:
+        print(f"Query too slow: {e}")
+    finally:
+        await qs.cleanup()
+
+asyncio.run(example())
 ```
 
 ---
 
-**Version:** 2.0
+**Version:** 0.2.0 (Async)
 **Robustness Score:** 10/10
-**Test Coverage:** 51/51 tests passing
+**Migration Guide:** See MIGRATION.md
 **Status:** Production Ready

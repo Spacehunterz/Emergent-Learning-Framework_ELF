@@ -1,30 +1,31 @@
 """
-Heuristic query mixin - golden rules, domain queries, tag queries.
+Heuristic query mixin - golden rules, domain queries, tag queries (async).
 """
 
+import aiofiles
 from functools import reduce
 from operator import or_
 from typing import Dict, List, Any, Optional
 
 # Import with fallbacks
 try:
-    from query.models import Heuristic, Learning
-    from query.utils import TimeoutHandler, escape_like
+    from query.models import Heuristic, Learning, get_manager
+    from query.utils import AsyncTimeoutHandler, escape_like
     from query.exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 except ImportError:
-    from models import Heuristic, Learning
-    from utils import TimeoutHandler, escape_like
+    from models import Heuristic, Learning, get_manager
+    from utils import AsyncTimeoutHandler, escape_like
     from exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 
 from .base import BaseQueryMixin
 
 
 class HeuristicQueryMixin(BaseQueryMixin):
-    """Mixin for heuristic and golden rule queries."""
+    """Mixin for heuristic and golden rule queries (async)."""
 
-    def get_golden_rules(self) -> str:
+    async def get_golden_rules(self) -> str:
         """
-        Read and return golden rules from memory/golden-rules.md.
+        Read and return golden rules from memory/golden-rules.md (async).
 
         Returns:
             Content of golden rules file, or empty string if file does not exist.
@@ -33,8 +34,8 @@ class HeuristicQueryMixin(BaseQueryMixin):
             return "# Golden Rules\n\nNo golden rules have been established yet."
 
         try:
-            with open(self.golden_rules_path, 'r', encoding='utf-8') as f:
-                content = f.read()
+            async with aiofiles.open(self.golden_rules_path, 'r', encoding='utf-8') as f:
+                content = await f.read()
             self._log_debug(f"Loaded golden rules ({len(content)} chars)")
             return content
         except Exception as e:
@@ -42,9 +43,9 @@ class HeuristicQueryMixin(BaseQueryMixin):
             self._log_debug(f"Failed to read golden rules: {e}")
             return error_msg
 
-    def query_by_domain(self, domain: str, limit: int = 10, timeout: int = None) -> Dict[str, Any]:
+    async def query_by_domain(self, domain: str, limit: int = 10, timeout: int = None) -> Dict[str, Any]:
         """
-        Get heuristics and learnings for a specific domain.
+        Get heuristics and learnings for a specific domain (async).
 
         Args:
             domain: The domain to query (e.g., 'coordination', 'debugging')
@@ -66,20 +67,27 @@ class HeuristicQueryMixin(BaseQueryMixin):
             timeout = timeout or self.DEFAULT_TIMEOUT
 
             self._log_debug(f"Querying domain '{domain}' with limit {limit}")
-            with TimeoutHandler(timeout):
-                heuristics_query = (Heuristic
-                    .select()
-                    .where(Heuristic.domain == domain)
-                    .order_by(Heuristic.confidence.desc(), Heuristic.times_validated.desc())
-                    .limit(limit))
-                heuristics = [h.__data__.copy() for h in heuristics_query]
+            async with AsyncTimeoutHandler(timeout):
+                m = get_manager()
+                async with m:
+                    async with m.connection():
+                        heuristics_query = (Heuristic
+                            .select()
+                            .where(Heuristic.domain == domain)
+                            .order_by(Heuristic.confidence.desc(), Heuristic.times_validated.desc())
+                            .limit(limit))
+                        heuristics = []
+                        async for h in heuristics_query:
+                            heuristics.append(h.__data__.copy())
 
-                learnings_query = (Learning
-                    .select()
-                    .where(Learning.domain == domain)
-                    .order_by(Learning.created_at.desc())
-                    .limit(limit))
-                learnings = [l.__data__.copy() for l in learnings_query]
+                        learnings_query = (Learning
+                            .select()
+                            .where(Learning.domain == domain)
+                            .order_by(Learning.created_at.desc())
+                            .limit(limit))
+                        learnings = []
+                        async for l in learnings_query:
+                            learnings.append(l.__data__.copy())
 
             result = {
                 'domain': domain,
@@ -115,7 +123,7 @@ class HeuristicQueryMixin(BaseQueryMixin):
             learnings_count = len(result['learnings']) if result else 0
             total_results = heuristics_count + learnings_count
 
-            self._log_query(
+            await self._log_query(
                 query_type='query_by_domain',
                 domain=domain,
                 limit_requested=limit,
@@ -129,9 +137,9 @@ class HeuristicQueryMixin(BaseQueryMixin):
                 query_summary=f"Domain query for '{domain}'"
             )
 
-    def query_by_tags(self, tags: List[str], limit: int = 10, timeout: int = None) -> List[Dict[str, Any]]:
+    async def query_by_tags(self, tags: List[str], limit: int = 10, timeout: int = None) -> List[Dict[str, Any]]:
         """
-        Get learnings matching specified tags.
+        Get learnings matching specified tags (async).
 
         Args:
             tags: List of tags to search for
@@ -153,16 +161,21 @@ class HeuristicQueryMixin(BaseQueryMixin):
             timeout = timeout or self.DEFAULT_TIMEOUT
 
             self._log_debug(f"Querying tags {tags} with limit {limit}")
-            with TimeoutHandler(timeout):
-                conditions = [Learning.tags.contains(escape_like(tag)) for tag in tags]
-                combined_conditions = reduce(or_, conditions)
+            async with AsyncTimeoutHandler(timeout):
+                m = get_manager()
+                async with m:
+                    async with m.connection():
+                        conditions = [Learning.tags.contains(escape_like(tag)) for tag in tags]
+                        combined_conditions = reduce(or_, conditions)
 
-                query = (Learning
-                    .select()
-                    .where(combined_conditions)
-                    .order_by(Learning.created_at.desc())
-                    .limit(limit))
-                results = [l.__data__.copy() for l in query]
+                        query = (Learning
+                            .select()
+                            .where(combined_conditions)
+                            .order_by(Learning.created_at.desc())
+                            .limit(limit))
+                        results = []
+                        async for l in query:
+                            results.append(l.__data__.copy())
 
             self._log_debug(f"Found {len(results)} results for tags")
             return results
@@ -186,7 +199,7 @@ class HeuristicQueryMixin(BaseQueryMixin):
             duration_ms = self._get_current_time_ms() - start_time
             learnings_count = len(results) if results else 0
 
-            self._log_query(
+            await self._log_query(
                 query_type='query_by_tags',
                 tags=','.join(tags),
                 limit_requested=limit,
