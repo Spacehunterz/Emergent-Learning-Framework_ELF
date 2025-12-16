@@ -179,20 +179,31 @@ if (Get-Command python3 -ErrorAction SilentlyContinue) {
 
 # Check Bun/Node (only if installing dashboard)
 $hasBun = $false
+$hasNode = $false
 if ($InstallDashboard) {
-    try {
+    if (Get-Command bun -ErrorAction SilentlyContinue) {
         $bunVersion = bun --version 2>&1
         Write-Host "  Bun: $bunVersion" -ForegroundColor Green
         $hasBun = $true
-    } catch {
-        try {
-            $nodeVersion = node --version 2>&1
-            Write-Host "  Node: $nodeVersion" -ForegroundColor Green
-        } catch {
-            Write-Host "  ERROR: Neither Bun nor Node.js found (needed for dashboard)" -ForegroundColor Red
-            Write-Host "  Fix option 1: Run with -NoDashboard to skip dashboard" -ForegroundColor Yellow
-            Write-Host "  Fix option 2: Install Bun (https://bun.sh) or Node.js (https://nodejs.org)" -ForegroundColor Yellow
-            Write-Host "  Then: Run this installer again" -ForegroundColor Yellow
+    } elseif (Get-Command node -ErrorAction SilentlyContinue) {
+        $nodeVersion = node --version 2>&1
+        Write-Host "  Node: $nodeVersion" -ForegroundColor Green
+        $hasNode = $true
+    } else {
+        Write-Host ""
+        Write-Host "  [!] Node.js or Bun not found (needed for dashboard)" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "  Choose an option:" -ForegroundColor Cyan
+        Write-Host "    1. Install Node.js from https://nodejs.org (LTS recommended)" -ForegroundColor White
+        Write-Host "    2. Install Bun from https://bun.sh (faster alternative)" -ForegroundColor White
+        Write-Host "    3. Skip dashboard: Run with -NoDashboard flag" -ForegroundColor White
+        Write-Host ""
+        $choice = Read-Host "  Continue without dashboard? (y/n)"
+        if ($choice -eq "y" -or $choice -eq "Y") {
+            Write-Host "  Continuing without dashboard..." -ForegroundColor Yellow
+            $script:InstallDashboard = $false
+        } else {
+            Write-Host "  Please install Node.js or Bun and run the installer again." -ForegroundColor Red
             exit 1
         }
     }
