@@ -176,8 +176,16 @@ if [ -f "$SRC_DIR/requirements.txt" ]; then
     pip install -q -r "$SRC_DIR/requirements.txt" 2>&1 || pip3 install -q -r "$SRC_DIR/requirements.txt" 2>&1
     echo -e "  ${GREEN}Installed Python dependencies (from requirements.txt)${NC}"
 else
-    pip install -q peewee 2>&1 || pip3 install -q peewee 2>&1
-    echo -e "  ${GREEN}Installed Python dependencies (peewee)${NC}"
+    # Fallback: install peewee-aio directly (the core dependency)
+    pip install -q "peewee-aio[aiosqlite]" aiofiles 2>&1 || pip3 install -q "peewee-aio[aiosqlite]" aiofiles 2>&1
+    echo -e "  ${GREEN}Installed Python dependencies (peewee-aio)${NC}"
+fi
+
+# Verify peewee-aio is available (critical for query system)
+if ! $PYTHON_CMD -c "import peewee_aio" 2>/dev/null; then
+    echo -e "  ${YELLOW}Installing peewee-aio (required dependency)...${NC}"
+    pip install -q "peewee-aio[aiosqlite]" aiofiles 2>&1 || pip3 install -q "peewee-aio[aiosqlite]" aiofiles 2>&1
+    echo -e "  ${GREEN}Installed peewee-aio${NC}"
 fi
 
 # Copy hooks (skip if in-place install)
@@ -196,19 +204,22 @@ cp "$SRC_DIR/scripts/"*.sh "$EMERGENT_LEARNING_DIR/scripts/" 2>&1 || echo -e "  
 chmod +x "$EMERGENT_LEARNING_DIR/scripts/"*.sh 2>&1 || echo -e "  ${YELLOW}Warning: Could not set execute permissions on some scripts${NC}"
 echo -e "  ${GREEN}Copied recording scripts${NC}"
 
-# Initialize database
+# Initialize database using Python (most reliable cross-platform)
 DB_PATH="$EMERGENT_LEARNING_DIR/memory/index.db"
-SQL_FILE="$EMERGENT_LEARNING_DIR/memory/init_db.sql"
+QUERY_SCRIPT="$EMERGENT_LEARNING_DIR/query/query.py"
 
 if [ ! -f "$DB_PATH" ]; then
-    if command -v sqlite3 &> /dev/null; then
-        sqlite3 "$DB_PATH" < "$SQL_FILE"
+    if [ -f "$QUERY_SCRIPT" ]; then
+        if $PYTHON_CMD "$QUERY_SCRIPT" --validate > /dev/null 2>&1; then
+            echo -e "  ${GREEN}Initialized database${NC}"
+        else
+            echo -e "  ${YELLOW}Database will initialize on first use${NC}"
+        fi
     else
-        $PYTHON_CMD "$EMERGENT_LEARNING_DIR/query/query.py" --validate > /dev/null 2>&1 || true
+        echo -e "  ${YELLOW}Database will initialize on first use${NC}"
     fi
-    echo -e "  ${GREEN}Initialized database${NC}"
 else
-    echo -e "  ${YELLOW}Database already exists (kept existing)${NC}"
+    echo -e "  ${GREEN}Database already exists${NC}"
 fi
 
 # === SWARM INSTALLATION ===

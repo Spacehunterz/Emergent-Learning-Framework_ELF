@@ -287,7 +287,15 @@ $requirementsFile = Join-Path $srcDir "requirements.txt"
 if (Test-Path $requirementsFile) {
     Invoke-NativeCommand -Command "pip" -Arguments "install -q -r $requirementsFile" -SuccessMessage "Installed Python dependencies (from requirements.txt)" -ContinueOnError
 } else {
-    Invoke-NativeCommand -Command "pip" -Arguments "install -q peewee" -SuccessMessage "Installed Python dependencies (peewee)" -ContinueOnError
+    # Fallback: install peewee-aio directly (the core dependency)
+    Invoke-NativeCommand -Command "pip" -Arguments "install -q peewee-aio[aiosqlite]" -SuccessMessage "Installed Python dependencies (peewee-aio)" -ContinueOnError
+}
+
+# Verify peewee-aio is available (critical for query system)
+$verifyResult = & $pythonCmd -c "import peewee_aio; print('ok')" 2>&1
+if ($verifyResult -ne "ok") {
+    Write-Host "  Installing peewee-aio (required dependency)..." -ForegroundColor Yellow
+    Invoke-NativeCommand -Command "pip" -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed peewee-aio" -ContinueOnError
 }
 
 # Copy hooks to emergent-learning directory (skip if in-place install)
