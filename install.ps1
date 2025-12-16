@@ -315,13 +315,17 @@ if (Test-Path $requirementsFile) {
     Invoke-NativeCommand -Command "pip" -Arguments "install -q peewee" -SuccessMessage "Installed Python dependencies (peewee)" -ContinueOnError
 }
 
-# Copy hooks to emergent-learning directory
-$srcHooksDir = Join-Path $ScriptDir "hooks"
-$dstHooksDir = Join-Path $EmergentLearningDir "hooks"
-if (Test-Path $srcHooksDir) {
-    Copy-Item -Path $srcHooksDir -Destination $EmergentLearningDir -Recurse -Force
+# Copy hooks to emergent-learning directory (skip if in-place install)
+if (-not $InPlaceInstall) {
+    $srcHooksDir = Join-Path $ScriptDir "hooks"
+    $dstHooksDir = Join-Path $EmergentLearningDir "hooks"
+    if (Test-Path $srcHooksDir) {
+        Copy-Item -Path $srcHooksDir -Destination $EmergentLearningDir -Recurse -Force
+    }
+    Write-Host "  Copied learning hooks to emergent-learning" -ForegroundColor Green
+} else {
+    Write-Host "  Hooks already in place (in-place install)" -ForegroundColor Green
 }
-Write-Host "  Copied learning hooks to emergent-learning" -ForegroundColor Green
 
 
 # Copy scripts (using safe copy)
