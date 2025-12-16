@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Command, Sparkles, LayoutGrid, Globe } from 'lucide-react'
-import { ConnectionStatus, CeoInboxDropdown, CeoItemModal, CeoItem } from './header-components'
+import { ConnectionStatus, NotificationCenter, CeoItemModal, CeoItem } from './header-components'
 import { SettingsPanel } from './SettingsPanel'
-import AlertsPanel from './AlertsPanel'
 import { useCosmicSettings } from '../context/CosmicSettingsContext'
 import { useCosmicAudio } from '../context/CosmicAudioContext'
 import { useDataContext } from '../context/DataContext'
@@ -14,8 +13,7 @@ interface HeaderProps {
 
 export default function Header({ isConnected, onOpenCommandPalette }: HeaderProps) {
   const [ceoItems, setCeoItems] = useState<CeoItem[]>([])
-  const [showCeoDropdown, setShowCeoDropdown] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<CeoItem | null>(null)
+    const [selectedItem, setSelectedItem] = useState<CeoItem | null>(null)
   const [itemContent, setItemContent] = useState<string>('')
   const [loadingContent, setLoadingContent] = useState(false)
   const { viewMode, setViewMode } = useCosmicSettings()
@@ -149,19 +147,12 @@ export default function Header({ isConnected, onOpenCommandPalette }: HeaderProp
             {/* Right Side: Actions */}
             <div className="flex items-center gap-4 px-4 border-l border-white/5 pl-6 shrink-0">
 
-              <AlertsPanel
+              <NotificationCenter
+                ceoItems={ceoItems}
+                onCeoItemClick={handleItemClick}
                 anomalies={anomalies}
                 goldenRules={goldenRules as any}
                 onDismissAnomaly={(index) => setAnomalies(prev => prev.filter((_, i) => i !== index))}
-                compact={true}
-              />
-
-              <CeoInboxDropdown
-                items={ceoItems}
-                isOpen={showCeoDropdown}
-                onToggle={() => setShowCeoDropdown(!showCeoDropdown)}
-                onClose={() => setShowCeoDropdown(false)}
-                onItemClick={handleItemClick}
               />
 
               <SettingsPanel />
