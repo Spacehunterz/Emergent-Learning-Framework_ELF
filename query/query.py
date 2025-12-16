@@ -92,100 +92,51 @@ try:
 except ImportError:
     META_OBSERVER_AVAILABLE = False
 
+# Import from refactored modules
+try:
+    from query.exceptions import (
+        QuerySystemError, ValidationError, DatabaseError,
+        TimeoutError, ConfigurationError
+    )
+    from query.utils import TimeoutHandler, escape_like, setup_windows_console
+    from query.validators import (
+        validate_domain, validate_limit, validate_tags, validate_query,
+        MAX_DOMAIN_LENGTH, MAX_QUERY_LENGTH, MAX_TAG_COUNT, MAX_TAG_LENGTH,
+        MIN_LIMIT, MAX_LIMIT, DEFAULT_TIMEOUT, MAX_TOKENS
+    )
+    from query.formatters import format_output, generate_accountability_banner
+    from query.setup import ensure_hooks_installed, ensure_full_setup
+except ImportError:
+    # Fallback for running as script
+    from exceptions import (
+        QuerySystemError, ValidationError, DatabaseError,
+        TimeoutError, ConfigurationError
+    )
+    from utils import TimeoutHandler, escape_like, setup_windows_console
+    from validators import (
+        validate_domain, validate_limit, validate_tags, validate_query,
+        MAX_DOMAIN_LENGTH, MAX_QUERY_LENGTH, MAX_TAG_COUNT, MAX_TAG_LENGTH,
+        MIN_LIMIT, MAX_TOKENS, DEFAULT_TIMEOUT, MAX_LIMIT
+    )
+    from formatters import format_output, generate_accountability_banner
+    from setup import ensure_hooks_installed, ensure_full_setup
+
 # Fix Windows console encoding for Unicode characters
-if sys.platform == 'win32':
-    # Wrap with line_buffering and ensure the wrapper doesn't close the underlying stream
-    import atexit
-    _original_stdout = sys.stdout
-    _original_stderr = sys.stderr
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace', line_buffering=True)
-    # Restore original streams on exit to prevent "lost sys.stderr" errors
-    def _restore_streams():
-        try:
-            sys.stdout.flush()
-            sys.stderr.flush()
-        except:
-            pass
-        sys.stdout = _original_stdout
-        sys.stderr = _original_stderr
-    atexit.register(_restore_streams)
-
-# Custom error classes for better error handling
-class QuerySystemError(Exception):
-    """Base exception for query system errors."""
-    error_code = 'QS000'
-
-class ValidationError(QuerySystemError):
-    """Raised when input validation fails."""
-    error_code = 'QS001'
-
-class DatabaseError(QuerySystemError):
-    """Raised when database operations fail."""
-    error_code = 'QS002'
-
-class TimeoutError(QuerySystemError):
-    """Raised when query times out."""
-    error_code = 'QS003'
-
-class ConfigurationError(QuerySystemError):
-    """Raised when configuration is invalid."""
-    error_code = 'QS004'
-
-
-# Timeout handler for queries
-class TimeoutHandler:
-    """Handles query timeouts using signal alarms (Unix) or threading (Windows)."""
-
-    def __init__(self, seconds: int = 30):
-        self.seconds = seconds
-        self.timeout_occurred = False
-
-    def __enter__(self):
-        if sys.platform != 'win32':
-            # Unix-based timeout using signals
-            signal.signal(signal.SIGALRM, self._timeout_handler)
-            signal.alarm(self.seconds)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if sys.platform != 'win32':
-            signal.alarm(0)  # Cancel alarm
-        return False
-
-    def _timeout_handler(self, signum, frame):
-        self.timeout_occurred = True
-        raise TimeoutError(
-            f"Query timed out after {self.seconds} seconds. "
-            f"Try reducing --limit or increasing --timeout. [QS003]"
-        )
-
-
-def escape_like(s: str) -> str:
-    """
-    Escape SQL LIKE wildcards to prevent wildcard injection.
-
-    Args:
-        s: String to escape
-
-    Returns:
-        String with SQL LIKE wildcards escaped
-    """
-    return s.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+setup_windows_console()
 
 
 class QuerySystem:
     """Manages knowledge retrieval from the Emergent Learning Framework."""
 
-    # Validation constants
-    MAX_DOMAIN_LENGTH = 100
-    MAX_QUERY_LENGTH = 10000
-    MAX_TAG_COUNT = 50
-    MAX_TAG_LENGTH = 50
-    MIN_LIMIT = 1
-    MAX_LIMIT = 1000
-    DEFAULT_TIMEOUT = 30
-    MAX_TOKENS = 50000
+    # Validation constants (imported from validators module for backward compatibility)
+    MAX_DOMAIN_LENGTH = MAX_DOMAIN_LENGTH
+    MAX_QUERY_LENGTH = MAX_QUERY_LENGTH
+    MAX_TAG_COUNT = MAX_TAG_COUNT
+    MAX_TAG_LENGTH = MAX_TAG_LENGTH
+    MIN_LIMIT = MIN_LIMIT
+    MAX_LIMIT = MAX_LIMIT
+    DEFAULT_TIMEOUT = DEFAULT_TIMEOUT
+    MAX_TOKENS = MAX_TOKENS
 
     def __init__(self, base_path: Optional[str] = None, debug: bool = False,
                  session_id: Optional[str] = None, agent_id: Optional[str] = None):
@@ -415,146 +366,23 @@ class QuerySystem:
             pass  # Ignore errors during garbage collection
 
     # ========== VALIDATION METHODS ==========
+    # Delegates to validators module functions
 
     def _validate_domain(self, domain: str) -> str:
-        """
-        Validate domain string.
-
-        Args:
-            domain: Domain to validate
-
-        Returns:
-            Validated domain string
-
-        Raises:
-            ValidationError: If domain is invalid
-        """
-        if not domain:
-            raise ValidationError(
-                "Domain cannot be empty. Provide a valid domain name. [QS001]"
-            )
-
-        if len(domain) > self.MAX_DOMAIN_LENGTH:
-            raise ValidationError(
-                f"Domain exceeds maximum length of {self.MAX_DOMAIN_LENGTH} characters. "
-                f"Use a shorter domain name. [QS001]"
-            )
-
-        # Allow alphanumeric, hyphen, underscore, and dot
-        if not re.match(r'^[a-zA-Z0-9\-_.]+$', domain):
-            raise ValidationError(
-                f"Domain '{domain}' contains invalid characters. "
-                f"Use only alphanumeric, hyphen, underscore, and dot. [QS001]"
-            )
-
-        return domain.strip()
+        """Validate domain string. Delegates to validators.validate_domain()."""
+        return validate_domain(domain)
 
     def _validate_limit(self, limit: int) -> int:
-        """
-        Validate limit parameter.
-
-        Args:
-            limit: Limit to validate
-
-        Returns:
-            Validated limit
-
-        Raises:
-            ValidationError: If limit is invalid
-        """
-        if not isinstance(limit, int):
-            raise ValidationError(
-                f"Limit must be an integer, got {type(limit).__name__}. [QS001]"
-            )
-
-        if limit < self.MIN_LIMIT:
-            raise ValidationError(
-                f"Limit must be at least {self.MIN_LIMIT}. Got: {limit}. [QS001]"
-            )
-
-        if limit > self.MAX_LIMIT:
-            raise ValidationError(
-                f"Limit exceeds maximum of {self.MAX_LIMIT}. "
-                f"Use a smaller limit or process results in batches. [QS001]"
-            )
-
-        return limit
+        """Validate limit parameter. Delegates to validators.validate_limit()."""
+        return validate_limit(limit)
 
     def _validate_tags(self, tags: List[str]) -> List[str]:
-        """
-        Validate tags list.
-
-        Args:
-            tags: List of tags to validate
-
-        Returns:
-            Validated tags list
-
-        Raises:
-            ValidationError: If tags are invalid
-        """
-        if not isinstance(tags, list):
-            raise ValidationError(
-                f"Tags must be a list, got {type(tags).__name__}. [QS001]"
-            )
-
-        if len(tags) > self.MAX_TAG_COUNT:
-            raise ValidationError(
-                f"Too many tags (max {self.MAX_TAG_COUNT}). "
-                f"Reduce number of tags or query in batches. [QS001]"
-            )
-
-        validated_tags = []
-        for tag in tags:
-            tag = tag.strip()
-            if not tag:
-                continue
-
-            if len(tag) > self.MAX_TAG_LENGTH:
-                raise ValidationError(
-                    f"Tag '{tag[:20]}...' exceeds maximum length of {self.MAX_TAG_LENGTH}. [QS001]"
-                )
-
-            if not re.match(r'^[a-zA-Z0-9\-_.]+$', tag):
-                raise ValidationError(
-                    f"Tag '{tag}' contains invalid characters. "
-                    f"Use only alphanumeric, hyphen, underscore, and dot. [QS001]"
-                )
-
-            validated_tags.append(tag)
-
-        if not validated_tags:
-            raise ValidationError(
-                "No valid tags provided after filtering. [QS001]"
-            )
-
-        return validated_tags
+        """Validate tags list. Delegates to validators.validate_tags()."""
+        return validate_tags(tags)
 
     def _validate_query(self, query: str) -> str:
-        """
-        Validate query string.
-
-        Args:
-            query: Query string to validate
-
-        Returns:
-            Validated query string
-
-        Raises:
-            ValidationError: If query is invalid
-        """
-        if not query:
-            raise ValidationError(
-                "Query string cannot be empty. [QS001]"
-            )
-
-        if len(query) > self.MAX_QUERY_LENGTH:
-            raise ValidationError(
-                f"Query exceeds maximum length of {self.MAX_QUERY_LENGTH} characters. "
-                f"Reduce query size. [QS001]"
-            )
-
-        return query.strip()
+        """Validate query string. Delegates to validators.validate_query()."""
+        return validate_query(query)
 
     # ========== DATABASE OPERATIONS ==========
 
@@ -2288,236 +2116,9 @@ class QuerySystem:
         return stats
 
 
-def generate_accountability_banner(summary: Dict[str, Any]) -> str:
-    """
-    Generate a visually distinct accountability banner showing violation status.
-
-    Args:
-        summary: Violation summary from get_violation_summary()
-
-    Returns:
-        Formatted banner string with box drawing characters
-    """
-    total = summary['total']
-    days = summary['days']
-    by_rule = summary['by_rule']
-    recent = summary['recent']
-
-    # Determine status level
-    if total >= 10:
-        status = "CRITICAL"
-        status_color = "RED"
-        message = "CEO ESCALATION REQUIRED"
-    elif total >= 5:
-        status = "PROBATION"
-        status_color = "YELLOW"
-        message = "INCREASED SCRUTINY MODE"
-    elif total >= 3:
-        status = "WARNING"
-        status_color = "YELLOW"
-        message = "Review adherence to rules"
-    else:
-        status = "NORMAL"
-        status_color = "GREEN"
-        message = "Acceptable compliance level"
-
-    # Build banner
-    banner = []
-    banner.append("╔═══════════════════════════════════════════════════════════════════════╗")
-    banner.append("║                    ACCOUNTABILITY TRACKING SYSTEM                     ║")
-    banner.append("║                     Golden Rule Violation Report                      ║")
-    banner.append("╠═══════════════════════════════════════════════════════════════════════╣")
-    banner.append(f"║  Period: Last {days} days                                                     ║")
-    banner.append(f"║  Total Violations: {total:<54} ║")
-    banner.append(f"║  Status: {status:<60} ║")
-    banner.append(f"║  {message:<68} ║")
-    banner.append("╠═══════════════════════════════════════════════════════════════════════╣")
-
-    if by_rule:
-        banner.append("║  Violations by Rule:                                                  ║")
-        for rule in by_rule[:5]:  # Top 5 rules
-            rule_line = f"║    Rule #{rule['rule_id']}: {rule['rule_name'][:35]:<35} ({rule['count']:>2}x) ║"
-            banner.append(rule_line)
-        if len(by_rule) > 5:
-            banner.append(f"║    ... and {len(by_rule) - 5} more                                                  ║")
-        banner.append("╠═══════════════════════════════════════════════════════════════════════╣")
-
-    if recent:
-        banner.append("║  Recent Violations:                                                   ║")
-        for v in recent[:3]:  # Top 3 recent
-            date_str = v['date'][:16] if v['date'] else "Unknown"
-            desc = v['description'][:45] if v['description'] else "No description"
-            banner.append(f"║    [{date_str}] Rule #{v['rule_id']:<2}                                   ║")
-            banner.append(f"║      {desc:<66} ║")
-        banner.append("╠═══════════════════════════════════════════════════════════════════════╣")
-
-    # Progressive consequences
-    if total >= 10:
-        banner.append("║  ⚠️  CONSEQUENCES: CEO escalation auto-created in ceo-inbox/          ║")
-    elif total >= 5:
-        banner.append("║  ⚠️  CONSEQUENCES: Under probation - violations logged prominently    ║")
-    elif total >= 3:
-        banner.append("║  ⚠️  CONSEQUENCES: Warning threshold - 2 more violations = probation  ║")
-    else:
-        banner.append("║  ✓  STATUS: Acceptable compliance. Keep up good practices.            ║")
-
-    banner.append("╚═══════════════════════════════════════════════════════════════════════╝")
-
-    return "\n".join(banner)
-
-
-def format_output(data: Any, format_type: str = 'text') -> str:
-    """
-    Format query results for display.
-
-    Args:
-        data: Data to format
-        format_type: Output format ('text', 'json', or 'csv')
-
-    Returns:
-        Formatted string
-    """
-    if format_type == 'json':
-        return json.dumps(data, indent=2, default=str)
-
-    elif format_type == 'csv':
-        # CSV formatting for list data
-        if isinstance(data, list) and data:
-            output = io.StringIO()
-            if isinstance(data[0], dict):
-                writer = csv.DictWriter(output, fieldnames=data[0].keys())
-                writer.writeheader()
-                writer.writerows(data)
-            else:
-                writer = csv.writer(output)
-                for item in data:
-                    writer.writerow([item])
-            return output.getvalue()
-        else:
-            return str(data)
-
-    # Text formatting
-    if isinstance(data, dict):
-        lines = []
-        for key, value in data.items():
-            if isinstance(value, (list, dict)):
-                lines.append(f"{key}:")
-                lines.append(format_output(value, format_type))
-            else:
-                lines.append(f"{key}: {value}")
-        return "\n".join(lines)
-
-    elif isinstance(data, list):
-        lines = []
-        for i, item in enumerate(data, 1):
-            lines.append(f"\n--- Item {i} ---")
-            lines.append(format_output(item, format_type))
-        return "\n".join(lines)
-
-    else:
-        return str(data)
-
-
-def ensure_hooks_installed():
-    """Auto-install ELF hooks on first use."""
-    marker = Path(__file__).parent.parent / ".hooks-installed"
-    if marker.exists():
-        return
-
-    install_script = Path(__file__).parent.parent / "scripts" / "install-hooks.py"
-    if install_script.exists():
-        import subprocess
-        try:
-            subprocess.run([sys.executable, str(install_script)],
-                          capture_output=True, timeout=10)
-        except Exception:
-            pass  # Silent fail - hooks are optional
-
-
-
-def ensure_full_setup():
-    """
-    Check setup status and return status code for Claude to handle.
-    Claude will use AskUserQuestion tool to show selection boxes if needed.
-
-    Returns:
-        "ok" - Already set up, proceed normally
-        "fresh_install" - New user, auto-installed successfully
-        "needs_user_choice" - Has existing config, Claude should ask user
-        "install_failed" - Something went wrong
-    """
-    import platform
-
-    global_claude_md = Path.home() / ".claude" / "CLAUDE.md"
-    elf_dir = Path(__file__).parent.parent
-
-    # Detect OS and find appropriate installer
-    is_windows = platform.system() == "Windows"
-
-    if is_windows:
-        setup_script = elf_dir / "install.ps1"
-    else:
-        setup_script = elf_dir / "setup" / "install.sh"
-
-    if not setup_script.exists():
-        return "ok"
-
-    # Case 1: No CLAUDE.md - new user, auto-install
-    if not global_claude_md.exists():
-        import subprocess
-        print("")
-        print("=" * 60)
-        print("[ELF] Welcome! First-time setup...")
-        print("=" * 60)
-        print("")
-        print("Installing:")
-        print("  - CLAUDE.md : Core instructions")
-        print("  - /search   : Session history search")
-        print("  - /checkin  : Building check-in")
-        print("  - /swarm    : Multi-agent coordination")
-        print("  - Hooks     : Auto-query & enforcement")
-        print("")
-        try:
-            if is_windows:
-                # Windows: use PowerShell with CoreOnly to avoid dashboard during auto-setup
-                result = subprocess.run(
-                    ["powershell", "-ExecutionPolicy", "Bypass", "-File", str(setup_script), "-CoreOnly"],
-                    capture_output=True, text=True, timeout=60
-                )
-            else:
-                # Unix: use bash
-                result = subprocess.run(
-                    ["bash", str(setup_script), "--mode", "fresh"],
-                    capture_output=True, text=True, timeout=30
-                )
-            print("[ELF] Setup complete!")
-            print("")
-            return "fresh_install"
-        except Exception as e:
-            print(f"[ELF] Setup issue: {e}")
-            return "install_failed"
-    
-    # Case 2: Has CLAUDE.md with ELF already
-    try:
-        with open(global_claude_md, 'r', encoding='utf-8') as f:
-            content = f.read()
-        if "Emergent Learning Framework" in content or "query the building" in content.lower():
-            return "ok"
-    except:
-        pass
-    
-    # Case 3: Has CLAUDE.md but no ELF - Claude should ask user
-    print("")
-    print("=" * 60)
-    print("[ELF] Existing configuration detected")
-    print("=" * 60)
-    print("")
-    print("You have ~/.claude/CLAUDE.md but it doesn't include ELF.")
-    print("Claude will ask how you'd like to proceed.")
-    print("")
-    print("[ELF_NEEDS_USER_CHOICE]")
-    print("")
-    return "needs_user_choice"
+# Formatting functions and setup functions imported from:
+# - query.formatters (format_output, generate_accountability_banner)
+# - query.setup (ensure_hooks_installed, ensure_full_setup)
 
 
 def main():
