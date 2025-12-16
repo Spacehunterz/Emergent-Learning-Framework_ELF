@@ -151,7 +151,7 @@ def mark_decided(filename: str, decision: str) -> bool:
     })
 
     if success:
-        print(f"✅ Marked as decided: {path.name}")
+        print(f"[OK] Marked as decided: {path.name}")
         return True
     else:
         print(f"ERROR: Failed to update: {path.name}", file=sys.stderr)
