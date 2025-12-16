@@ -30,20 +30,24 @@ def get_db_version(conn):
 
 def ensure_version_table(conn):
     """Create schema_version table if it doesn't exist."""
+    # Check if table exists first
+    cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'")
+    if cur.fetchone():
+        return  # Table already exists, don't modify it
+
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS schema_version (
-            id INTEGER PRIMARY KEY CHECK (id = 1),
-            version INTEGER NOT NULL DEFAULT 0,
-            applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+        CREATE TABLE schema_version (
+            version INTEGER PRIMARY KEY,
+            applied_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            description TEXT
         )
     """)
-    conn.execute("INSERT OR IGNORE INTO schema_version (id, version) VALUES (1, 0)")
     conn.commit()
 
 
 def set_db_version(conn, version):
-    """Update schema version in database."""
-    conn.execute("UPDATE schema_version SET version = ?, applied_at = datetime('now') WHERE id = 1", (version,))
+    """Record schema version in database."""
+    conn.execute("INSERT OR REPLACE INTO schema_version (version, applied_at) VALUES (?, datetime('now'))", (version,))
     conn.commit()
 
 
