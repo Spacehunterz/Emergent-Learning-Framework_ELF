@@ -211,9 +211,14 @@ $dstQueryDir = Join-Path $EmergentLearningDir "query"
 
 # Copy core files (using safe copy that skips if src=dst)
 Copy-IfDifferent -Source (Join-Path $srcQueryDir "query.py") -Destination (Join-Path $dstQueryDir "query.py") | Out-Null
+Copy-IfDifferent -Source (Join-Path $srcQueryDir "models.py") -Destination (Join-Path $dstQueryDir "models.py") | Out-Null
 Copy-IfDifferent -Source (Join-Path $srcTemplatesDir "golden-rules.md") -Destination (Join-Path $MemoryDir "golden-rules.md") | Out-Null
 Copy-IfDifferent -Source (Join-Path $srcTemplatesDir "init_db.sql") -Destination (Join-Path $MemoryDir "init_db.sql") | Out-Null
 Write-Host "  Copied query system" -ForegroundColor Green
+
+# Install core Python dependencies
+pip install -q peewee 2>&1 | Out-Null
+Write-Host "  Installed Python dependencies (peewee)" -ForegroundColor Green
 
 # Copy hooks (these go to a different location, so always safe)
 $srcHooksDir = $ScriptDir
@@ -351,7 +356,7 @@ if ($InstallDashboard) {
         # Install backend dependencies
         $backendDir = Join-Path $dashboardDst "backend"
         if (Test-Path $backendDir) {
-            pip install -q fastapi uvicorn aiofiles websockets 2>&1 | Out-Null
+            pip install -q fastapi uvicorn aiofiles websockets peewee 2>&1 | Out-Null
             Write-Host "  Installed backend dependencies" -ForegroundColor Green
         }
 

@@ -3,7 +3,8 @@
 ## Prerequisites
 
 - Python 3.8+
-- Node.js 18+ or Bun (recommended)
+- Peewee ORM (installed automatically)
+- Node.js 18+ or Bun (recommended for dashboard)
 - Claude Code CLI installed
 
 **Verify prerequisites:**
@@ -14,6 +15,9 @@ node --version        # Expected: v18.0.0+
 bun --version         # Alternative to Node
 claude --version      # Should show version
 ```
+
+**Python dependencies (installed automatically by installer):**
+- `peewee` - SQLite ORM for database operations
 
 ## Install Options
 

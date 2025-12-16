@@ -28,6 +28,14 @@
 +---------------------------------------------------------------+
 ```
 
+## Database Layer
+
+The framework uses **Peewee ORM** for all database operations, providing:
+- Type-safe queries with Python expressions
+- Automatic table creation and schema management
+- Connection pooling handled by the ORM
+- Cross-platform SQLite compatibility
+
 ## Database Tables
 
 | Table | Purpose |
@@ -38,6 +46,10 @@
 | `trails` | Pheromone signals for swarm |
 | `workflow_runs` | Swarm execution instances |
 | `node_executions` | Individual agent work |
+| `assumptions` | Hypotheses to verify or challenge |
+| `invariants` | Statements that must always be true |
+| `spike_reports` | Research investigation knowledge |
+| `decisions` | Architecture decision records |
 
 ## File Locations
 

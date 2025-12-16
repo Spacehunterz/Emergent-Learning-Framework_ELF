@@ -143,9 +143,14 @@ SRC_DIR="$SCRIPT_DIR"
 
 # Copy core files
 cp "$SRC_DIR/query/query.py" "$EMERGENT_LEARNING_DIR/query/query.py"
+cp "$SRC_DIR/query/models.py" "$EMERGENT_LEARNING_DIR/query/models.py" 2>/dev/null || true
 cp "$SRC_DIR/templates/golden-rules.md" "$EMERGENT_LEARNING_DIR/memory/golden-rules.md"
 cp "$SRC_DIR/templates/init_db.sql" "$EMERGENT_LEARNING_DIR/memory/init_db.sql"
 echo -e "  ${GREEN}Copied query system${NC}"
+
+# Install core Python dependencies
+pip install -q peewee 2>&1 || pip3 install -q peewee 2>&1
+echo -e "  ${GREEN}Installed Python dependencies (peewee)${NC}"
 
 # Copy hooks
 cp "$SCRIPT_DIR/hooks/learning-loop/"*.py "$HOOKS_DIR/learning-loop/"
@@ -234,7 +239,7 @@ if [ "$INSTALL_DASHBOARD" = true ]; then
             if [ -f "$BACKEND_DIR/requirements.txt" ]; then
                 pip install -q -r "$BACKEND_DIR/requirements.txt" 2>&1 || pip3 install -q -r "$BACKEND_DIR/requirements.txt" 2>&1
             else
-                pip install -q fastapi uvicorn aiofiles websockets aiosqlite python-dateutil 2>&1 || pip3 install -q fastapi uvicorn aiofiles websockets aiosqlite python-dateutil 2>&1
+                pip install -q fastapi uvicorn aiofiles websockets aiosqlite python-dateutil peewee 2>&1 || pip3 install -q fastapi uvicorn aiofiles websockets aiosqlite python-dateutil 2>&1
             fi
             echo -e "  ${GREEN}Installed backend dependencies${NC}"
         fi
