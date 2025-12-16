@@ -151,6 +151,49 @@ cd ~/.claude/emergent-learning/dashboard-app && ./run-dashboard.sh
 /swarm investigate the authentication system
 ```
 
+## Programmatic Usage (v0.2.0+)
+
+The QuerySystem uses async/await for non-blocking database operations:
+
+```python
+import asyncio
+from query import QuerySystem
+
+async def main():
+    # Initialize with factory method
+    qs = await QuerySystem.create()
+
+    try:
+        # Build context for a task
+        context = await qs.build_context("My task", domain="debugging")
+
+        # Query by domain
+        results = await qs.query_by_domain("testing", limit=10)
+
+        # Get statistics
+        stats = await qs.get_statistics()
+
+        # Run multiple queries concurrently (2.9x faster for mixed workloads)
+        context, stats, recent = await asyncio.gather(
+            qs.build_context("task"),
+            qs.get_statistics(),
+            qs.query_recent(limit=5)
+        )
+    finally:
+        await qs.cleanup()
+
+asyncio.run(main())
+```
+
+**CLI unchanged** - handles async internally:
+```bash
+python -m query --context --domain debugging
+python -m query --stats
+python -m query --validate
+```
+
+See [query/MIGRATION.md](query/MIGRATION.md) for migration guide from sync API.
+
 ## Swarm Agents
 
 | Agent | Role |
