@@ -210,21 +210,39 @@ $srcTemplatesDir = Join-Path $srcDir "templates"
 $dstQueryDir = Join-Path $EmergentLearningDir "query"
 
 # Copy core files (using safe copy that skips if src=dst)
-Copy-IfDifferent -Source (Join-Path $srcQueryDir "query.py") -Destination (Join-Path $dstQueryDir "query.py") | Out-Null
-Copy-IfDifferent -Source (Join-Path $srcQueryDir "models.py") -Destination (Join-Path $dstQueryDir "models.py") | Out-Null
+# Copy all query Python files (query.py, models.py, exceptions.py, utils.py, validators.py, etc.)
+Get-ChildItem -Path $srcQueryDir -Filter "*.py" -ErrorAction SilentlyContinue | ForEach-Object {
+    Copy-IfDifferent -Source $_.FullName -Destination $dstQueryDir | Out-Null
+}
+# Copy queries subdirectory with query mixins
+$srcQueriesSubdir = Join-Path $srcQueryDir "queries"
+$dstQueriesSubdir = Join-Path $dstQueryDir "queries"
+if (Test-Path $srcQueriesSubdir) {
+    New-Item -ItemType Directory -Path $dstQueriesSubdir -Force | Out-Null
+    Get-ChildItem -Path $srcQueriesSubdir -Filter "*.py" -ErrorAction SilentlyContinue | ForEach-Object {
+        Copy-IfDifferent -Source $_.FullName -Destination $dstQueriesSubdir | Out-Null
+    }
+}
 Copy-IfDifferent -Source (Join-Path $srcTemplatesDir "golden-rules.md") -Destination (Join-Path $MemoryDir "golden-rules.md") | Out-Null
 Copy-IfDifferent -Source (Join-Path $srcTemplatesDir "init_db.sql") -Destination (Join-Path $MemoryDir "init_db.sql") | Out-Null
 Write-Host "  Copied query system" -ForegroundColor Green
 
 # Install core Python dependencies
-pip install -q peewee 2>&1 | Out-Null
-Write-Host "  Installed Python dependencies (peewee)" -ForegroundColor Green
+$requirementsFile = Join-Path $srcDir "requirements.txt"
+if (Test-Path $requirementsFile) {
+    pip install -q -r $requirementsFile 2>&1 | Out-Null
+    Write-Host "  Installed Python dependencies (from requirements.txt)" -ForegroundColor Green
+} else {
+    pip install -q peewee 2>&1 | Out-Null
+    Write-Host "  Installed Python dependencies (peewee)" -ForegroundColor Green
+}
 
-# Copy hooks (these go to a different location, so always safe)
-$srcHooksDir = $ScriptDir
-$hooksSource = Join-Path (Join-Path $srcHooksDir "hooks") "learning-loop"
-$learningLoopDir = Join-Path $HooksDir "learning-loop"
-Copy-Item -Path (Join-Path $hooksSource "*.py") -Destination $learningLoopDir -Force
+# Copy hooks to emergent-learning directory
+$srcHooksDir = Join-Path $ScriptDir "hooks"
+$dstHooksDir = Join-Path $EmergentLearningDir "hooks"
+if (Test-Path $srcHooksDir) {
+    Copy-Item -Path $srcHooksDir -Destination $EmergentLearningDir -Recurse -Force
+}
 Write-Host "  Copied learning hooks" -ForegroundColor Green
 
 # Copy scripts (using safe copy)
