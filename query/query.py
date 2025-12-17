@@ -2255,6 +2255,12 @@ Error Codes:
     parser.add_argument('--health-check', action='store_true',
                        help='Run system health check and display alerts (meta-observer)')
 
+    # Project-related arguments
+    parser.add_argument('--project-status', action='store_true',
+                       help='Show current project context and status')
+    parser.add_argument('--project-only', action='store_true',
+                       help='Only show project-specific context (no global)')
+
     args = parser.parse_args()
 
     # Initialize query system with error handling
@@ -2342,6 +2348,69 @@ Error Codes:
                 print(f"  (Could not retrieve metrics: {e})")
 
             return 0
+
+        elif args.project_status:
+            # Show project context and status
+            try:
+                from project import detect_project_context, format_project_status
+                ctx = detect_project_context()
+                print(format_project_status(ctx))
+                return 0
+            except ImportError:
+                print("ERROR: Project context module not available", file=sys.stderr)
+                return 1
+
+        elif args.project_only:
+            # Show only project-specific context (no global)
+            try:
+                from project import detect_project_context
+                import sqlite3
+
+                ctx = detect_project_context()
+                if not ctx.has_project_context():
+                    print("ERROR: No .elf/ found. Run elf init first.", file=sys.stderr)
+                    return 1
+
+                output = []
+                output.append("# Project Context: " + str(ctx.project_name) + "\n")
+                output.append("Root: " + str(ctx.elf_root) + "\n\n")
+
+                # Load context.md
+                context_content = ctx.get_context_md_content()
+                if context_content:
+                    output.append("## Project Description\n")
+                    output.append(context_content)
+                    output.append("\n\n")
+
+                # Query project heuristics
+                if ctx.project_db_path and ctx.project_db_path.exists():
+                    conn = sqlite3.connect(str(ctx.project_db_path))
+                    cursor = conn.cursor()
+
+                    cursor.execute("SELECT rule, explanation, confidence FROM heuristics ORDER BY confidence DESC LIMIT 20")
+                    heuristics = cursor.fetchall()
+                    if heuristics:
+                        output.append("## Project Heuristics\n\n")
+                        for rule, expl, conf in heuristics:
+                            output.append("- **" + str(rule) + "** (confidence: " + format(conf, ".2f") + ")\n")
+                            if expl:
+                                output.append("  " + str(expl)[:100] + "\n")
+                            output.append("\n")
+
+                    cursor.execute("SELECT type, summary FROM learnings ORDER BY created_at DESC LIMIT 10")
+                    learnings = cursor.fetchall()
+                    if learnings:
+                        output.append("## Project Learnings\n\n")
+                        for ltype, summary in learnings:
+                            output.append("- **" + str(summary) + "** (" + str(ltype) + ")\n")
+
+                    conn.close()
+
+                print("".join(output))
+                return 0
+            except ImportError as e:
+                print("ERROR: Project context module not available: " + str(e), file=sys.stderr)
+                return 1
 
         elif args.context:
             # Build full context
