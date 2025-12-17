@@ -102,8 +102,38 @@ class AutoCapture:
         self.running = False
         logger.info("AutoCapture stopped")
 
+    async def fix_completed_unknowns(self) -> int:
+        """Fix completed workflow runs that still have unknown outcomes.
+
+        This handles the case where runs completed but outcome inference
+        found no content to analyze. If status is 'completed' and all nodes
+        finished, it's a success regardless of content.
+
+        Runs without time limit - fixes all historical data.
+        """
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                UPDATE workflow_runs
+                SET output_json = json_object('outcome', 'success', 'reason', 'Workflow completed successfully')
+                WHERE status = 'completed'
+                AND completed_nodes >= total_nodes
+                AND total_nodes > 0
+                AND output_json LIKE '%"outcome": "unknown"%'
+                """
+            )
+            fixed = cursor.rowcount
+            if fixed > 0:
+                conn.commit()
+                logger.info(f"Fixed {fixed} completed runs with unknown outcomes")
+            return fixed
+
     async def reanalyze_unknown_outcomes(self) -> int:
         """Re-analyze workflow runs with unknown outcomes."""
+        # First, fix any completed runs that shouldn't be unknown
+        await self.fix_completed_unknowns()
+
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute(
