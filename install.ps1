@@ -282,21 +282,65 @@ Copy-IfDifferent -Source (Join-Path $srcTemplatesDir "golden-rules.md") -Destina
 Copy-IfDifferent -Source (Join-Path $srcTemplatesDir "init_db.sql") -Destination (Join-Path $MemoryDir "init_db.sql") | Out-Null
 Write-Host "  Copied query system" -ForegroundColor Green
 
-# Install core Python dependencies
-$requirementsFile = Join-Path $srcDir "requirements.txt"
-$pipCmd = if ($pythonCmd -eq "python3") { "pip3" } else { "pip" }
-if (Test-Path $requirementsFile) {
-    Invoke-NativeCommand -Command $pipCmd -Arguments "install -q -r $requirementsFile" -SuccessMessage "Installed Python dependencies (from requirements.txt)" -ContinueOnError
-} else {
-    # Fallback: install peewee-aio directly (the core dependency)
-    Invoke-NativeCommand -Command $pipCmd -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed Python dependencies (peewee-aio)" -ContinueOnError
+# Create Python virtual environment for ELF
+$venvDir = Join-Path $EmergentLearningDir ".venv"
+$venvPython = $null
+
+if (-not (Test-Path $venvDir)) {
+    Write-Host "  Creating Python virtual environment..." -ForegroundColor Yellow
+    try {
+        & $pythonCmd -m venv $venvDir 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "  Virtual environment created" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "  Warning: Could not create venv, using system Python" -ForegroundColor Yellow
+    }
 }
 
-# Verify peewee-aio is available (critical for query system)
-$verifyResult = & $pythonCmd -c "import peewee_aio; print('ok')" 2>&1
-if ($verifyResult -ne "ok") {
-    Write-Host "  Installing peewee-aio (required dependency)..." -ForegroundColor Yellow
-    Invoke-NativeCommand -Command $pipCmd -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed peewee-aio" -ContinueOnError
+# Determine venv python path
+$venvPythonPath = Join-Path $venvDir "Scripts" "python.exe"
+if (Test-Path $venvPythonPath) {
+    $venvPython = $venvPythonPath
+    $venvPipCmd = Join-Path $venvDir "Scripts" "pip.exe"
+    Write-Host "  Using venv Python: $venvPython" -ForegroundColor Green
+} else {
+    $venvPipCmd = if ($pythonCmd -eq "python3") { "pip3" } else { "pip" }
+    Write-Host "  Using system Python (venv not available)" -ForegroundColor Yellow
+}
+
+# Install core Python dependencies into venv
+$requirementsFile = Join-Path $srcDir "requirements.txt"
+if (Test-Path $venvPythonPath) {
+    # Use venv pip
+    if (Test-Path $requirementsFile) {
+        Invoke-NativeCommand -Command "`"$venvPipCmd`"" -Arguments "install -q --upgrade pip" -SuccessMessage "Upgraded pip in venv" -ContinueOnError
+        Invoke-NativeCommand -Command "`"$venvPipCmd`"" -Arguments "install -q -r `"$requirementsFile`"" -SuccessMessage "Installed Python dependencies in venv (from requirements.txt)" -ContinueOnError
+    } else {
+        Invoke-NativeCommand -Command "`"$venvPipCmd`"" -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed Python dependencies in venv (peewee-aio)" -ContinueOnError
+    }
+
+    # Verify peewee-aio is available in venv
+    $verifyResult = & $venvPython -c "import peewee_aio; print('ok')" 2>&1
+    if ($verifyResult -ne "ok") {
+        Write-Host "  Installing peewee-aio in venv (required dependency)..." -ForegroundColor Yellow
+        Invoke-NativeCommand -Command "`"$venvPipCmd`"" -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed peewee-aio in venv" -ContinueOnError
+    }
+} else {
+    # Fallback to system pip
+    $pipCmd = if ($pythonCmd -eq "python3") { "pip3" } else { "pip" }
+    if (Test-Path $requirementsFile) {
+        Invoke-NativeCommand -Command $pipCmd -Arguments "install -q -r $requirementsFile" -SuccessMessage "Installed Python dependencies (from requirements.txt)" -ContinueOnError
+    } else {
+        Invoke-NativeCommand -Command $pipCmd -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed Python dependencies (peewee-aio)" -ContinueOnError
+    }
+
+    # Verify peewee-aio is available (critical for query system)
+    $verifyResult = & $pythonCmd -c "import peewee_aio; print('ok')" 2>&1
+    if ($verifyResult -ne "ok") {
+        Write-Host "  Installing peewee-aio (required dependency)..." -ForegroundColor Yellow
+        Invoke-NativeCommand -Command $pipCmd -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed peewee-aio" -ContinueOnError
+    }
 }
 
 # Copy hooks to emergent-learning directory (skip if in-place install)
@@ -507,13 +551,15 @@ if (-not $settings.ContainsKey("hooks")) {
     $settings["hooks"] = @{}
 }
 
-# Create ELF hooks - use detected python command
+# Create ELF hooks - use venv python if available, otherwise system python
+$hookPythonCmd = if ($venvPython) { "`"$venvPython`"" } else { $pythonCmd }
+
 $elfPreHook = @{
     "matcher" = "Task"
     "hooks" = @(
         @{
             "type" = "command"
-            "command" = "$pythonCmd `"$preToolHook`""
+            "command" = "$hookPythonCmd `"$preToolHook`""
         }
     )
 }
@@ -523,7 +569,7 @@ $elfPostHook = @{
     "hooks" = @(
         @{
             "type" = "command"
-            "command" = "$pythonCmd `"$postToolHook`""
+            "command" = "$hookPythonCmd `"$postToolHook`""
         }
     )
 }
@@ -534,7 +580,7 @@ $elfFileOpsHook = @{
     "hooks" = @(
         @{
             "type" = "command"
-            "command" = "$pythonCmd `"$postToolHook`""
+            "command" = "$hookPythonCmd `"$postToolHook`""
         }
     )
 }

@@ -6,6 +6,10 @@ desktop.ini
 __pycache__/
 *.pyc
 
+# Python virtual environment
+.venv/
+venv/
+
 # Private user data - NEVER push to public repo
 memory/
 ceo-inbox/
