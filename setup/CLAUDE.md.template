@@ -142,9 +142,19 @@ This is a REMINDER to query, but you should have already done so automatically.
 
 - **Failure:** `~/.claude/emergent-learning/scripts/record-failure.sh`
 - **Success:** Create file in `memory/successes/` following template
-- **Heuristic:** `~/.claude/emergent-learning/scripts/record-heuristic.sh`
+- **Heuristic:** `python ~/.claude/emergent-learning/scripts/record-heuristic.py` (cross-platform, recommended)
+  - Or bash version: `~/.claude/emergent-learning/scripts/record-heuristic.sh` (requires sqlite3 CLI)
 - **Experiment:** `~/.claude/emergent-learning/scripts/start-experiment.sh`
 - **CEO Decision:** Create file in `ceo-inbox/` following template
+
+### Checkin Hook (Auto-Configured)
+
+When you type `/checkin`, `checkin`, or `check in`, a hook automatically reminds Claude to:
+1. Analyze the session for learnings
+2. List potential heuristics before summarizing
+3. Offer to record them to the building
+
+This ensures learnings are captured proactively, not forgotten.
 
 ### Golden Rules (Always Follow)
 
