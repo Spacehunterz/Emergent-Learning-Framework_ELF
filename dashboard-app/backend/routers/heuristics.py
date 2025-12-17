@@ -29,31 +29,46 @@ async def get_heuristics(
     domain: Optional[str] = None,
     golden_only: bool = False,
     sort_by: str = "confidence",
-    limit: int = 50
+    limit: int = 50,
+    scope: str = "global"
 ):
-    """Get heuristics with optional filtering."""
-    with get_db() as conn:
+    """Get heuristics with optional filtering. scope: 'global' or 'project'"""
+    with get_db(scope) as conn:
         cursor = conn.cursor()
 
-        query = """
-            SELECT id, domain, rule, explanation, confidence,
-                   times_validated, times_violated, is_golden,
-                   source_type, created_at, updated_at
-            FROM heuristics
-            WHERE 1=1
-        """
+        # Different schemas for global vs project
+        if scope == "project":
+            # Project schema: uses validation_count, source (not source_type), no is_golden
+            query = """
+                SELECT id, domain, rule, explanation, confidence,
+                       validation_count as times_validated, 0 as times_violated,
+                       0 as is_golden, source as source_type, created_at,
+                       created_at as updated_at
+                FROM heuristics
+                WHERE 1=1
+            """
+        else:
+            # Global schema
+            query = """
+                SELECT id, domain, rule, explanation, confidence,
+                       times_validated, times_violated, is_golden,
+                       source_type, created_at, updated_at
+                FROM heuristics
+                WHERE 1=1
+            """
         params = []
 
         if domain:
             query += " AND domain = ?"
             params.append(domain)
 
-        if golden_only:
+        if golden_only and scope == "global":
             query += " AND is_golden = 1"
 
+        # Use correct column name based on scope
         sort_map = {
             "confidence": "confidence DESC",
-            "validated": "times_validated DESC",
+            "validated": "validation_count DESC" if scope == "project" else "times_validated DESC",
             "violated": "times_violated DESC",
             "recent": "created_at DESC"
         }

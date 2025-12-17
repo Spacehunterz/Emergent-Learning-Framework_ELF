@@ -1,7 +1,8 @@
-import { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext, ReactNode, useEffect } from 'react'
 import { Stats, Hotspot, ApiRun, RawEvent, TimelineData, ApiAnomaly, Heuristic } from '../types'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { useHeuristics } from '../hooks/useHeuristics'
+import { useScopeStore } from '../store/scopeStore'
 
 interface DataContextType {
   // Dashboard data
@@ -30,12 +31,21 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
 export function DataProvider({ children }: { children: ReactNode }) {
+  // Get scope from store
+  const { scope, fetchProjectContext } = useScopeStore()
+
+  // Fetch project context on mount
+  useEffect(() => {
+    fetchProjectContext()
+  }, [fetchProjectContext])
+
   // Use existing dashboard data hook
   const dashboardData = useDashboardData()
 
-  // Use heuristics hook with stats reload callback
+  // Use heuristics hook with stats reload callback and scope
   const heuristicsData = useHeuristics({
-    onStatsChange: dashboardData.loadStats
+    onStatsChange: dashboardData.loadStats,
+    scope
   })
 
   const value: DataContextType = {

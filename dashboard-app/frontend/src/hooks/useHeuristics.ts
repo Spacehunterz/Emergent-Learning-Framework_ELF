@@ -1,19 +1,22 @@
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Heuristic } from '../types'
 import { useAPI } from './useAPI'
 
 interface UseHeuristicsOptions {
   onStatsChange?: () => void
+  scope?: 'global' | 'project'
 }
 
 export function useHeuristics(options?: UseHeuristicsOptions) {
   const [heuristics, setHeuristics] = useState<Heuristic[]>([])
   const api = useAPI()
-  const { onStatsChange } = options || {}
+  const { onStatsChange, scope = 'global' } = options || {}
+  const scopeRef = useRef(scope)
+  scopeRef.current = scope
 
   const reloadHeuristics = useCallback(async () => {
     try {
-      const data = await api.get('/api/heuristics')
+      const data = await api.get(`/api/heuristics?scope=${scopeRef.current}`)
       setHeuristics(data || [])
     } catch (err) {
       console.error('Failed to load heuristics:', err)
@@ -72,9 +75,10 @@ export function useHeuristics(options?: UseHeuristicsOptions) {
     }
   }, [api])
 
+  // Reload when scope changes
   useEffect(() => {
     reloadHeuristics()
-  }, [reloadHeuristics])
+  }, [reloadHeuristics, scope])
 
   return useMemo(() => ({
     heuristics,

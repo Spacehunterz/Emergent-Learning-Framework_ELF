@@ -2,35 +2,141 @@
 Database utility functions for the Emergent Learning Dashboard.
 
 Provides database connection management and helper functions for SQLite operations.
+Supports both global and project-specific databases.
 """
 
 import sqlite3
+import os
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Optional
+from dataclasses import dataclass
 
 
-# Database path
+# Database paths
 EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
-DB_PATH = EMERGENT_LEARNING_PATH / "memory" / "index.db"
+GLOBAL_DB_PATH = EMERGENT_LEARNING_PATH / "memory" / "index.db"
+
+# Legacy alias
+DB_PATH = GLOBAL_DB_PATH
+
+
+@dataclass
+class ProjectContext:
+    """Current project context for the dashboard."""
+    has_project: bool = False
+    project_name: Optional[str] = None
+    project_root: Optional[Path] = None
+    project_db_path: Optional[Path] = None
+
+
+# Global project context (set at startup)
+_current_project: Optional[ProjectContext] = None
+
+
+def detect_project_context(start_path: Optional[Path] = None) -> ProjectContext:
+    """
+    Detect if we are in an ELF-initialized project.
+    Walks up from start_path looking for .elf/ directory.
+    """
+    if start_path is None:
+        start_path = Path.cwd()
+    else:
+        start_path = Path(start_path).resolve()
+
+    current = start_path
+
+    while True:
+        elf_dir = current / '.elf'
+        if elf_dir.exists() and elf_dir.is_dir():
+            db_path = elf_dir / 'learnings.db'
+            project_name = current.name
+            config_path = elf_dir / 'config.yaml'
+            if config_path.exists():
+                try:
+                    import yaml
+                    with open(config_path, 'r', encoding='utf-8') as f:
+                        config = yaml.safe_load(f) or {}
+                    project_name = config.get('project', {}).get('name', current.name)
+                except Exception:
+                    pass
+
+            return ProjectContext(
+                has_project=True,
+                project_name=project_name,
+                project_root=current,
+                project_db_path=db_path if db_path.exists() else None
+            )
+
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+
+    return ProjectContext(has_project=False)
+
+
+def init_project_context(start_path: Optional[Path] = None):
+    """Initialize the global project context at startup."""
+    global _current_project
+    _current_project = detect_project_context(start_path)
+    return _current_project
+
+
+def get_project_context() -> ProjectContext:
+    """Get the current project context."""
+    global _current_project
+    if _current_project is None:
+        _current_project = detect_project_context()
+    return _current_project
 
 
 def escape_like(s: str) -> str:
-    """
-    Escape SQL LIKE wildcards to prevent wildcard injection.
-
-    Args:
-        s: String to escape
-
-    Returns:
-        String with SQL LIKE wildcards escaped
-    """
-    return s.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+    """Escape SQL LIKE wildcards to prevent wildcard injection."""
+    return s.replace(chr(92), chr(92)+chr(92)).replace('%', chr(92)+'%').replace('_', chr(92)+'_')
 
 
 @contextmanager
-def get_db():
+def get_db(scope: str = "global"):
     """Get database connection with row factory."""
-    conn = sqlite3.connect(str(DB_PATH), timeout=10.0)
+    if scope == "project":
+        ctx = get_project_context()
+        if ctx.project_db_path and ctx.project_db_path.exists():
+            db_path = ctx.project_db_path
+        else:
+            db_path = GLOBAL_DB_PATH
+    else:
+        db_path = GLOBAL_DB_PATH
+
+    conn = sqlite3.connect(str(db_path), timeout=10.0)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+@contextmanager
+def get_global_db():
+    """Get global database connection."""
+    conn = sqlite3.connect(str(GLOBAL_DB_PATH), timeout=10.0)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+@contextmanager
+def get_project_db():
+    """Get project database connection (falls back to global if no project)."""
+    ctx = get_project_context()
+    if ctx.project_db_path and ctx.project_db_path.exists():
+        db_path = ctx.project_db_path
+    else:
+        db_path = GLOBAL_DB_PATH
+
+    conn = sqlite3.connect(str(db_path), timeout=10.0)
     conn.row_factory = sqlite3.Row
     try:
         yield conn

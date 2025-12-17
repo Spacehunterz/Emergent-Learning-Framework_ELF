@@ -24,7 +24,7 @@ from fastapi.responses import FileResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # Import utilities
-from utils import get_db, dict_from_row, ConnectionManager, auto_capture
+from utils import get_db, dict_from_row, ConnectionManager, auto_capture, init_project_context
 
 # Import routers
 from routers import (
@@ -37,6 +37,7 @@ from routers import (
     admin_router,
     fraud_router,
     workflows_router,
+    context_router,
 )
 
 # Import router setup functions
@@ -146,6 +147,7 @@ app.include_router(sessions_router)
 app.include_router(admin_router)
 app.include_router(fraud_router)
 app.include_router(workflows_router)
+app.include_router(context_router)
 
 
 # ==============================================================================
@@ -286,6 +288,13 @@ async def monitor_changes():
 
 @app.on_event("startup")
 async def startup_event():
+    # Initialize project context
+    ctx = init_project_context()
+    if ctx.has_project:
+        logger.info(f"Project context detected: {ctx.project_name} at {ctx.project_root}")
+    else:
+        logger.info("No project context - using global scope only")
+
     # Initial session index scan
     try:
         session_count = session_index.scan()

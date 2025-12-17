@@ -11,6 +11,7 @@ Each router handles a specific domain of the API:
 - admin: CEO inbox, domains, export, editor integration
 - fraud: Fraud reports and review
 - workflows: Workflow management
+- context: Project context and scope information
 """
 
 from .analytics import router as analytics_router
@@ -22,6 +23,7 @@ from .sessions import router as sessions_router
 from .admin import router as admin_router
 from .fraud import router as fraud_router
 from .workflows import router as workflows_router
+from .context import router as context_router
 
 __all__ = [
     'analytics_router',
@@ -33,4 +35,5 @@ __all__ = [
     'admin_router',
     'fraud_router',
     'workflows_router',
+    'context_router',
 ]
