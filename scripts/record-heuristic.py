@@ -25,6 +25,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple
 
+# Project context detection
+PROJECT_CONTEXT_AVAILABLE = False
+try:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "query"))
+    from project import detect_project_context
+    PROJECT_CONTEXT_AVAILABLE = True
+except ImportError:
+    pass
+
 # Constants
 MAX_RULE_LENGTH = 500
 MAX_DOMAIN_LENGTH = 100
@@ -282,6 +291,46 @@ def validate_heuristic_quality(rule: str, explanation: str) -> dict:
     }
 
 
+
+def record_heuristic_to_project(
+    project_db_path: Path,
+    domain: str,
+    rule: str,
+    explanation: str = '',
+    source_type: str = 'observation',
+    confidence: float = 0.7,
+) -> Optional[int]:
+    """Record a heuristic to the project-specific database."""
+    try:
+        conn = sqlite3.connect(str(project_db_path))
+        cursor = conn.cursor()
+        
+        # Sanitize inputs
+        domain = sanitize_domain(domain)
+        rule = sanitize_input(rule)[:MAX_RULE_LENGTH]
+        explanation = sanitize_input(explanation)[:MAX_EXPLANATION_LENGTH]
+        
+        cursor.execute("""
+            INSERT INTO heuristics (rule, explanation, domain, confidence, source)
+            VALUES (?, ?, ?, ?, ?)
+        """, (rule, explanation, domain, confidence, source_type))
+        
+        heuristic_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        print(f"[OK] Recorded project heuristic #{heuristic_id}")
+        print(f"    Domain: {domain}")
+        print(f"    Rule: {rule[:50]}...")
+        log("INFO", f"Recorded project heuristic #{heuristic_id} in domain '{domain}'")
+        
+        return heuristic_id
+    except Exception as e:
+        log("ERROR", f"Failed to record project heuristic: {e}")
+        print(f"ERROR: Failed to record: {e}", file=sys.stderr)
+        return None
+
+
 def record_heuristic(
     domain: str,
     rule: str,
@@ -497,6 +546,14 @@ Examples:
                        help='Confidence level 0.0-1.0 or low/medium/high (default: 0.7)')
     parser.add_argument('--skip-validation', action='store_true',
                        help='Skip quality validation checks (use with caution)')
+    
+    # Project scope arguments
+    parser.add_argument('--project', action='store_true',
+                       help='Record to current project (requires .elf/)')
+    parser.add_argument('--global', dest='global_scope', action='store_true',
+                       help='Record to global database (default if no .elf/)')
+    parser.add_argument('--justification', type=str,
+                       help='Justification for global heuristic (required with --global in project)')
 
     args = parser.parse_args()
 
@@ -539,15 +596,50 @@ Examples:
         print('  HEURISTIC_DOMAIN="domain" HEURISTIC_RULE="rule" python record-heuristic.py')
         sys.exit(0)
 
+    # Determine scope (project vs global)
+    project_ctx = None
+    use_project_db = False
+    
+    if PROJECT_CONTEXT_AVAILABLE:
+        project_ctx = detect_project_context()
+        
+        if args.project:
+            # Explicit project scope
+            if not project_ctx.has_project_context():
+                print("ERROR: --project specified but no .elf/ found. Run 'elf init' first.", file=sys.stderr)
+                sys.exit(1)
+            use_project_db = True
+        elif args.global_scope:
+            # Explicit global scope
+            if project_ctx.has_project_context() and not args.justification:
+                print("WARNING: Recording to global from within a project. Consider using --project.", file=sys.stderr)
+            use_project_db = False
+        elif project_ctx.has_project_context():
+            # Default to project if in project context
+            use_project_db = True
+            print(f"[Recording to project: {project_ctx.project_name}]")
+    
     # Record the heuristic
-    heuristic_id = record_heuristic(
-        domain=data['domain'],
-        rule=data['rule'],
-        explanation=data['explanation'],
-        source_type=data['source_type'],
-        confidence=data['confidence'],
-        skip_validation=args.skip_validation,
-    )
+    if use_project_db and project_ctx:
+        # Record to project database
+        heuristic_id = record_heuristic_to_project(
+            project_db_path=project_ctx.project_db_path,
+            domain=data['domain'],
+            rule=data['rule'],
+            explanation=data['explanation'],
+            source_type=data['source_type'],
+            confidence=data['confidence'],
+        )
+    else:
+        # Record to global database
+        heuristic_id = record_heuristic(
+            domain=data['domain'],
+            rule=data['rule'],
+            explanation=data['explanation'],
+            source_type=data['source_type'],
+            confidence=data['confidence'],
+            skip_validation=args.skip_validation,
+        )
 
     if heuristic_id is None:
         sys.exit(1)

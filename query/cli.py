@@ -139,6 +139,69 @@ async def _async_main(args: argparse.Namespace) -> int:
 
             return 0
 
+        elif args.project_status:
+            # Show project context status
+            try:
+                from project import detect_project_context, format_project_status
+                ctx = detect_project_context()
+                print(format_project_status(ctx))
+                return 0
+            except ImportError:
+                print('ERROR: Project context module not available', file=sys.stderr)
+                return 1
+
+        elif args.project_only:
+            # Show only project-specific context (no global)
+            try:
+                from project import detect_project_context
+                import sqlite3
+
+                ctx = detect_project_context()
+                if not ctx.has_project_context():
+                    print('ERROR: No .elf/ found. Run elf init first.', file=sys.stderr)
+                    return 1
+
+                output = []
+                output.append('# Project Context: ' + str(ctx.project_name) + chr(10))
+                output.append('Root: ' + str(ctx.elf_root) + chr(10) + chr(10))
+
+                # Load context.md
+                context_content = ctx.get_context_md_content()
+                if context_content:
+                    output.append('## Project Description' + chr(10))
+                    output.append(context_content)
+                    output.append(chr(10) + chr(10))
+
+                # Query project heuristics
+                if ctx.project_db_path and ctx.project_db_path.exists():
+                    conn = sqlite3.connect(str(ctx.project_db_path))
+                    cursor = conn.cursor()
+
+                    cursor.execute('SELECT rule, explanation, confidence FROM heuristics ORDER BY confidence DESC LIMIT 20')
+                    heuristics = cursor.fetchall()
+                    if heuristics:
+                        output.append('## Project Heuristics' + chr(10) + chr(10))
+                        for rule, expl, conf in heuristics:
+                            output.append('- **' + str(rule) + '** (confidence: ' + format(conf, '.2f') + ')' + chr(10))
+                            if expl:
+                                output.append('  ' + str(expl)[:100] + chr(10))
+                            output.append(chr(10))
+
+                    cursor.execute('SELECT type, summary FROM learnings ORDER BY created_at DESC LIMIT 10')
+                    learnings = cursor.fetchall()
+                    if learnings:
+                        output.append('## Project Learnings' + chr(10) + chr(10))
+                        for ltype, summary in learnings:
+                            output.append('- **' + str(summary) + '** (' + str(ltype) + ')' + chr(10))
+
+                    conn.close()
+
+                print(''.join(output))
+                return 0
+            except ImportError as e:
+                print('ERROR: Project context module not available: ' + str(e), file=sys.stderr)
+                return 1
+
         elif args.context:
             # Build full context
             task = "Agent task context generation"
@@ -338,6 +401,12 @@ Error Codes:
     parser.add_argument('--validate', action='store_true', help='Validate database integrity')
     parser.add_argument('--health-check', action='store_true',
                        help='Run system health check and display alerts (meta-observer)')
+
+    # Project-related arguments
+    parser.add_argument('--project-status', action='store_true',
+                       help='Show current project context and status')
+    parser.add_argument('--project-only', action='store_true',
+                       help='Only show project-specific context (no global)')
 
     args = parser.parse_args()
 

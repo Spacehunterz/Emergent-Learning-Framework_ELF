@@ -318,6 +318,55 @@ If a rule seems wrong:
 
 ---
 
+## Per-Project Learning
+
+ELF supports project-specific knowledge via `.elf/` directories. When you work in a project with `.elf/`, learnings are automatically scoped to that project.
+
+### Initialize a Project
+
+```bash
+# In the project root
+python ~/.claude/emergent-learning/scripts/init-project.py
+
+# With options
+python ~/.claude/emergent-learning/scripts/init-project.py --name "my-project" --domains "react,typescript"
+```
+
+This creates:
+- `.elf/config.yaml` - Project configuration and domains
+- `.elf/context.md` - Project description for Claude
+- `.elf/learnings.db` - Project-specific heuristics and learnings
+- `.elf/heuristics/` - Markdown exports for git tracking
+
+### Project Commands
+
+```bash
+# Check project status
+python ~/.claude/emergent-learning/query/query.py --project-status
+
+# View only project context
+python ~/.claude/emergent-learning/query/query.py --project-only
+
+# Record heuristic to project (auto-detects .elf)
+python ~/.claude/emergent-learning/scripts/record-heuristic.py --project \
+  --rule "..." --explanation "..." --domain "..."
+
+# List promotion candidates
+python ~/.claude/emergent-learning/scripts/promote-heuristic.py --list-candidates
+
+# Promote to global
+python ~/.claude/emergent-learning/scripts/promote-heuristic.py --id 5
+```
+
+### How Project Context Works
+
+1. `--context` automatically includes project context as **Tier 0** (highest priority)
+2. Project heuristics are merged with global domain heuristics
+3. Domains in `.elf/config.yaml` are auto-included in queries
+4. High-confidence heuristics can be promoted to global
+
+---
+
 ## File Structure Quick Reference
 
 ```

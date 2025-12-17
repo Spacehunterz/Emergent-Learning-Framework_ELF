@@ -41,6 +41,17 @@ try:
 except ImportError:
     pass
 
+# Project context support (optional)
+PROJECT_CONTEXT_AVAILABLE = False
+try:
+    try:
+        from query.project import detect_project_context, ProjectContext
+    except ImportError:
+        from project import detect_project_context, ProjectContext
+    PROJECT_CONTEXT_AVAILABLE = True
+except ImportError:
+    pass
+
 
 def get_depth_limits(depth: str) -> dict:
     """Get query limits based on depth level."""
@@ -156,6 +167,48 @@ class ContextBuilderMixin:
                 approx_tokens = 0
                 max_chars = max_tokens * 4  # Rough approximation
 
+                # Tier 0: Project Context (if in an ELF-initialized project)
+                project_ctx = None
+                if PROJECT_CONTEXT_AVAILABLE:
+                    try:
+                        project_ctx = detect_project_context()
+                        if project_ctx.has_project_context():
+                            self._log_debug(f"Detected project: {project_ctx.project_name} at {project_ctx.elf_root}")
+
+                            # Add project header
+                            context_parts.append("# TIER 0: Project Context\n\n")
+                            context_parts.append(f"**Project:** {project_ctx.project_name}\n")
+                            context_parts.append(f"**Root:** {project_ctx.elf_root}\n")
+
+                            if project_ctx.domains:
+                                context_parts.append(f"**Domains:** {', '.join(project_ctx.domains)}\n")
+                                # Use project domains if no explicit domain provided
+                                if not domain and project_ctx.domains:
+                                    domain = project_ctx.domains[0]
+                                    self._log_debug(f"Using project domain: {domain}")
+
+                            if project_ctx.inheritance_chain:
+                                parents = [p.name for p in project_ctx.inheritance_chain]
+                                context_parts.append(f"**Inherits from:** {' -> '.join(parents)}\n")
+
+                            context_parts.append("\n")
+
+                            # Load project context.md content
+                            project_description = project_ctx.get_context_md_content()
+                            if project_description:
+                                context_parts.append("## Project Description\n\n")
+                                if len(project_description) > 2000:
+                                    project_description = project_description[:2000] + "\n...(truncated)"
+                                context_parts.append(project_description)
+                                context_parts.append("\n\n")
+                                approx_tokens += len(project_description) // 4
+
+                            context_parts.append("---\n\n")
+                        else:
+                            self._log_debug("No .elf/ found - global-only mode")
+                    except Exception as e:
+                        self._log_debug(f"Project context detection failed: {e}")
+
                 # Tier 1: Golden Rules
                 # For minimal depth, only load configured always_load_categories
                 if depth == 'minimal':
@@ -240,6 +293,67 @@ class ContextBuilderMixin:
                             context_parts.append(entry)
                             approx_tokens += len(entry) // 4
                         learnings_count += len(domain_data['learnings'])
+
+
+                # Add project-specific heuristics (if in project mode)
+                if PROJECT_CONTEXT_AVAILABLE and project_ctx and project_ctx.has_project_context():
+                    try:
+                        import sqlite3
+                        project_db = project_ctx.project_db_path
+                        if project_db and project_db.exists():
+                            conn = sqlite3.connect(str(project_db))
+                            cursor = conn.cursor()
+
+                            # Query project heuristics
+                            cursor.execute("""
+                                SELECT rule, explanation, domain, confidence, validation_count
+                                FROM heuristics
+                                ORDER BY confidence DESC, validation_count DESC
+                                LIMIT ?
+                            """, (limits['heuristics'],))
+                            project_heuristics = cursor.fetchall()
+
+                            if project_heuristics:
+                                context_parts.append("\n## Project-Specific Heuristics\n\n")
+                                for h in project_heuristics:
+                                    rule, explanation, h_domain, confidence, val_count = h
+                                    entry = f"- **{rule}** (confidence: {confidence:.2f}"
+                                    if val_count:
+                                        entry += f", validated: {val_count}x"
+                                    entry += ")\n"
+                                    if explanation:
+                                        expl = explanation[:100] + '...' if len(explanation) > 100 else explanation
+                                        entry += f"  {expl}\n"
+                                    entry += "\n"
+                                    context_parts.append(entry)
+                                    approx_tokens += len(entry) // 4
+                                heuristics_count += len(project_heuristics)
+
+                            # Query project learnings
+                            cursor.execute("""
+                                SELECT type, summary, details, domain
+                                FROM learnings
+                                ORDER BY created_at DESC
+                                LIMIT ?
+                            """, (limits['learnings'],))
+                            project_learnings = cursor.fetchall()
+
+                            if project_learnings:
+                                context_parts.append("\n## Project-Specific Learnings\n\n")
+                                for l in project_learnings:
+                                    l_type, summary, details, l_domain = l
+                                    entry = f"- **{summary}** ({l_type})\n"
+                                    if details:
+                                        det = details[:100] + '...' if len(details) > 100 else details
+                                        entry += f"  {det}\n"
+                                    entry += "\n"
+                                    context_parts.append(entry)
+                                    approx_tokens += len(entry) // 4
+                                learnings_count += len(project_learnings)
+
+                            conn.close()
+                    except Exception as e:
+                        self._log_debug(f"Failed to load project-specific content: {e}")
 
                 else:
                     # No domain specified - show recent heuristics across all domains

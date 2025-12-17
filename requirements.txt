@@ -8,3 +8,6 @@ peewee-aio[aiosqlite]>=1.0.0
 aiofiles>=23.0.0
 
 # Note: The dashboard has additional dependencies in dashboard-app/backend/requirements.txt
+
+# YAML config parsing (for per-project config)
+PyYAML>=6.0
