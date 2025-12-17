@@ -45,15 +45,6 @@ install_venv() {
         return 1
     fi
 
-    # Create venv if it doesn't exist
-    if [ ! -d "$venv_dir" ]; then
-        echo "[ELF] Creating Python virtual environment..."
-        if ! $PYTHON_CMD -m venv "$venv_dir" 2>/dev/null; then
-            echo "[ELF] Warning: Failed to create venv. Using system Python."
-            return 1
-        fi
-    fi
-
     # Determine venv python path based on OS
     if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
         VENV_PYTHON="$venv_dir/Scripts/python.exe"
@@ -61,20 +52,73 @@ install_venv() {
         VENV_PYTHON="$venv_dir/bin/python"
     fi
 
-    # Verify venv python exists
+    # Check if existing venv is valid (python exists and works)
+    local need_create=false
+    if [ ! -d "$venv_dir" ]; then
+        need_create=true
+    elif [ ! -f "$VENV_PYTHON" ]; then
+        echo "[ELF] Existing venv appears broken, recreating..."
+        rm -rf "$venv_dir"
+        need_create=true
+    elif ! "$VENV_PYTHON" -c "import sys; sys.exit(0)" 2>/dev/null; then
+        echo "[ELF] Existing venv Python not working, recreating..."
+        rm -rf "$venv_dir"
+        need_create=true
+    fi
+
+    # Create venv if needed
+    if [ "$need_create" = true ]; then
+        echo "[ELF] Creating Python virtual environment..."
+
+        # Try to create venv, capture error for better diagnostics
+        local venv_output
+        venv_output=$($PYTHON_CMD -m venv "$venv_dir" 2>&1)
+        local venv_exit=$?
+
+        if [ $venv_exit -ne 0 ]; then
+            echo "[ELF] Warning: Failed to create venv (exit code $venv_exit)"
+            if echo "$venv_output" | grep -qi "ensurepip"; then
+                echo "[ELF] Hint: On Debian/Ubuntu, run: sudo apt install python3-venv"
+            elif echo "$venv_output" | grep -qi "permission"; then
+                echo "[ELF] Hint: Permission denied. Check write access to $ELF_DIR"
+            else
+                echo "[ELF] Error: $venv_output"
+            fi
+            echo "[ELF] Falling back to system Python."
+            VENV_PYTHON=""
+            return 1
+        fi
+    fi
+
+    # Verify venv python exists and works
     if [ ! -f "$VENV_PYTHON" ]; then
         echo "[ELF] Warning: Venv python not found at $VENV_PYTHON"
         VENV_PYTHON=""
         return 1
     fi
 
-    # Install requirements if they exist
+    # Install/update requirements
     if [ -f "$requirements" ]; then
         echo "[ELF] Installing Python dependencies..."
-        "$VENV_PYTHON" -m pip install --quiet --upgrade pip 2>/dev/null || true
-        if ! "$VENV_PYTHON" -m pip install --quiet -r "$requirements" 2>/dev/null; then
-            echo "[ELF] Warning: Some dependencies failed to install. Core features should still work."
+        "$VENV_PYTHON" -m pip install --upgrade pip 2>&1 | grep -v "already satisfied" || true
+
+        local pip_output
+        pip_output=$("$VENV_PYTHON" -m pip install -r "$requirements" 2>&1)
+        local pip_exit=$?
+
+        if [ $pip_exit -ne 0 ]; then
+            echo "[ELF] Warning: Some dependencies failed to install:"
+            echo "$pip_output" | grep -i "error\|failed" | head -5
+            echo "[ELF] Core features may still work."
+        else
+            echo "[ELF] Dependencies installed successfully."
         fi
+    fi
+
+    # Final verification - can we import the core dependency?
+    if ! "$VENV_PYTHON" -c "import peewee_aio" 2>/dev/null; then
+        echo "[ELF] Warning: Core dependency peewee_aio not available."
+        echo "[ELF] Try: $VENV_PYTHON -m pip install peewee-aio[aiosqlite]"
     fi
 
     echo "[ELF] Virtual environment ready at: $venv_dir"

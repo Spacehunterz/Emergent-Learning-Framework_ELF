@@ -285,21 +285,45 @@ Write-Host "  Copied query system" -ForegroundColor Green
 # Create Python virtual environment for ELF
 $venvDir = Join-Path $EmergentLearningDir ".venv"
 $venvPython = $null
+$venvPythonPath = Join-Path $venvDir "Scripts" "python.exe"
+$needCreate = $false
 
+# Check if existing venv is valid
 if (-not (Test-Path $venvDir)) {
-    Write-Host "  Creating Python virtual environment..." -ForegroundColor Yellow
-    try {
-        & $pythonCmd -m venv $venvDir 2>&1 | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "  Virtual environment created" -ForegroundColor Green
-        }
-    } catch {
-        Write-Host "  Warning: Could not create venv, using system Python" -ForegroundColor Yellow
+    $needCreate = $true
+} elseif (-not (Test-Path $venvPythonPath)) {
+    Write-Host "  Existing venv appears broken, recreating..." -ForegroundColor Yellow
+    Remove-Item -Path $venvDir -Recurse -Force -ErrorAction SilentlyContinue
+    $needCreate = $true
+} else {
+    # Test if venv python actually works
+    $testResult = & $venvPythonPath -c "import sys; sys.exit(0)" 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  Existing venv Python not working, recreating..." -ForegroundColor Yellow
+        Remove-Item -Path $venvDir -Recurse -Force -ErrorAction SilentlyContinue
+        $needCreate = $true
     }
 }
 
-# Determine venv python path
-$venvPythonPath = Join-Path $venvDir "Scripts" "python.exe"
+if ($needCreate) {
+    Write-Host "  Creating Python virtual environment..." -ForegroundColor Yellow
+    $venvOutput = & $pythonCmd -m venv $venvDir 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  Warning: Failed to create venv (exit code $LASTEXITCODE)" -ForegroundColor Yellow
+        if ($venvOutput -match "ensurepip") {
+            Write-Host "  Hint: venv module may be missing. Try reinstalling Python with pip." -ForegroundColor Yellow
+        } elseif ($venvOutput -match "access|permission") {
+            Write-Host "  Hint: Permission denied. Check write access to $EmergentLearningDir" -ForegroundColor Yellow
+        } else {
+            Write-Host "  Error: $venvOutput" -ForegroundColor Yellow
+        }
+        Write-Host "  Falling back to system Python." -ForegroundColor Yellow
+    } else {
+        Write-Host "  Virtual environment created" -ForegroundColor Green
+    }
+}
+
+# Determine venv python path and verify it works
 if (Test-Path $venvPythonPath) {
     $venvPython = $venvPythonPath
     $venvPipCmd = Join-Path $venvDir "Scripts" "pip.exe"
@@ -325,7 +349,15 @@ if (Test-Path $venvPythonPath) {
     if ($verifyResult -ne "ok") {
         Write-Host "  Installing peewee-aio in venv (required dependency)..." -ForegroundColor Yellow
         Invoke-NativeCommand -Command "`"$venvPipCmd`"" -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed peewee-aio in venv" -ContinueOnError
+
+        # Final check
+        $finalCheck = & $venvPython -c "import peewee_aio; print('ok')" 2>&1
+        if ($finalCheck -ne "ok") {
+            Write-Host "  Warning: Core dependency peewee_aio not available." -ForegroundColor Yellow
+            Write-Host "  Try: $venvPython -m pip install peewee-aio[aiosqlite]" -ForegroundColor Yellow
+        }
     }
+    Write-Host "  Virtual environment ready" -ForegroundColor Green
 } else {
     # Fallback to system pip
     $pipCmd = if ($pythonCmd -eq "python3") { "pip3" } else { "pip" }
