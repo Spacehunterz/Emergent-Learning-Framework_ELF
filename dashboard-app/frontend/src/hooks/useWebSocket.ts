@@ -7,9 +7,14 @@ function buildWsUrl(path: string): string {
   if (path.startsWith('ws://') || path.startsWith('wss://')) {
     return path
   }
+
+  // In development, connect directly to backend (Vite WS proxy can be flaky)
+  // In production, use current host (backend serves frontend)
+  const isDev = import.meta.env.DEV
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const host = window.location.host
+  const host = isDev ? 'localhost:8888' : window.location.host
   const wsPath = path.startsWith('/') ? path : `/${path}`
+
   return `${protocol}//${host}${wsPath}`
 }
 
@@ -35,12 +40,14 @@ export function useWebSocket(url: string, onMessage: (data: any) => void) {
 
     setConnectionStatus('connecting')
     const wsUrl = buildWsUrl(url)
+    console.log(`WebSocket connecting to: ${wsUrl}`)
 
     try {
       ws.current = new WebSocket(wsUrl)
 
       ws.current.onopen = () => {
         if (!mountedRef.current) return
+        console.log('WebSocket connected successfully')
         setConnectionStatus('connected')
         reconnectAttempts.current = 0
       }
@@ -57,18 +64,25 @@ export function useWebSocket(url: string, onMessage: (data: any) => void) {
 
       ws.current.onclose = (event) => {
         if (!mountedRef.current) return
+        console.log('WebSocket closed:', { code: event.code, reason: event.reason })
         setConnectionStatus('disconnected')
 
         // Attempt to reconnect with exponential backoff
         if (reconnectAttempts.current < maxReconnectAttempts && mountedRef.current) {
           const delay = Math.min(baseReconnectDelay * Math.pow(2, reconnectAttempts.current), 10000)
+          console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current + 1}/${maxReconnectAttempts})`)
           reconnectAttempts.current++
           reconnectTimeout.current = setTimeout(connect, delay)
         }
       }
 
-      ws.current.onerror = () => {
+      ws.current.onerror = (event) => {
         if (!mountedRef.current) return
+        console.error('WebSocket error:', {
+          readyState: ws.current?.readyState,
+          url: wsUrl,
+          event
+        })
         if (reconnectAttempts.current > 0) {
           setConnectionStatus('error')
         }
@@ -110,9 +124,9 @@ export function useWebSocket(url: string, onMessage: (data: any) => void) {
     }
   }, []) // Empty deps - only run once
 
-  return useMemo(() => ({ 
-    sendMessage, 
-    connectionStatus, 
-    reconnect: connect 
+  return useMemo(() => ({
+    sendMessage,
+    connectionStatus,
+    reconnect: connect
   }), [sendMessage, connectionStatus, connect])
 }

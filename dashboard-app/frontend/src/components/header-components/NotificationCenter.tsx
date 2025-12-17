@@ -122,7 +122,7 @@ export default function NotificationCenter({
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute right-0 top-full mt-2 w-[420px] rounded-xl shadow-2xl overflow-hidden z-[9999] glass-panel border border-white/10"
+          className="absolute right-0 top-full mt-2 w-[380px] rounded-xl shadow-2xl overflow-hidden z-[9999] glass-panel border border-white/10 translate-x-4"
           style={{ backgroundColor: 'rgba(15, 23, 42, 0.95)' }}
           onClick={(e) => e.stopPropagation()}
         >

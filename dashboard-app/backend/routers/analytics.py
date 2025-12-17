@@ -300,6 +300,50 @@ async def get_learning_velocity(days: int = 30):
         total_learnings_period = sum(d['total'] for d in learnings_by_day)
         total_promotions_period = sum(d['count'] for d in promotions_by_day)
 
+        # Failure-to-learning conversion rate
+        cursor.execute("""
+            SELECT COUNT(*) as total_failures
+            FROM learnings
+            WHERE type = 'failure'
+              AND created_at > datetime('now', ?)
+        """, (f'-{days} days',))
+        total_failures = cursor.fetchone()[0] or 0
+
+        cursor.execute("""
+            SELECT COUNT(*) as heuristics_from_failures
+            FROM heuristics
+            WHERE source = 'failure'
+              AND created_at > datetime('now', ?)
+        """, (f'-{days} days',))
+        heuristics_from_failures = cursor.fetchone()[0] or 0
+
+        failure_to_learning_rate = 0.0
+        if total_failures > 0:
+            failure_to_learning_rate = (heuristics_from_failures / total_failures) * 100
+
+        # Average confidence change
+        avg_confidence_start = 0.0
+        avg_confidence_end = 0.0
+        if len(confidence_by_day) >= 2:
+            avg_confidence_start = confidence_by_day[0].get('avg_confidence', 0) or 0
+            avg_confidence_end = confidence_by_day[-1].get('avg_confidence', 0) or 0
+        confidence_improvement = avg_confidence_end - avg_confidence_start
+
+        # Golden rule promotion rate
+        cursor.execute("""
+            SELECT COUNT(*) as total_promotable
+            FROM heuristics
+            WHERE confidence >= 0.8
+              AND times_validated >= 5
+              AND is_golden = 0
+              AND created_at > datetime('now', ?)
+        """, (f'-{days} days',))
+        total_promotable = cursor.fetchone()[0] or 0
+
+        promotion_rate = 0.0
+        if total_promotable + total_promotions_period > 0:
+            promotion_rate = (total_promotions_period / (total_promotable + total_promotions_period)) * 100
+
         return {
             "heuristics_by_day": heuristics_by_day,
             "learnings_by_day": learnings_by_day,
@@ -309,10 +353,15 @@ async def get_learning_velocity(days: int = 30):
             "success_trend": success_trend,
             "current_streak": current_streak,
             "heuristics_trend": round(heuristics_trend, 1),
+            "failure_to_learning_rate": round(failure_to_learning_rate, 1),
+            "confidence_improvement": round(confidence_improvement, 2),
+            "promotion_rate": round(promotion_rate, 1),
             "totals": {
                 "heuristics": total_heuristics_period,
                 "learnings": total_learnings_period,
-                "promotions": total_promotions_period
+                "promotions": total_promotions_period,
+                "failures": total_failures,
+                "heuristics_from_failures": heuristics_from_failures
             }
         }
 

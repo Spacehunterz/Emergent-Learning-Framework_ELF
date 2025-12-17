@@ -21,11 +21,13 @@ Usage:
 """
 
 import asyncio
+import json
 import logging
 from datetime import datetime
 from typing import Optional
 
 from utils.database import get_db
+from utils.outcome_inference import infer_outcome_from_content, extract_content_from_result
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +60,7 @@ class AutoCapture:
         self.stats = {
             "failures_captured": 0,
             "successes_captured": 0,
+            "unknowns_reanalyzed": 0,
             "total_captured": 0,
             "last_batch_size": 0,
             "errors": 0,
@@ -76,6 +79,7 @@ class AutoCapture:
                 # Capture both failures and successes
                 failures = await self.capture_new_failures()
                 successes = await self.capture_new_successes()
+                reanalyzed = await self.reanalyze_unknown_outcomes()
                 total = failures + successes
 
                 self.stats["runs"] += 1
@@ -85,6 +89,8 @@ class AutoCapture:
                     logger.info(f"AutoCapture: captured {failures} new failure(s)")
                 if successes > 0:
                     logger.info(f"AutoCapture: captured {successes} new success(es)")
+                if reanalyzed > 0:
+                    logger.info(f"AutoCapture: re-analyzed {reanalyzed} unknown outcome(s)")
             except Exception as e:
                 self.stats["errors"] += 1
                 logger.error(f"AutoCapture error: {e}")
@@ -95,6 +101,94 @@ class AutoCapture:
         """Stop the auto-capture background loop."""
         self.running = False
         logger.info("AutoCapture stopped")
+
+    async def reanalyze_unknown_outcomes(self) -> int:
+        """Re-analyze workflow runs with unknown outcomes."""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT wr.id, wr.workflow_name, wr.output_json, wr.status,
+                       wr.completed_nodes, wr.total_nodes
+                FROM workflow_runs wr
+                WHERE wr.created_at > datetime('now', ?)
+                AND wr.output_json LIKE '%"outcome": "unknown"%'
+                """,
+                (f"-{self.lookback_hours} hours",),
+            )
+            runs = cursor.fetchall()
+            updated = 0
+
+            for run in runs:
+                run_id, workflow_name, output_json, status, completed_nodes, total_nodes = run
+                all_content = []
+
+                cursor.execute(
+                    "SELECT result_text, result_json FROM node_executions WHERE run_id = ?",
+                    (run_id,),
+                )
+                for result_text, result_json in cursor.fetchall():
+                    if result_text:
+                        all_content.append(result_text)
+                    if result_json:
+                        all_content.append(extract_content_from_result(result_json))
+
+                combined = "\n".join(filter(None, all_content))
+                new_outcome, new_reason = infer_outcome_from_content(combined)
+
+                if new_outcome == "unknown" and status == "completed":
+                    if completed_nodes and total_nodes and completed_nodes >= total_nodes:
+                        new_outcome, new_reason = "success", "All nodes completed"
+                    else:
+                        new_outcome, new_reason = "success", "Workflow completed without errors"
+
+                if new_outcome != "unknown":
+                    try:
+                        new_output = json.dumps({"outcome": new_outcome, "reason": new_reason})
+                        cursor.execute("UPDATE workflow_runs SET output_json = ? WHERE id = ?", (new_output, run_id))
+                        cursor.execute("UPDATE node_executions SET result_json = ? WHERE run_id = ?", (new_output, run_id))
+                        updated += 1
+                    except Exception as e:
+                        logger.warning(f"Failed to update run {run_id}: {e}")
+
+            if updated > 0:
+                cursor.execute(
+                    "INSERT INTO metrics (metric_type, metric_name, metric_value, context) VALUES ('outcome_reanalysis', 'background_job', ?, 'auto_capture.py')",
+                    (updated,),
+                )
+                conn.commit()
+                self.stats["unknowns_reanalyzed"] += updated
+
+            return updated
+
+
+    async def link_orphan_trails(self) -> int:
+        """Link trails without run_id to workflow runs based on timestamps."""
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                UPDATE trails
+                SET run_id = (
+                    SELECT wr.id FROM workflow_runs wr
+                    WHERE trails.created_at BETWEEN wr.started_at AND COALESCE(wr.completed_at, datetime('now'))
+                    ORDER BY wr.started_at DESC
+                    LIMIT 1
+                )
+                WHERE run_id IS NULL
+                AND created_at > datetime('now', ?)
+                """,
+                (f"-{self.lookback_hours} hours",),
+            )
+            linked = cursor.rowcount
+            if linked > 0:
+                cursor.execute(
+                    "INSERT INTO metrics (metric_type, metric_name, metric_value, context) VALUES ('trail_linking', 'background_job', ?, 'auto_capture.py')",
+                    (linked,),
+                )
+                conn.commit()
+                logger.debug(f"Linked {linked} orphan trails to workflow runs")
+            return linked
 
     async def capture_new_failures(self) -> int:
         """

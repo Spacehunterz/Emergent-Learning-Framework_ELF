@@ -7,10 +7,15 @@ export interface LearningVelocityData {
   success_trend: Array<{ date: string; total: number; success_ratio: number }>
   current_streak: number
   heuristics_trend: number
+  failure_to_learning_rate?: number
+  confidence_improvement?: number
+  promotion_rate?: number
   totals: {
     heuristics: number
     learnings: number
     promotions: number
+    failures?: number
+    heuristics_from_failures?: number
   }
 }
 

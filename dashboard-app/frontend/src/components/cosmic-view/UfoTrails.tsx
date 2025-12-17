@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { SolarSystem } from './types'
@@ -23,13 +23,18 @@ interface Ufo {
 
 export function UfoTrails({ systems }: UfoTrailsProps) {
   const groupRef = useRef<THREE.Group>(null)
-
-  // Initialize UFOs
   const ufosRef = useRef<Ufo[]>([])
+  const trailGeometriesRef = useRef<THREE.BufferGeometry[]>([])
 
   // Get all body positions from systems
   const bodyPositions = useMemo(() => {
     const positions: { pos: THREE.Vector3; systemIdx: number }[] = []
+
+    // Null check for empty systems
+    if (!systems || systems.length === 0) {
+      console.warn('[UfoTrails] No systems provided')
+      return positions
+    }
 
     systems.forEach((system, sysIdx) => {
       // Add system center (sun position)
@@ -39,7 +44,7 @@ export function UfoTrails({ systems }: UfoTrailsProps) {
       })
 
       // Add estimated planet positions (they orbit, so we use base position)
-      system.planets.forEach((planet) => {
+      system.planets?.forEach((planet) => {
         const planetPos = new THREE.Vector3(
           system.position[0] + planet.orbitRadius,
           system.position[1],
@@ -49,12 +54,34 @@ export function UfoTrails({ systems }: UfoTrailsProps) {
       })
     })
 
+    console.log(`[UfoTrails] Found ${positions.length} body positions`)
     return positions
   }, [systems])
 
-  // Initialize UFOs on first render
-  if (ufosRef.current.length === 0 && bodyPositions.length > 1) {
-    for (let i = 0; i < Math.min(UFO_COUNT, bodyPositions.length); i++) {
+  // Initialize UFOs when body positions are available
+  useEffect(() => {
+    // Clear existing UFOs and geometries on reset
+    if (ufosRef.current.length > 0) {
+      console.log('[UfoTrails] Clearing existing UFOs')
+      ufosRef.current = []
+
+      // Dispose old geometries to prevent memory leaks
+      trailGeometriesRef.current.forEach((geom) => {
+        geom.dispose()
+      })
+      trailGeometriesRef.current = []
+    }
+
+    // Need at least 2 positions to create meaningful paths
+    if (bodyPositions.length < 2) {
+      console.warn('[UfoTrails] Not enough body positions to create UFO paths')
+      return
+    }
+
+    console.log('[UfoTrails] Initializing UFOs')
+    const ufoCount = Math.min(UFO_COUNT, bodyPositions.length)
+
+    for (let i = 0; i < ufoCount; i++) {
       const startIdx = i % bodyPositions.length
       const targetIdx = (i + 1) % bodyPositions.length
 
@@ -70,14 +97,39 @@ export function UfoTrails({ systems }: UfoTrailsProps) {
         targetBodyIndex: targetIdx,
         progress: 0,
       })
+
+      // Create geometry for this UFO's trail
+      const geometry = new THREE.BufferGeometry()
+      const positions = new Float32Array(TRAIL_LENGTH * 3)
+
+      // Initialize with starting position
+      for (let j = 0; j < TRAIL_LENGTH; j++) {
+        positions[j * 3] = startPos.x
+        positions[j * 3 + 1] = startPos.y
+        positions[j * 3 + 2] = startPos.z
+      }
+
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+      trailGeometriesRef.current.push(geometry)
     }
-  }
+
+    console.log(`[UfoTrails] Initialized ${ufosRef.current.length} UFOs`)
+
+    // Cleanup on unmount
+    return () => {
+      console.log('[UfoTrails] Cleaning up geometries')
+      trailGeometriesRef.current.forEach((geom) => {
+        geom.dispose()
+      })
+      trailGeometriesRef.current = []
+    }
+  }, [bodyPositions])
 
   // Animate UFOs
   useFrame((state, delta) => {
-    if (bodyPositions.length < 2) return
+    if (bodyPositions.length < 2 || ufosRef.current.length === 0) return
 
-    ufosRef.current.forEach((ufo) => {
+    ufosRef.current.forEach((ufo, idx) => {
       // Move toward target
       const direction = ufo.target.clone().sub(ufo.position)
       const distance = direction.length()
@@ -107,31 +159,27 @@ export function UfoTrails({ systems }: UfoTrailsProps) {
       ufo.trail.unshift(ufo.position.clone())
 
       ufo.progress += delta
+
+      // Update trail geometry
+      if (trailGeometriesRef.current[idx]) {
+        const positions = new Float32Array(ufo.trail.length * 3)
+        ufo.trail.forEach((point, i) => {
+          positions[i * 3] = point.x
+          positions[i * 3 + 1] = point.y
+          positions[i * 3 + 2] = point.z
+        })
+
+        const positionAttribute = trailGeometriesRef.current[idx].getAttribute('position') as THREE.BufferAttribute
+        positionAttribute.set(positions)
+        positionAttribute.needsUpdate = true
+      }
     })
   })
 
-  // Create geometry for trails
-  const trailGeometries = useMemo(() => {
-    return ufosRef.current.map(() => new THREE.BufferGeometry())
-  }, [])
-
-  // Update trail geometries each frame
-  useFrame(() => {
-    ufosRef.current.forEach((ufo, idx) => {
-      const positions = new Float32Array(ufo.trail.length * 3)
-      ufo.trail.forEach((point, i) => {
-        positions[i * 3] = point.x
-        positions[i * 3 + 1] = point.y
-        positions[i * 3 + 2] = point.z
-      })
-      trailGeometries[idx].setAttribute(
-        'position',
-        new THREE.BufferAttribute(positions, 3)
-      )
-    })
-  })
-
-  if (bodyPositions.length < 2) return null
+  // Early return if not enough data
+  if (bodyPositions.length < 2 || ufosRef.current.length === 0) {
+    return null
+  }
 
   return (
     <group ref={groupRef}>
@@ -158,15 +206,15 @@ export function UfoTrails({ systems }: UfoTrailsProps) {
             />
           </mesh>
 
-          {/* Trail line */}
-          <line geometry={trailGeometries[idx]}>
+          {/* Trail line - use LineSegments for better rendering */}
+          <lineSegments geometry={trailGeometriesRef.current[idx]}>
             <lineBasicMaterial
               color="#22d3ee"
               transparent
               opacity={0.4}
               blending={THREE.AdditiveBlending}
             />
-          </line>
+          </lineSegments>
         </group>
       ))}
     </group>
