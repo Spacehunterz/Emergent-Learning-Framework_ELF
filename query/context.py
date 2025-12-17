@@ -45,9 +45,9 @@ except ImportError:
 PROJECT_CONTEXT_AVAILABLE = False
 try:
     try:
-        from query.project import detect_project_context, ProjectContext
+        from query.project import detect_project_context, ProjectContext, format_project_status
     except ImportError:
-        from project import detect_project_context, ProjectContext
+        from project import detect_project_context, ProjectContext, format_project_status
     PROJECT_CONTEXT_AVAILABLE = True
 except ImportError:
     pass
@@ -234,6 +234,16 @@ class ContextBuilderMixin:
                 # For minimal depth, return just core golden rules (~300 tokens)
                 if depth == 'minimal':
                     building_header = "🏢 Building Status (minimal)\n━━━━━━━━━━━━━━━━━━\n\n"
+
+                    # Add project location to header
+                    if PROJECT_CONTEXT_AVAILABLE:
+                        try:
+                            project_ctx = detect_project_context()
+                            project_info = format_project_status(project_ctx)
+                            building_header += f"{project_info}\n\n"
+                        except Exception:
+                            pass
+
                     context_parts.insert(0, f"{building_header}# Task Context\n\n{task}\n\n---\n\n")
                     result = "".join(context_parts)
                     self._log_debug(f"Built minimal context with ~{len(result)//4} tokens")
@@ -611,6 +621,16 @@ class ContextBuilderMixin:
                 # Task context with building header (show depth level)
                 depth_label = f" ({depth})" if depth != 'standard' else ""
                 building_header = f"🏢 Building Status{depth_label}\n━━━━━━━━━━━━━━━━━━\n\n"
+                
+                # Add project location to header
+                if PROJECT_CONTEXT_AVAILABLE:
+                    try:
+                        project_ctx = detect_project_context()
+                        project_info = format_project_status(project_ctx)
+                        building_header += f"{project_info}\n\n"
+                    except Exception:
+                        pass
+
                 context_parts.insert(0, f"{building_header}# Task Context\n\n{task}\n\n---\n\n")
 
             result = "".join(context_parts)
