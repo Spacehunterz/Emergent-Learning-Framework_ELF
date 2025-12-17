@@ -37,7 +37,12 @@ PYTHON_CMD=$(detect_python)
 
 install_venv() {
     local venv_dir="$ELF_DIR/.venv"
-    local requirements="$ELF_DIR/requirements.txt"
+    # requirements.txt is at root of repo, not in ELF_DIR
+    local requirements="$SCRIPT_DIR/../requirements.txt"
+    # Fallback: check if it's in ELF_DIR (for in-place installs)
+    if [ ! -f "$requirements" ]; then
+        requirements="$ELF_DIR/requirements.txt"
+    fi
 
     if [ -z "$PYTHON_CMD" ]; then
         echo "[ELF] Warning: Python not found. Skipping venv setup."

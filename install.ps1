@@ -335,6 +335,9 @@ if (Test-Path $venvPythonPath) {
 
 # Install core Python dependencies into venv
 $requirementsFile = Join-Path $srcDir "requirements.txt"
+# Define pipCmd for fallback cases (also used later for dashboard backend)
+$pipCmd = if ($pythonCmd -eq "python3") { "pip3" } else { "pip" }
+
 if (Test-Path $venvPythonPath) {
     # Use venv pip
     if (Test-Path $requirementsFile) {
@@ -526,10 +529,11 @@ if ($InstallDashboard) {
             Write-Host "  Frontend dependencies already installed" -ForegroundColor Green
         }
 
-        # Install backend dependencies
+        # Install backend dependencies (use venv pip if available)
         $backendDir = Join-Path $dashboardDst "backend"
         if (Test-Path $backendDir) {
-            Invoke-NativeCommand -Command $pipCmd -Arguments "install -q fastapi uvicorn aiofiles websockets peewee" -SuccessMessage "Installed backend dependencies" -ContinueOnError
+            $backendPipCmd = if ($venvPython) { "`"$venvPipCmd`"" } else { $pipCmd }
+            Invoke-NativeCommand -Command $backendPipCmd -Arguments "install -q fastapi uvicorn aiofiles websockets peewee" -SuccessMessage "Installed backend dependencies" -ContinueOnError
         }
 
         Set-Location $ScriptDir
@@ -538,7 +542,7 @@ if ($InstallDashboard) {
 
 # === CHECK CLAUDE CODE ===
 Write-Host ""
-Write-Host "[Step 5/5] Checking optional components..." -ForegroundColor Yellow
+Write-Host "[Step 4/5] Checking optional components..." -ForegroundColor Yellow
 try {
     $claudeVersion = claude --version 2>&1
     Write-Host "  Claude Code: $claudeVersion" -ForegroundColor Green
@@ -550,7 +554,7 @@ try {
 
 # === CONFIGURE SETTINGS.JSON ===
 Write-Host ""
-Write-Host "[Step 4/5] Configuring Claude Code settings..." -ForegroundColor Yellow
+Write-Host "[Step 5/5] Configuring Claude Code settings..." -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  About to modify settings.json:" -ForegroundColor Cyan
 Write-Host "  - Adding PreToolUse hook (runs before each task)"
