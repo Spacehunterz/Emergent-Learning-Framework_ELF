@@ -5,6 +5,7 @@ import { SettingsPanel } from './SettingsPanel'
 import { useCosmicSettings } from '../context/CosmicSettingsContext'
 import { useCosmicAudio } from '../context/CosmicAudioContext'
 import { useDataContext } from '../context/DataContext'
+import ScopeToggle from './ScopeToggle'
 
 interface HeaderProps {
   isConnected: boolean
@@ -118,6 +119,9 @@ export default function Header({ isConnected, onOpenCommandPalette }: HeaderProp
                   <LayoutGrid className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* Scope Toggle (Global/Project) */}
+              <ScopeToggle />
             </div>
 
             {/* Middle: Cosmic Navigation / Search */}
