@@ -559,13 +559,16 @@ Write-Host ""
 Write-Host "  About to modify settings.json:" -ForegroundColor Cyan
 Write-Host "  - Adding PreToolUse hook (runs before each task)"
 Write-Host "  - Adding PostToolUse hook (runs after each task)"
+Write-Host "  - Adding UserPromptSubmit hook (checkin heuristic reminder)"
 Write-Host "  - Preserving your existing hooks (if any)"
 Write-Host "  - Creating backup at settings.json.backup"
 Write-Host ""
 
 $hookLearningLoop = Join-Path $EmergentLearningDir "hooks" "learning-loop"
+$hookMainDir = Join-Path $EmergentLearningDir "hooks"
 $preToolHook = Join-Path $hookLearningLoop "pre_tool_learning.py"
 $postToolHook = Join-Path $hookLearningLoop "post_tool_learning.py"
+$checkinHook = Join-Path $hookMainDir "checkin_heuristic_reminder.py"
 
 # Backup existing settings if present
 if (Test-Path $SettingsFile) {
@@ -621,6 +624,17 @@ $elfFileOpsHook = @{
     )
 }
 
+# Hook for checkin commands (proactive heuristic recording reminder)
+$elfCheckinHook = @{
+    "matcher" = ""
+    "hooks" = @(
+        @{
+            "type" = "command"
+            "command" = "$hookPythonCmd `"$checkinHook`""
+        }
+    )
+}
+
 # Merge with existing hooks (don't overwrite user's other hooks)
 if (-not $settings["hooks"].ContainsKey("PreToolUse")) {
     $settings["hooks"]["PreToolUse"] = @()
@@ -630,12 +644,18 @@ if (-not $settings["hooks"].ContainsKey("PostToolUse")) {
 }
 
 # Remove any existing ELF hooks (to avoid duplicates on reinstall)
-# Remove hooks where command contains "learning-loop"
+# Remove hooks where command contains "learning-loop" or "checkin_heuristic"
 $settings["hooks"]["PreToolUse"] = @($settings["hooks"]["PreToolUse"] | Where-Object {
     -not ($_.hooks -and ($_.hooks | Where-Object { $_.command -like "*learning-loop*" }))
 })
 $settings["hooks"]["PostToolUse"] = @($settings["hooks"]["PostToolUse"] | Where-Object {
     -not ($_.hooks -and ($_.hooks | Where-Object { $_.command -like "*learning-loop*" }))
+})
+if (-not $settings["hooks"].ContainsKey("UserPromptSubmit")) {
+    $settings["hooks"]["UserPromptSubmit"] = @()
+}
+$settings["hooks"]["UserPromptSubmit"] = @($settings["hooks"]["UserPromptSubmit"] | Where-Object {
+    -not ($_.hooks -and ($_.hooks | Where-Object { $_.command -like "*checkin_heuristic*" }))
 })
 
 # Add ELF hooks using ArrayList to avoid nested array issues
@@ -647,6 +667,10 @@ $settings["hooks"]["PreToolUse"] = $preHooks
 $postHooks.Add($elfPostHook) | Out-Null
 $postHooks.Add($elfFileOpsHook) | Out-Null
 $settings["hooks"]["PostToolUse"] = $postHooks
+
+[System.Collections.ArrayList]$userPromptHooks = @($settings["hooks"]["UserPromptSubmit"])
+$userPromptHooks.Add($elfCheckinHook) | Out-Null
+$settings["hooks"]["UserPromptSubmit"] = $userPromptHooks
 
 # Write without BOM (UTF8 BOM can break JSON parsers)
 $jsonContent = $settings | ConvertTo-Json -Depth 10

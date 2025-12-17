@@ -179,16 +179,21 @@ else:
     python_cmd = "python3"
 
 # Detect platform and format paths appropriately
+# Hook paths: learning-loop for pre/post, main hooks dir for checkin reminder
+elf_hooks_main = elf_dir / "hooks"
+
 if sys.platform == "win32":
     # Windows: use escaped backslashes in JSON
     pre_hook = str(elf_hooks / "pre_tool_learning.py").replace("\\", "\\\\")
     post_hook = str(elf_hooks / "post_tool_learning.py").replace("\\", "\\\\")
+    checkin_hook = str(elf_hooks_main / "checkin_heuristic_reminder.py").replace("\\", "\\\\")
     if venv_python:
         python_cmd = f'"{venv_python.replace(chr(92), chr(92)+chr(92))}"'
 else:
     # Unix: forward slashes
     pre_hook = str(elf_hooks / "pre_tool_learning.py")
     post_hook = str(elf_hooks / "post_tool_learning.py")
+    checkin_hook = str(elf_hooks_main / "checkin_heuristic_reminder.py")
 
 settings = {
     "hooks": {
@@ -212,6 +217,17 @@ settings = {
                     }
                 ],
                 "matcher": "Task"
+            }
+        ],
+        "UserPromptSubmit": [
+            {
+                "hooks": [
+                    {
+                        "command": f'{python_cmd} "{checkin_hook}"',
+                        "type": "command"
+                    }
+                ],
+                "matcher": ""
             }
         ]
     }
