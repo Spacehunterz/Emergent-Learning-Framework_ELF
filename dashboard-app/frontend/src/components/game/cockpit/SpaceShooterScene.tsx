@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Stars, Sparkles } from '@react-three/drei'
+import { Stars } from '@react-three/drei'
 import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
 import { useGame } from '../../../context/GameContext'
@@ -91,7 +91,6 @@ const AsteroidMesh = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null)
     const mainMatRef = useRef<THREE.MeshBasicMaterial>(null)
     const innerMatRef = useRef<THREE.MeshBasicMaterial>(null)
-    const lightRef = useRef<THREE.PointLight>(null)
 
     const rotSpeed = useMemo(() => ({
         x: 0.3 + Math.random() * 0.4,
@@ -119,7 +118,6 @@ const AsteroidMesh = ({ data }: { data: Enemy }) => {
         // Update material opacity
         if (mainMatRef.current) mainMatRef.current.opacity = 0.85 * ease
         if (innerMatRef.current) innerMatRef.current.opacity = 0.4 * ease
-        if (lightRef.current) lightRef.current.intensity = 1 * ease
     })
 
     return (
@@ -136,7 +134,6 @@ const AsteroidMesh = ({ data }: { data: Enemy }) => {
                 <tetrahedronGeometry args={[1, 0]} />
                 <meshBasicMaterial ref={innerMatRef} color="#ffffff" wireframe transparent opacity={0} />
             </mesh>
-            <pointLight ref={lightRef} color={color} intensity={0} distance={40} />
         </group>
     )
 }
@@ -146,7 +143,6 @@ const DroneMesh = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null)
     const outerMatRef = useRef<THREE.MeshBasicMaterial>(null)
     const innerMatRef = useRef<THREE.MeshBasicMaterial>(null)
-    const lightRef = useRef<THREE.PointLight>(null)
 
     const healthPct = data.hp / data.maxHp
     const color = healthPct > 0.5 ? '#00ff88' : healthPct > 0.25 ? '#ffff00' : '#ff0044'
@@ -164,7 +160,6 @@ const DroneMesh = ({ data }: { data: Enemy }) => {
         // Update material opacity
         if (outerMatRef.current) outerMatRef.current.opacity = 0.9 * ease
         if (innerMatRef.current) innerMatRef.current.opacity = 0.6 * ease
-        if (lightRef.current) lightRef.current.intensity = 0.8 * ease
     })
 
     return (
@@ -179,8 +174,6 @@ const DroneMesh = ({ data }: { data: Enemy }) => {
                 <octahedronGeometry args={[1, 0]} />
                 <meshBasicMaterial ref={innerMatRef} color="#ffffff" wireframe transparent opacity={0} />
             </mesh>
-            <pointLight ref={lightRef} color={color} intensity={0} distance={30} />
-            <Sparkles count={20} scale={15} size={4} speed={3} opacity={0.5} color={color} />
         </group>
     )
 }
@@ -193,7 +186,6 @@ const FighterMesh = ({ data }: { data: Enemy }) => {
     const wingMat1Ref = useRef<THREE.MeshBasicMaterial>(null)
     const wingMat2Ref = useRef<THREE.MeshBasicMaterial>(null)
     const coreMatRef = useRef<THREE.MeshBasicMaterial>(null)
-    const lightRef = useRef<THREE.PointLight>(null)
 
     const healthPct = data.hp / data.maxHp
     const color = healthPct > 0.5 ? '#ff00ff' : healthPct > 0.25 ? '#ffff00' : '#ff0044'
@@ -215,7 +207,6 @@ const FighterMesh = ({ data }: { data: Enemy }) => {
         if (wingMat1Ref.current) wingMat1Ref.current.opacity = 0.7 * ease
         if (wingMat2Ref.current) wingMat2Ref.current.opacity = 0.7 * ease
         if (coreMatRef.current) coreMatRef.current.opacity = 0.8 * ease
-        if (lightRef.current) lightRef.current.intensity = 1.5 * ease
     })
 
     return (
@@ -239,8 +230,6 @@ const FighterMesh = ({ data }: { data: Enemy }) => {
                 <icosahedronGeometry args={[1, 0]} />
                 <meshBasicMaterial ref={coreMatRef} color="#00ffff" wireframe transparent opacity={0} />
             </mesh>
-            <pointLight ref={lightRef} color={color} intensity={0} distance={50} />
-            <Sparkles count={30} scale={25} size={5} speed={2} opacity={0.4} color={color} />
         </group>
     )
 }
@@ -254,8 +243,6 @@ const EliteMesh = ({ data }: { data: Enemy }) => {
     const ring1MatRef = useRef<THREE.MeshBasicMaterial>(null)
     const ring2MatRef = useRef<THREE.MeshBasicMaterial>(null)
     const innerMatRef = useRef<THREE.MeshBasicMaterial>(null)
-    const light1Ref = useRef<THREE.PointLight>(null)
-    const light2Ref = useRef<THREE.PointLight>(null)
 
     const healthPct = data.hp / data.maxHp
     const color = healthPct > 0.5 ? '#ffaa00' : healthPct > 0.25 ? '#ff6600' : '#ff0044'
@@ -276,8 +263,6 @@ const EliteMesh = ({ data }: { data: Enemy }) => {
         if (ring1MatRef.current) ring1MatRef.current.opacity = 0.8 * ease
         if (ring2MatRef.current) ring2MatRef.current.opacity = 0.8 * ease
         if (innerMatRef.current) innerMatRef.current.opacity = 0.7 * ease
-        if (light1Ref.current) light1Ref.current.intensity = 2.5 * ease
-        if (light2Ref.current) light2Ref.current.intensity = 1 * ease
     })
 
     return (
@@ -302,9 +287,6 @@ const EliteMesh = ({ data }: { data: Enemy }) => {
                 <icosahedronGeometry args={[1, 0]} />
                 <meshBasicMaterial ref={innerMatRef} color="#ffffff" wireframe transparent opacity={0} />
             </mesh>
-            <pointLight ref={light1Ref} color={color} intensity={0} distance={80} />
-            <pointLight ref={light2Ref} color="#00ffff" intensity={0} distance={50} />
-            <Sparkles count={60} scale={50} size={6} speed={1.5} opacity={0.5} color={color} />
         </group>
     )
 }
@@ -376,13 +358,6 @@ const BossMesh = ({ data }: { data: Enemy }) => {
                 <sphereGeometry args={[1, 8, 8]} />
                 <meshBasicMaterial color={baseColor} transparent opacity={0.6} />
             </mesh>
-
-            {/* Point lights for glow effect */}
-            <pointLight color={baseColor} intensity={3} distance={150} />
-            <pointLight color="#ff00ff" intensity={1.5} distance={80} />
-
-            {/* Particle effects */}
-            <Sparkles count={100} scale={80} size={8} speed={2} opacity={0.6} color={baseColor} />
         </group>
     )
 }
