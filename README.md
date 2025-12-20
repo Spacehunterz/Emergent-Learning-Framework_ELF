@@ -253,7 +253,7 @@ The run-dashboard.sh script will now detect this issue and warn you before faili
 
 - [Claude Code Docs](https://docs.anthropic.com/en/docs/claude-code)
 - [Hooks System](https://docs.anthropic.com/en/docs/claude-code/hooks)
-- [Issues & Support](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/issues)
+- [Community & Support](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/discussions)
 
 ## License
 
@@ -267,4 +267,4 @@ MIT License
 
 ELF is under heavy active development. Rapid commits reflect live experimentation, architectural refinement, and real-world usage. The main branch represents active research and may change frequently. Stable checkpoints will be published as versioned GitHub releases; users who prefer stability should rely on tagged releases rather than the latest commit.
 
-**Not accepting pull requests. Feature requests and bug reports welcome via issues.**
+**Not accepting pull requests. Feature requests, bug reports, and questions welcome via [Discussions](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/discussions).**
