@@ -292,6 +292,165 @@ def validate_heuristic_quality(rule: str, explanation: str) -> dict:
 
 
 
+def record_heuristic_with_location(
+    domain: str,
+    rule: str,
+    explanation: str = '',
+    source_type: str = 'observation',
+    confidence: float = 0.7,
+    project_path: Optional[str] = None,
+    skip_validation: bool = False
+) -> Optional[int]:
+    """
+    Record a heuristic to the global database with optional location tagging.
+
+    Args:
+        domain: Domain for the heuristic
+        rule: The heuristic rule/statement
+        explanation: Why this heuristic works
+        source_type: failure|success|observation
+        confidence: 0.0-1.0 confidence level
+        project_path: Optional project path for location-specific heuristics.
+                     NULL = global (available everywhere)
+                     path = location-specific (only in that directory)
+        skip_validation: Skip quality checks
+
+    Returns: heuristic ID if successful, None otherwise
+    """
+    # Sanitize inputs
+    domain = sanitize_domain(domain)
+    if not domain:
+        log("ERROR", "Domain resulted in empty string after sanitization")
+        return None
+
+    rule = sanitize_input(rule)
+    explanation = sanitize_input(explanation)
+
+    # Validate lengths
+    if len(rule) > MAX_RULE_LENGTH:
+        log("ERROR", f"Rule exceeds maximum length ({MAX_RULE_LENGTH} chars)")
+        print(f"ERROR: Rule too long (max {MAX_RULE_LENGTH} characters)", file=sys.stderr)
+        return None
+
+    if len(explanation) > MAX_EXPLANATION_LENGTH:
+        log("ERROR", "Explanation exceeds maximum length")
+        print(f"ERROR: Explanation too long (max {MAX_EXPLANATION_LENGTH} characters)", file=sys.stderr)
+        return None
+
+    # Validate source_type
+    valid_sources = {'failure', 'success', 'observation'}
+    if source_type not in valid_sources:
+        source_type = 'observation'
+
+    # Validate confidence
+    if not (0.0 <= confidence <= 1.0):
+        confidence = 0.7
+
+    # === QUALITY VALIDATION CHECKLIST ===
+    if not skip_validation:
+        print("\n--- Quality Validation ---")
+
+        # Check for similar existing heuristics
+        similar = check_similar_heuristics(domain, rule)
+        if similar:
+            print(f"\nSimilar heuristics found in '{domain}':")
+            for s in similar:
+                print(f"  [{s['id']}] {s['rule'][:60]}... ({s['similarity']*100:.0f}% similar)")
+            print("  Consider updating existing heuristic instead of adding duplicate.")
+            log("WARN", f"Similar heuristics found: {[s['id'] for s in similar]}")
+
+        # Run quality checks
+        quality = validate_heuristic_quality(rule, explanation)
+        print(f"\nQuality Score: {quality['score']}/5")
+
+        if quality['warnings']:
+            print("\nWarnings:")
+            for w in quality['warnings']:
+                print(f"  - {w}")
+
+        if quality['suggestions']:
+            print("\nSuggestions:")
+            for s in quality['suggestions']:
+                print(f"  - {s}")
+
+        if not quality['passed']:
+            log("WARN", f"Quality validation warnings: {quality['warnings']}")
+
+        print("--- End Validation ---\n")
+
+    log("INFO", f"Recording heuristic: {rule} (domain: {domain}, confidence: {confidence}, project_path: {project_path})")
+
+    # Insert into database with project_path for location awareness
+    query = """
+        INSERT INTO heuristics (domain, rule, explanation, source_type, confidence, project_path)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """
+    success, heuristic_id = sqlite_with_retry(
+        DB_PATH,
+        query,
+        (domain, rule, explanation, source_type, confidence, project_path)
+    )
+
+    if not success or not heuristic_id:
+        log("ERROR", "Failed to insert into database")
+        return None
+
+    location_str = f" (location: {project_path})" if project_path else " (global)"
+    print(f"Database record created (ID: {heuristic_id}){location_str}")
+    log("INFO", f"Database record created (ID: {heuristic_id}){location_str}")
+
+    # Ensure heuristics directory exists
+    HEURISTICS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Append to domain markdown file
+    domain_file = HEURISTICS_DIR / f"{domain}.md"
+
+    # Security checks before file write
+    if not check_symlink_safe(domain_file):
+        return None
+    if not check_hardlink_safe(domain_file):
+        return None
+
+    # Create file header if new
+    if not domain_file.exists():
+        header = f"""# Heuristics: {domain}
+
+Generated from failures, successes, and observations in the **{domain}** domain.
+
+---
+
+"""
+        with open(domain_file, 'w', encoding='utf-8') as f:
+            f.write(header)
+        log("INFO", f"Created new domain file: {domain_file}")
+
+    # Append heuristic entry
+    location_tag = f"\n**Location**: {project_path}" if project_path else "\n**Location**: global"
+    entry = f"""## H-{heuristic_id}: {rule}
+
+**Confidence**: {confidence}
+**Source**: {source_type}{location_tag}
+**Created**: {datetime.now().strftime('%Y-%m-%d')}
+
+{explanation}
+
+---
+
+"""
+    with open(domain_file, 'a', encoding='utf-8') as f:
+        f.write(entry)
+
+    print(f"Appended to: {domain_file}")
+    log("INFO", f"Appended heuristic to: {domain_file}")
+
+    log("INFO", f"Heuristic recorded successfully: {rule}")
+    print()
+    print("Heuristic recorded successfully!")
+
+    return heuristic_id
+
+
+# Legacy function for backwards compatibility
 def record_heuristic_to_project(
     project_db_path: Path,
     domain: str,
@@ -300,35 +459,25 @@ def record_heuristic_to_project(
     source_type: str = 'observation',
     confidence: float = 0.7,
 ) -> Optional[int]:
-    """Record a heuristic to the project-specific database."""
-    try:
-        conn = sqlite3.connect(str(project_db_path))
-        cursor = conn.cursor()
-        
-        # Sanitize inputs
-        domain = sanitize_domain(domain)
-        rule = sanitize_input(rule)[:MAX_RULE_LENGTH]
-        explanation = sanitize_input(explanation)[:MAX_EXPLANATION_LENGTH]
-        
-        cursor.execute("""
-            INSERT INTO heuristics (rule, explanation, domain, confidence, source)
-            VALUES (?, ?, ?, ?, ?)
-        """, (rule, explanation, domain, confidence, source_type))
-        
-        heuristic_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-        
-        print(f"[OK] Recorded project heuristic #{heuristic_id}")
-        print(f"    Domain: {domain}")
-        print(f"    Rule: {rule[:50]}...")
-        log("INFO", f"Recorded project heuristic #{heuristic_id} in domain '{domain}'")
-        
-        return heuristic_id
-    except Exception as e:
-        log("ERROR", f"Failed to record project heuristic: {e}")
-        print(f"ERROR: Failed to record: {e}", file=sys.stderr)
-        return None
+    """
+    DEPRECATED: Record a heuristic to the project-specific database.
+
+    This function is deprecated. Use record_heuristic_with_location() instead
+    with project_path parameter to store location-specific heuristics in the
+    global database.
+    """
+    log("WARN", "record_heuristic_to_project is deprecated - use single DB with project_path")
+    # Convert to new approach: store in global DB with project_path
+    project_path = str(project_db_path.parent.parent) if project_db_path else None
+    return record_heuristic_with_location(
+        domain=domain,
+        rule=rule,
+        explanation=explanation,
+        source_type=source_type,
+        confidence=confidence,
+        project_path=project_path,
+        skip_validation=True
+    )
 
 
 def record_heuristic(
@@ -527,9 +676,15 @@ Examples:
   # Interactive mode
   python record-heuristic.py
 
-  # Non-interactive mode
+  # Non-interactive mode (global heuristic, available everywhere)
   python record-heuristic.py --domain "error-handling" --rule "Always log before raising"
   python record-heuristic.py --domain testing --rule "Mock at boundaries" --confidence 0.8
+
+  # Location-specific heuristic (only shown when in current directory)
+  python record-heuristic.py --project --domain "react" --rule "Use hooks for state"
+
+  # Explicit location path
+  python record-heuristic.py --location "/path/to/project" --domain "api" --rule "..."
 
   # Using environment variables
   HEURISTIC_DOMAIN="api" HEURISTIC_RULE="Validate inputs" python record-heuristic.py
@@ -547,13 +702,13 @@ Examples:
     parser.add_argument('--skip-validation', action='store_true',
                        help='Skip quality validation checks (use with caution)')
     
-    # Project scope arguments
+    # Location scope arguments
     parser.add_argument('--project', action='store_true',
-                       help='Record to current project (requires .elf/)')
+                       help='Record as location-specific (tags with current directory)')
     parser.add_argument('--global', dest='global_scope', action='store_true',
-                       help='Record to global database (default if no .elf/)')
-    parser.add_argument('--justification', type=str,
-                       help='Justification for global heuristic (required with --global in project)')
+                       help='Record as global (available everywhere, default)')
+    parser.add_argument('--location', type=str,
+                       help='Explicit location path for location-specific heuristic')
 
     args = parser.parse_args()
 
@@ -596,50 +751,38 @@ Examples:
         print('  HEURISTIC_DOMAIN="domain" HEURISTIC_RULE="rule" python record-heuristic.py')
         sys.exit(0)
 
-    # Determine scope (project vs global)
-    project_ctx = None
-    use_project_db = False
-    
-    if PROJECT_CONTEXT_AVAILABLE:
-        project_ctx = detect_project_context()
-        
-        if args.project:
-            # Explicit project scope
-            if not project_ctx.has_project_context():
-                print("ERROR: --project specified but no .elf/ found. Run 'elf init' first.", file=sys.stderr)
-                sys.exit(1)
-            use_project_db = True
-        elif args.global_scope:
-            # Explicit global scope
-            if project_ctx.has_project_context() and not args.justification:
-                print("WARNING: Recording to global from within a project. Consider using --project.", file=sys.stderr)
-            use_project_db = False
-        elif project_ctx.has_project_context():
-            # Default to project if in project context
-            use_project_db = True
-            print(f"[Recording to project: {project_ctx.project_name}]")
-    
-    # Record the heuristic
-    if use_project_db and project_ctx:
-        # Record to project database
-        heuristic_id = record_heuristic_to_project(
-            project_db_path=project_ctx.project_db_path,
-            domain=data['domain'],
-            rule=data['rule'],
-            explanation=data['explanation'],
-            source_type=data['source_type'],
-            confidence=data['confidence'],
-        )
+    # Determine location scope
+    # New single-database approach: project_path column for location awareness
+    # NULL = global (available everywhere)
+    # path = location-specific (only shown when in that directory)
+    project_path = None
+
+    if args.location:
+        # Explicit location path provided
+        project_path = args.location
+        print(f"[Recording with location: {project_path}]")
+    elif args.project:
+        # Use current working directory as location
+        project_path = os.getcwd()
+        print(f"[Recording with location: {project_path}]")
+    elif args.global_scope:
+        # Explicit global scope
+        project_path = None
+        print("[Recording as global heuristic]")
     else:
-        # Record to global database
-        heuristic_id = record_heuristic(
-            domain=data['domain'],
-            rule=data['rule'],
-            explanation=data['explanation'],
-            source_type=data['source_type'],
-            confidence=data['confidence'],
-            skip_validation=args.skip_validation,
-        )
+        # Default: global heuristic (NULL project_path)
+        project_path = None
+
+    # Record the heuristic using single-database with location tagging
+    heuristic_id = record_heuristic_with_location(
+        domain=data['domain'],
+        rule=data['rule'],
+        explanation=data['explanation'],
+        source_type=data['source_type'],
+        confidence=data['confidence'],
+        project_path=project_path,
+        skip_validation=args.skip_validation,
+    )
 
     if heuristic_id is None:
         sys.exit(1)

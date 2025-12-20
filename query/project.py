@@ -1,6 +1,18 @@
 """
 Project detection and context management for per-project ELF support.
 
+DEPRECATION NOTICE (2025-12-20):
+The .elf/ per-project database approach is being deprecated in favor of
+a simpler single-database architecture with a 'project_path' column for
+location awareness. This module remains for backwards compatibility but
+new code should use:
+- QuerySystem with current_location parameter for location-aware queries
+- record_heuristic_with_location() with project_path parameter
+
+Legacy features that will be removed:
+- .elf/ directory detection and project-specific databases
+- Separate learnings.db files per project
+
 This module handles:
 - Detecting project root by walking up from cwd
 - Distinguishing between ELF-initialized projects (.elf/) and regular projects

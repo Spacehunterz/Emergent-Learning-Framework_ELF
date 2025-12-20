@@ -235,6 +235,8 @@ class Heuristic(BaseModel):
         constraints=[Check("times_violated >= 0")]
     )
     is_golden = fields.BooleanField(default=False)
+    # Location-specific heuristics: NULL = global (everywhere), path = location-specific
+    project_path = fields.TextField(null=True, default=None)
     created_at = fields.DateTimeField(default=datetime.utcnow)
     updated_at = fields.DateTimeField(default=datetime.utcnow)
 
@@ -246,6 +248,7 @@ class Heuristic(BaseModel):
             (('confidence',), False),
             (('created_at',), False),
             (('domain', 'confidence'), False),
+            (('project_path',), False),
         )
 
 

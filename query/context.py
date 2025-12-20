@@ -235,14 +235,9 @@ class ContextBuilderMixin:
                 if depth == 'minimal':
                     building_header = "🏢 Building Status (minimal)\n━━━━━━━━━━━━━━━━━━\n\n"
 
-                    # Add project location to header
-                    if PROJECT_CONTEXT_AVAILABLE:
-                        try:
-                            project_ctx = detect_project_context()
-                            project_info = format_project_status(project_ctx)
-                            building_header += f"{project_info}\n\n"
-                        except Exception:
-                            pass
+                    # Add location awareness header
+                    location_info = f"**Location:** `{self.current_location}`\n\n"
+                    building_header += location_info
 
                     context_parts.insert(0, f"{building_header}# Task Context\n\n{task}\n\n---\n\n")
                     result = "".join(context_parts)
@@ -621,15 +616,10 @@ class ContextBuilderMixin:
                 # Task context with building header (show depth level)
                 depth_label = f" ({depth})" if depth != 'standard' else ""
                 building_header = f"🏢 Building Status{depth_label}\n━━━━━━━━━━━━━━━━━━\n\n"
-                
-                # Add project location to header
-                if PROJECT_CONTEXT_AVAILABLE:
-                    try:
-                        project_ctx = detect_project_context()
-                        project_info = format_project_status(project_ctx)
-                        building_header += f"{project_info}\n\n"
-                    except Exception:
-                        pass
+
+                # Add location awareness header
+                location_info = f"**Location:** `{self.current_location}`\n\n"
+                building_header += location_info
 
                 context_parts.insert(0, f"{building_header}# Task Context\n\n{task}\n\n---\n\n")
 

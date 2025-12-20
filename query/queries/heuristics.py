@@ -142,16 +142,28 @@ class HeuristicQueryMixin(BaseQueryMixin):
             limit = self._validate_limit(limit)
             timeout = timeout or self.DEFAULT_TIMEOUT
 
-            self._log_debug(f"Querying domain '{domain}' with limit {limit}")
+            current_loc = getattr(self, 'current_location', None)
+            self._log_debug(f"Querying domain '{domain}' with limit {limit}, location={current_loc}")
             async with AsyncTimeoutHandler(timeout):
                 m = get_manager()
                 async with m:
                     async with m.connection():
-                        heuristics_query = (Heuristic
-                            .select()
-                            .where(Heuristic.domain == domain)
-                            .order_by(Heuristic.confidence.desc(), Heuristic.times_validated.desc())
-                            .limit(limit))
+                        # Include global heuristics (project_path IS NULL) and location-specific ones
+                        if current_loc:
+                            heuristics_query = (Heuristic
+                                .select()
+                                .where(
+                                    (Heuristic.domain == domain) &
+                                    ((Heuristic.project_path.is_null()) | (Heuristic.project_path == current_loc))
+                                )
+                                .order_by(Heuristic.confidence.desc(), Heuristic.times_validated.desc())
+                                .limit(limit))
+                        else:
+                            heuristics_query = (Heuristic
+                                .select()
+                                .where(Heuristic.domain == domain)
+                                .order_by(Heuristic.confidence.desc(), Heuristic.times_validated.desc())
+                                .limit(limit))
                         heuristics = []
                         async for h in heuristics_query:
                             heuristics.append(h.__data__.copy())
