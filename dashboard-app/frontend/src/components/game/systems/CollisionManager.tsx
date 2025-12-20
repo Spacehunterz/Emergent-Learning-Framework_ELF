@@ -38,7 +38,6 @@ export const CollisionManager = () => {
 
     useFrame((_, delta) => {
         if (isPaused) return
-        if (performance.now() % 60 < 1) console.log('[CollisionManager] Tick', delta)
         updateProjectiles(delta)
         tick(delta) // Update Enemy Positions (Centralized)
 
@@ -148,11 +147,8 @@ export const CollisionManager = () => {
                         const dmgText = e.type === 'boss' ? `${p.damage} (${e.hp - p.damage}HP)` : p.damage.toString()
                         spawnText(tempTextPos, dmgText, '#22d3ee', 1.0)
 
-                        console.log(`[Collision] Hit ${e.type} id=${e.id} for ${p.damage} dmg, HP: ${e.hp} -> ${e.hp - p.damage}`)
-
                         const dead = damageEnemy(e.id, p.damage)
                         if (dead) {
-                            console.log(`[Collision] ${e.type} DESTROYED!`)
                             spawnExplosion(e.position, e.type === 'boss' ? 'cyan' : 'orange', e.type === 'boss' ? 4 : 2)
                             // Small explosions for smaller enemies, large for bigger ones
                             const isLargeExplosion = e.type === 'boss' || e.type === 'elite' || e.type === 'fighter'

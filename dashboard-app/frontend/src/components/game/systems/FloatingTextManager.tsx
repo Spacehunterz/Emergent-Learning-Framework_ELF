@@ -17,39 +17,39 @@ interface FloatingText {
 interface FloatingTextStore {
     texts: FloatingText[]
     spawnText: (position: Vector3, text: string, color?: string, scale?: number) => void
-    removeText: (id: string) => void
 }
 
+// Simplified store - cleanup happens on spawn
 export const useFloatingTextStore = create<FloatingTextStore>((set) => ({
     texts: [],
-    spawnText: (position, text, color = '#ffffff', scale = 1) => set((state) => ({
-        texts: [...state.texts, {
-            id: Math.random().toString(),
-            position: position.clone(),
-            text,
-            color,
-            scale,
-            createdAt: Date.now()
-        }]
-    })),
-    removeText: (id) => set((state) => ({
-        texts: state.texts.filter(t => t.id !== id)
-    }))
+    spawnText: (position, text, color = '#ffffff', scale = 1) => set((state) => {
+        // Clean up old texts when spawning new ones
+        const now = Date.now()
+        const activeTexts = state.texts.filter(t => now - t.createdAt < 1500)
+        return {
+            texts: [...activeTexts, {
+                id: `txt-${now}-${Math.random()}`,
+                position: position.clone(),
+                text,
+                color,
+                scale,
+                createdAt: now
+            }]
+        }
+    })
 }))
 
 const FloatingTextElement = ({ data }: { data: FloatingText }) => {
     const ref = useRef<any>()
-    const initialY = useRef(data.position.y)
     const { isPaused } = useGameSettings()
 
-    useFrame((_, delta) => {
-        if (isPaused) return
-        if (ref.current) {
-            // Float upward
-            ref.current.position.y += delta * 2
-            // Fade out
-            ref.current.fillOpacity = Math.max(0, ref.current.fillOpacity - delta * 1.5)
-        }
+    useFrame(() => {
+        if (isPaused || !ref.current) return
+        const age = (Date.now() - data.createdAt) / 1000
+        // Float upward
+        ref.current.position.y = data.position.y + age * 3
+        // Fade out
+        ref.current.fillOpacity = Math.max(0, 1 - age * 0.8)
     })
 
     return (
@@ -68,23 +68,15 @@ const FloatingTextElement = ({ data }: { data: FloatingText }) => {
 }
 
 export const FloatingTextRenderer = () => {
-    const { texts, removeText } = useFloatingTextStore()
-    const { isPaused } = useGameSettings()
+    const { texts } = useFloatingTextStore()
 
-    // Cleanup old texts
-    useFrame(() => {
-        if (isPaused) return
-        const now = Date.now()
-        texts.forEach(t => {
-            if (now - t.createdAt > 1500) {
-                removeText(t.id)
-            }
-        })
-    })
+    // Filter active texts in render (no state updates)
+    const now = Date.now()
+    const activeTexts = texts.filter(t => now - t.createdAt < 1500)
 
     return (
         <group>
-            {texts.map(t => (
+            {activeTexts.map(t => (
                 <FloatingTextElement key={t.id} data={t} />
             ))}
         </group>
