@@ -9,7 +9,7 @@ class SoundEngine {
             const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
             this.ctx = new AudioContextClass()
             this.masterGain = this.ctx.createGain()
-            this.masterGain.gain.value = 0 // Muted by default
+            this.masterGain.gain.value = 0.5 // Default 50% volume
             this.masterGain.connect(this.ctx.destination)
         } catch (e) {
             console.error("AudioContext not supported", e)
