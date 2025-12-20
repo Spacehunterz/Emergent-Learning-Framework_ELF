@@ -63,7 +63,7 @@ const LIMITS = {
 const LASER = {
     speed: 150,
     lifetime: 2.5,
-    cooldown: 0.12,
+    cooldown: 0.5, // 2 shots per second max
     radius: 0.35,
     energyCost: 5,
     regenRate: 25
@@ -705,7 +705,6 @@ export const SpaceShooterScene = () => {
             // Consume Energy
             weaponEnergy.current -= LASER.energyCost
 
-            console.log('[SpaceShooterScene] Firing!', aimDir.current)
             lastShot.current = elapsed
             sound.playLaser('player')
 

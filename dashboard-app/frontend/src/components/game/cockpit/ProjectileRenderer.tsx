@@ -46,8 +46,6 @@ const ProjectileMesh = React.memo(({ data }: { data: { id: string, position: THR
                 />
             </mesh>
 
-            {/* Point light for visibility */}
-            <pointLight color={color} intensity={1.5} distance={15} />
         </group>
     )
 }, (prev, next) => prev.data.id === next.data.id) // Only re-render if ID changes (which shouldn't happen for same index usually, but data ref is stable)

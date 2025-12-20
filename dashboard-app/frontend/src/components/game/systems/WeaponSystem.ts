@@ -33,38 +33,27 @@ export const useProjectileStore = create<ProjectileState>((set, get) => ({
     updateProjectiles: (delta) => {
         const state = get()
         const projectiles = state.projectiles
+        if (projectiles.length === 0) return // Skip if no projectiles
+
         const tempVel = new Vector3()
         const MAX_DISTANCE_SQ = 500 * 500
+        let hasExpired = false
 
-
-
-        // Mutate in place
+        // Mutate in place and track if any expired
         for (let i = 0; i < projectiles.length; i++) {
             const p = projectiles[i]
-
-            // Move
             tempVel.copy(p.velocity).multiplyScalar(delta)
             p.position.add(tempVel)
             p.lifetime -= delta
 
-            // Check bounds/lifetime
             if (p.lifetime <= 0 || p.position.lengthSq() > MAX_DISTANCE_SQ) {
-                // Mark for removal?
-                // Since we can't easily remove from the array in-place without affecting the store reference eventually
-                // we will let the set() handle it below.
+                hasExpired = true
             }
         }
 
-        // Filter out dead projectiles
-        // We check if any NEED removal to avoid calling set() if nothing changed
-        // This is O(N) but essential to avoid React renders when no one died.
-        // Optimization: We could flag 'hasRemovals' inside the loop above?
-        // Yes, let's do that to avoid the .some() check if possible, or just accept the filter cost.
-        // Actually, mutation above doesn't tell us if we SHOULD remove.
-
-        const activeProjectiles = projectiles.filter(p => p.lifetime > 0 && p.position.lengthSq() < MAX_DISTANCE_SQ)
-
-        if (activeProjectiles.length !== projectiles.length) {
+        // Only filter and update state if something actually expired
+        if (hasExpired) {
+            const activeProjectiles = projectiles.filter(p => p.lifetime > 0 && p.position.lengthSq() < MAX_DISTANCE_SQ)
             set({ projectiles: activeProjectiles })
         }
     }
