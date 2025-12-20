@@ -9,7 +9,7 @@ import { useGLTF } from '@react-three/drei'
 import { useGameSettings } from './GameSettings'
 
 // Game phases - one enemy type at a time
-type GamePhase = 'asteroids' | 'drones' | 'fighters' | 'elite' | 'boss_approaching' | 'boss_fight' | 'victory'
+type GamePhase = 'asteroid_intro' | 'asteroids' | 'drones' | 'fighters' | 'elite' | 'boss_approaching' | 'boss_fight' | 'victory'
 
 export const WaveManager = () => {
     const { levelUp, addScore } = useGame()
@@ -194,8 +194,6 @@ export const WaveManager = () => {
     // Spawn timers and tracking
     const lastSpawn = useRef(0)
     const totalSpawned = useRef(0)
-    const lastEnemyCount = useRef(0)
-    const killCount = useRef(0)
 
     // Main game loop - ONE enemy type at a time
     useFrame((_, delta) => {

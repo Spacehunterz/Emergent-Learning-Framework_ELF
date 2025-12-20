@@ -2,40 +2,90 @@ import { Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import * as THREE from 'three'
-import { useGame } from '../../../context/GameContext'
-import { usePlayerState } from './PlayerShip'
 
-interface HudProps {
+export interface HudData {
     stageLabel: string
     stageObjective: string
-    bossHealth: number | null
+    bossHealth: number | null // 0-1
+    energy: number // 0-100
+    shields: number // 0-100
+    integrity: number // 0-100
+    score: number
+    level: number
 }
 
-export const HolographicHud = ({ stageLabel, stageObjective, bossHealth }: HudProps) => {
-    const { score, level } = useGame()
-    const { hull, maxHull, shields, maxShields } = usePlayerState()
+// Default initial data to prevent crashes
+export const DEFAULT_HUD_DATA: HudData = {
+    stageLabel: '',
+    stageObjective: '',
+    bossHealth: null,
+    energy: 100,
+    shields: 100,
+    integrity: 100,
+    score: 0,
+    level: 1
+}
 
-    // Alias hull to health for consistency with existing ref logic
-    const health = hull
-    const maxHealth = maxHull
-
+export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudData> }) => {
     // Refs for animated bars
     const shieldBarRef = useRef<THREE.Group>(null)
     const hullBarRef = useRef<THREE.Group>(null)
+    const energyBarRef = useRef<THREE.Group>(null)
     const bossBarRef = useRef<THREE.Group>(null)
 
+    // Refs for Text components (Troika-three-text instances)
+    const scoreTextRef = useRef<any>(null)
+    const levelTextRef = useRef<any>(null)
+    const stageLabelRef = useRef<any>(null)
+    const stageObjRef = useRef<any>(null)
+
+    // Internal state for boss bar visibility toggling (rare update, safe for state)
+    // Actually, let's just control opacity/scale in useFrame to avoid ANY re-renders
+    const bossGroupRef = useRef<THREE.Group>(null)
+
     useFrame((_, delta) => {
+        const data = hudRef.current
+
         // Smooth bar animation
         if (shieldBarRef.current) {
-            const target = Math.max(0, shields / maxShields)
+            const target = Math.max(0, data.shields / 100)
             shieldBarRef.current.scale.x = THREE.MathUtils.lerp(shieldBarRef.current.scale.x, target, delta * 5)
         }
         if (hullBarRef.current) {
-            const target = Math.max(0, health / maxHealth)
+            const target = Math.max(0, data.integrity / 100)
             hullBarRef.current.scale.x = THREE.MathUtils.lerp(hullBarRef.current.scale.x, target, delta * 5)
         }
-        if (bossBarRef.current && bossHealth !== null) {
-            bossBarRef.current.scale.x = THREE.MathUtils.lerp(bossBarRef.current.scale.x, bossHealth, delta * 5)
+        if (energyBarRef.current) {
+            const target = Math.max(0, data.energy / 100)
+            energyBarRef.current.scale.x = THREE.MathUtils.lerp(energyBarRef.current.scale.x, target, delta * 10)
+        }
+
+        // Boss Bar Logic
+        if (bossBarRef.current && bossGroupRef.current) {
+            if (data.bossHealth !== null) {
+                bossGroupRef.current.visible = true
+                bossBarRef.current.scale.x = THREE.MathUtils.lerp(bossBarRef.current.scale.x, data.bossHealth, delta * 5)
+            } else {
+                bossGroupRef.current.visible = false
+            }
+        }
+
+        // Text Updates - Check and update only if changed to minimize overhead (though assignment is cheap)
+        if (scoreTextRef.current) {
+            // Format score with commas
+            const scoreStr = `SCORE: ${Math.floor(data.score).toLocaleString()}`
+            if (scoreTextRef.current.text !== scoreStr) scoreTextRef.current.text = scoreStr
+        }
+        if (levelTextRef.current) {
+            const levelStr = `LEVEL ${data.level}`
+            if (levelTextRef.current.text !== levelStr) levelTextRef.current.text = levelStr
+        }
+        if (stageLabelRef.current) {
+            const str = data.stageLabel.toUpperCase()
+            if (stageLabelRef.current.text !== str) stageLabelRef.current.text = str
+        }
+        if (stageObjRef.current) {
+            if (stageObjRef.current.text !== data.stageObjective) stageObjRef.current.text = data.stageObjective
         }
     })
 
@@ -43,6 +93,37 @@ export const HolographicHud = ({ stageLabel, stageObjective, bossHealth }: HudPr
 
     return (
         <group position={[0, 0, -1.8]} rotation={[0, 0, 0]}>
+            {/* CENTER CROSSHAIR */}
+            <group position={[0, 0, 0]}>
+                {/* Outer ring */}
+                <mesh>
+                    <ringGeometry args={[0.025, 0.03, 32]} />
+                    <meshBasicMaterial color="#00ffff" transparent opacity={0.8} toneMapped={false} />
+                </mesh>
+                {/* Inner dot */}
+                <mesh>
+                    <circleGeometry args={[0.006, 16]} />
+                    <meshBasicMaterial color="#ffffff" toneMapped={false} />
+                </mesh>
+                {/* Crosshair lines */}
+                <mesh position={[0, 0.05, 0]}>
+                    <planeGeometry args={[0.003, 0.025]} />
+                    <meshBasicMaterial color="#00ffff" transparent opacity={0.6} toneMapped={false} />
+                </mesh>
+                <mesh position={[0, -0.05, 0]}>
+                    <planeGeometry args={[0.003, 0.025]} />
+                    <meshBasicMaterial color="#00ffff" transparent opacity={0.6} toneMapped={false} />
+                </mesh>
+                <mesh position={[0.05, 0, 0]}>
+                    <planeGeometry args={[0.025, 0.003]} />
+                    <meshBasicMaterial color="#00ffff" transparent opacity={0.6} toneMapped={false} />
+                </mesh>
+                <mesh position={[-0.05, 0, 0]}>
+                    <planeGeometry args={[0.025, 0.003]} />
+                    <meshBasicMaterial color="#00ffff" transparent opacity={0.6} toneMapped={false} />
+                </mesh>
+            </group>
+
             {/* Left Panel: Status */}
             <group position={[-1.2, -0.6, 0]} rotation={[0, 0.2, 0]}>
                 {/* Shield Bar (Cyan) */}
@@ -94,11 +175,36 @@ export const HolographicHud = ({ stageLabel, stageObjective, bossHealth }: HudPr
                         </mesh>
                     </group>
                 </group>
+
+                {/* Energy Bar (Yellow) */}
+                <group position={[0, -0.15, 0]}>
+                    <Text
+                        position={[-0.6, 0, 0]}
+                        fontSize={0.08}
+                        color="#facc15"
+                        font={fontUrl}
+                        anchorX="right"
+                        anchorY="middle"
+                    >
+                        ENERGY
+                    </Text>
+                    <mesh position={[0, 0, 0]}>
+                        <planeGeometry args={[1, 0.06]} />
+                        <meshBasicMaterial color="#422006" transparent opacity={0.5} />
+                    </mesh>
+                    <group ref={energyBarRef} position={[-0.5, 0, 0.01]}>
+                        <mesh position={[0.5, 0, 0]}>
+                            <planeGeometry args={[1, 0.05]} />
+                            <meshBasicMaterial color="#facc15" toneMapped={false} />
+                        </mesh>
+                    </group>
+                </group>
             </group>
 
             {/* Right Panel: Data */}
             <group position={[1.2, -0.6, 0]} rotation={[0, -0.2, 0]}>
                 <Text
+                    ref={scoreTextRef}
                     position={[0, 0.15, 0]}
                     fontSize={0.12}
                     color="#facc15"
@@ -106,9 +212,10 @@ export const HolographicHud = ({ stageLabel, stageObjective, bossHealth }: HudPr
                     anchorX="left"
                     anchorY="middle"
                 >
-                    {`SCORE: ${score.toLocaleString()}`}
+                    SCORE: 0
                 </Text>
                 <Text
+                    ref={levelTextRef}
                     position={[0, 0, 0]}
                     fontSize={0.09}
                     color="#ffffff"
@@ -117,37 +224,36 @@ export const HolographicHud = ({ stageLabel, stageObjective, bossHealth }: HudPr
                     anchorY="middle"
                     fillOpacity={0.8}
                 >
-                    {`LEVEL ${level}`}
+                    LEVEL 1
                 </Text>
             </group>
 
             {/* Center Top: Objectives */}
             <group position={[0, 0.9, 0]}>
-                {bossHealth !== null && (
-                    <group position={[0, 0.2, 0]}>
-                        <Text
-                            position={[0, 0.1, 0]}
-                            fontSize={0.08}
-                            color="#f97316"
-                            font={fontUrl}
-                            anchorX="center"
-                        >
-                            DREADNOUGHT CLASS DETECTED
-                        </Text>
-                        <mesh position={[0, 0, 0]}>
-                            <planeGeometry args={[2, 0.04]} />
-                            <meshBasicMaterial color="#431407" transparent opacity={0.6} />
+                <group ref={bossGroupRef} position={[0, 0.2, 0]} visible={false}>
+                    <Text
+                        position={[0, 0.1, 0]}
+                        fontSize={0.08}
+                        color="#f97316"
+                        font={fontUrl}
+                        anchorX="center"
+                    >
+                        DREADNOUGHT CLASS DETECTED
+                    </Text>
+                    <mesh position={[0, 0, 0]}>
+                        <planeGeometry args={[2, 0.04]} />
+                        <meshBasicMaterial color="#431407" transparent opacity={0.6} />
+                    </mesh>
+                    <group ref={bossBarRef} position={[-1, 0, 0.01]}>
+                        <mesh position={[1, 0, 0]}>
+                            <planeGeometry args={[2, 0.03]} />
+                            <meshBasicMaterial color="#f97316" toneMapped={false} />
                         </mesh>
-                        <group ref={bossBarRef} position={[-1, 0, 0.01]}>
-                            <mesh position={[1, 0, 0]}>
-                                <planeGeometry args={[2, 0.03]} />
-                                <meshBasicMaterial color="#f97316" toneMapped={false} />
-                            </mesh>
-                        </group>
                     </group>
-                )}
+                </group>
 
                 <Text
+                    ref={stageLabelRef}
                     position={[0, 0, 0]}
                     fontSize={0.1}
                     color="#e2e8f0"
@@ -156,9 +262,10 @@ export const HolographicHud = ({ stageLabel, stageObjective, bossHealth }: HudPr
                     anchorY="middle"
                     fillOpacity={0.9}
                 >
-                    {stageLabel.toUpperCase()}
+                    READY
                 </Text>
                 <Text
+                    ref={stageObjRef}
                     position={[0, -0.12, 0]}
                     fontSize={0.06}
                     color="#94a3b8"
@@ -168,7 +275,7 @@ export const HolographicHud = ({ stageLabel, stageObjective, bossHealth }: HudPr
                     maxWidth={2}
                     textAlign="center"
                 >
-                    {stageObjective}
+                    Prepare for launch
                 </Text>
             </group>
 

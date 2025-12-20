@@ -1,11 +1,11 @@
-import { Suspense, useEffect, useMemo, useRef } from 'react'
+import React, { Suspense, useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Stars, useGLTF, Sparkles } from '@react-three/drei'
+import { Stars, Sparkles } from '@react-three/drei'
 import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
 import { useGame } from '../../../context/GameContext'
-import type { HudState } from './Hud'
-import { HolographicHud } from './HolographicHud'
+import type { HudData } from './HolographicHud'
+import { HolographicHud, DEFAULT_HUD_DATA } from './HolographicHud'
 import { ProjectileRenderer } from './ProjectileRenderer'
 import { CollisionManager } from '../systems/CollisionManager'
 import { useEnemyStore, Enemy } from '../systems/EnemySystem'
@@ -32,10 +32,12 @@ const LIMITS = {
 }
 
 const LASER = {
-    speed: 150, // Increased from 120
-    lifetime: 2.5, // Increased from 1.6 - bullets now travel 375 units
+    speed: 150,
+    lifetime: 2.5,
     cooldown: 0.12,
-    radius: 0.35
+    radius: 0.35,
+    energyCost: 5,
+    regenRate: 25
 }
 
 const GUN_OFFSETS = [
@@ -279,12 +281,7 @@ const EliteMesh = ({ data }: { data: Enemy }) => {
 }
 
 // Legacy ship mesh fallback (shouldn't be used now)
-const ShipMesh = ({ data }: { data: Enemy }) => {
-    // Route to appropriate wireframe mesh
-    if (data.type === 'drone') return <DroneMesh data={data} />
-    if (data.type === 'fighter') return <FighterMesh data={data} />
-    return <FighterMesh data={data} /> // Default to fighter
-}
+
 
 const BossMesh = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null)
@@ -361,14 +358,15 @@ const BossMesh = ({ data }: { data: Enemy }) => {
     )
 }
 
-const EntityRenderer = ({ data }: { data: Enemy }) => {
+const EntityRenderer = React.memo(({ data }: { data: Enemy }) => {
     if (data.type === 'asteroid') return <AsteroidMesh data={data} />
     if (data.type === 'boss') return <BossMesh data={data} />
     if (data.type === 'elite') return <EliteMesh data={data} />
     if (data.type === 'drone') return <DroneMesh data={data} />
     if (data.type === 'fighter') return <FighterMesh data={data} />
     return <FighterMesh data={data} /> // Default
-}
+}, (prev, next) => prev.data === next.data) // Equality check based on reference identity
+
 
 const GunRig = ({ gunRef, recoilImpulse }: { gunRef: React.RefObject<THREE.Group>, recoilImpulse: React.MutableRefObject<number> }) => {
     const innerRef = useRef<THREE.Group>(null)
@@ -384,11 +382,13 @@ const GunRig = ({ gunRef, recoilImpulse }: { gunRef: React.RefObject<THREE.Group
     return (
         <group ref={gunRef}>
             <group ref={innerRef} name="RecoilContainer">
+                {/* Lit from behind/above to ensure visibility */}
+                <pointLight position={[0, 1, 0.5]} intensity={0.5} distance={5} color="#ffffff" />
                 <pointLight position={[0, 0.4, -6]} intensity={1.2} distance={140} color="#dbeafe" />
                 <group position={GUN_OFFSETS[0].toArray()}>
                     <mesh rotation={[Math.PI / 2, 0, 0]}>
                         <cylinderGeometry args={[0.08, 0.16, 2.8]} />
-                        <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.2} />
+                        <meshStandardMaterial color="#a1a1aa" metalness={0.2} roughness={0.8} />
                     </mesh>
                     <mesh position={[0, 0, -1.2]}>
                         <sphereGeometry args={[0.14, 12, 12]} />
@@ -398,7 +398,7 @@ const GunRig = ({ gunRef, recoilImpulse }: { gunRef: React.RefObject<THREE.Group
                 <group position={GUN_OFFSETS[1].toArray()}>
                     <mesh rotation={[Math.PI / 2, 0, 0]}>
                         <cylinderGeometry args={[0.08, 0.16, 2.8]} />
-                        <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.2} />
+                        <meshStandardMaterial color="#a1a1aa" metalness={0.2} roughness={0.8} />
                     </mesh>
                     <mesh position={[0, 0, -1.2]}>
                         <sphereGeometry args={[0.14, 12, 12]} />
@@ -410,11 +410,11 @@ const GunRig = ({ gunRef, recoilImpulse }: { gunRef: React.RefObject<THREE.Group
     )
 }
 
-export const SpaceShooterScene = ({ onHudUpdate }: { onHudUpdate: (state: HudState) => void, resetKey: number }) => {
+export const SpaceShooterScene = () => {
     const { camera, gl } = useThree()
     const mode = useXR((state) => state.mode)
     const isPresenting = mode === 'immersive-vr'
-    const { rechargeShields, damageShields, shields, level, viewMode, setGameOver, triggerPlayerHit } = useGame()
+    const { rechargeShields, damageShields, shields, level, score, viewMode, setGameOver, triggerPlayerHit } = useGame()
     const { isPaused } = useGameSettings()
     const isStaticView = viewMode === 'static'
 
@@ -439,21 +439,24 @@ export const SpaceShooterScene = ({ onHudUpdate }: { onHudUpdate: (state: HudSta
     const pointerLocked = useRef(false)
     const isVrRef = useRef(false)
 
+    // HUD REF - Zero render updates
+    const hudRef = useRef<HudData>(DEFAULT_HUD_DATA)
+
+    const weaponEnergy = useRef(100)
+    const canFire = useRef(true)
+
     const tempVecA = useMemo(() => new THREE.Vector3(), [])
     const tempVecB = useMemo(() => new THREE.Vector3(), [])
     const tempVecC = useMemo(() => new THREE.Vector3(), [])
 
-    // HUD Sync (minimal now, as Systems drive logic)
+
+
+    // Synced Refs for HUD (No Layout Thrashing)
     useEffect(() => {
-        onHudUpdate({
-            stageLabel: `Sector ${level}`,
-            stageObjective: 'Defend the station',
-            stageIndex: level,
-            stageStatus: enemies.some(e => e.type === 'boss') ? 'BOSS DETECTED' : 'ENGAGE',
-            bossHealth: enemies.find(e => e.type === 'boss') ? (enemies.find(e => e.type === 'boss')!.hp / enemies.find(e => e.type === 'boss')!.maxHp) : null,
-            bossSegments: null
-        })
-    }, [enemies, level, onHudUpdate])
+        hudRef.current.level = level
+        hudRef.current.score = score
+        // onHudUpdate is removed/ignored to prevent parent re-renders
+    }, [level, score])
 
     // PLAYER DAMAGE HANDLER - Listens for player-hit events from CollisionManager
     // This handles damage in cockpit mode where PlayerShip component isn't mounted
@@ -575,6 +578,36 @@ export const SpaceShooterScene = ({ onHudUpdate }: { onHudUpdate: (state: HudSta
         }
         const elapsed = state.clock.getElapsedTime()
         if (Math.round(elapsed * 60) % 120 === 0) console.log(`[SpaceShooterScene] Active Enemies: ${enemies.length}`)
+
+        // Energy Regen
+        if (!firing.current) {
+            weaponEnergy.current = Math.min(100, weaponEnergy.current + LASER.regenRate * delta)
+            if (weaponEnergy.current > 20) canFire.current = true // Re-enable if above threshold
+        }
+
+        // --- HUD UPDATES (Per Frame, mutable) ---
+        hudRef.current.energy = weaponEnergy.current
+        hudRef.current.shields = shields // Note: shields is state, but we read it here. 
+        // Ideally shields would be a ref too for true zero-render, but it changes rarely compared to position/energy.
+        // Actually shields IS state, so this whole component re-renders when shields change. 
+        // That is acceptable for 'hit' events, but not for 'energy' or 'time'.
+        // To fix shields re-rendering, we'd need to move shields to a store/ref.
+        // For now, energy is the big one.
+
+        hudRef.current.integrity = hullRef.current
+
+        const boss = enemies.find(e => e.type === 'boss')
+        if (boss) {
+            hudRef.current.bossHealth = boss.hp / boss.maxHp
+            hudRef.current.stageObjective = 'DESTROY MOTHERSHIP'
+        } else {
+            hudRef.current.bossHealth = null
+            hudRef.current.stageObjective = 'CLEAR SECTOR'
+        }
+        hudRef.current.stageLabel = `SECTOR ${level}`
+
+
+
         rechargeShields(delta * 3)
         const isVr = isPresenting
         isVrRef.current = isVr
@@ -633,6 +666,16 @@ export const SpaceShooterScene = ({ onHudUpdate }: { onHudUpdate: (state: HudSta
 
         // --- FIRING LOGIC ---
         if (firing.current && elapsed - lastShot.current > LASER.cooldown) {
+            if (!canFire.current || weaponEnergy.current < LASER.energyCost) {
+                // Out of energy sound?
+                firing.current = false // Stop trying to fire automatically
+                canFire.current = false // Lockout until regen
+                return
+            }
+
+            // Consume Energy
+            weaponEnergy.current -= LASER.energyCost
+
             console.log('[SpaceShooterScene] Firing!', aimDir.current)
             lastShot.current = elapsed
             sound.playLaser('player')
@@ -688,11 +731,7 @@ export const SpaceShooterScene = ({ onHudUpdate }: { onHudUpdate: (state: HudSta
             {/* UI & HUD - Mounted inside Camera Rig Group or synced manually */}
             <group position={[0, 0, -1.5]} ref={cockpitRef}>
                 <Suspense fallback={null}>
-                    <HolographicHud
-                        stageLabel={`Sector ${level}`}
-                        stageObjective={enemies.some(e => e.type === 'boss') ? "DESTROY MOTHERSHIP" : "CLEAR SECTOR"}
-                        bossHealth={enemies.find(e => e.type === 'boss') ? enemies.find(e => e.type === 'boss')!.hp : null}
-                    />
+                    <HolographicHud hudRef={hudRef} />
                 </Suspense>
             </group>
 

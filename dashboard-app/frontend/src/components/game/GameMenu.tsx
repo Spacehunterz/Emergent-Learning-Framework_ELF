@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trophy, Crosshair, Github, Star, Zap, Lock, Rocket, Sparkles, Navigation } from 'lucide-react';
+import { X, Trophy, Github, Lock, Rocket, Sparkles, Navigation, Zap } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { useSound } from './systems/SoundManager';
 
-type MenuTab = 'weapons' | 'ships' | 'trails';
+type MenuTab = 'ships' | 'trails';
 
 export const GameMenu: React.FC = () => {
     const {
         isMenuOpen,
         toggleMenu,
         score,
-        activeWeapon,
-        setActiveWeapon,
-        unlockedWeapons,
+
+        unlockedCursors,
         githubUser,
         login,
         logout,
@@ -30,7 +29,7 @@ export const GameMenu: React.FC = () => {
     } = useGame();
     const sound = useSound();
 
-    const [activeTab, setActiveTab] = useState<MenuTab>('weapons');
+    const [activeTab, setActiveTab] = useState<MenuTab>('ships');
 
     const handleLoginClick = async () => {
         try {
@@ -113,14 +112,7 @@ export const GameMenu: React.FC = () => {
                                 )}
 
                                 {/* Tabs */}
-                                <button
-                                    onClick={() => { setActiveTab('weapons'); sound.playUiClick() }}
-                                    onMouseEnter={() => sound.playUiHover()}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${activeTab === 'weapons' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-400 hover:bg-white/5'}`}
-                                >
-                                    <Crosshair className="w-4 h-4" />
-                                    <span className="font-bold text-sm">Weapons</span>
-                                </button>
+
 
                                 <button
                                     onClick={() => { setActiveTab('ships'); sound.playUiClick() }}
@@ -176,65 +168,7 @@ export const GameMenu: React.FC = () => {
                             {/* Main Panel Content */}
                             <div className="p-6 overflow-y-auto custom-scrollbar bg-slate-900/50">
 
-                                {/* WEAPONS TAB */}
-                                {activeTab === 'weapons' && (
-                                    <div className="space-y-4">
-                                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Active Weapon</h3>
 
-                                        {/* Pulse Laser */}
-                                        <div
-                                            onClick={() => setActiveWeapon('pulse_laser')}
-                                            className={`relative p-4 rounded-xl border transition-all cursor-pointer ${activeWeapon === 'pulse_laser'
-                                                ? 'bg-cyan-500/20 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
-                                                : 'bg-white/5 border-white/10 hover:border-white/30'
-                                                }`}
-                                        >
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`p-2 rounded-lg ${activeWeapon === 'pulse_laser' ? 'bg-cyan-500/20' : 'bg-slate-800'}`}>
-                                                        <Zap className={`w-5 h-5 ${activeWeapon === 'pulse_laser' ? 'text-cyan-400' : 'text-slate-400'}`} />
-                                                    </div>
-                                                    <div>
-                                                        <div className={activeWeapon === 'pulse_laser' ? 'text-white font-bold' : 'text-slate-300 font-medium'}>Pulse Laser</div>
-                                                        <div className="text-xs text-slate-500">Standard Issue. Rapid fire.</div>
-                                                    </div>
-                                                </div>
-                                                {activeWeapon === 'pulse_laser' && <div className="text-xs font-bold text-cyan-400 bg-cyan-400/10 px-2 py-1 rounded">EQUIPPED</div>}
-                                            </div>
-                                        </div>
-
-                                        {/* Star Blaster */}
-                                        <div
-                                            onClick={() => unlockedWeapons.includes('star_blaster') ? setActiveWeapon('star_blaster') : verifyStar()}
-                                            className={`relative p-4 rounded-xl border transition-all cursor-pointer ${activeWeapon === 'star_blaster'
-                                                ? 'bg-amber-500/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-                                                : 'bg-white/5 border-white/10 hover:border-white/30'
-                                                }`}
-                                        >
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`p-2 rounded-lg ${activeWeapon === 'star_blaster' ? 'bg-amber-500/20' : 'bg-slate-800'}`}>
-                                                        {unlockedWeapons.includes('star_blaster') ? (
-                                                            <Star className={`w-5 h-5 ${activeWeapon === 'star_blaster' ? 'text-amber-400' : 'text-slate-400'}`} />
-                                                        ) : (
-                                                            <Lock className="w-5 h-5 text-slate-500" />
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <div className={activeWeapon === 'star_blaster' ? 'text-white font-bold' : 'text-slate-300 font-medium'}>Star Blaster</div>
-                                                        <div className="text-xs text-slate-500">3-Way Spread. Star Projectiles.</div>
-                                                    </div>
-                                                </div>
-                                                {!unlockedWeapons.includes('star_blaster') && (
-                                                    <span className="text-[10px] uppercase font-bold text-amber-500/80 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
-                                                        Star Repo to Unlock
-                                                    </span>
-                                                )}
-                                                {activeWeapon === 'star_blaster' && <div className="text-xs font-bold text-amber-400 bg-amber-400/10 px-2 py-1 rounded">EQUIPPED</div>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
 
                                 {/* SHIPS TAB */}
                                 {activeTab === 'ships' && (
@@ -261,31 +195,11 @@ export const GameMenu: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        {/* UFO */}
-                                        <div
-                                            onClick={() => setActiveShip('ufo')}
-                                            className={`relative p-4 rounded-xl border transition-all cursor-pointer ${activeShip === 'ufo'
-                                                ? 'bg-cyan-500/20 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
-                                                : 'bg-white/5 border-white/10 hover:border-white/30'
-                                                }`}
-                                        >
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full border border-cyan-500 bg-slate-800 flex items-center justify-center">
-                                                        <div className="w-4 h-4 rounded-full bg-cyan-400/50" />
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-bold text-white">The Visitor</div>
-                                                        <div className="text-xs text-slate-500">Classic UFO. Rotating lights.</div>
-                                                    </div>
-                                                </div>
-                                                {activeShip === 'ufo' && <div className="text-xs font-bold text-cyan-400 bg-cyan-400/10 px-2 py-1 rounded">EQUIPPED</div>}
-                                            </div>
-                                        </div>
 
-                                        {/* Star Ship */}
+
+                                        {/* Star Ship - Locked behind GitHub star */}
                                         <div
-                                            onClick={() => setActiveShip('star_ship')}
+                                            onClick={() => unlockedCursors.includes('star_ship') ? setActiveShip('star_ship') : verifyStar()}
                                             className={`relative p-4 rounded-xl border transition-all cursor-pointer ${activeShip === 'star_ship'
                                                 ? 'bg-amber-500/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
                                                 : 'bg-white/5 border-white/10 hover:border-white/30'
@@ -293,19 +207,30 @@ export const GameMenu: React.FC = () => {
                                         >
                                             <div className="flex justify-between items-center">
                                                 <div className="flex items-center gap-3">
-                                                    <Rocket className={`w-5 h-5 ${activeShip === 'star_ship' ? 'text-amber-400' : 'text-slate-400'}`} />
+                                                    <div className={`p-2 rounded-lg ${activeShip === 'star_ship' ? 'bg-amber-500/20' : 'bg-slate-800'}`}>
+                                                        {unlockedCursors.includes('star_ship') ? (
+                                                            <Rocket className={`w-5 h-5 ${activeShip === 'star_ship' ? 'text-amber-400' : 'text-slate-400'}`} />
+                                                        ) : (
+                                                            <Lock className="w-5 h-5 text-slate-500" />
+                                                        )}
+                                                    </div>
                                                     <div>
                                                         <div className="font-bold text-white">Star Fighter</div>
                                                         <div className="text-xs text-slate-500">Interceptor class. Gold plating.</div>
                                                     </div>
                                                 </div>
+                                                {!unlockedCursors.includes('star_ship') && (
+                                                    <span className="text-[10px] uppercase font-bold text-amber-500/80 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
+                                                        Star Repo to Unlock
+                                                    </span>
+                                                )}
                                                 {activeShip === 'star_ship' && <div className="text-xs font-bold text-amber-400 bg-amber-400/10 px-2 py-1 rounded">EQUIPPED</div>}
                                             </div>
                                         </div>
 
                                         {/* Drone */}
                                         <div
-                                            onClick={() => setActiveShip('drone')}
+                                            onClick={() => unlockedCursors.includes('star_ship') ? setActiveShip('drone') : verifyStar()}
                                             className={`relative p-4 rounded-xl border transition-all cursor-pointer ${activeShip === 'drone'
                                                 ? 'bg-emerald-500/20 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
                                                 : 'bg-white/5 border-white/10 hover:border-white/30'
@@ -314,20 +239,29 @@ export const GameMenu: React.FC = () => {
                                             <div className="flex justify-between items-center">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 rounded-full border border-emerald-500 bg-emerald-900/20 flex items-center justify-center">
-                                                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                                        {unlockedCursors.includes('star_ship') ? (
+                                                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                                        ) : (
+                                                            <Lock className="w-4 h-4 text-emerald-500/50" />
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <div className="font-bold text-white">Surveillance Drone</div>
                                                         <div className="text-xs text-slate-500">Autonomous unit. High precision.</div>
                                                     </div>
                                                 </div>
+                                                {!unlockedCursors.includes('star_ship') && (
+                                                    <span className="text-[10px] uppercase font-bold text-emerald-500/80 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">
+                                                        Star Repo to Unlock
+                                                    </span>
+                                                )}
                                                 {activeShip === 'drone' && <div className="text-xs font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded">EQUIPPED</div>}
                                             </div>
                                         </div>
 
                                         {/* Glitch */}
                                         <div
-                                            onClick={() => setActiveShip('glitch')}
+                                            onClick={() => unlockedCursors.includes('star_ship') ? setActiveShip('glitch') : verifyStar()}
                                             className={`relative p-4 rounded-xl border transition-all cursor-pointer ${activeShip === 'glitch'
                                                 ? 'bg-fuchsia-500/20 border-fuchsia-500 shadow-[0_0_15px_rgba(217,70,239,0.2)]'
                                                 : 'bg-white/5 border-white/10 hover:border-white/30'
@@ -336,14 +270,25 @@ export const GameMenu: React.FC = () => {
                                             <div className="flex justify-between items-center">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 rounded border border-fuchsia-500 bg-slate-800 flex items-center justify-center overflow-hidden">
-                                                        <div className="absolute inset-0 bg-fuchsia-500/20 animate-pulse" />
-                                                        <div className="text-xs font-mono text-fuchsia-400 font-bold">ERR</div>
+                                                        {unlockedCursors.includes('star_ship') ? (
+                                                            <>
+                                                                <div className="absolute inset-0 bg-fuchsia-500/20 animate-pulse" />
+                                                                <div className="text-xs font-mono text-fuchsia-400 font-bold">ERR</div>
+                                                            </>
+                                                        ) : (
+                                                            <Lock className="w-4 h-4 text-fuchsia-500/50" />
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <div className="font-bold text-white">System Glitch</div>
                                                         <div className="text-xs text-slate-500">Anomaly detected. Unstable.</div>
                                                     </div>
                                                 </div>
+                                                {!unlockedCursors.includes('star_ship') && (
+                                                    <span className="text-[10px] uppercase font-bold text-fuchsia-500/80 bg-fuchsia-500/10 px-2 py-1 rounded border border-fuchsia-500/20">
+                                                        Star Repo to Unlock
+                                                    </span>
+                                                )}
                                                 {activeShip === 'glitch' && <div className="text-xs font-bold text-fuchsia-400 bg-fuchsia-400/10 px-2 py-1 rounded">EQUIPPED</div>}
                                             </div>
                                         </div>
@@ -364,43 +309,67 @@ export const GameMenu: React.FC = () => {
                                         </div>
 
                                         <div
-                                            onClick={() => setActiveTrail('cyan')}
+                                            onClick={() => unlockedCursors.includes('star_ship') ? setActiveTrail('cyan') : verifyStar()}
                                             className={`p-4 rounded-xl border text-center transition-all cursor-pointer ${activeTrail === 'cyan'
                                                 ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
                                                 : 'bg-white/5 border-white/10 hover:bg-white/10 text-cyan-700'
                                                 }`}
                                         >
-                                            <div className="text-sm font-bold">Cyan Ion</div>
+                                            <div className="flex items-center justify-center gap-2">
+                                                {!unlockedCursors.includes('star_ship') && <Lock className="w-3 h-3 text-slate-500" />}
+                                                <div className="text-sm font-bold">Cyan Ion</div>
+                                            </div>
+                                            {!unlockedCursors.includes('star_ship') && (
+                                                <div className="text-[9px] text-cyan-500/60 mt-1">⭐ Star to Unlock</div>
+                                            )}
                                         </div>
 
                                         <div
-                                            onClick={() => setActiveTrail('star')}
+                                            onClick={() => unlockedCursors.includes('star_trail') ? setActiveTrail('star') : verifyStar()}
                                             className={`p-4 rounded-xl border text-center transition-all cursor-pointer ${activeTrail === 'star'
                                                 ? 'bg-amber-500/20 border-amber-500 text-amber-300'
                                                 : 'bg-white/5 border-white/10 hover:bg-white/10 text-amber-700'
                                                 }`}
                                         >
-                                            <div className="text-sm font-bold">Star Dust</div>
+                                            <div className="flex items-center justify-center gap-2">
+                                                {!unlockedCursors.includes('star_trail') && <Lock className="w-3 h-3 text-slate-500" />}
+                                                <div className="text-sm font-bold">Star Dust</div>
+                                            </div>
+                                            {!unlockedCursors.includes('star_trail') && (
+                                                <div className="text-[9px] text-amber-500/60 mt-1">⭐ Star to Unlock</div>
+                                            )}
                                         </div>
 
                                         <div
-                                            onClick={() => setActiveTrail('plasma')}
+                                            onClick={() => unlockedCursors.includes('star_ship') ? setActiveTrail('plasma') : verifyStar()}
                                             className={`p-4 rounded-xl border text-center transition-all cursor-pointer ${activeTrail === 'plasma'
                                                 ? 'bg-rose-500/20 border-rose-500 text-rose-300'
                                                 : 'bg-white/5 border-white/10 hover:bg-white/10 text-rose-700'
                                                 }`}
                                         >
-                                            <div className="text-sm font-bold">Plasma Burn</div>
+                                            <div className="flex items-center justify-center gap-2">
+                                                {!unlockedCursors.includes('star_ship') && <Lock className="w-3 h-3 text-slate-500" />}
+                                                <div className="text-sm font-bold">Plasma Burn</div>
+                                            </div>
+                                            {!unlockedCursors.includes('star_ship') && (
+                                                <div className="text-[9px] text-rose-500/60 mt-1">⭐ Star to Unlock</div>
+                                            )}
                                         </div>
 
                                         <div
-                                            onClick={() => setActiveTrail('fire')}
+                                            onClick={() => unlockedCursors.includes('star_ship') ? setActiveTrail('fire') : verifyStar()}
                                             className={`p-4 rounded-xl border text-center transition-all cursor-pointer ${activeTrail === 'fire'
                                                 ? 'bg-orange-500/20 border-orange-500 text-orange-300'
                                                 : 'bg-white/5 border-white/10 hover:bg-white/10 text-orange-700'
                                                 }`}
                                         >
-                                            <div className="text-sm font-bold">Solar Flare</div>
+                                            <div className="flex items-center justify-center gap-2">
+                                                {!unlockedCursors.includes('star_ship') && <Lock className="w-3 h-3 text-slate-500" />}
+                                                <div className="text-sm font-bold">Solar Flare</div>
+                                            </div>
+                                            {!unlockedCursors.includes('star_ship') && (
+                                                <div className="text-[9px] text-orange-500/60 mt-1">⭐ Star to Unlock</div>
+                                            )}
                                         </div>
                                     </div>
                                 )}

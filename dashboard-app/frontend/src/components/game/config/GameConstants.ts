@@ -66,10 +66,11 @@ export const GAME_CONFIG = {
             DRONE: 3.0
         },
         HP: {
-            BOSS: 2000,            // MEGA HP - long fight
-            FIGHTER: 40,
-            ASTEROID: 5,           // Easy to destroy for target practice
-            DRONE: 20
+            BOSS: 1200,            // Harder boss (~80 shots at 15 dmg each)
+            FIGHTER: 60,
+            ASTEROID: 15,          // Slightly tougher
+            DRONE: 30,
+            ELITE: 200             // Mini-boss type
         },
         SPEEDS: {
             FIGHTER: 15,

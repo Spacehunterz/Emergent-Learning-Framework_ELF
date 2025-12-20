@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { Vector3, Quaternion } from 'three'
 
-export type EnemyType = 'drone' | 'scout' | 'fighter' | 'boss' | 'asteroid'
+export type EnemyType = 'drone' | 'scout' | 'fighter' | 'boss' | 'asteroid' | 'elite'
 
 export interface Enemy {
     id: string
@@ -29,7 +29,7 @@ interface EnemyState {
 
 import { GAME_CONFIG } from '../config/GameConstants'
 
-export const useEnemyStore = create<EnemyState>((set) => ({
+export const useEnemyStore = create<EnemyState>((set, get) => ({
     enemies: [],
     spawnEnemy: (enemy) => set((state) => ({ enemies: [...state.enemies, enemy] })),
     updateEnemy: (id, updates) => set((state) => ({
@@ -55,10 +55,18 @@ export const useEnemyStore = create<EnemyState>((set) => ({
         }))
         return isDead
     },
-    tick: (delta) => set((state) => {
+    tick: (delta) => {
+        const state = get()
+        const enemies = state.enemies
+
         const time = Date.now() * 0.001
 
-        const newEnemies = state.enemies.map(e => {
+        const loopThreshold = GAME_CONFIG.WAVES.RESPAWN_Z_THRESHOLD
+        const respawnXThreshold = GAME_CONFIG.WAVES.RESPAWN_X_THRESHOLD
+
+        // Mutate positions in place to avoid React re-renders and GC pressure
+        for (let i = 0; i < enemies.length; i++) {
+            const e = enemies[i]
             let x = e.position.x
             let y = e.position.y
             let z = e.position.z
@@ -70,11 +78,10 @@ export const useEnemyStore = create<EnemyState>((set) => ({
                 // Slight menacing sway
                 x += Math.sin(time * 0.3 + e.seed) * 2 * delta
                 y += Math.cos(time * 0.2 + e.seed) * 1 * delta
-                // Boss doesn't loop/respawn - stays in play
-                // Stop before hitting player (Keep distance)
-                const minZ = -200 // Moved back significantly
+
+                const minZ = -120
                 e.position.set(x, y, Math.max(z, minZ))
-                return { ...e } // Return new ref for boss too
+                continue
             }
 
             if (e.aiPattern === 'strafe') {
@@ -117,28 +124,34 @@ export const useEnemyStore = create<EnemyState>((set) => ({
                 y += Math.sin(time * 3 + e.seed) * 10 * delta
             }
 
-            // Movement Constraint: Don't go below player ship (approx -10 Y)
+            // Movement Constraint
             if (y < -10) y = -10
 
-            const loopThreshold = GAME_CONFIG.WAVES.RESPAWN_Z_THRESHOLD
-            const respawnXThreshold = GAME_CONFIG.WAVES.RESPAWN_X_THRESHOLD
-            const respawnZOffset = GAME_CONFIG.WAVES.RESPAWN_Z_OFFSET
-
-            if (z > loopThreshold || Math.abs(x) > respawnXThreshold) {
-                z = respawnZOffset - (Math.random() * 50)
-                // Wider respawn spread for scale
-                x = (Math.random() - 0.5) * 400
-                y = Math.max(-10, (Math.random() - 0.5) * 60)
-            }
-
-            // Update position object IN PLACE but return NEW STATE OBJECT
+            // Apply mutation
             e.position.set(x, y, z)
-            return {
-                ...e
-            }
-        })
 
-        return { enemies: newEnemies }
-    }),
+            // Check for removal
+            if (z > loopThreshold || Math.abs(x) > respawnXThreshold) {
+                // Use a property-based flag or just mark for removal from the set
+                // For now, we'll just use the shouldUpdate flag logic, 
+                // but since we can't easily modify the array while iterating effectively without a new array
+                // we will rely on a new array ONLY if needed.
+                // Wait, simply filtering IS the way if we need to remove.
+                // To minimize GC, we only filter if we find one.
+            }
+        }
+
+        // Second pass for removals - only if needed
+        // Actually, we can just check if any exceeded bounds
+        const hasRemovals = enemies.some(e => e.position.z > loopThreshold || Math.abs(e.position.x) > respawnXThreshold)
+
+        if (hasRemovals) {
+            set((state) => ({
+                enemies: state.enemies.filter(e =>
+                    e.position.z <= loopThreshold && Math.abs(e.position.x) <= respawnXThreshold
+                )
+            }))
+        }
+    },
     clearEnemies: () => set({ enemies: [] })
 }))

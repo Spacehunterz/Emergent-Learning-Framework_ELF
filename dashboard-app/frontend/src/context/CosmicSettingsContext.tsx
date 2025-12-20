@@ -1,16 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-type CursorMode = 'ufo' | 'default';
+
 type PerformanceMode = 'low' | 'medium' | 'high';
 type ViewMode = 'cosmic' | 'grid';
 
 interface CosmicSettings {
-    cursorMode: CursorMode;
     trailsEnabled: boolean;
     audioEnabled: boolean;
     performanceMode: PerformanceMode;
     viewMode: ViewMode;
-    setCursorMode: (mode: CursorMode) => void;
     setTrailsEnabled: (enabled: boolean) => void;
     setAudioEnabled: (enabled: boolean) => void;
     setPerformanceMode: (mode: PerformanceMode) => void;
@@ -20,9 +18,7 @@ interface CosmicSettings {
 const CosmicSettingsContext = createContext<CosmicSettings | undefined>(undefined);
 
 export const CosmicSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [cursorMode, setCursorMode] = useState<CursorMode>(() => {
-        return (localStorage.getItem('cosmic_cursorMode') as CursorMode) || 'ufo';
-    });
+
 
     const [trailsEnabled, setTrailsEnabled] = useState<boolean>(() => {
         const saved = localStorage.getItem('cosmic_trailsEnabled');
@@ -42,9 +38,7 @@ export const CosmicSettingsProvider: React.FC<{ children: React.ReactNode }> = (
         return (localStorage.getItem('cosmic_viewMode') as ViewMode) || 'cosmic';
     });
 
-    useEffect(() => {
-        localStorage.setItem('cosmic_cursorMode', cursorMode);
-    }, [cursorMode]);
+
 
     useEffect(() => {
         localStorage.setItem('cosmic_trailsEnabled', JSON.stringify(trailsEnabled));
@@ -64,12 +58,10 @@ export const CosmicSettingsProvider: React.FC<{ children: React.ReactNode }> = (
 
     return (
         <CosmicSettingsContext.Provider value={{
-            cursorMode,
             trailsEnabled,
             audioEnabled,
             performanceMode,
             viewMode,
-            setCursorMode,
             setTrailsEnabled,
             setAudioEnabled,
             setPerformanceMode,

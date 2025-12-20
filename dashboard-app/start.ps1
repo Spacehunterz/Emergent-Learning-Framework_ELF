@@ -64,7 +64,7 @@ Write-Host ""
 
 # Start backend
 Write-Host "Starting backend (FastAPI)..." -ForegroundColor Yellow
-$backendJob = Start-Process -FilePath "python" -ArgumentList "-m", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000" -WorkingDirectory $BackendPath -PassThru -NoNewWindow
+$backendJob = Start-Process -FilePath "python" -ArgumentList "-m", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8888" -WorkingDirectory $BackendPath -PassThru -NoNewWindow
 Start-Sleep -Seconds 2
 
 # Start frontend
