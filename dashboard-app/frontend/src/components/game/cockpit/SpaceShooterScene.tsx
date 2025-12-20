@@ -13,7 +13,10 @@ import { useProjectileStore } from '../systems/WeaponSystem'
 import { useSound } from '../systems/SoundManager'
 import { WaveManager } from '../systems/WaveManager'
 import { ExplosionRenderer } from '../systems/ExplosionManager'
+import { useGameSettings } from '../systems/GameSettings'
+import { PauseMenuXR } from '../ui/PauseMenuXR'
 import { FloatingTextRenderer } from '../systems/FloatingTextManager'
+import { useExplosionStore } from '../systems/ExplosionManager'
 
 // --- CONSTANTS ---
 const INPUT = {
@@ -24,13 +27,13 @@ const INPUT = {
 
 const LIMITS = {
     yaw: Math.PI / 2,
-    pitchMin: 0,
+    pitchMin: -Math.PI / 12, // Allow looking down ~15 degrees
     pitchMax: Math.PI / 2.1
 }
 
 const LASER = {
-    speed: 120,
-    lifetime: 1.6,
+    speed: 150, // Increased from 120
+    lifetime: 2.5, // Increased from 1.6 - bullets now travel 375 units
     cooldown: 0.12,
     radius: 0.35
 }
@@ -40,127 +43,320 @@ const GUN_OFFSETS = [
     new THREE.Vector3(2.2, -1.2, -1.0)
 ]
 
-// --- VISUAL COMPONENTS ---
+// --- WIREFRAME VISUAL COMPONENTS ---
 
+// Spawn animation duration in ms
+const SPAWN_DURATION = 600
+
+// Helper: calculate spawn easing (0->1 over SPAWN_DURATION)
+const getSpawnEase = (createdAt: number) => {
+    const age = Date.now() - createdAt
+    const t = Math.min(1, age / SPAWN_DURATION)
+    return 1 - Math.pow(1 - t, 3) // Ease out cubic
+}
+
+// Neon wireframe asteroid - tumbling geometric crystal
 const AsteroidMesh = ({ data }: { data: Enemy }) => {
-    const { scene } = useGLTF('/models/asteroids/asteroid1.glb')
     const ref = useRef<THREE.Group>(null)
-    // Clone scene to allow multiple instances
-    const clone = useMemo(() => scene.clone(), [scene])
+    const mainMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const innerMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const lightRef = useRef<THREE.PointLight>(null)
 
-    const scale = useMemo(() => 20.0 + Math.random() * 5, [])
+    const rotSpeed = useMemo(() => ({
+        x: 0.3 + Math.random() * 0.4,
+        y: 0.2 + Math.random() * 0.3,
+        z: 0.1 + Math.random() * 0.2
+    }), [])
+    const baseScale = useMemo(() => 12 + Math.random() * 8, [])
+    const geoType = useMemo(() => Math.floor(data.seed * 3), [data.seed])
+
+    // Health-based color
+    const healthPct = data.hp / data.maxHp
+    const color = healthPct > 0.5 ? '#ff6600' : healthPct > 0.25 ? '#ffff00' : '#ff0044'
 
     useFrame((_, delta) => {
         if (!ref.current) return
         ref.current.position.copy(data.position)
-        // Smooth rotation using delta
-        ref.current.rotation.x += 0.5 * delta
-        ref.current.rotation.y += 0.2 * delta
+        ref.current.rotation.x += rotSpeed.x * delta
+        ref.current.rotation.y += rotSpeed.y * delta
+        ref.current.rotation.z += rotSpeed.z * delta
+
+        // Per-enemy spawn animation
+        const ease = getSpawnEase(data.createdAt)
+        ref.current.scale.setScalar(baseScale * ease)
+
+        // Update material opacity
+        if (mainMatRef.current) mainMatRef.current.opacity = 0.85 * ease
+        if (innerMatRef.current) innerMatRef.current.opacity = 0.4 * ease
+        if (lightRef.current) lightRef.current.intensity = 1 * ease
     })
 
-    return <primitive object={clone} ref={ref} scale={scale} />
+    return (
+        <group ref={ref} scale={0}>
+            {/* Main crystal shape */}
+            <mesh scale={1}>
+                {geoType === 0 && <dodecahedronGeometry args={[1, 0]} />}
+                {geoType === 1 && <icosahedronGeometry args={[1, 0]} />}
+                {geoType === 2 && <octahedronGeometry args={[1, 0]} />}
+                <meshBasicMaterial ref={mainMatRef} color={color} wireframe transparent opacity={0} />
+            </mesh>
+            {/* Inner glow */}
+            <mesh scale={0.5}>
+                <tetrahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial ref={innerMatRef} color="#ffffff" wireframe transparent opacity={0} />
+            </mesh>
+            <pointLight ref={lightRef} color={color} intensity={0} distance={40} />
+        </group>
+    )
 }
 
-const ShipMesh = ({ data }: { data: Enemy }) => {
-    const isFighter = data.type === 'fighter'
-    const url = isFighter ? '/models/enemies/ship2.glb' : '/models/enemies/ship1.glb'
-    const { scene } = useGLTF(url)
+// Neon wireframe drone - small fast pyramid
+const DroneMesh = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null)
-    const clone = useMemo(() => scene.clone(), [scene])
+    const outerMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const innerMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const lightRef = useRef<THREE.PointLight>(null)
 
-    useFrame(() => {
+    const healthPct = data.hp / data.maxHp
+    const color = healthPct > 0.5 ? '#00ff88' : healthPct > 0.25 ? '#ffff00' : '#ff0044'
+
+    useFrame((_, delta) => {
         if (!ref.current) return
         ref.current.position.copy(data.position)
-        // Ships should look at the player roughly or fly forward
-        // The System sets rotation based on velocity!
-        // But we need to apply that rotation here.
-        // data.rotation is a Quaternion.
-        // HOWEVER: The system updates data.rotation?
-        // EnemySystem.ts doesn't explicitly store rotation updates in the state for all types?
-        // Actually, SpaceShooterScene previously did: enemy.rotation.setFromRotationMatrix...
-        // Let's re-add that logic in a "VisualSystem" hook or just do it here.
-        // For now, let's just LookAt(0,0,0) + 180 deg (since models usually face +Z)
         ref.current.lookAt(0, 0, 0)
-        ref.current.rotateY(Math.PI) // Face player
+        ref.current.rotation.z += delta * 3 // Spin while facing player
+
+        // Per-enemy spawn animation
+        const ease = getSpawnEase(data.createdAt)
+        ref.current.scale.setScalar(ease)
+
+        // Update material opacity
+        if (outerMatRef.current) outerMatRef.current.opacity = 0.9 * ease
+        if (innerMatRef.current) innerMatRef.current.opacity = 0.6 * ease
+        if (lightRef.current) lightRef.current.intensity = 0.8 * ease
     })
 
-    return <primitive object={clone} ref={ref} scale={isFighter ? 15.0 : 20.0} />
+    return (
+        <group ref={ref} scale={0}>
+            {/* Outer pyramid */}
+            <mesh scale={8} rotation={[Math.PI, 0, 0]}>
+                <coneGeometry args={[1, 2, 4]} />
+                <meshBasicMaterial ref={outerMatRef} color={color} wireframe transparent opacity={0} />
+            </mesh>
+            {/* Inner core */}
+            <mesh scale={4}>
+                <octahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial ref={innerMatRef} color="#ffffff" wireframe transparent opacity={0} />
+            </mesh>
+            <pointLight ref={lightRef} color={color} intensity={0} distance={30} />
+            <Sparkles count={20} scale={15} size={4} speed={3} opacity={0.5} color={color} />
+        </group>
+    )
+}
+
+// Neon wireframe fighter - aggressive double-pyramid
+const FighterMesh = ({ data }: { data: Enemy }) => {
+    const ref = useRef<THREE.Group>(null)
+    const innerRef = useRef<THREE.Mesh>(null)
+    const bodyMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const wingMat1Ref = useRef<THREE.MeshBasicMaterial>(null)
+    const wingMat2Ref = useRef<THREE.MeshBasicMaterial>(null)
+    const coreMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const lightRef = useRef<THREE.PointLight>(null)
+
+    const healthPct = data.hp / data.maxHp
+    const color = healthPct > 0.5 ? '#ff00ff' : healthPct > 0.25 ? '#ffff00' : '#ff0044'
+
+    useFrame((_, delta) => {
+        if (!ref.current) return
+        ref.current.position.copy(data.position)
+        ref.current.lookAt(0, 0, 0)
+        if (innerRef.current) {
+            innerRef.current.rotation.y += delta * 4
+        }
+
+        // Per-enemy spawn animation
+        const ease = getSpawnEase(data.createdAt)
+        ref.current.scale.setScalar(ease)
+
+        // Update material opacity
+        if (bodyMatRef.current) bodyMatRef.current.opacity = 0.85 * ease
+        if (wingMat1Ref.current) wingMat1Ref.current.opacity = 0.7 * ease
+        if (wingMat2Ref.current) wingMat2Ref.current.opacity = 0.7 * ease
+        if (coreMatRef.current) coreMatRef.current.opacity = 0.8 * ease
+        if (lightRef.current) lightRef.current.intensity = 1.5 * ease
+    })
+
+    return (
+        <group ref={ref} scale={0}>
+            {/* Main body - elongated octahedron */}
+            <mesh scale={[10, 10, 20]}>
+                <octahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial ref={bodyMatRef} color={color} wireframe transparent opacity={0} />
+            </mesh>
+            {/* Wings - two flat diamonds */}
+            <mesh position={[12, 0, 0]} scale={[8, 2, 10]} rotation={[0, 0, Math.PI / 4]}>
+                <octahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial ref={wingMat1Ref} color={color} wireframe transparent opacity={0} />
+            </mesh>
+            <mesh position={[-12, 0, 0]} scale={[8, 2, 10]} rotation={[0, 0, -Math.PI / 4]}>
+                <octahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial ref={wingMat2Ref} color={color} wireframe transparent opacity={0} />
+            </mesh>
+            {/* Spinning core */}
+            <mesh ref={innerRef} scale={5}>
+                <icosahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial ref={coreMatRef} color="#00ffff" wireframe transparent opacity={0} />
+            </mesh>
+            <pointLight ref={lightRef} color={color} intensity={0} distance={50} />
+            <Sparkles count={30} scale={25} size={5} speed={2} opacity={0.4} color={color} />
+        </group>
+    )
+}
+
+// Elite mini-boss - larger more complex structure
+const EliteMesh = ({ data }: { data: Enemy }) => {
+    const ref = useRef<THREE.Group>(null)
+    const ring1Ref = useRef<THREE.Mesh>(null)
+    const ring2Ref = useRef<THREE.Mesh>(null)
+    const centerMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const ring1MatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const ring2MatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const innerMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const light1Ref = useRef<THREE.PointLight>(null)
+    const light2Ref = useRef<THREE.PointLight>(null)
+
+    const healthPct = data.hp / data.maxHp
+    const color = healthPct > 0.5 ? '#ffaa00' : healthPct > 0.25 ? '#ff6600' : '#ff0044'
+
+    useFrame((_, delta) => {
+        if (!ref.current) return
+        ref.current.position.copy(data.position)
+        ref.current.lookAt(0, 0, 0)
+        if (ring1Ref.current) ring1Ref.current.rotation.x += delta * 2
+        if (ring2Ref.current) ring2Ref.current.rotation.y += delta * 2.5
+
+        // Per-enemy spawn animation
+        const ease = getSpawnEase(data.createdAt)
+        ref.current.scale.setScalar(ease)
+
+        // Update material opacity
+        if (centerMatRef.current) centerMatRef.current.opacity = 0.9 * ease
+        if (ring1MatRef.current) ring1MatRef.current.opacity = 0.8 * ease
+        if (ring2MatRef.current) ring2MatRef.current.opacity = 0.8 * ease
+        if (innerMatRef.current) innerMatRef.current.opacity = 0.7 * ease
+        if (light1Ref.current) light1Ref.current.intensity = 2.5 * ease
+        if (light2Ref.current) light2Ref.current.intensity = 1 * ease
+    })
+
+    return (
+        <group ref={ref} scale={0}>
+            {/* Central dodecahedron */}
+            <mesh scale={25}>
+                <dodecahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial ref={centerMatRef} color={color} wireframe transparent opacity={0} />
+            </mesh>
+            {/* Orbiting ring 1 */}
+            <mesh ref={ring1Ref} scale={35}>
+                <torusGeometry args={[1, 0.05, 8, 6]} />
+                <meshBasicMaterial ref={ring1MatRef} color="#00ffff" wireframe={false} transparent opacity={0} />
+            </mesh>
+            {/* Orbiting ring 2 */}
+            <mesh ref={ring2Ref} scale={35} rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[1, 0.05, 8, 6]} />
+                <meshBasicMaterial ref={ring2MatRef} color="#ff00ff" wireframe={false} transparent opacity={0} />
+            </mesh>
+            {/* Inner icosahedron */}
+            <mesh scale={12}>
+                <icosahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial ref={innerMatRef} color="#ffffff" wireframe transparent opacity={0} />
+            </mesh>
+            <pointLight ref={light1Ref} color={color} intensity={0} distance={80} />
+            <pointLight ref={light2Ref} color="#00ffff" intensity={0} distance={50} />
+            <Sparkles count={60} scale={50} size={6} speed={1.5} opacity={0.5} color={color} />
+        </group>
+    )
+}
+
+// Legacy ship mesh fallback (shouldn't be used now)
+const ShipMesh = ({ data }: { data: Enemy }) => {
+    // Route to appropriate wireframe mesh
+    if (data.type === 'drone') return <DroneMesh data={data} />
+    if (data.type === 'fighter') return <FighterMesh data={data} />
+    return <FighterMesh data={data} /> // Default to fighter
 }
 
 const BossMesh = ({ data }: { data: Enemy }) => {
-    // Mothership - using ship1 but HUGE
-    const { scene } = useGLTF('/models/enemies/ship1.glb')
     const ref = useRef<THREE.Group>(null)
-    const clone = useMemo(() => scene.clone(), [scene])
+    const innerRef = useRef<THREE.Group>(null)
+    const time = useRef(0)
 
-    useFrame(() => {
+    useFrame((_, delta) => {
         if (!ref.current) return
+        time.current += delta
 
         // WARP IN EFFECT
         const age = Date.now() - (data.createdAt || 0)
-        const warpDuration = 1800 // ms
+        const warpDuration = 1800
 
         if (age < warpDuration) {
-            // Percent complete (0 to 1)
-            // Use easeOutExpo for dramatic arrive
             const p = age / warpDuration
-            const ease = 1 - Math.pow(2, -10 * p) // easeOutExpo
-
-            // Start WAY back, arrive at destination
+            const ease = 1 - Math.pow(2, -10 * p)
             const startZ = -4000
             const currentZ = THREE.MathUtils.lerp(startZ, data.position.z, ease)
-
             ref.current.position.set(data.position.x, data.position.y, currentZ)
-
-            // Stretch Effect: Long at start, normal at end
-            const stretch = THREE.MathUtils.lerp(30, 1, ease)
-            ref.current.scale.set(150.0, 150.0, 150.0 * stretch)
-
-            ref.current.lookAt(0, 0, 0)
-            ref.current.rotateY(Math.PI)
+            const stretch = THREE.MathUtils.lerp(5, 1, ease)
+            ref.current.scale.set(1, 1, stretch)
         } else {
-            // Normal behavior
             ref.current.position.copy(data.position)
-            ref.current.scale.set(150.0, 150.0, 150.0) // Normal massive scale
-            ref.current.lookAt(0, 0, 0)
-            ref.current.rotateY(Math.PI)
+            ref.current.scale.set(1, 1, 1)
+        }
+
+        // Rotate inner structure
+        if (innerRef.current) {
+            innerRef.current.rotation.x += delta * 0.3
+            innerRef.current.rotation.y += delta * 0.5
         }
     })
 
-    const EngineExhaust = () => {
-        // Twin Ion Engines
-        return (
-            <group position={[0, 0, 3.5]}> {/* Positioned at rear of ship1 model */}
-                {/* Left Engine */}
-                <mesh position={[-0.8, 0, 0]}>
-                    <sphereGeometry args={[0.4, 16, 16]} />
-                    <meshBasicMaterial color="#00ffff" />
-                </mesh>
-                <pointLight position={[-0.8, 0, 1]} distance={5} intensity={5} color="#00ffff" />
+    // Health-based color (green -> yellow -> red)
+    const healthPct = data.hp / data.maxHp
+    const baseColor = healthPct > 0.5 ? '#00ffff' : healthPct > 0.25 ? '#ffff00' : '#ff0044'
 
-                {/* Right Engine */}
-                <mesh position={[0.8, 0, 0]}>
-                    <sphereGeometry args={[0.4, 16, 16]} />
-                    <meshBasicMaterial color="#00ffff" />
-                </mesh>
-                <pointLight position={[0.8, 0, 1]} distance={5} intensity={5} color="#00ffff" />
-
-                {/* Particle Trail - Twin Streams */}
-                <group position={[-0.8, 0, 0]}>
-                    <Sparkles count={50} scale={[1, 1, 10]} size={10} speed={4} opacity={0.5} color="#00ffff" position={[0, 0, 5]} />
-                </group>
-                <group position={[0.8, 0, 0]}>
-                    <Sparkles count={50} scale={[1, 1, 10]} size={10} speed={4} opacity={0.5} color="#00ffff" position={[0, 0, 5]} />
-                </group>
-            </group>
-        )
-    }
-
-    // ... inside BossMesh ...
     return (
         <group ref={ref}>
-            <primitive object={clone} />
-            <EngineExhaust />
+            {/* Outer Octahedron Frame */}
+            <mesh scale={50}>
+                <octahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial color={baseColor} wireframe transparent opacity={0.9} />
+            </mesh>
+
+            {/* Inner rotating icosahedron */}
+            <group ref={innerRef}>
+                <mesh scale={30}>
+                    <icosahedronGeometry args={[1, 0]} />
+                    <meshBasicMaterial color="#ff00ff" wireframe transparent opacity={0.7} />
+                </mesh>
+
+                {/* Core tetrahedron */}
+                <mesh scale={15}>
+                    <tetrahedronGeometry args={[1, 0]} />
+                    <meshBasicMaterial color="#ffffff" wireframe transparent opacity={0.8} />
+                </mesh>
+            </group>
+
+            {/* Glowing core */}
+            <mesh scale={8}>
+                <sphereGeometry args={[1, 8, 8]} />
+                <meshBasicMaterial color={baseColor} transparent opacity={0.6} />
+            </mesh>
+
+            {/* Point lights for glow effect */}
+            <pointLight color={baseColor} intensity={3} distance={150} />
+            <pointLight color="#ff00ff" intensity={1.5} distance={80} />
+
+            {/* Particle effects */}
+            <Sparkles count={100} scale={80} size={8} speed={2} opacity={0.6} color={baseColor} />
         </group>
     )
 }
@@ -168,8 +364,10 @@ const BossMesh = ({ data }: { data: Enemy }) => {
 const EntityRenderer = ({ data }: { data: Enemy }) => {
     if (data.type === 'asteroid') return <AsteroidMesh data={data} />
     if (data.type === 'boss') return <BossMesh data={data} />
-    // Fighter / Interceptor
-    return <ShipMesh data={data} />
+    if (data.type === 'elite') return <EliteMesh data={data} />
+    if (data.type === 'drone') return <DroneMesh data={data} />
+    if (data.type === 'fighter') return <FighterMesh data={data} />
+    return <FighterMesh data={data} /> // Default
 }
 
 const GunRig = ({ gunRef, recoilImpulse }: { gunRef: React.RefObject<THREE.Group>, recoilImpulse: React.MutableRefObject<number> }) => {
@@ -216,12 +414,18 @@ export const SpaceShooterScene = ({ onHudUpdate }: { onHudUpdate: (state: HudSta
     const { camera, gl } = useThree()
     const mode = useXR((state) => state.mode)
     const isPresenting = mode === 'immersive-vr'
-    const { rechargeShields, level } = useGame()
+    const { rechargeShields, damageShields, shields, level, viewMode, setGameOver, triggerPlayerHit } = useGame()
+    const { isPaused } = useGameSettings()
+    const isStaticView = viewMode === 'static'
 
     // SYSTEMS & STORES
     const enemies = useEnemyStore(s => s.enemies)
     const { spawnProjectile } = useProjectileStore()
+    const { spawnExplosion } = useExplosionStore()
     const sound = useSound()
+
+    // Local hull tracking for cockpit mode (shields come from GameContext)
+    const hullRef = useRef(100)
 
     // REFS
     const aimQuat = useRef(new THREE.Quaternion())
@@ -251,37 +455,80 @@ export const SpaceShooterScene = ({ onHudUpdate }: { onHudUpdate: (state: HudSta
         })
     }, [enemies, level, onHudUpdate])
 
+    // PLAYER DAMAGE HANDLER - Listens for player-hit events from CollisionManager
+    // This handles damage in cockpit mode where PlayerShip component isn't mounted
+    useEffect(() => {
+        const handlePlayerHit = (event: CustomEvent<{ damage: number }>) => {
+            const damage = event.detail.damage || 10
+            triggerPlayerHit() // Update lastHitTime for visual feedback
+
+            // Check shields first
+            if (shields > 0) {
+                damageShields(damage)
+                sound.playShieldHit()
+            } else {
+                // Shields depleted - damage hull
+                hullRef.current = Math.max(0, hullRef.current - damage)
+                sound.playHit()
+
+                // Camera shake on hull damage
+                spawnExplosion(new THREE.Vector3(0, 0, -2), 'red', 0.3)
+
+                if (hullRef.current <= 0) {
+                    // Game Over
+                    setGameOver(true)
+                    sound.playExplosion('large')
+                }
+            }
+        }
+
+        window.addEventListener('player-hit', handlePlayerHit as EventListener)
+        return () => window.removeEventListener('player-hit', handlePlayerHit as EventListener)
+    }, [shields, damageShields, setGameOver, triggerPlayerHit, sound, spawnExplosion])
 
     // INPUT HANDLING
     useEffect(() => {
         const handlePointerDown = (event: PointerEvent) => {
-            if (isPresenting) return
+            if (isPresenting || isPaused) return
             if (event.button !== 0) return
             firing.current = true
-            if (document.pointerLockElement !== gl.domElement) {
-                gl.domElement.requestPointerLock()
+            if (!isStaticView && document.pointerLockElement !== gl.domElement) {
+                // requestPointerLock returns a Promise - handle rejection gracefully
+                gl.domElement.requestPointerLock()?.catch?.(() => {
+                    // Pointer lock may fail in certain contexts (XR, iframe, etc.) - game still works without it
+                })
             }
         }
         const handlePointerUp = () => {
-            if (isPresenting) return
+            if (isPresenting || isPaused) return
             firing.current = false
         }
         const handleMouseMove = (event: MouseEvent) => {
-            if (isPresenting) return
+            if (isPresenting || isPaused) return
+            if (isStaticView) {
+                const normX = (event.clientX / window.innerWidth) * 2 - 1
+                const normY = (event.clientY / window.innerHeight) * 2 - 1
+                targetAngles.current.yaw = -normX * LIMITS.yaw * 0.35
+                targetAngles.current.pitch = THREE.MathUtils.clamp(normY * LIMITS.pitchMax * 0.45, LIMITS.pitchMin, LIMITS.pitchMax)
+                return
+            }
             if (!pointerLocked.current) return
             targetAngles.current.yaw -= event.movementX * INPUT.yawSpeed
-            targetAngles.current.pitch -= event.movementY * INPUT.pitchSpeed
+            targetAngles.current.yaw = THREE.MathUtils.clamp(targetAngles.current.yaw, -LIMITS.yaw, LIMITS.yaw) // Clamp yaw to prevent spinning
+            targetAngles.current.pitch -= event.movementY * INPUT.pitchSpeed // Standard: up=up, down=down
             targetAngles.current.pitch = THREE.MathUtils.clamp(targetAngles.current.pitch, LIMITS.pitchMin, LIMITS.pitchMax)
         }
         const handleKeyDown = (event: KeyboardEvent) => {
+            if (isPaused) return
             if (event.code === 'Space') firing.current = true
         }
         const handleKeyUp = (event: KeyboardEvent) => {
+            if (isPaused) return
             if (event.code === 'Space') firing.current = false
         }
         const handlePointerLockChange = () => {
             pointerLocked.current = document.pointerLockElement === gl.domElement
-            if (!pointerLocked.current && !isPresenting) {
+            if (!pointerLocked.current && !isPresenting && !isStaticView) {
                 targetAngles.current.yaw = aimAngles.current.yaw
                 targetAngles.current.pitch = aimAngles.current.pitch
             }
@@ -302,11 +549,30 @@ export const SpaceShooterScene = ({ onHudUpdate }: { onHudUpdate: (state: HudSta
             window.removeEventListener('keyup', handleKeyUp)
             document.removeEventListener('pointerlockchange', handlePointerLockChange)
         }
-    }, [gl, isPresenting])
+    }, [gl, isPresenting, isPaused, isStaticView])
+
+    useEffect(() => {
+        if (isPaused && document.pointerLockElement === gl.domElement) {
+            document.exitPointerLock()
+        }
+        if (isPaused) {
+            firing.current = false
+        }
+    }, [gl, isPaused])
+
+    useEffect(() => {
+        if (isStaticView && document.pointerLockElement === gl.domElement) {
+            document.exitPointerLock()
+        }
+    }, [gl, isStaticView])
 
     const recoilImpulse = useRef(0)
 
     useFrame((state, delta) => {
+        if (isPaused) {
+            firing.current = false
+            return
+        }
         const elapsed = state.clock.getElapsedTime()
         if (Math.round(elapsed * 60) % 120 === 0) console.log(`[SpaceShooterScene] Active Enemies: ${enemies.length}`)
         rechargeShields(delta * 3)
@@ -341,8 +607,9 @@ export const SpaceShooterScene = ({ onHudUpdate }: { onHudUpdate: (state: HudSta
             camera.getWorldDirection(aimDir.current)
         } else {
             // DESKTOP: Smooth look
-            const targetYaw = pointerLocked.current ? targetAngles.current.yaw : 0
-            const targetPitch = pointerLocked.current ? targetAngles.current.pitch : 0
+            const allowAim = pointerLocked.current || isStaticView
+            const targetYaw = allowAim ? targetAngles.current.yaw : 0
+            const targetPitch = allowAim ? targetAngles.current.pitch : 0
 
             aimAngles.current.yaw = THREE.MathUtils.damp(aimAngles.current.yaw, targetYaw, INPUT.damp, delta)
             aimAngles.current.pitch = THREE.MathUtils.damp(aimAngles.current.pitch, targetPitch, INPUT.damp, delta)
@@ -399,7 +666,7 @@ export const SpaceShooterScene = ({ onHudUpdate }: { onHudUpdate: (state: HudSta
                     position: tempVecB.clone(),
                     rotation: projectileRot,
                     velocity: tempVecC.clone(),
-                    damage: 1,
+                    damage: 15, // Increased from 1
                     owner: 'PLAYER',
                     type: 'PLASMA',
                     createdAt: Date.now(),
@@ -444,6 +711,7 @@ export const SpaceShooterScene = ({ onHudUpdate }: { onHudUpdate: (state: HudSta
                 <EntityRenderer key={enemy.id} data={enemy} />
             ))}
 
+            <PauseMenuXR />
         </group>
     )
 }
