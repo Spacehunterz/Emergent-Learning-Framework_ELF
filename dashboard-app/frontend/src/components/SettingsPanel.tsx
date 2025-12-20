@@ -7,7 +7,7 @@ import { useTheme, Theme, useCosmicSettings, useCosmicAudio } from '../context'
 export function SettingsPanel() {
   const [isOpen, setIsOpen] = useState(false)
   const { theme, setTheme, particleCount, setParticleCount, glassOpacity, setGlassOpacity } = useTheme()
-  const { cursorMode, setCursorMode, trailsEnabled, setTrailsEnabled, audioEnabled, setAudioEnabled, performanceMode, setPerformanceMode } = useCosmicSettings()
+  const { trailsEnabled, setTrailsEnabled, audioEnabled, setAudioEnabled, performanceMode, setPerformanceMode } = useCosmicSettings()
   const { playToggle, playHover, playClick } = useCosmicAudio()
 
   const themes: { id: Theme; name: string; icon: any; color: string; description: string }[] = [
@@ -165,19 +165,7 @@ export function SettingsPanel() {
                     <h3 className="text-sm font-medium" style={{ color: 'var(--theme-text-primary)' }}>Experience</h3>
 
                     {/* Cursor Controls */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>UFO Cursor</span>
-                      <button
-                        onClick={() => {
-                          setCursorMode(cursorMode === 'ufo' ? 'default' : 'ufo');
-                          playToggle(cursorMode !== 'ufo');
-                        }}
-                        onMouseEnter={() => playHover()}
-                        className={`w-10 h-6 rounded-full transition-colors relative ${cursorMode === 'ufo' ? 'bg-cyan-500' : 'bg-slate-700'}`}
-                      >
-                        <span className={`block w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${cursorMode === 'ufo' ? 'left-5' : 'left-1'}`} />
-                      </button>
-                    </div>
+
 
                     <div className="flex items-center justify-between">
                       <span className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Cursor Trails</span>
@@ -188,8 +176,6 @@ export function SettingsPanel() {
                         }}
                         onMouseEnter={() => playHover()}
                         className={`w-10 h-6 rounded-full transition-colors relative ${trailsEnabled ? 'bg-cyan-500' : 'bg-slate-700'}`}
-                        disabled={cursorMode !== 'ufo'}
-                        style={{ opacity: cursorMode === 'ufo' ? 1 : 0.5 }}
                       >
                         <span className={`block w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${trailsEnabled ? 'left-5' : 'left-1'}`} />
                       </button>

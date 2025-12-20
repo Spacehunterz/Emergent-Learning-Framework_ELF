@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { Vector3 } from 'three'
 import * as THREE from 'three'
 import { GAME_CONFIG } from '../config/GameConstants'
+import { useGameSettings } from './GameSettings'
 
 interface Explosion {
     id: string
@@ -42,11 +43,13 @@ const ExplosionParticle = ({ position, color }: { position: Vector3, color: stri
         (Math.random() - 0.5) * 10,
         (Math.random() - 0.5) * 10
     ))
+    const { isPaused } = useGameSettings()
 
     // Pre-allocate temp vector to avoid clone() every frame
     const tempVelocity = useRef(new Vector3())
 
     useFrame((state, delta) => {
+        if (isPaused) return
         if (ref.current) {
             tempVelocity.current.copy(velocity).multiplyScalar(delta)
             ref.current.position.add(tempVelocity.current)
@@ -82,8 +85,10 @@ const ExplosionEffect = ({ data }: { data: Explosion }) => {
 
 const Shockwave = ({ color }: { color: string }) => {
     const ref = useRef<any>()
+    const { isPaused } = useGameSettings()
 
     useFrame((state, delta) => {
+        if (isPaused) return
         if (ref.current) {
             ref.current.scale.addScalar(delta * 20) // Fast expansion
             ref.current.material.opacity -= delta * 2 // Fade out
@@ -109,9 +114,11 @@ const Shockwave = ({ color }: { color: string }) => {
 
 export const ExplosionRenderer = () => {
     const { explosions, removeExplosion } = useExplosionStore()
+    const { isPaused } = useGameSettings()
 
     // Cleanup old explosions - FIXED: Date.now() inside useFrame to avoid stale closure
     useFrame(() => {
+        if (isPaused) return
         const now = Date.now()
         explosions.forEach(e => {
             if (now - e.createdAt > 1000) {

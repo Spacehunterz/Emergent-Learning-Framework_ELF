@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
-export type WeaponType = 'pulse_laser' | 'star_blaster' | 'quantum_cannon';
+
 
 interface GameState {
     score: number;
     level: number;
-    activeWeapon: WeaponType;
-    unlockedWeapons: WeaponType[];
+
     unlockedCursors: string[];
     githubUser: {
         username: string;
@@ -15,7 +14,7 @@ interface GameState {
     isMenuOpen: boolean;
     isSetupOpen: boolean;
     isGameEnabled: boolean;
-    activeShip: 'default' | 'ufo' | 'star_ship' | 'drone' | 'glitch';
+    activeShip: 'default' | 'star_ship' | 'drone' | 'glitch';
     activeTrail: 'none' | 'cyan' | 'star' | 'plasma' | 'fire';
     shields: number;
     viewMode: 'static' | 'cockpit';
@@ -30,7 +29,7 @@ interface GameContextType extends GameState {
     rechargeShields: (amount: number) => void;
     resetShields: () => void;
     levelUp: () => void;
-    setActiveWeapon: (weapon: WeaponType) => void;
+
     toggleMenu: () => void;
     verifyStar: () => Promise<void>;
     checkAuth: () => Promise<void>;
@@ -38,7 +37,8 @@ interface GameContextType extends GameState {
     logout: () => void;
     setIsSetupOpen: (open: boolean) => void;
     toggleGameMode: () => void;
-    setActiveShip: (ship: 'default' | 'ufo' | 'star_ship' | 'drone' | 'glitch') => void;
+    setGameEnabled: (enabled: boolean) => void;
+    setActiveShip: (ship: 'default' | 'star_ship' | 'drone' | 'glitch') => void;
     setActiveTrail: (trail: 'none' | 'cyan' | 'star' | 'plasma' | 'fire') => void;
     toggleViewMode: () => void;
     setGameOver: (isOver: boolean) => void;
@@ -53,8 +53,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [state, setState] = useState<GameState>({
         score: 0,
         level: 1,
-        activeWeapon: 'pulse_laser',
-        unlockedWeapons: ['pulse_laser'],
+
         unlockedCursors: ['default'],
         githubUser: null,
         isMenuOpen: false,
@@ -63,7 +62,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         activeShip: 'default', // Default System Cursor
         activeTrail: 'none',
         shields: 100,
-        viewMode: 'static',
+        viewMode: 'cockpit', // Changed from 'static' - enables pointer lock
         isGameOver: false,
         lastHitTime: 0 // Added lastHitTime to initial state
     });
@@ -85,8 +84,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     githubUser: { username: authData.username, avatar_url: authData.avatar_url },
                     score: gameData.score,
                     level: gameData.level || 1,
-                    activeWeapon: (gameData.active_weapon as WeaponType) || 'pulse_laser',
-                    unlockedWeapons: gameData.unlocked_weapons || ['pulse_laser'],
+
                     unlockedCursors: gameData.unlocked_cursors || ['default'],
                 }));
             }
@@ -119,18 +117,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setState(prev => ({ ...prev, score }));
     };
 
-    const setActiveWeapon = (weapon: WeaponType) => {
-        setState(prev => {
-            // Optimistic
-            fetch('http://localhost:8888/api/game/equip', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ id: weapon })
-            }).catch(console.error);
-            return { ...prev, activeWeapon: weapon }
-        });
-    };
+
 
     const verifyStar = async () => {
         try {
@@ -156,16 +143,22 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setState(prev => ({
             ...prev,
             githubUser: null,
-            activeWeapon: 'pulse_laser',
-            unlockedWeapons: ['pulse_laser'],
+
             score: 0
         }));
     };
 
     const toggleMenu = () => setState(prev => ({ ...prev, isMenuOpen: !prev.isMenuOpen }));
     const setIsSetupOpen = (open: boolean) => setState(prev => ({ ...prev, isSetupOpen: open }));
-    const toggleGameMode = () => setState(prev => ({ ...prev, isGameEnabled: !prev.isGameEnabled }));
-    const setActiveShip = (ship: 'default' | 'ufo' | 'star_ship' | 'drone' | 'glitch') => setState(prev => ({ ...prev, activeShip: ship }));
+    const setGameEnabled = (enabled: boolean) => setState(prev => ({
+        ...prev,
+        isGameEnabled: enabled,
+        isMenuOpen: enabled ? prev.isMenuOpen : false,
+        isSetupOpen: enabled ? prev.isSetupOpen : false,
+        isGameOver: enabled ? prev.isGameOver : false
+    }));
+    const toggleGameMode = () => setGameEnabled(!state.isGameEnabled);
+    const setActiveShip = (ship: 'default' | 'star_ship' | 'drone' | 'glitch') => setState(prev => ({ ...prev, activeShip: ship }));
     const setActiveTrail = (trail: 'none' | 'cyan' | 'star' | 'plasma' | 'fire') => setState(prev => ({ ...prev, activeTrail: trail }));
     const rechargeShields = (amount: number) => setState(prev => ({ ...prev, shields: Math.min(100, prev.shields + amount) }));
     const resetShields = () => setState(prev => ({ ...prev, shields: 100 }));
@@ -195,7 +188,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ...state,
             setScore,
             addScore,
-            setActiveWeapon,
+
             toggleMenu,
             verifyStar,
             checkAuth,
@@ -203,6 +196,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             logout,
             setIsSetupOpen,
             toggleGameMode,
+            setGameEnabled,
             setActiveShip,
             setActiveTrail,
             damageShields,

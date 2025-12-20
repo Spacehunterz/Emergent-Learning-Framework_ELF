@@ -21,35 +21,53 @@ interface ProjectileState {
     updateProjectiles: (delta: number) => void
 }
 
-export const useProjectileStore = create<ProjectileState>((set) => ({
+export const useProjectileStore = create<ProjectileState>((set, get) => ({
     projectiles: [],
     spawnProjectile: (p) => set((state) => {
-        // Apply defaults if missing (though usually passed fully)
-        // Hard to enforce defaults here without modifying P before call, but we can trust P is mostly correct 
-        // OR we override here if we want to enforce constants strictly.
-        // Let's rely on the CALLER (PlayerShip/Enemy) using the constants, but we can set safety defaults here?
-        // Actually, best to just store what's passed. Callers are already refactored.
+        // Simple append - triggers React update, which is fine for spawns (staggered)
         return { projectiles: [...state.projectiles, p] }
     }),
     removeProjectile: (id) => set((state) => ({
         projectiles: state.projectiles.filter(p => p.id !== id)
     })),
-    updateProjectiles: (delta) => set((state) => {
-        // FIXED: Pre-allocate a single temp vector for velocity scaling
-        // Position still needs clone() for React state change detection
+    updateProjectiles: (delta) => {
+        const state = get()
+        const projectiles = state.projectiles
         const tempVel = new Vector3()
-        return {
-            projectiles: state.projectiles
-                .map(p => {
-                    // IMPORTANT: We must create a NEW Vector3 instance so R3F detects the prop change!
-                    // FIXED: Reuse tempVel instead of cloning velocity each time
-                    tempVel.copy(p.velocity).multiplyScalar(delta)
-                    const newPos = p.position.clone().add(tempVel)
-                    return { ...p, position: newPos, lifetime: p.lifetime - delta }
-                })
-                .filter(p => p.lifetime > 0)
+        const MAX_DISTANCE_SQ = 500 * 500
+
+
+
+        // Mutate in place
+        for (let i = 0; i < projectiles.length; i++) {
+            const p = projectiles[i]
+
+            // Move
+            tempVel.copy(p.velocity).multiplyScalar(delta)
+            p.position.add(tempVel)
+            p.lifetime -= delta
+
+            // Check bounds/lifetime
+            if (p.lifetime <= 0 || p.position.lengthSq() > MAX_DISTANCE_SQ) {
+                // Mark for removal?
+                // Since we can't easily remove from the array in-place without affecting the store reference eventually
+                // we will let the set() handle it below.
+            }
         }
-    })
+
+        // Filter out dead projectiles
+        // We check if any NEED removal to avoid calling set() if nothing changed
+        // This is O(N) but essential to avoid React renders when no one died.
+        // Optimization: We could flag 'hasRemovals' inside the loop above?
+        // Yes, let's do that to avoid the .some() check if possible, or just accept the filter cost.
+        // Actually, mutation above doesn't tell us if we SHOULD remove.
+
+        const activeProjectiles = projectiles.filter(p => p.lifetime > 0 && p.position.lengthSq() < MAX_DISTANCE_SQ)
+
+        if (activeProjectiles.length !== projectiles.length) {
+            set({ projectiles: activeProjectiles })
+        }
+    }
 }))
 
 // Hook for managing weapon state (Heat, Fire Rate)

@@ -1,12 +1,10 @@
-import { Suspense, Component, ReactNode, useCallback, useState } from 'react'
+import { Suspense, Component, ReactNode, useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { XR, createXRStore } from '@react-three/xr'
+import { XR } from '@react-three/xr'
 import { SpaceShooterScene } from './SpaceShooterScene'
-import { useGame } from '../../../context/GameContext'
-import { HudState } from './Hud'
-
-// Create the XR store outside of the component to maintain state
-const store = createXRStore()
+import { PauseMenu } from '../ui/PauseMenu'
+import { useGameSettings } from '../systems/GameSettings'
+import { xrStore } from '../../xr/xrStore'
 
 // Simple local ErrorBoundary for the game view
 class GameErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean, error: Error | null }> {
@@ -47,31 +45,64 @@ class GameErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
 }
 
 export const GameScene = () => {
-    const { isGameEnabled } = useGame()
-    const [, setHudStatus] = useState<HudState>({
-        stageLabel: 'Asteroid Ring',
-        stageObjective: 'Target practice: clear the debris field.',
-        stageIndex: 1,
-        stageStatus: 'Engage',
-        bossHealth: null,
-        bossSegments: null
-    })
-    const handleHudUpdate = useCallback((next: HudState) => {
-        setHudStatus(next)
-    }, [])
+    const { isPaused, setPaused } = useGameSettings()
+    const [vrSupported, setVrSupported] = useState(false)
 
-    if (!isGameEnabled) return null
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setPaused(!isPaused)
+            }
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [isPaused, setPaused])
+
+    useEffect(() => {
+        return () => setPaused(false)
+    }, [setPaused])
+
+    useEffect(() => {
+        let active = true
+        const checkSupport = async () => {
+            console.log('[VR DEBUG] Checking XR Support...')
+            if (!navigator.xr) {
+                console.warn('[VR DEBUG] navigator.xr is undefined. HTTPS required?')
+                if (active) setVrSupported(false)
+                return
+            }
+            try {
+                const vrSupported = await navigator.xr.isSessionSupported('immersive-vr')
+                console.log('[VR DEBUG] immersive-vr supported:', vrSupported)
+
+                // Fallback check to see if *any* immersive mode works
+                const arSupported = await navigator.xr.isSessionSupported('immersive-ar')
+                console.log('[VR DEBUG] immersive-ar supported:', arSupported)
+
+                if (active) setVrSupported(vrSupported)
+            } catch (e) {
+                console.error('[VR DEBUG] XR Check Error:', e)
+                if (active) setVrSupported(false)
+            }
+        }
+        checkSupport()
+        return () => {
+            active = false
+        }
+    }, [])
 
     return (
         <GameErrorBoundary>
             <div className="fixed inset-0 z-50 bg-black">
-                {/* VR Enable Button - Only visible if VR is supported */}
-                <button
-                    onClick={() => store.enterVR()}
-                    className="!absolute !bottom-6 !left-1/2 !-translate-x-1/2 !z-[60] !bg-slate-900/90 !border !border-indigo-500/50 !text-indigo-100 !font-mono !tracking-widest !uppercase !px-6 !py-3 !rounded-lg hover:!bg-indigo-900/80 transition-colors"
-                >
-                    ENTER VR
-                </button>
+                <PauseMenu />
+                {vrSupported && (
+                    <button
+                        onClick={() => xrStore.enterVR()}
+                        className="!absolute !bottom-6 !left-1/2 !-translate-x-1/2 !z-[60] !bg-slate-900/90 !border !border-indigo-500/50 !text-indigo-100 !font-mono !tracking-widest !uppercase !px-6 !py-3 !rounded-lg hover:!bg-indigo-900/80 transition-colors"
+                    >
+                        ENTER VR
+                    </button>
+                )}
 
                 {/* 3D Scene */}
                 <Canvas
@@ -79,9 +110,9 @@ export const GameScene = () => {
                     camera={{ position: [0, 0, 0], fov: 70, near: 0.1, far: 1000 }}
                     gl={{ antialias: true, powerPreference: 'high-performance' }}
                 >
-                    <XR store={store}>
+                    <XR store={xrStore}>
                         <Suspense fallback={null}>
-                            <SpaceShooterScene onHudUpdate={handleHudUpdate} resetKey={0} />
+                            <SpaceShooterScene />
                         </Suspense>
                     </XR>
                 </Canvas>

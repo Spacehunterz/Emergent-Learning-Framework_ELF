@@ -147,9 +147,13 @@ async def verify_star(request: Request):
             if "star_blaster" not in weapons:
                 weapons.append("star_blaster")
                 unlocked_any = True
-                
-            if "star_cursor" not in cursors:
-                cursors.append("star_cursor")
+
+            # Unlock star_ship cursor and star_trail
+            if "star_ship" not in cursors:
+                cursors.append("star_ship")
+                unlocked_any = True
+            if "star_trail" not in cursors:
+                cursors.append("star_trail")
                 unlocked_any = True
             
             if unlocked_any:

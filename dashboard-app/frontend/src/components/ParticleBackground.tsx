@@ -11,11 +11,11 @@ import type { Mouse } from './particle-background/types'
 export const ParticleBackground = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const { particleCount, theme } = useTheme()
-    const { addScore, activeWeapon, isGameEnabled, activeShip, activeTrail, damageShields, shields, rechargeShields, levelUp, level } = useGame() // Get methods
+    const { addScore, isGameEnabled, activeShip, activeTrail, damageShields, shields, rechargeShields, levelUp, level } = useGame() // Get methods
 
     // Refs
     const addScoreRef = useRef(addScore)
-    const activeWeaponRef = useRef(activeWeapon)
+
     const isGameEnabledRef = useRef(isGameEnabled)
     const activeShipRef = useRef(activeShip)
     const activeTrailRef = useRef(activeTrail)
@@ -26,7 +26,7 @@ export const ParticleBackground = () => {
     const levelRef = useRef(level)
 
     useEffect(() => { addScoreRef.current = addScore }, [addScore])
-    useEffect(() => { activeWeaponRef.current = activeWeapon }, [activeWeapon])
+
     useEffect(() => { isGameEnabledRef.current = isGameEnabled }, [isGameEnabled])
     useEffect(() => { activeShipRef.current = activeShip }, [activeShip])
     useEffect(() => { activeTrailRef.current = activeTrail }, [activeTrail])
@@ -112,16 +112,8 @@ export const ParticleBackground = () => {
             if (e.button === 0) {
                 if (isGameEnabledRef.current && activeShipRef.current !== 'default') {
                     const angle = rotationRef.current
-                    const weapon = activeWeaponRef.current
-
-                    if (weapon === 'star_blaster') {
-                        const spread = 15
-                        projectiles.push(new Projectile(mouse.x, mouse.y, angle - spread, 'star_blaster'))
-                        projectiles.push(new Projectile(mouse.x, mouse.y, angle, 'star_blaster'))
-                        projectiles.push(new Projectile(mouse.x, mouse.y, angle + spread, 'star_blaster'))
-                    } else {
-                        projectiles.push(new Projectile(mouse.x, mouse.y, angle, weapon === 'quantum_cannon' ? 'pulse_laser' : weapon))
-                    }
+                    const weapon = 'pulse_laser'
+                    projectiles.push(new Projectile(mouse.x, mouse.y, angle, weapon))
                 }
             }
         }

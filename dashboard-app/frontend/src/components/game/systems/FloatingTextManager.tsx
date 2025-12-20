@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import { Vector3 } from 'three'
 import { Text } from '@react-three/drei'
+import { useGameSettings } from './GameSettings'
 
 interface FloatingText {
     id: string
@@ -39,8 +40,10 @@ export const useFloatingTextStore = create<FloatingTextStore>((set) => ({
 const FloatingTextElement = ({ data }: { data: FloatingText }) => {
     const ref = useRef<any>()
     const initialY = useRef(data.position.y)
+    const { isPaused } = useGameSettings()
 
     useFrame((_, delta) => {
+        if (isPaused) return
         if (ref.current) {
             // Float upward
             ref.current.position.y += delta * 2
@@ -66,9 +69,11 @@ const FloatingTextElement = ({ data }: { data: FloatingText }) => {
 
 export const FloatingTextRenderer = () => {
     const { texts, removeText } = useFloatingTextStore()
+    const { isPaused } = useGameSettings()
 
     // Cleanup old texts
     useFrame(() => {
+        if (isPaused) return
         const now = Date.now()
         texts.forEach(t => {
             if (now - t.createdAt > 1500) {
