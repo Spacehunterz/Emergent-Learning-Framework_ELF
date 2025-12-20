@@ -142,10 +142,7 @@ export const CollisionManager = () => {
                         spawnExplosion(p.position, 'cyan', 0.5) // Small hit effect
                         sound.playHit()
 
-                        // DAMAGE TEXT
-                        tempTextPos.copy(e.position).addScalar((Math.random() - 0.5) * 2)
-                        const dmgText = e.type === 'boss' ? `${p.damage} (${e.hp - p.damage}HP)` : p.damage.toString()
-                        spawnText(tempTextPos, dmgText, '#22d3ee', 1.0)
+                        // PERF: Removed per-hit damage text (expensive drei Text component)
 
                         const dead = damageEnemy(e.id, p.damage)
                         if (dead) {
@@ -179,7 +176,7 @@ export const CollisionManager = () => {
                             removeProjectile(otherP.id)
                             spawnExplosion(p.position, 'white', 0.3) // Tiny spark
                             sound.playExplosion('small') // Small pop for bullet interception
-                            spawnText(p.position, 'BLOCK', '#a1a1aa', 0.8)
+                            // PERF: Removed "BLOCK" text (expensive drei Text component)
                         }
                     }
                 })
