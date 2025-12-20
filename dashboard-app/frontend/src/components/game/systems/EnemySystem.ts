@@ -39,21 +39,21 @@ export const useEnemyStore = create<EnemyState>((set, get) => ({
         enemies: state.enemies.filter(e => e.id !== id)
     })),
     damageEnemy: (id, amount) => {
-        let isDead = false
-        set((state) => ({
-            enemies: state.enemies.map(e => {
-                if (e.id === id) {
-                    const newHp = e.hp - amount
-                    if (newHp <= 0) {
-                        isDead = true
-                        return { ...e, hp: 0, isDead: true }
-                    }
-                    return { ...e, hp: newHp }
-                }
-                return e
-            }).filter(e => e.hp > 0)
-        }))
-        return isDead
+        // PERF: Mutate in place, only trigger state update when enemy dies
+        const enemies = get().enemies
+        const enemy = enemies.find(e => e.id === id)
+        if (!enemy) return false
+
+        enemy.hp -= amount
+
+        if (enemy.hp <= 0) {
+            enemy.hp = 0
+            enemy.isDead = true
+            // Only set state when we need to remove the enemy
+            set({ enemies: enemies.filter(e => e.hp > 0) })
+            return true
+        }
+        return false
     },
     tick: (delta) => {
         const state = get()
