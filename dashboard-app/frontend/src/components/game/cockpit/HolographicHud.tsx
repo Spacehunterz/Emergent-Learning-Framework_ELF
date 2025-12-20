@@ -89,8 +89,6 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
         }
     })
 
-    const fontUrl = 'https://fonts.gstatic.com/s/teko/v15/LYjCdG7kmE0gdQhfr-IF.woff'
-
     return (
         <group position={[0, 0, -1.8]} rotation={[0, 0, 0]}>
             {/* CENTER CROSSHAIR */}
@@ -132,7 +130,6 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                         position={[-0.6, 0, 0]}
                         fontSize={0.08}
                         color="#38bdf8"
-                        font={fontUrl}
                         anchorX="right"
                         anchorY="middle"
                     >
@@ -158,7 +155,6 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                         position={[-0.6, 0, 0]}
                         fontSize={0.08}
                         color="#f43f5e"
-                        font={fontUrl}
                         anchorX="right"
                         anchorY="middle"
                     >
@@ -182,7 +178,6 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                         position={[-0.6, 0, 0]}
                         fontSize={0.08}
                         color="#facc15"
-                        font={fontUrl}
                         anchorX="right"
                         anchorY="middle"
                     >
@@ -208,7 +203,6 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                     position={[0, 0.15, 0]}
                     fontSize={0.12}
                     color="#facc15"
-                    font={fontUrl}
                     anchorX="left"
                     anchorY="middle"
                 >
@@ -219,7 +213,6 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                     position={[0, 0, 0]}
                     fontSize={0.09}
                     color="#ffffff"
-                    font={fontUrl}
                     anchorX="left"
                     anchorY="middle"
                     fillOpacity={0.8}
@@ -235,7 +228,6 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                         position={[0, 0.1, 0]}
                         fontSize={0.08}
                         color="#f97316"
-                        font={fontUrl}
                         anchorX="center"
                     >
                         DREADNOUGHT CLASS DETECTED
@@ -257,7 +249,6 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                     position={[0, 0, 0]}
                     fontSize={0.1}
                     color="#e2e8f0"
-                    font={fontUrl}
                     anchorX="center"
                     anchorY="middle"
                     fillOpacity={0.9}
@@ -269,7 +260,6 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                     position={[0, -0.12, 0]}
                     fontSize={0.06}
                     color="#94a3b8"
-                    font={fontUrl}
                     anchorX="center"
                     anchorY="middle"
                     maxWidth={2}
