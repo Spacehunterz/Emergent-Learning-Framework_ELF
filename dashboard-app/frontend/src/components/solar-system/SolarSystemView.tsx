@@ -1,10 +1,12 @@
 import { useRef, useMemo, useState, useEffect } from 'react'
 import { Canvas, useFrame, useThree, extend, ReactThreeFiber } from '@react-three/fiber'
 import { OrbitControls, Stars, Text, Float, Billboard, Html, shaderMaterial } from '@react-three/drei'
+import { XR, useXR } from '@react-three/xr'
 import { useDataContext } from '../../context/DataContext'
 import * as THREE from 'three'
 import { sunVertexShader, sunFragmentShader, planetVertexShader, planetFragmentShader } from './shaders'
 import { Floating3DParticles } from './Floating3DParticles'
+import { xrStore } from '../xr/xrStore'
 
 // Create custom shader materials
 const SunMaterial = shaderMaterial(
@@ -54,6 +56,7 @@ interface CameraControllerProps {
 function CameraController({ target, defaultPosition, defaultTarget, isSelected, planetSize, onEscape }: CameraControllerProps & { onEscape: () => void }) {
     const { camera } = useThree()
     const controlsRef = useRef<any>(null)
+    const isPresenting = useXR((state) => state.mode === 'immersive-vr')
 
     // Store refs for animation
     const savedView = useRef<{ position: THREE.Vector3, target: THREE.Vector3 } | null>(null)
@@ -90,6 +93,7 @@ function CameraController({ target, defaultPosition, defaultTarget, isSelected, 
     }, [isSelected, onEscape])
 
     useFrame(() => {
+        if (isPresenting) return
         if (!controlsRef.current) return
 
         // If user is manually interacting, cancel any restoration
@@ -139,6 +143,8 @@ function CameraController({ target, defaultPosition, defaultTarget, isSelected, 
 
         controlsRef.current.update()
     })
+
+    if (isPresenting) return null
 
     return (
         <OrbitControls
@@ -211,6 +217,7 @@ function Planet({ label, color, size, speed, orbitRadius, onClick, selected, pau
     const atmosphereRef = useRef<THREE.ShaderMaterial>(null)
     const [hovered, setHovered] = useState(false)
     const [viewMode, setViewMode] = useState<'summary' | 'details'>('summary')
+    const isPresenting = useXR((state) => state.mode === 'immersive-vr')
 
     // Reset view mode when selection changes
     useEffect(() => {
@@ -247,7 +254,7 @@ function Planet({ label, color, size, speed, orbitRadius, onClick, selected, pau
     })
 
     return (
-        <group ref={orbitGroupRef}>
+            <group ref={orbitGroupRef}>
             {/* Actual Planet Surface */}
             <mesh
                 ref={meshRef}
@@ -255,8 +262,8 @@ function Planet({ label, color, size, speed, orbitRadius, onClick, selected, pau
                     e.stopPropagation()
                     onClick(label)
                 }}
-                onPointerOver={() => { document.body.style.cursor = 'pointer'; setHovered(true) }}
-                onPointerOut={() => { document.body.style.cursor = 'auto'; setHovered(false) }}
+                onPointerOver={() => { if (!isPresenting) document.body.style.cursor = 'pointer'; setHovered(true) }}
+                onPointerOut={() => { if (!isPresenting) document.body.style.cursor = 'auto'; setHovered(false) }}
             >
                 <sphereGeometry args={[size, 32, 32]} />
                 <meshStandardMaterial
@@ -275,8 +282,8 @@ function Planet({ label, color, size, speed, orbitRadius, onClick, selected, pau
                     e.stopPropagation()
                     onClick(label)
                 }}
-                onPointerOver={() => { document.body.style.cursor = 'pointer'; setHovered(true) }}
-                onPointerOut={() => { document.body.style.cursor = 'auto'; setHovered(false) }}
+                onPointerOver={() => { if (!isPresenting) document.body.style.cursor = 'pointer'; setHovered(true) }}
+                onPointerOut={() => { if (!isPresenting) document.body.style.cursor = 'auto'; setHovered(false) }}
             >
                 <sphereGeometry args={[size * 1.8, 16, 16]} />
                 <meshBasicMaterial />
@@ -311,7 +318,7 @@ function Planet({ label, color, size, speed, orbitRadius, onClick, selected, pau
             </Billboard>
 
             {/* Info Popup - Using HTML to overlay UI elements on 3D objects */}
-            {hovered && !selected && (
+            {hovered && !selected && !isPresenting && (
                 <Html position={[0, size + 2, 0]} center style={{ pointerEvents: 'none' }}>
                     <div className="w-48 p-3 rounded-lg bg-black/80 glass-panel shadow-neon backdrop-blur-md" style={{ borderColor: 'var(--theme-accent)' }}>
                         <div className="relative z-10 text-center">
@@ -333,7 +340,7 @@ function Planet({ label, color, size, speed, orbitRadius, onClick, selected, pau
             )}
 
             {/* Expanded info panel when selected - SHARP TEXT MODE (No 3D Transform) */}
-            {selected && (
+            {selected && !isPresenting && (
                 <Html position={[0, 0, 0]} center zIndexRange={[100, 0]} style={{ pointerEvents: 'auto' }}>
                     <div className="relative flex flex-col items-center justify-center">
                         {/* Connecting Line (visual only) */}
@@ -434,17 +441,47 @@ function Planet({ label, color, size, speed, orbitRadius, onClick, selected, pau
                     </div>
                 </Html>
             )}
-        </group>
+
+            {selected && isPresenting && (
+                <group position={[0, size + 2.2, 0]}>
+                    <mesh>
+                        <planeGeometry args={[2.4, 1.4]} />
+                        <meshStandardMaterial color="#0b1220" transparent opacity={0.85} />
+                    </mesh>
+                    <Text position={[0, 0.45, 0.02]} fontSize={0.16} color={color} anchorX="center" anchorY="middle">
+                        {label}
+                    </Text>
+                    <Text position={[-1.05, 0.1, 0.02]} fontSize={0.1} color="#94a3b8" anchorX="left" anchorY="middle">
+                        Heuristics:
+                    </Text>
+                    <Text position={[1.05, 0.1, 0.02]} fontSize={0.12} color="#ffffff" anchorX="right" anchorY="middle">
+                        {details.count}
+                    </Text>
+                    <Text position={[-1.05, -0.18, 0.02]} fontSize={0.1} color="#f59e0b" anchorX="left" anchorY="middle">
+                        Golden:
+                    </Text>
+                    <Text position={[1.05, -0.18, 0.02]} fontSize={0.12} color="#f59e0b" anchorX="right" anchorY="middle">
+                        {details.goldenCount || 0}
+                    </Text>
+                    <Text position={[-1.05, -0.46, 0.02]} fontSize={0.1} color="#22d3ee" anchorX="left" anchorY="middle">
+                        Confidence:
+                    </Text>
+                    <Text position={[1.05, -0.46, 0.02]} fontSize={0.12} color="#22d3ee" anchorX="right" anchorY="middle">
+                        {((details.avgConfidence || 0) * 100).toFixed(0)}%
+                    </Text>
+                </group>
+            )}
+            </group>
     )
 }
 
 // Background plane to catch clicks for deselection
 function BackgroundClickCatcher({ onClick }: { onClick: () => void }) {
     return (
-        <mesh position={[0, 0, -100]} onClick={onClick}>
-            <planeGeometry args={[500, 500]} />
-            <meshBasicMaterial transparent opacity={0} />
-        </mesh>
+            <mesh position={[0, 0, -100]} onClick={onClick}>
+                <planeGeometry args={[500, 500]} />
+                <meshBasicMaterial transparent opacity={0} />
+            </mesh>
     )
 }
 
@@ -564,6 +601,28 @@ function SolarSystemScene({ onDomainSelect, selectedDomainProp }: { onDomainSele
 }
 
 export default function SolarSystemView({ onDomainSelect, selectedDomain }: { onDomainSelect?: (domain: string) => void, selectedDomain?: string | null }) {
+    const [vrSupported, setVrSupported] = useState(false)
+
+    useEffect(() => {
+        let active = true
+        const checkSupport = async () => {
+            if (!navigator.xr || !navigator.xr.isSessionSupported) {
+                if (active) setVrSupported(false)
+                return
+            }
+            try {
+                const supported = await navigator.xr.isSessionSupported('immersive-vr')
+                if (active) setVrSupported(supported)
+            } catch (e) {
+                if (active) setVrSupported(false)
+            }
+        }
+        checkSupport()
+        return () => {
+            active = false
+        }
+    }, [])
+
     return (
         <div className="w-full h-full min-h-[600px] relative">
             {/* Overlay Title - pointer-events-none ensures we can click through to canvas */}
@@ -592,9 +651,22 @@ export default function SolarSystemView({ onDomainSelect, selectedDomain }: { on
                 </div>
             </div>
 
+            {vrSupported && (
+                <div className="absolute bottom-6 right-6 z-20">
+                    <button
+                        onClick={() => xrStore.enterVR()}
+                        className="px-4 py-2 bg-slate-900/90 border border-cyan-500/40 text-cyan-200 font-mono text-xs tracking-[0.2em] uppercase rounded-lg hover:bg-slate-800/90 transition-colors"
+                    >
+                        Enter VR
+                    </button>
+                </div>
+            )}
+
             <Canvas camera={{ position: [0, 30, 40], fov: 45 }} className="w-full h-full" gl={{ alpha: true }}>
-                <SolarSystemScene onDomainSelect={onDomainSelect} selectedDomainProp={selectedDomain} />
-                <Floating3DParticles count={300} />
+                <XR store={xrStore}>
+                    <SolarSystemScene onDomainSelect={onDomainSelect} selectedDomainProp={selectedDomain} />
+                    <Floating3DParticles count={300} />
+                </XR>
             </Canvas>
         </div>
     )
