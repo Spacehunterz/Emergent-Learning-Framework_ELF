@@ -48,15 +48,6 @@ export interface Hotspot {
   related_heuristics: any[]
 }
 
-export interface TreemapNode {
-  name: string
-  value: number
-  strength: number
-  severity: string
-  domains: string[]
-  children?: TreemapNode[]
-}
-
 // Run interface for display (used by RunsPanel)
 export interface Run {
   id: string
@@ -141,17 +132,6 @@ export interface ApiAnomaly {
   data: Record<string, any>
 }
 
-export interface Learning {
-  id: number
-  type: 'failure' | 'success' | 'observation' | 'experiment'
-  filepath: string
-  title: string
-  summary: string
-  domain: string
-  severity: number
-  created_at: string
-}
-
 export interface QueryResult {
   query: string
   interpretation: string
@@ -182,14 +162,6 @@ export interface WorkflowEdge {
   source: string
   target: string
   label?: string
-}
-
-export interface Domain {
-  name: string
-  heuristic_count: number
-  golden_count: number
-  avg_confidence: number
-  recent_activity: number
 }
 
 export interface Session {

@@ -695,8 +695,107 @@ class OrchestratorAgent:
         return True
 
 
+def test_multiagent_integration():
+    """
+    Pytest entry point for multi-agent integration test.
+
+    Validates:
+    - All 5 agents complete successfully (no thread exceptions)
+    - All tasks reach completed status
+    - Findings are recorded by agents
+    - Questions asked are answered
+    - No orphaned file claims remain
+    - Event log is consistent with blackboard state
+    - Timeline contains no ERROR entries
+    """
+    # Create temporary project directory
+    temp_dir = tempfile.mkdtemp(prefix="multiagent_test_")
+
+    try:
+        # Run orchestrator
+        orchestrator = OrchestratorAgent(temp_dir)
+        orchestrator.run()
+
+        # Get final state for assertions
+        state = orchestrator.bb.get_full_state()
+        event_log_stats = orchestrator.bb.get_event_log_stats()
+        validation = orchestrator.bb.validate_state_consistency()
+        timeline_events = orchestrator.timeline.events
+
+        # Assert 1: All 5 tasks completed
+        tasks = state.get("task_queue", [])
+        assert len(tasks) == 5, f"Expected 5 tasks, got {len(tasks)}"
+        completed_tasks = [t for t in tasks if t["status"] == "completed"]
+        assert len(completed_tasks) == 5, (
+            f"Expected all 5 tasks completed, but only {len(completed_tasks)} completed. "
+            f"Incomplete: {[t['description'] for t in tasks if t['status'] != 'completed']}"
+        )
+
+        # Assert 2: Findings were recorded (at least 5 - one per agent minimum)
+        findings = state.get("findings", [])
+        assert len(findings) >= 5, (
+            f"Expected at least 5 findings (one per agent), got {len(findings)}"
+        )
+
+        # Assert 3: All questions answered
+        questions = state.get("questions", [])
+        open_questions = [q for q in questions if q["status"] != "resolved"]
+        assert len(open_questions) == 0, (
+            f"Expected all questions resolved, but {len(open_questions)} still open: "
+            f"{[q['question'] for q in open_questions]}"
+        )
+
+        # Assert 4: No orphaned active claims
+        chains = state.get("claim_chains", [])
+        active_chains = [c for c in chains if c["status"] == "active"]
+        assert len(active_chains) == 0, (
+            f"Expected no active claims after completion, but found {len(active_chains)} "
+            f"orphaned chains: {[c['agent_id'] for c in active_chains]}"
+        )
+
+        # Assert 5: Event log is consistent with blackboard state
+        assert validation["consistent"], (
+            f"State consistency check failed. Differences: {validation.get('differences', [])}"
+        )
+
+        # Assert 6: Event log recorded events
+        assert event_log_stats["total_events"] > 0, (
+            "Event log should have recorded events during the test"
+        )
+
+        # Assert 7: All agents registered
+        agents = state.get("agents", [])
+        assert len(agents) >= 5, (
+            f"Expected at least 5 agents registered, got {len(agents)}"
+        )
+
+        # Assert 8: No ERROR entries in timeline
+        error_events = [e for e in timeline_events if "ERROR:" in e]
+        assert len(error_events) == 0, (
+            f"Timeline contains {len(error_events)} errors: {error_events}"
+        )
+
+        # Assert 9: Conflict resolution worked (Beta should have logged BLOCKED)
+        blocked_events = [e for e in timeline_events if "BLOCKED" in e]
+        assert len(blocked_events) >= 1, (
+            "Expected Agent Beta to be blocked at least once (conflict resolution test)"
+        )
+
+        # Assert 10: State reconstruction is valid
+        assert len(agents) > 0 and len(findings) > 0, (
+            "State should contain both agents and findings after test"
+        )
+
+    finally:
+        # Cleanup
+        try:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        except Exception:
+            pass
+
+
 def main():
-    """Main entry point for integration test."""
+    """Main entry point for integration test (non-pytest execution)."""
     # Create temporary project directory
     temp_dir = tempfile.mkdtemp(prefix="multiagent_test_")
 

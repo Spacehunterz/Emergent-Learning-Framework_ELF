@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { ThemeProvider, NotificationProvider, useNotificationContext, DataProvider, useDataContext, CosmicSettingsProvider, CosmicAudioProvider, useCosmicSettings, useTheme } from './context'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { ThemeProvider, NotificationProvider, useNotificationContext, DataProvider, useDataContext, CosmicSettingsProvider, CosmicAudioProvider, GameProvider, useGame, useCosmicSettings, useTheme } from './context'
 import { DashboardLayout } from './layouts/DashboardLayout'
 import { useWebSocket, useAPI } from './hooks'
 import CosmicIntro from './components/CosmicIntro'
+import { GameScene } from './components/game/cockpit/GameScene'
 import {
   StatsBar,
   HotspotVisualization,
@@ -75,6 +76,8 @@ function AppContent() {
 
   const api = useAPI()
   const notifications = useNotificationContext()
+  const { isGameEnabled } = useGame() // Get Game State
+
   const {
     stats,
     hotspots,
@@ -158,6 +161,30 @@ function AppContent() {
     setIsConnected(connectionStatus === 'connected')
   }, [connectionStatus])
 
+  // Startup Check-in Handshake
+  useEffect(() => {
+    const performCheckIn = async () => {
+      try {
+        console.log('[Check-in] Initiating startup handshake...')
+        const response = await api.post('/api/sessions/check-in')
+
+        if (response?.status === 'initiated') {
+          notifications.info(
+            'Session Check-in',
+            'Summarizing your last session in the background...'
+          )
+        } else if (response?.status === 'ready') {
+          // Optional: Could show a "Last Session" summary modal here
+          console.log('[Check-in] Last session summary ready:', response.session_id)
+        }
+      } catch (err) {
+        console.error('[Check-in] Handshake failed:', err)
+      }
+    }
+
+    performCheckIn()
+  }, [])
+
   // Command Palette keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -190,13 +217,14 @@ function AppContent() {
     }
   }
 
-  const handleOpenInEditor = async (path: string, line?: number) => {
+  // FIXED: Wrap in useCallback to prevent unnecessary re-renders
+  const handleOpenInEditor = useCallback(async (path: string, line?: number) => {
     try {
       await api.post('/api/open-in-editor', { path, line })
     } catch (err) {
       console.error('Failed to open in editor:', err)
     }
-  }
+  }, [api])
 
   const { performanceMode } = useCosmicSettings()
   const { setParticleCount } = useTheme()
@@ -210,34 +238,45 @@ function AppContent() {
     }
   }, [performanceMode, setParticleCount])
 
-  // Convert stats to expected format for StatsBar
-  // FIX: Use successful_runs/failed_runs from backend (actual workflow runs), not successes/failures (learnings)
-  const statsForBar = stats ? {
-    total_runs: stats.total_runs,
-    successful_runs: stats.successful_runs,
-    failed_runs: stats.failed_runs,
-    success_rate: stats.total_runs > 0 ? stats.successful_runs / stats.total_runs : 0,
-    total_heuristics: stats.total_heuristics,
-    golden_rules: stats.golden_rules,
-    total_learnings: stats.total_learnings,
-    hotspot_count: hotspots.length,
-    avg_confidence: stats.avg_confidence,
-    total_validations: stats.total_validations,
-    runs_today: stats.runs_today || 0,
-    active_domains: new Set(heuristics.map(h => h.domain)).size,
-    queries_today: stats.queries_today || 0,
-    total_queries: stats.total_queries || 0,
-    avg_query_duration_ms: stats.avg_query_duration_ms || 0,
-  } : null
+  // FIXED: Memoize normalized heuristics to avoid recalculation on every render
+  const normalizedHeuristics = useMemo(() =>
+    heuristics.map(h => ({
+      ...h,
+      is_golden: Boolean(h.is_golden)
+    })),
+    [heuristics]
+  )
 
-  // Convert heuristics to expected format (normalize is_golden)
-  const normalizedHeuristics = heuristics.map(h => ({
-    ...h,
-    is_golden: Boolean(h.is_golden)
-  }))
+  // FIXED: Memoize active domains calculation
+  const activeDomains = useMemo(() =>
+    new Set(heuristics.map(h => h.domain)).size,
+    [heuristics]
+  )
 
-  // Command palette commands
-  const commands = [
+  // FIXED: Memoize stats object to avoid recreation on every render
+  const statsForBar = useMemo(() => {
+    if (!stats) return null
+    return {
+      total_runs: stats.total_runs,
+      successful_runs: stats.successful_runs,
+      failed_runs: stats.failed_runs,
+      success_rate: stats.total_runs > 0 ? stats.successful_runs / stats.total_runs : 0,
+      total_heuristics: stats.total_heuristics,
+      golden_rules: stats.golden_rules,
+      total_learnings: stats.total_learnings,
+      hotspot_count: hotspots.length,
+      avg_confidence: stats.avg_confidence,
+      total_validations: stats.total_validations,
+      runs_today: stats.runs_today || 0,
+      active_domains: activeDomains,
+      queries_today: stats.queries_today || 0,
+      total_queries: stats.total_queries || 0,
+      avg_query_duration_ms: stats.avg_query_duration_ms || 0,
+    }
+  }, [stats, hotspots.length, activeDomains])
+
+  // FIXED: Memoize command palette commands to avoid recreation on every render
+  const commands = useMemo(() => [
     { id: 'overview', label: 'Go to Overview', category: 'Navigation', action: () => setActiveTab('overview') },
     { id: 'graph', label: 'View Knowledge Graph', category: 'Navigation', action: () => setActiveTab('graph') },
     { id: 'analytics', label: 'View Learning Analytics', category: 'Navigation', action: () => setActiveTab('analytics') },
@@ -255,7 +294,12 @@ function AppContent() {
     { id: 'clearNotifications', label: 'Clear All Notifications', category: 'Actions', action: notifications.clearAll },
     { id: 'playIntroFull', label: 'Play Intro (Full)', category: 'System', action: () => { setIntroMode('full'); setShowIntro(true); setCommandPaletteOpen(false); } },
     { id: 'playIntroShort', label: 'Play Intro (Short)', category: 'System', action: () => { setIntroMode('short'); setShowIntro(true); setCommandPaletteOpen(false); } },
-  ]
+  ], [notifications.soundEnabled, notifications.toggleSound, notifications.clearAll, loadStats, reloadHeuristics])
+
+  // GAME MODE OVERRIDE
+  if (isGameEnabled) {
+    return <GameScene />
+  }
 
   return (
     <>
@@ -289,7 +333,7 @@ function AppContent() {
               <div className="lg:col-span-2">
                 <HotspotVisualization
                   hotspots={hotspots}
-                  onSelect={(path) => handleOpenInEditor(path)}
+                  onSelect={handleOpenInEditor}
                   selectedDomain={selectedDomain}
                   onDomainFilter={setSelectedDomain}
                 />
@@ -385,7 +429,9 @@ function App() {
         <DataProvider>
           <CosmicSettingsProvider>
             <CosmicAudioProvider>
-              <AppContent />
+              <GameProvider>
+                <AppContent />
+              </GameProvider>
             </CosmicAudioProvider>
           </CosmicSettingsProvider>
         </DataProvider>

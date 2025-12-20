@@ -45,7 +45,7 @@ All deliverables created, tested, and documented. System is ready for production
    - Uncommitted change protection
    - Selective file/database restore
 
-4. **verify-backup.sh** (346 lines)
+4. **verify-backup.sh** (TODO: needs creation)
    - Multi-level verification
    - Automated backup testing
    - Email alerts on failure
@@ -304,7 +304,7 @@ Backup System
    # Daily backup at 2 AM
    0 2 * * * ~/.claude/emergent-learning/scripts/backup.sh
 
-   # Weekly verification on Sundays at 3 AM
+   # Weekly verification on Sundays at 3 AM (TODO: verify-backup.sh needs creation)
    0 3 * * 0 ~/.claude/emergent-learning/scripts/verify-backup.sh --alert-on-fail
    ```
 
@@ -395,7 +395,7 @@ Backup System
 │   ├── backup.sh                  (153 lines)
 │   ├── restore.sh                 (335 lines)
 │   ├── restore-from-git.sh        (254 lines)
-│   ├── verify-backup.sh           (346 lines)
+│   ├── verify-backup.sh           (TODO: needs creation)
 │   └── lib/
 │       └── backup-helpers.sh      (95 lines)
 ├── DISASTER_RECOVERY.md           (650+ lines)

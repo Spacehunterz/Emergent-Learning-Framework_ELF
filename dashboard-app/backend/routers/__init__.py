@@ -24,6 +24,9 @@ from .admin import router as admin_router
 from .fraud import router as fraud_router
 from .workflows import router as workflows_router
 from .context import router as context_router
+from .auth import router as auth_router
+from .game import router as game_router
+from .setup import router as setup_router
 
 __all__ = [
     'analytics_router',
@@ -36,4 +39,7 @@ __all__ = [
     'fraud_router',
     'workflows_router',
     'context_router',
+    'auth_router',
+    'game_router',
+    'setup_router',
 ]

@@ -4,3 +4,4 @@ websockets>=15.0
 aiosqlite>=0.20.0
 python-dateutil>=2.8.0
 peewee>=3.17.0
+python-dotenv>=1.0.0

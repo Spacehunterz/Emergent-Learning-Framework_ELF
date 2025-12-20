@@ -306,6 +306,13 @@ def test_blackboard_concurrent_access(runner: TestRunner) -> TestResult:
 
     total_ops = sum(operation_counts.values())
 
+    # Explicit assertions for pytest compatibility
+    assert len(errors) == 0, f"Expected no errors, got {len(errors)}: {errors[:5]}"
+    assert len(state["agents"]) == num_threads, f"Expected {num_threads} agents, found {len(state['agents'])}"
+    assert len(finding_ids) == len(set(finding_ids)), "Duplicate finding IDs detected"
+    assert len(msg_ids) == len(set(msg_ids)), "Duplicate message IDs detected"
+    assert total_ops > 0, "Expected at least one operation to complete"
+
     return TestResult(
         name="Blackboard Concurrent Access",
         passed=len(errors) == 0,
@@ -447,6 +454,14 @@ def test_event_log_stress(runner: TestRunner) -> TestResult:
 
     total_ops = append_count + read_count
 
+    # Explicit assertions for pytest compatibility
+    assert len(errors) == 0, f"Expected no errors, got {len(errors)}: {errors[:5]}"
+    assert len(event_seqs) == len(set(event_seqs)), "Duplicate sequence numbers in event log"
+    assert event_seqs == sorted(event_seqs), "Sequence numbers are not monotonic"
+    assert append_count > 0, "Expected at least one append operation"
+    assert read_count > 0, "Expected at least one read operation"
+    assert len(seen_sequences) > 0, "Expected at least one unique sequence"
+
     return TestResult(
         name="Event Log Stress",
         passed=len(errors) == 0,
@@ -562,6 +577,12 @@ def test_claim_chain_contention(runner: TestRunner) -> TestResult:
     # Count operations
     total_ops = len(claims_succeeded) + len(claims_blocked)
 
+    # Explicit assertions for pytest compatibility
+    assert len(errors) == 0, f"Expected no errors, got {len(errors)}: {errors[:5]}"
+    assert len(claims_succeeded) > 0, "No claims succeeded (possible deadlock)"
+    assert len(claims_released) == len(claims_succeeded), f"Expected all succeeded claims to be released: {len(claims_released)} released vs {len(claims_succeeded)} succeeded"
+    assert total_ops > 0, "Expected at least one claim operation"
+
     return TestResult(
         name="Claim Chain Contention",
         passed=len(errors) == 0,
@@ -644,14 +665,21 @@ def test_file_lock_stress(runner: TestRunner) -> TestResult:
             errors.append("Thread did not terminate cleanly")
 
     # Verify lock file can still be acquired (no orphaned locks)
+    lock_acquired = False
     try:
         lock_handle = bb._get_lock(timeout=5.0)
         if lock_handle is None:
             errors.append("Lock file appears orphaned")
         else:
+            lock_acquired = True
             bb._release_lock(lock_handle)
     except Exception as e:
         errors.append(f"Final lock test failed: {e}")
+
+    # Explicit assertions for pytest compatibility
+    assert len(errors) == 0, f"Expected no errors, got {len(errors)}: {errors[:5]}"
+    assert lock_count > 0, "Expected at least one lock cycle to complete"
+    assert lock_acquired, "Lock file appears orphaned - could not acquire final lock"
 
     return TestResult(
         name="File Lock Stress",
@@ -748,6 +776,12 @@ def test_resource_usage(runner: TestRunner) -> TestResult:
 
     if mem_growth > 50:  # 50 MB
         warnings.append(f"Memory growth: {mem_growth:.1f} MB")
+
+    # Explicit assertions for pytest compatibility
+    assert len(errors) == 0, f"Expected no errors, got {len(errors)}: {errors[:5]}"
+    assert operation_count > 0, "Expected at least one operation to complete"
+    assert fd_growth <= 50, f"File descriptor leak detected: grew by {fd_growth} (threshold: 50)"
+    assert mem_growth <= 100, f"Excessive memory growth: {mem_growth:.1f} MB (threshold: 100 MB)"
 
     return TestResult(
         name="Resource Usage Monitor",

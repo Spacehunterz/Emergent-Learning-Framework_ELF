@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Command, Sparkles, LayoutGrid, Globe } from 'lucide-react'
+import { Command, Sparkles, LayoutGrid, Globe, Gamepad2 } from 'lucide-react'
 import { ConnectionStatus, NotificationCenter, CeoItemModal, CeoItem } from './header-components'
 import { SettingsPanel } from './SettingsPanel'
 import { useCosmicSettings } from '../context/CosmicSettingsContext'
 import { useCosmicAudio } from '../context/CosmicAudioContext'
 import { useDataContext } from '../context/DataContext'
+import { useGame } from '../context/GameContext'
 import ScopeToggle from './ScopeToggle'
 
 interface HeaderProps {
@@ -14,12 +15,13 @@ interface HeaderProps {
 
 export default function Header({ isConnected, onOpenCommandPalette }: HeaderProps) {
   const [ceoItems, setCeoItems] = useState<CeoItem[]>([])
-    const [selectedItem, setSelectedItem] = useState<CeoItem | null>(null)
+  const [selectedItem, setSelectedItem] = useState<CeoItem | null>(null)
   const [itemContent, setItemContent] = useState<string>('')
   const [loadingContent, setLoadingContent] = useState(false)
   const { viewMode, setViewMode } = useCosmicSettings()
   const { playHover, playClick } = useCosmicAudio()
   const { anomalies, heuristics, setAnomalies } = useDataContext()
+  const { toggleMenu } = useGame()
 
   // Get golden rules for alerts panel
   const goldenRules = heuristics
@@ -162,6 +164,21 @@ export default function Header({ isConnected, onOpenCommandPalette }: HeaderProp
               <SettingsPanel />
 
               <div className="w-px h-6 bg-white/10 mx-1" />
+
+              {/* Game Menu Toggle */}
+              <button
+                onClick={() => {
+                  toggleMenu();
+                  playClick();
+                }}
+                onMouseEnter={() => playHover()}
+                className="p-2 rounded-full hover:bg-white/10 text-cyan-400 hover:text-cyan-300 transition-colors relative group"
+                title="Cosmic Armory"
+              >
+                <Gamepad2 className="w-5 h-5" />
+                <div className="absolute inset-0 rounded-full bg-cyan-400/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+
               <ConnectionStatus isConnected={isConnected} />
             </div>
           </div>

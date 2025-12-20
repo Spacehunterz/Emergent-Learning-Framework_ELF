@@ -69,19 +69,21 @@ export function Moon({
 
       {/* Moon group */}
       <group ref={groupRef}>
-        {/* Subtle glow for recent moons */}
-        {body.glowIntensity > 0.5 && (
-          <mesh scale={body.radius * 1.5}>
-            <sphereGeometry args={[1, 8, 8]} />
-            <meshBasicMaterial
-              color={color}
-              transparent
-              opacity={body.glowIntensity * 0.2}
-              blending={THREE.AdditiveBlending}
-              depthWrite={false}
-            />
-          </mesh>
-        )}
+        {/* Subtle glow for recent moons - FIXED: always render, control visibility */}
+        <mesh
+          scale={body.radius * 1.5}
+          visible={body.glowIntensity > 0.5}
+          position={[0, 0, 0.005]} // Small z-offset to prevent z-fighting
+        >
+          <sphereGeometry args={[1, 8, 8]} />
+          <meshBasicMaterial
+            color={color}
+            transparent
+            opacity={body.glowIntensity > 0.5 ? body.glowIntensity * 0.2 : 0}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
 
         {/* Main moon sphere */}
         <mesh
@@ -100,18 +102,20 @@ export function Moon({
           />
         </mesh>
 
-        {/* Selection/hover indicator */}
-        {(isSelected || isHovered) && (
-          <mesh scale={body.radius * 2} rotation={[Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0.8, 1, 32]} />
-            <meshBasicMaterial
-              color={isSelected ? '#fbbf24' : '#94a3b8'}
-              transparent
-              opacity={0.5}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-        )}
+        {/* Selection/hover indicator - FIXED: always render, control visibility */}
+        <mesh
+          scale={body.radius * 2}
+          rotation={[Math.PI / 2, 0, 0]}
+          visible={isSelected || isHovered}
+        >
+          <ringGeometry args={[0.8, 1, 32]} />
+          <meshBasicMaterial
+            color={isSelected ? '#fbbf24' : '#94a3b8'}
+            transparent
+            opacity={isSelected || isHovered ? 0.5 : 0}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
       </group>
     </>
   )

@@ -77,19 +77,21 @@ export function Planet({
 
       {/* Planet group (moves along orbit) */}
       <group ref={groupRef}>
-        {/* Glow effect */}
-        {body.glowIntensity > 0.3 && (
-          <mesh scale={body.radius * 1.4}>
-            <sphereGeometry args={[1, 16, 16]} />
-            <meshBasicMaterial
-              color={glowColor}
-              transparent
-              opacity={body.glowIntensity * 0.3}
-              blending={THREE.AdditiveBlending}
-              depthWrite={false}
-            />
-          </mesh>
-        )}
+        {/* Glow effect - FIXED: always render, control visibility to prevent remounts */}
+        <mesh
+          scale={body.radius * 1.4}
+          visible={body.glowIntensity > 0.3}
+          position={[0, 0, 0.01]} // FIXED: small z-offset to prevent z-fighting
+        >
+          <sphereGeometry args={[1, 16, 16]} />
+          <meshBasicMaterial
+            color={glowColor}
+            transparent
+            opacity={body.glowIntensity > 0.3 ? body.glowIntensity * 0.3 : 0}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
 
         {/* Main planet sphere */}
         <mesh
@@ -116,18 +118,20 @@ export function Planet({
           />
         )}
 
-        {/* Selection/hover indicator */}
-        {(isSelected || isHovered) && (
-          <mesh scale={body.radius * 1.8} rotation={[Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0.85, 1, 64]} />
-            <meshBasicMaterial
-              color={isSelected ? '#fbbf24' : '#94a3b8'}
-              transparent
-              opacity={0.6}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-        )}
+        {/* Selection/hover indicator - FIXED: always render, control visibility */}
+        <mesh
+          scale={body.radius * 1.8}
+          rotation={[Math.PI / 2, 0, 0]}
+          visible={isSelected || isHovered}
+        >
+          <ringGeometry args={[0.85, 1, 64]} />
+          <meshBasicMaterial
+            color={isSelected ? '#fbbf24' : '#94a3b8'}
+            transparent
+            opacity={isSelected || isHovered ? 0.6 : 0}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
 
         {/* Render moons orbiting this planet */}
         {moons.map((moon) => (

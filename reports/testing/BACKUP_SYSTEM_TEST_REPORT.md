@@ -56,7 +56,7 @@ Successfully implemented a comprehensive backup and disaster recovery system for
   - Database integrity verification
 - **Status:** ✓ Tested and working
 
-#### verify-backup.sh
+#### verify-backup.sh (TODO: needs creation)
 - **Location:** `~/.claude/emergent-learning/scripts/verify-backup.sh`
 - **Features:**
   - Multi-level verification (file, archive, content, full test)
@@ -222,7 +222,7 @@ sqlite3 test_index.db "SELECT COUNT(*) FROM learnings;"
 ### Next Steps
 1. Set up automated daily backups via cron
 2. Configure remote backup destination
-3. Run weekly verification with `verify-backup.sh`
+3. Run weekly verification with `verify-backup.sh` (TODO: script needs creation)
 4. Perform quarterly disaster recovery drills
 5. Monitor backup logs for failures
 
@@ -237,6 +237,7 @@ crontab -e
 
 **Weekly Verification (Sunday 3 AM):**
 ```bash
+# TODO: verify-backup.sh needs creation
 0 3 * * 0 ~/.claude/emergent-learning/scripts/verify-backup.sh --alert-on-fail
 ```
 

@@ -26,9 +26,9 @@ import hashlib
 import time
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Optional, Dict, List, Any, Callable, Tuple
+from typing import Optional, Dict, List, Any, Callable, Tuple, Union
 from contextlib import contextmanager
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from enum import Enum
 import re
 

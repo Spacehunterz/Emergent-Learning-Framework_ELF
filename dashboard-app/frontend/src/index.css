@@ -31,6 +31,27 @@
   background-color: var(--theme-bg-primary);
 }
 
+@keyframes floatUp {
+  0% {
+    transform: translateY(0px) scale(0.8);
+    opacity: 0;
+  }
+
+  20% {
+    transform: translateY(-10px) scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-50px) scale(1);
+    opacity: 0;
+  }
+}
+
+.animate-float-up {
+  animation: floatUp 1s ease-out forwards;
+}
+
 /* Black Hole (Default) - Inherits :root values */
 
 /* White Dwarf (Light) */
@@ -166,7 +187,7 @@ body {
 }
 
 body {
-  cursor: none;
+  /* cursor: none;  <-- RESTORED DEFAULT CURSOR per user request */
   /* Hide default cursor, we use UfoCursor */
   background-color: var(--theme-bg-primary);
   background-image:
@@ -260,35 +281,6 @@ nav * {
   }
 }
 
-.animate-wave {
-  animation: wave 1s ease-in-out infinite alternate;
-}
-
-@keyframes wave {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(30deg);
-  }
-}
-
-.animate-bounce-slight {
-  animation: bounceSlight 2s ease-in-out infinite;
-}
-
-@keyframes bounceSlight {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-2px);
-  }
-}
 
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out forwards;
@@ -317,9 +309,11 @@ nav * {
   }
 }
 
-.animate-light-chase {
-  animation: lightChase 1s linear infinite;
+/* Cursor Hiding Utility */
+.cursor-hidden-important {
+  cursor: none !important;
 }
+
 
 /* ============================================
    TREEMAP STYLES
@@ -337,13 +331,6 @@ nav * {
    TIMELINE STYLES
    ============================================ */
 
-.timeline-event {
-  transition: all 0.2s ease;
-}
-
-.timeline-event:hover {
-  transform: scale(1.05);
-}
 
 /* ============================================
    GLASSMORPHISM AND PANEL STYLES
@@ -378,11 +365,6 @@ nav * {
   box-shadow: 0 0 20px var(--theme-accent-glow);
 }
 
-/* Neon Text */
-.text-neon {
-  color: var(--theme-text-primary);
-  text-shadow: 0 0 10px var(--theme-accent-glow), 0 0 20px var(--theme-accent-glow);
-}
 
 /* Override Tailwind slate backgrounds */
 .bg-slate-700 {
@@ -449,10 +431,6 @@ nav * {
   transition: background-color 0.3s ease;
 }
 
-.theme-bg-secondary {
-  background-color: var(--theme-bg-secondary) !important;
-  transition: background-color 0.3s ease;
-}
 
 .theme-bg-card {
   background-color: rgba(var(--theme-panel-rgb), var(--glass-opacity)) !important;
@@ -466,10 +444,6 @@ nav * {
   transition: color 0.3s ease;
 }
 
-.theme-glow {
-  box-shadow: 0 0 20px var(--theme-accent-glow), 0 0 40px rgba(var(--theme-accent-rgb), 0.1);
-  transition: box-shadow 0.3s ease;
-}
 
 /* ============================================
    MISC STYLES
@@ -482,27 +456,3 @@ nav * {
 
 /* UFO Cursor is handled by React UfoCursor component */
 
-/* Shimmer animation for cosmic title */
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-.cosmic-title {
-  background: linear-gradient(120deg,
-      var(--theme-accent) 0%,
-      #ccc 45%,
-      #ccc 55%,
-      var(--theme-accent) 100%);
-  background-size: 300% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: shimmer 12s ease-in-out infinite;
-  filter: drop-shadow(0 0 15px var(--theme-accent-glow));
-}

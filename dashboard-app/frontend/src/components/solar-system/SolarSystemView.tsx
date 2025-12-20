@@ -153,6 +153,11 @@ function CameraController({ target, defaultPosition, defaultTarget, isSelected, 
             // Temporarily disable damping to see if it helps with "fighting"
             enableDamping={true}
             dampingFactor={0.05}
+            mouseButtons={{
+                LEFT: undefined as any, // Disable Left Click Rotation to allow Weapon Fire
+                MIDDLE: THREE.MOUSE.DOLLY,
+                RIGHT: THREE.MOUSE.ROTATE
+            }}
         />
     )
 }
@@ -569,7 +574,7 @@ export default function SolarSystemView({ onDomainSelect, selectedDomain }: { on
             <div className="absolute bottom-6 left-6 z-10 pointer-events-none select-none">
                 <div className="flex items-center gap-4 text-[10px] text-slate-500 font-mono">
                     <span className="flex items-center gap-1">
-                        <kbd className="px-1.5 py-0.5 bg-slate-800/80 rounded border border-slate-700 text-slate-400">Drag</kbd>
+                        <kbd className="px-1.5 py-0.5 bg-slate-800/80 rounded border border-slate-700 text-slate-400">Right Drag</kbd>
                         <span>Look around</span>
                     </span>
                     <span className="flex items-center gap-1">

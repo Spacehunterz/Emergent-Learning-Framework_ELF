@@ -33,3 +33,6 @@ wiki-repo/
 desktop.ini
 sessions/.processed
 workflows/*/output/
+
+# Reference material (do not commit)
+reference/

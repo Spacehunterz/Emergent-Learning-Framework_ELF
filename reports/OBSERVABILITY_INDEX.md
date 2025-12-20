@@ -17,9 +17,9 @@
 - [Quick Reference](OBSERVABILITY_QUICK_REF.md) - Cheat sheet for common tasks
 
 ### For Operators
-- [Dashboard](scripts/dashboard-simple.sh) - Real-time system health
-- [Verification Test](scripts/verify-observability.sh) - Confirm 10/10 status
-- [Live Demo](scripts/demo-observability.sh) - See it in action
+- [Dashboard](scripts/dashboard-simple.sh) - Real-time system health (TODO: needs creation)
+- [Verification Test](scripts/verify-observability.sh) - Confirm 10/10 status (TODO: needs creation)
+- [Live Demo](scripts/demo-observability.sh) - See it in action (TODO: needs creation)
 
 ---
 
@@ -88,7 +88,7 @@ Located in: `scripts/lib/`
 ### Tools
 Located in: `scripts/`
 
-1. **dashboard-simple.sh**
+1. **dashboard-simple.sh** (TODO: needs creation)
    - Real-time health dashboard
    - System status
    - Active alerts
@@ -104,13 +104,13 @@ Located in: `scripts/`
    - Storage tracking
    - Metrics recording
 
-4. **verify-observability.sh**
+4. **verify-observability.sh** (TODO: needs creation)
    - 32 automated tests
    - Verification of all features
    - Score calculation
    - Success/failure reporting
 
-5. **demo-observability.sh**
+5. **demo-observability.sh** (TODO: needs creation)
    - Live demonstration
    - Shows all features
    - Creates sample data
@@ -229,6 +229,7 @@ All core framework scripts now have full observability:
 ### Automated Testing
 ```bash
 cd ~/.claude/emergent-learning
+# TODO: verify-observability.sh script needs to be created
 ./scripts/verify-observability.sh
 ```
 
@@ -236,6 +237,7 @@ cd ~/.claude/emergent-learning
 
 ### Live Demo
 ```bash
+# TODO: demo-observability.sh script needs to be created
 ./scripts/demo-observability.sh
 ```
 
@@ -271,7 +273,7 @@ ls -lh ceo-inbox/alert_*.md
 
 ### Monitoring
 ```bash
-# Real-time dashboard
+# Real-time dashboard (TODO: script needs creation)
 ./scripts/dashboard-simple.sh
 
 # Live logs
@@ -438,9 +440,9 @@ CREATE INDEX idx_metrics_name ON metrics(metric_name);
 ## Next Steps
 
 1. **Learn**: Read [Quick Start Guide](OBSERVABILITY_QUICK_START.md)
-2. **Verify**: Run `./scripts/verify-observability.sh`
-3. **Demo**: Run `./scripts/demo-observability.sh`
-4. **Monitor**: Run `./scripts/dashboard-simple.sh`
+2. **Verify**: Run `./scripts/verify-observability.sh` (TODO: script needs creation)
+3. **Demo**: Run `./scripts/demo-observability.sh` (TODO: script needs creation)
+4. **Monitor**: Run `./scripts/dashboard-simple.sh` (TODO: script needs creation)
 5. **Explore**: See [Complete Report](OBSERVABILITY_10_OF_10_REPORT.md)
 
 ---

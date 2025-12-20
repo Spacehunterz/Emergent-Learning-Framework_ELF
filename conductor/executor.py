@@ -22,22 +22,17 @@ USAGE:
 
 import json
 import os
-import sys
 import time
 import subprocess
-import tempfile
 from pathlib import Path
-from typing import Dict, Tuple, Optional, List
+from typing import Dict, Tuple, List
 from datetime import datetime
-import sqlite3
 
 # Import validation utilities
 from validation import (
     validate_identifier,
     validate_node_id,
-    validate_agent_id,
     validate_agent_type,
-    validate_filename_safe,
     ValidationError
 )
 

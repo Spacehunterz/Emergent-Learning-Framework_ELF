@@ -7,7 +7,6 @@ when handling user-provided identifiers like node_id, workflow_id, run_id, etc.
 """
 
 import re
-from typing import Optional
 
 
 class ValidationError(ValueError):

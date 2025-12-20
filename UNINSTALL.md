@@ -18,6 +18,7 @@ PowerShell -ExecutionPolicy Bypass -File "$env:TEMP\uninstall-elf.ps1"
 ### Mac/Linux
 ```bash
 # Download and run uninstall script
+# TODO: uninstall.sh script needs to be created
 curl -fsSL https://raw.githubusercontent.com/your-repo/ELF/main/scripts/uninstall.sh | bash
 ```
 

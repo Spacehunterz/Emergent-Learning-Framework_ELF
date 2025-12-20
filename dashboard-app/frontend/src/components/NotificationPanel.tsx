@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Info, CheckCircle, AlertTriangle, AlertCircle, Volume2, VolumeX } from 'lucide-react'
-import { Notification, NotificationType } from '../hooks/useNotifications'
+import { Notification, NotificationType } from '../context/NotificationContext'
 
 interface NotificationPanelProps {
   notifications: Notification[]

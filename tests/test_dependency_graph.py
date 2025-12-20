@@ -129,27 +129,22 @@ def test_import_parsing(results: TestResults, test_dir: Path):
 
     # Test simple imports (should only have stdlib, which we ignore)
     simple_deps = dg.get_dependencies("simple.py")
-    if len(simple_deps) == 0:
-        results.pass_test("Simple imports (stdlib filtered)")
-    else:
-        results.fail_test("Simple imports", f"Expected 0 deps, got {len(simple_deps)}: {simple_deps}")
+    assert len(simple_deps) == 0, f"Expected 0 deps, got {len(simple_deps)}: {simple_deps}"
+    results.pass_test("Simple imports (stdlib filtered)")
 
     # Test complex imports (should import simple and utils)
     complex_deps = dg.get_dependencies("complex.py")
     expected_complex = {"simple.py"}  # utils might not resolve if structure is wrong
 
     has_simple = "simple.py" in complex_deps
-    if has_simple:
-        results.pass_test("Complex imports - found simple.py")
-    else:
-        results.fail_test("Complex imports", f"Expected simple.py in {complex_deps}")
+    assert has_simple, f"Expected simple.py in {complex_deps}"
+    results.pass_test("Complex imports - found simple.py")
 
     # Test utils/advanced imports utils/helper
     utils_advanced_deps = dg.get_dependencies("utils/advanced.py")
-    if "utils/helper.py" in utils_advanced_deps or "simple.py" in utils_advanced_deps:
-        results.pass_test("Nested module imports")
-    else:
-        results.fail_test("Nested module imports", f"Expected utils/helper.py or simple.py, got {utils_advanced_deps}")
+    assert "utils/helper.py" in utils_advanced_deps or "simple.py" in utils_advanced_deps, \
+        f"Expected utils/helper.py or simple.py, got {utils_advanced_deps}"
+    results.pass_test("Nested module imports")
 
 
 def test_graph_building(results: TestResults, test_dir: Path):
@@ -160,23 +155,17 @@ def test_graph_building(results: TestResults, test_dir: Path):
     dg.scan()
 
     # Check forward graph exists
-    if len(dg.graph) > 0:
-        results.pass_test("Forward graph built")
-    else:
-        results.fail_test("Forward graph", "Graph is empty")
+    assert len(dg.graph) > 0, "Graph is empty"
+    results.pass_test("Forward graph built")
 
     # Check reverse graph exists
-    if len(dg.reverse) > 0:
-        results.pass_test("Reverse graph built")
-    else:
-        results.fail_test("Reverse graph", "Reverse graph is empty")
+    assert len(dg.reverse) > 0, "Reverse graph is empty"
+    results.pass_test("Reverse graph built")
 
     # Test that simple.py has dependents (complex.py imports it)
     simple_dependents = dg.get_dependents("simple.py")
-    if "complex.py" in simple_dependents:
-        results.pass_test("Reverse graph correctly tracks dependents")
-    else:
-        results.fail_test("Reverse graph dependents", f"Expected complex.py in {simple_dependents}")
+    assert "complex.py" in simple_dependents, f"Expected complex.py in {simple_dependents}"
+    results.pass_test("Reverse graph correctly tracks dependents")
 
 
 def test_cluster_generation(results: TestResults, test_dir: Path):
@@ -188,30 +177,24 @@ def test_cluster_generation(results: TestResults, test_dir: Path):
 
     # Test cluster depth=1
     cluster1 = dg.get_cluster("simple.py", depth=1)
-    if "simple.py" in cluster1:
-        results.pass_test("Cluster includes original file")
-    else:
-        results.fail_test("Cluster depth=1", "Original file not in cluster")
+    assert "simple.py" in cluster1, "Original file not in cluster"
+    results.pass_test("Cluster includes original file")
 
     # Cluster should include both dependencies and dependents
-    if len(cluster1) >= 1:  # At minimum includes itself
-        results.pass_test("Cluster depth=1 generated")
-    else:
-        results.fail_test("Cluster depth=1", f"Cluster is empty: {cluster1}")
+    assert len(cluster1) >= 1, f"Cluster is empty: {cluster1}"  # At minimum includes itself
+    results.pass_test("Cluster depth=1 generated")
 
     # Test cluster depth=2 (should be larger or equal)
     cluster2 = dg.get_cluster("simple.py", depth=2)
-    if len(cluster2) >= len(cluster1):
-        results.pass_test("Cluster depth=2 >= depth=1")
-    else:
-        results.fail_test("Cluster depth=2", f"depth=2 ({len(cluster2)}) smaller than depth=1 ({len(cluster1)})")
+    assert len(cluster2) >= len(cluster1), \
+        f"depth=2 ({len(cluster2)}) smaller than depth=1 ({len(cluster1)})"
+    results.pass_test("Cluster depth=2 >= depth=1")
 
     # Test that cluster includes both deps and dependents
     # complex.py imports simple.py, so it should be in the cluster
-    if "complex.py" in cluster1 or "complex.py" in cluster2:
-        results.pass_test("Cluster includes dependents")
-    else:
-        results.fail_test("Cluster dependents", f"complex.py not in clusters: {cluster1}, {cluster2}")
+    assert "complex.py" in cluster1 or "complex.py" in cluster2, \
+        f"complex.py not in clusters: {cluster1}, {cluster2}"
+    results.pass_test("Cluster includes dependents")
 
 
 def test_chain_suggestion(results: TestResults, test_dir: Path):
@@ -223,31 +206,24 @@ def test_chain_suggestion(results: TestResults, test_dir: Path):
 
     # Test single file
     chain_single = dg.suggest_chain(["simple.py"])
-    if "simple.py" in chain_single:
-        results.pass_test("Chain suggestion for single file")
-    else:
-        results.fail_test("Chain single file", f"simple.py not in {chain_single}")
+    assert "simple.py" in chain_single, f"simple.py not in {chain_single}"
+    results.pass_test("Chain suggestion for single file")
 
     # Test multiple files
     chain_multi = dg.suggest_chain(["simple.py", "complex.py"])
-    if "simple.py" in chain_multi and "complex.py" in chain_multi:
-        results.pass_test("Chain suggestion for multiple files")
-    else:
-        results.fail_test("Chain multiple files", f"Missing files in {chain_multi}")
+    assert "simple.py" in chain_multi and "complex.py" in chain_multi, \
+        f"Missing files in {chain_multi}"
+    results.pass_test("Chain suggestion for multiple files")
 
     # Test that chain returns sorted list
-    if chain_multi == sorted(chain_multi):
-        results.pass_test("Chain is sorted")
-    else:
-        results.fail_test("Chain sorting", f"Chain not sorted: {chain_multi}")
+    assert chain_multi == sorted(chain_multi), f"Chain not sorted: {chain_multi}"
+    results.pass_test("Chain is sorted")
 
     # Test complete transitive closure
     # If we modify complex.py, we should get simple.py too (since complex imports simple)
     chain_complex = dg.suggest_chain(["complex.py"])
-    if "simple.py" in chain_complex:
-        results.pass_test("Chain includes transitive dependencies")
-    else:
-        results.fail_test("Chain transitive closure", f"simple.py not in complex.py chain: {chain_complex}")
+    assert "simple.py" in chain_complex, f"simple.py not in complex.py chain: {chain_complex}"
+    results.pass_test("Chain includes transitive dependencies")
 
 
 def test_edge_cases(results: TestResults, test_dir: Path):
@@ -259,47 +235,32 @@ def test_edge_cases(results: TestResults, test_dir: Path):
 
     # Test file with no imports
     no_import_deps = dg.get_dependencies("no_imports.py")
-    if len(no_import_deps) == 0:
-        results.pass_test("File with no imports")
-    else:
-        results.fail_test("No imports file", f"Expected 0 deps, got {no_import_deps}")
+    assert len(no_import_deps) == 0, f"Expected 0 deps, got {no_import_deps}"
+    results.pass_test("File with no imports")
 
     # Test circular imports (should handle gracefully)
-    try:
-        circular_a_cluster = dg.get_cluster("circular_a.py", depth=2)
-        circular_b_cluster = dg.get_cluster("circular_b.py", depth=2)
+    circular_a_cluster = dg.get_cluster("circular_a.py", depth=2)
+    circular_b_cluster = dg.get_cluster("circular_b.py", depth=2)
 
-        # Both should be in each other's clusters
-        if "circular_b.py" in circular_a_cluster and "circular_a.py" in circular_b_cluster:
-            results.pass_test("Circular imports handled")
-        else:
-            results.fail_test("Circular imports", f"A: {circular_a_cluster}, B: {circular_b_cluster}")
-    except Exception as e:
-        results.fail_test("Circular imports", f"Exception: {e}")
+    # Both should be in each other's clusters
+    assert "circular_b.py" in circular_a_cluster and "circular_a.py" in circular_b_cluster, \
+        f"A: {circular_a_cluster}, B: {circular_b_cluster}"
+    results.pass_test("Circular imports handled")
 
     # Test non-existent file
-    try:
-        nonexistent_deps = dg.get_dependencies("does_not_exist.py")
-        if len(nonexistent_deps) == 0:
-            results.pass_test("Non-existent file returns empty")
-        else:
-            results.fail_test("Non-existent file", f"Expected empty, got {nonexistent_deps}")
-    except Exception as e:
-        results.fail_test("Non-existent file", f"Exception: {e}")
+    nonexistent_deps = dg.get_dependencies("does_not_exist.py")
+    assert len(nonexistent_deps) == 0, f"Expected empty, got {nonexistent_deps}"
+    results.pass_test("Non-existent file returns empty")
 
     # Test non-Python file (should not be in graph)
-    if "README.md" not in dg.graph:
-        results.pass_test("Non-Python file filtered")
-    else:
-        results.fail_test("Non-Python file", "README.md should not be in graph")
+    assert "README.md" not in dg.graph, "README.md should not be in graph"
+    results.pass_test("Non-Python file filtered")
 
-    # Test file with syntax error (should be in graph but with no deps)
+    # Test file with syntax error (should be in graph but with no deps, or excluded)
     if "syntax_error.py" in dg.graph:
         syntax_deps = dg.get_dependencies("syntax_error.py")
-        if len(syntax_deps) == 0:
-            results.pass_test("Syntax error file handled gracefully")
-        else:
-            results.fail_test("Syntax error file", f"Expected 0 deps, got {syntax_deps}")
+        assert len(syntax_deps) == 0, f"Expected 0 deps, got {syntax_deps}"
+        results.pass_test("Syntax error file handled gracefully")
     else:
         results.pass_test("Syntax error file handled gracefully (excluded)")
 
@@ -311,52 +272,43 @@ def test_elf_codebase(results: TestResults):
     elf_root = Path(__file__).parent.parent
     dg = DependencyGraph(elf_root)
 
-    try:
-        dg.scan()
-        stats = dg.get_stats()
+    dg.scan()
+    stats = dg.get_stats()
 
-        print(f"\nELF Codebase Statistics:")
-        print(f"  Total files: {stats['total_files']}")
-        print(f"  Total dependencies: {stats['total_dependencies']}")
-        print(f"  Files with no deps: {stats['files_with_no_deps']}")
-        print(f"  Files with no dependents: {stats['files_with_no_dependents']}")
-        print(f"  Max dependencies: {stats['most_dependencies']}")
-        print(f"  Max dependents: {stats['most_dependents']}")
+    print(f"\nELF Codebase Statistics:")
+    print(f"  Total files: {stats['total_files']}")
+    print(f"  Total dependencies: {stats['total_dependencies']}")
+    print(f"  Files with no deps: {stats['files_with_no_deps']}")
+    print(f"  Files with no dependents: {stats['files_with_no_dependents']}")
+    print(f"  Max dependencies: {stats['most_dependencies']}")
+    print(f"  Max dependents: {stats['most_dependents']}")
 
-        if stats['total_files'] > 0:
-            results.pass_test("ELF codebase scanned")
-        else:
-            results.fail_test("ELF codebase", "No files found")
+    assert stats['total_files'] > 0, "No files found"
+    results.pass_test("ELF codebase scanned")
 
-        # Test that dependency_graph.py itself is in the graph
-        # Use os.path.join for cross-platform compatibility
-        dep_graph_path = os.path.join("coordinator", "dependency_graph.py")
-        if dep_graph_path in dg.graph:
-            results.pass_test("dependency_graph.py found in graph")
+    # Test that dependency_graph.py itself is in the graph
+    # Use os.path.join for cross-platform compatibility
+    dep_graph_path = os.path.join("coordinator", "dependency_graph.py")
+    assert dep_graph_path in dg.graph, "dependency_graph.py not found in graph"
+    results.pass_test("dependency_graph.py found in graph")
 
-            # Check its dependencies
-            deps = dg.get_dependencies(dep_graph_path)
-            print(f"\n  dependency_graph.py imports: {len(deps)} files")
-            for dep in sorted(deps):
-                print(f"    - {dep}")
-        else:
-            results.fail_test("dependency_graph.py", "Not found in graph")
+    # Check its dependencies
+    deps = dg.get_dependencies(dep_graph_path)
+    print(f"\n  dependency_graph.py imports: {len(deps)} files")
+    for dep in sorted(deps):
+        print(f"    - {dep}")
 
-        # Find the file with most dependencies
-        max_deps_file = max(dg.graph.items(), key=lambda x: len(x[1]), default=(None, set()))
-        if max_deps_file[0]:
-            print(f"\n  Most dependencies: {max_deps_file[0]} ({len(max_deps_file[1])} deps)")
+    # Find the file with most dependencies
+    max_deps_file = max(dg.graph.items(), key=lambda x: len(x[1]), default=(None, set()))
+    if max_deps_file[0]:
+        print(f"\n  Most dependencies: {max_deps_file[0]} ({len(max_deps_file[1])} deps)")
 
-        # Find the file with most dependents
-        max_dependents_file = max(dg.reverse.items(), key=lambda x: len(x[1]), default=(None, set()))
-        if max_dependents_file[0]:
-            print(f"  Most dependents: {max_dependents_file[0]} ({len(max_dependents_file[1])} dependents)")
+    # Find the file with most dependents
+    max_dependents_file = max(dg.reverse.items(), key=lambda x: len(x[1]), default=(None, set()))
+    if max_dependents_file[0]:
+        print(f"  Most dependents: {max_dependents_file[0]} ({len(max_dependents_file[1])} dependents)")
 
-        return stats
-
-    except Exception as e:
-        results.fail_test("ELF codebase scan", f"Exception: {e}")
-        return None
+    return stats
 
 
 def test_query_before_scan(results: TestResults, test_dir: Path):
@@ -366,16 +318,18 @@ def test_query_before_scan(results: TestResults, test_dir: Path):
     dg = DependencyGraph(test_dir)
 
     # Should raise RuntimeError if queried before scan
+    raised_correctly = False
     try:
         dg.get_dependencies("simple.py")
-        results.fail_test("Query before scan", "Should raise RuntimeError")
+        assert False, "Should raise RuntimeError"
     except RuntimeError as e:
-        if "scan()" in str(e):
-            results.pass_test("Query before scan raises RuntimeError")
-        else:
-            results.fail_test("Query before scan", f"Wrong error message: {e}")
+        assert "scan()" in str(e), f"Wrong error message: {e}"
+        raised_correctly = True
     except Exception as e:
-        results.fail_test("Query before scan", f"Wrong exception type: {type(e)}")
+        assert False, f"Wrong exception type: {type(e)}"
+
+    assert raised_correctly, "RuntimeError was not raised"
+    results.pass_test("Query before scan raises RuntimeError")
 
 
 def main():

@@ -7,6 +7,7 @@
 ### View System Health
 ```bash
 cd ~/.claude/emergent-learning
+# TODO: dashboard-simple.sh script needs to be created
 ./scripts/dashboard-simple.sh
 ```
 
@@ -201,10 +202,10 @@ Automatically determined by metric name:
     │   ├── logging.sh            # Logging library
     │   ├── metrics.sh            # Metrics library
     │   └── alerts.sh             # Alerts library
-    ├── dashboard-simple.sh        # Health dashboard
+    ├── dashboard-simple.sh        # Health dashboard (TODO: needs creation)
     ├── rotate-logs.sh            # Log rotation
-    ├── demo-observability.sh     # Live demo
-    └── verify-observability.sh   # Verification test
+    ├── demo-observability.sh     # Live demo (TODO: needs creation)
+    └── verify-observability.sh   # Verification test (TODO: needs creation)
 ```
 
 ---
@@ -318,6 +319,7 @@ alert_trigger "info" "Test alert"
 Run the full observability demo:
 
 ```bash
+# TODO: demo-observability.sh script needs to be created
 ~/.claude/emergent-learning/scripts/demo-observability.sh
 ```
 
@@ -336,6 +338,7 @@ This demonstrates:
 Verify 10/10 observability:
 
 ```bash
+# TODO: verify-observability.sh script needs to be created
 ~/.claude/emergent-learning/scripts/verify-observability.sh
 ```
 

@@ -1,5 +1,4 @@
 export { useAPI } from './useAPI'
 export { useWebSocket } from './useWebSocket'
-export { useNotifications } from './useNotifications'
 export { useHeuristics } from './useHeuristics'
 export { useDashboardData } from './useDashboardData'

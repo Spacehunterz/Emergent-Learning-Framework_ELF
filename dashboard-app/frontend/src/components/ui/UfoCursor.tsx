@@ -1,69 +1,115 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useCosmicSettings } from '../../context/CosmicSettingsContext';
-
-// Ring buffer for trail points - increased size for smoother/longer trails
-const MAX_TRAIL_POINTS = 600;
-
-interface TrailPoint {
-    x: number;
-    y: number;
-    timestamp: number;
-}
+import { useGame } from '../../context/GameContext';
 
 export const UfoCursor: React.FC = () => {
-    const { cursorMode, trailsEnabled } = useCosmicSettings();
-    const [position, setPosition] = useState({ x: -100, y: -100 });
-    const [isClicking, setIsClicking] = useState(false);
+    const { activeShip, isGameEnabled, activeTrail } = useGame(); // Hook into Game System
 
-    // Ring buffer refs for trail - avoids React state updates
-    const trailRef = useRef<TrailPoint[]>([]);
-    const trailIndexRef = useRef(0);
-    const svgPathRef = useRef<SVGPolylineElement>(null);
-    const beamParticlesRef = useRef<HTMLDivElement>(null);
-    const requestRef = useRef<number>();
+    const [position, setPosition] = useState({ x: -100, y: -100 });
+    const [isBeamActive, setIsBeamActive] = useState(false); // Right Click
+
+    // Trail particles
+    interface TrailParticle {
+        id: number;
+        x: number;
+        y: number;
+        life: number;
+        color: string;
+        size: number;
+        vx: number;
+        vy: number;
+    }
+    const [particles, setParticles] = useState<TrailParticle[]>([]);
 
     // Light animation state
     const [lightPhase, setLightPhase] = useState(0);
+    const requestRef = useRef<number>();
 
-    // Toggle body cursor class
+    // Toggle cursors
     useEffect(() => {
-        if (cursorMode === 'ufo') {
+        // Only hide cursor if we have a ship active
+        if (activeShip !== 'default') {
             document.body.classList.add('cosmic-cursor-hidden');
         } else {
             document.body.classList.remove('cosmic-cursor-hidden');
         }
-        return () => {
-            document.body.classList.remove('cosmic-cursor-hidden');
-        };
-    }, [cursorMode]);
+        return () => window.removeEventListener('contextmenu', preventMenu);
+    }, [activeShip]);
 
-    // Add trail point to ring buffer
-    const addTrailPoint = useCallback((x: number, y: number) => {
-        // Respect toggles
-        if (cursorMode !== 'ufo' || !trailsEnabled) return;
-
-        const now = performance.now();
-        const trail = trailRef.current;
-
-        // Initialize array if empty
-        if (trail.length < MAX_TRAIL_POINTS) {
-            trail.push({ x, y, timestamp: now });
-        } else {
-            // Overwrite oldest point (ring buffer)
-            trail[trailIndexRef.current] = { x, y, timestamp: now };
-            trailIndexRef.current = (trailIndexRef.current + 1) % MAX_TRAIL_POINTS;
+    // Prevent Context Menu on Right Click if in UFO mode
+    const preventMenu = useCallback((e: MouseEvent) => {
+        if (activeShip !== 'default') {
+            e.preventDefault();
         }
-    }, [cursorMode]);
+    }, [activeShip]);
 
-    // Track movement
+    useEffect(() => {
+        if (activeShip !== 'default') {
+            window.addEventListener('contextmenu', preventMenu);
+        }
+        return () => window.removeEventListener('contextmenu', preventMenu);
+    }, [activeShip, preventMenu]);
+
+    // Mouse Listeners
     useEffect(() => {
         const updatePosition = (e: MouseEvent) => {
             setPosition({ x: e.clientX, y: e.clientY });
-            addTrailPoint(e.clientX, e.clientY);
+
+            // Emit particles based on active trail
+            if (activeTrail !== 'none') {
+                const count = activeTrail === 'plasma' ? 2 : activeTrail === 'fire' ? 3 : 1;
+
+                const newParticles: TrailParticle[] = [];
+                for (let i = 0; i < count; i++) {
+                    let color = 'white';
+                    let size = 2;
+                    let life = 1.0;
+
+                    if (activeTrail === 'plasma') {
+                        color = Math.random() > 0.5 ? '#f43f5e' : '#fb7185'; // rose-500/400
+                        size = 2 + Math.random() * 3;
+                        life = 0.8;
+                    } else if (activeTrail === 'fire') {
+                        color = Math.random() > 0.5 ? '#f97316' : '#fbbf24'; // orange/amber
+                        size = 3 + Math.random() * 4;
+                        life = 0.6;
+                    } else if (activeTrail === 'cyan') {
+                        color = '#06b6d4';
+                        life = 0.5;
+                    } else if (activeTrail === 'star') {
+                        color = '#fbbf24';
+                        life = 0.7;
+                    }
+
+                    newParticles.push({
+                        id: Math.random(),
+                        x: e.clientX + (Math.random() - 0.5) * 10,
+                        y: e.clientY + (Math.random() - 0.5) * 10,
+                        life,
+                        color,
+                        size,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2
+                    });
+                }
+
+                setParticles(prev => [...prev, ...newParticles].slice(-50)); // Limit total particles
+            }
         };
 
-        const handleMouseDown = () => setIsClicking(true);
-        const handleMouseUp = () => setIsClicking(false);
+        const handleMouseDown = (e: MouseEvent) => {
+            if (activeShip === 'default') return;
+            if (!isGameEnabled) return;
+
+            if (e.button === 2) { // Right Click
+                setIsBeamActive(true);
+            }
+        };
+
+        const handleMouseUp = (e: MouseEvent) => {
+            if (e.button === 2) {
+                setIsBeamActive(false);
+            }
+        };
 
         window.addEventListener('mousemove', updatePosition);
         window.addEventListener('mousedown', handleMouseDown);
@@ -74,54 +120,31 @@ export const UfoCursor: React.FC = () => {
             window.removeEventListener('mousedown', handleMouseDown);
             window.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [addTrailPoint]);
+    }, [activeShip, isGameEnabled]);
 
-    // Animation loop - updates SVG path directly, no React state
+    // Animation Loop (Lights & Particles)
     useEffect(() => {
         let lastTime = performance.now();
 
         const animate = (currentTime: number) => {
             const deltaTime = currentTime - lastTime;
 
-            // Update light phase for chase effect (60fps throttle)
+            // Lights
             if (deltaTime > 16) {
                 setLightPhase(prev => (prev + deltaTime * 0.003) % 1);
+
+                // Update Particles
+                setParticles(prev => prev
+                    .map(p => ({
+                        ...p,
+                        x: p.x + p.vx,
+                        y: p.y + p.vy,
+                        life: p.life - 0.02
+                    }))
+                    .filter(p => p.life > 0)
+                );
+
                 lastTime = currentTime;
-            }
-
-            // Update trail SVG path directly
-            if (svgPathRef.current) {
-                if (!trailsEnabled) {
-                    svgPathRef.current.setAttribute('points', '');
-                    return; // Stop animation loop when trails disabled
-                }
-
-                if (trailRef.current.length === 0) {
-                    svgPathRef.current.setAttribute('points', '');
-                    // Keep animation loop alive - waiting for first mouse movement
-                    requestRef.current = requestAnimationFrame(animate);
-                    return;
-                }
-
-                const now = currentTime;
-                const trailLifetime = 400; // ms
-
-                // Build points string from valid trail points
-                const validPoints = trailRef.current
-                    .filter(p => now - p.timestamp < trailLifetime)
-                    .sort((a, b) => a.timestamp - b.timestamp);
-
-                if (validPoints.length > 1) {
-                    const pointsStr = validPoints.map(p => `${p.x},${p.y}`).join(' ');
-                    svgPathRef.current.setAttribute('points', pointsStr);
-
-                    // Fade based on age
-                    const oldestAge = now - validPoints[0].timestamp;
-                    const opacity = Math.max(0, 1 - oldestAge / trailLifetime);
-                    svgPathRef.current.style.opacity = String(opacity * 1.0); // Increased from 0.6
-                } else {
-                    svgPathRef.current.setAttribute('points', '');
-                }
             }
 
             requestRef.current = requestAnimationFrame(animate);
@@ -129,13 +152,14 @@ export const UfoCursor: React.FC = () => {
 
         requestRef.current = requestAnimationFrame(animate);
         return () => {
-            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+            if (requestRef.current) {
+                cancelAnimationFrame(requestRef.current);
+            }
         };
-    }, [trailsEnabled, cursorMode]);
+    }, []);
 
-    if (cursorMode === 'default') return null;
+    if (activeShip === 'default') return null;
 
-    // Calculate light opacities for chase effect
     const getLightOpacity = (index: number) => {
         const offset = (lightPhase + index / 8) % 1;
         return 0.3 + 0.7 * Math.sin(offset * Math.PI * 2) ** 2;
@@ -143,156 +167,103 @@ export const UfoCursor: React.FC = () => {
 
     return (
         <div className="pointer-events-none fixed inset-0 z-[9999999] overflow-visible">
-            {/* Trail SVG - single element, updated directly */}
-            <svg className="absolute inset-0 w-full h-full overflow-visible">
-                <polyline
-                    ref={svgPathRef}
-                    fill="none"
-                    stroke="#22d3ee"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{ opacity: 0.8 }}
+            {/* Particles */}
+            {particles.map(p => (
+                <div
+                    key={p.id}
+                    className="absolute rounded-full pointer-events-none"
+                    style={{
+                        left: p.x,
+                        top: p.y,
+                        width: p.size,
+                        height: p.size,
+                        backgroundColor: p.color,
+                        opacity: p.life,
+                        boxShadow: `0 0 ${p.size * 2}px ${p.color}`,
+                        transform: 'translate(-50%, -50%)'
+                    }}
                 />
-            </svg>
+            ))}
 
-            {/* UFO Container */}
+            {/* Ship Container */}
             <div
                 className="absolute transition-transform duration-100 ease-out will-change-transform"
                 style={{
                     left: position.x,
                     top: position.y,
-                    transform: `translate(-50%, -50%) scale(${isClicking ? 0.9 : 1.2}) rotate(${isClicking ? -5 : 5}deg)`,
+                    transform: 'translate(-50%, -50%)' // No scaling/rotation here, separate from ship internals
                 }}
             >
-                {/* INLINE SVG UFO with Alien */}
-                <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-[0_0_15px_rgba(34,211,238,0.8)]">
-
-                    {/* 1. Saucer Hull (Back) - Brighter Metal */}
-                    <ellipse cx="50" cy="50" rx="45" ry="12" fill="#475569" stroke="#94a3b8" strokeWidth="2" />
-
-                    {/* 2. Engines / Undercarriage */}
-                    <ellipse cx="50" cy="55" rx="15" ry="4" fill="rgba(34, 211, 238, 0.6)" className="animate-pulse" />
-
-
-                    {/* 3. Tiny Green Alien - Moved UP significantly to be inside */}
-                    <g className="animate-bounce-slight" style={{ transform: 'translateY(-5px)' }}>
-                        {/* Body - Vivid Green */}
-                        <ellipse cx="50" cy="40" rx="10" ry="12" fill="#22c55e" />
-                        {/* Eyes */}
-                        <ellipse cx="46" cy="38" rx="2.5" ry="3.5" fill="black" />
-                        <ellipse cx="54" cy="38" rx="2.5" ry="3.5" fill="black" />
-                        {/* Smile */}
-                        <path d="M 48 44 Q 50 46 52 44" stroke="black" strokeWidth="1" strokeLinecap="round" opacity="0.5" />
-
-                        {/* Waving Arm */}
-                        <path
-                            d="M 58 40 Q 68 35 70 25"
-                            stroke="#22c55e"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            className="origin-[58px_40px] animate-wave"
+                {activeShip === 'ufo' ? (
+                    // Classic UFO
+                    <div className="relative w-8 h-8">
+                        {/* Beam (Visual Only) */}
+                        <div
+                            className={`absolute top-1/2 left-1/2 -translate-x-1/2 w-0.5 bg-cyan-400/50 blur-[2px] transition-all duration-200 ${isBeamActive ? 'h-[500px] opacity-100' : 'h-0 opacity-0'
+                                }`}
+                            style={{ transformOrigin: 'top' }}
                         />
-                    </g>
 
-                    {/* 4. Cockpit Glass - Semi-transparent, drawn OVER alien */}
-                    <path d="M50 15 C 30 15, 20 40, 15 50 L 85 50 C 80 40, 70 15, 50 15 Z" fill="rgba(165, 243, 252, 0.4)" stroke="rgba(255,255,255,0.6)" strokeWidth="1" />
-                    {/* Glass Reflection */}
-                    <path d="M40 20 Q 30 25 35 35" stroke="rgba(255,255,255,0.4)" strokeWidth="2" fill="none" />
+                        {/* Saucer */}
+                        <div className="absolute inset-0 bg-slate-900 rounded-full border border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.5)] overflow-hidden">
+                            {/* Rotating Lights */}
+                            {[...Array(8)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="absolute w-1 h-1 bg-cyan-400 rounded-full"
+                                    style={{
+                                        top: '50%',
+                                        left: '50%',
+                                        transform: `rotate(${i * 45}deg) translate(0, -12px)`,
+                                        opacity: getLightOpacity(i)
+                                    }}
+                                />
+                            ))}
+                            {/* Cockpit */}
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-cyan-900/50 rounded-full border border-cyan-400/30" />
+                        </div>
+                    </div>
+                ) : activeShip === 'drone' ? (
+                    // Drone
+                    <div className="relative w-8 h-8 animate-[spin_4s_linear_infinite]">
+                        <div className="absolute inset-0 border-2 border-emerald-500/50 rounded-full" />
+                        <div className="absolute inset-1 border border-emerald-400/30 rounded-full border-dashed" />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-1 h-3 bg-emerald-500/50" />
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-2 w-1 h-3 bg-emerald-500/50" />
+                        <div className="absolute left-0 top-1/2 -translate-x-2 -translate-y-1/2 w-3 h-1 bg-emerald-500/50" />
+                        <div className="absolute right-0 top-1/2 translate-x-2 -translate-y-1/2 w-3 h-1 bg-emerald-500/50" />
+                    </div>
+                ) : activeShip === 'glitch' ? (
+                    // Glitch
+                    <div className="relative w-8 h-8">
+                        <div className="absolute inset-0 bg-fuchsia-600/20 clip-path-polygon animate-pulse" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+                        <div className="absolute inset-0 border-2 border-fuchsia-500 clip-path-polygon" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)' }} />
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] font-mono font-bold text-fuchsia-200">ERR</div>
+                        {/* Glitch artifacts */}
+                        <div className="absolute -left-2 top-0 w-2 h-1 bg-fuchsia-400/50 animate-[ping_0.5s_ease-in-out_infinite]" />
+                        <div className="absolute -right-2 bottom-2 w-2 h-1 bg-white/50 animate-[ping_0.7s_ease-in-out_infinite]" />
+                    </div>
+                ) : (
+                    // Star Ship (Rocket/Fighter)
+                    <div className="relative w-10 h-10">
+                        {/* Engine Glow */}
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-6 bg-amber-500/50 blur-md" />
 
-                    {/* 5. Saucer Rim (Front) - to cover bottom of glass */}
-                    <path d="M 5 50 Q 50 62 95 50" stroke="#94a3b8" strokeWidth="2" fill="none" opacity="0.8" />
-
-
-                    {/* 6. Lights - CHASE ANIMATION (opacity only, no transform) */}
-                    {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, i) => (
-                        <circle
-                            key={i}
-                            cx={50 + 38 * Math.cos(deg * Math.PI / 180)}
-                            cy={50 + 8 * Math.sin(deg * Math.PI / 180)}
-                            r={isClicking ? 3 : 2}
-                            fill={isClicking ? "#ef4444" : "#00fff2"}
-                            style={{ opacity: getLightOpacity(i) }}
-                        />
-                    ))}
-
-
-                    <defs>
-                        <filter id="glow">
-                            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-                            <feMerge>
-                                <feMergeNode in="coloredBlur" />
-                                <feMergeNode in="SourceGraphic" />
-                            </feMerge>
-                        </filter>
-                    </defs>
-                </svg>
-
-                {/* Hybrid Abduction Beam on Click */}
-                {isClicking && (
-                    <div
-                        ref={beamParticlesRef}
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-1"
-                    >
-                        {/* Main beam - gradient triangle */}
-                        <svg width="80" height="120" viewBox="0 0 80 120" className="absolute -left-10 top-0">
-                            <defs>
-                                <linearGradient id="beamGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                    <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.6" />
-                                    <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.3" />
-                                    <stop offset="100%" stopColor="#0891b2" stopOpacity="0.1" />
-                                </linearGradient>
-                            </defs>
-                            <polygon
-                                points="30,0 50,0 70,120 10,120"
-                                fill="url(#beamGradient)"
-                                style={{ filter: 'blur(2px)' }}
+                        {/* Ship Body */}
+                        <svg viewBox="0 0 24 24" fill="none" className="w-full h-full text-slate-900 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">
+                            <path
+                                d="M12 2L2 22L12 18L22 22L12 2Z"
+                                fill="#0f172a"
+                                stroke="#fbbf24"
+                                strokeWidth="1.5"
+                                strokeLinejoin="round"
                             />
-                            {/* Inner bright core */}
-                            <polygon
-                                points="35,0 45,0 55,120 25,120"
-                                fill="rgba(165, 243, 252, 0.4)"
-                                style={{ filter: 'blur(1px)' }}
-                            />
+                            <path d="M12 12V18" stroke="#fbbf24" strokeWidth="1" />
                         </svg>
-
-                        {/* Floating particles */}
-                        {[0, 1, 2, 3, 4].map(i => (
-                            <div
-                                key={i}
-                                className="absolute rounded-full bg-cyan-300"
-                                style={{
-                                    width: `${4 + Math.random() * 4}px`,
-                                    height: `${4 + Math.random() * 4}px`,
-                                    left: `${-10 + Math.random() * 20}px`,
-                                    top: `${20 + i * 20}px`,
-                                    opacity: 0.6 - i * 0.1,
-                                    animation: `floatUp ${1 + i * 0.2}s ease-out infinite`,
-                                    animationDelay: `${i * 0.15}s`,
-                                    filter: 'blur(1px)',
-                                }}
-                            />
-                        ))}
                     </div>
                 )}
             </div>
-
-            {/* Keyframes for floating particles */}
-            <style>{`
-                @keyframes floatUp {
-                    0% {
-                        transform: translateY(0) scale(1);
-                        opacity: 0.6;
-                    }
-                    50% {
-                        opacity: 0.8;
-                    }
-                    100% {
-                        transform: translateY(-30px) scale(0.5);
-                        opacity: 0;
-                    }
-                }
-            `}</style>
         </div>
     );
 };

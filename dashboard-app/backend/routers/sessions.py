@@ -310,3 +310,48 @@ async def trigger_batch_summarize(
     except Exception as e:
         logger.error(f"Error triggering batch summarize: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to trigger batch summarization")
+@router.post("/sessions/check-in")
+async def check_in(background_tasks: BackgroundTasks):
+    """
+    Perform a startup check-in:
+    1. Identify the most recent session.
+    2. Trigger background summarization if needed (using Haiku).
+    3. Return the session ID and status.
+    """
+    try:
+        if session_index is None:
+            raise HTTPException(status_code=500, detail="Session index not initialized")
+
+        # Get the most recent session
+        sessions, total = session_index.list_sessions(limit=1)
+        if not sessions:
+            return {"status": "empty", "message": "No sessions found"}
+
+        latest_session = sessions[0]
+        sid = latest_session.session_id
+
+        # Check if already summarized
+        summary = session_index.get_session_summary(sid)
+        
+        if summary:
+            return {
+                "status": "ready",
+                "session_id": sid,
+                "project": latest_session.project,
+                "summary": summary
+            }
+        
+        # Not summarized? Trigger it in the background
+        logger.info(f"Check-in: Triggering background summary for {sid}")
+        background_tasks.add_task(_run_summarizer, sid, use_llm=True)
+
+        return {
+            "status": "initiated",
+            "session_id": sid,
+            "project": latest_session.project,
+            "message": "Summarizing most recent session in background..."
+        }
+
+    except Exception as e:
+        logger.error(f"Error during check-in: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Check-in failed")

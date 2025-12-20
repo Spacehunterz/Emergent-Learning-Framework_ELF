@@ -102,18 +102,19 @@ export function Sun({
         decay={2}
       />
 
-      {/* Selection/hover indicator */}
-      {(isSelected || isHovered) && (
-        <mesh scale={body.radius * 2.2}>
-          <ringGeometry args={[0.9, 1, 64]} />
-          <meshBasicMaterial
-            color={isSelected ? '#fbbf24' : '#94a3b8'}
-            transparent
-            opacity={0.6}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      )}
+      {/* Selection/hover indicator - FIXED: always render, control visibility */}
+      <mesh
+        scale={body.radius * 2.2}
+        visible={isSelected || isHovered}
+      >
+        <ringGeometry args={[0.9, 1, 64]} />
+        <meshBasicMaterial
+          color={isSelected ? '#fbbf24' : '#94a3b8'}
+          transparent
+          opacity={isSelected || isHovered ? 0.6 : 0}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
     </group>
   )
 }

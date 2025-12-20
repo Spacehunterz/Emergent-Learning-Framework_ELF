@@ -18,13 +18,11 @@ Usage:
 """
 
 import sqlite3
-import os
 import sys
 import io
 import argparse
 import json
 from pathlib import Path
-from datetime import datetime
 from typing import List, Dict, Any, Optional
 from contextlib import contextmanager
 

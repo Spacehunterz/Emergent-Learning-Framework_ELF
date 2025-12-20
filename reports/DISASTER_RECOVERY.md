@@ -34,7 +34,7 @@ This document provides step-by-step procedures for recovering from various failu
 # Restore to git commit
 ~/.claude/emergent-learning/scripts/restore-from-git.sh HEAD~5
 
-# Verify backups
+# Verify backups (TODO: script needs to be created)
 ~/.claude/emergent-learning/scripts/verify-backup.sh
 ```
 
@@ -55,7 +55,7 @@ This document provides step-by-step procedures for recovering from various failu
 │   ├── backup.sh          # Create backups
 │   ├── restore.sh         # Restore from backup
 │   ├── restore-from-git.sh # Git-based recovery
-│   └── verify-backup.sh   # Verify backup integrity
+│   └── verify-backup.sh   # Verify backup integrity (TODO: needs creation)
 └── DISASTER_RECOVERY.md   # This document
 ```
 
@@ -74,7 +74,7 @@ crontab -e
 # Add daily backup at 2 AM
 0 2 * * * ~/.claude/emergent-learning/scripts/backup.sh >> ~/.claude/backups/backup.log 2>&1
 
-# Add weekly verification on Sundays at 3 AM
+# Add weekly verification on Sundays at 3 AM (TODO: verify-backup.sh needs creation)
 0 3 * * 0 ~/.claude/emergent-learning/scripts/verify-backup.sh --alert-on-fail
 ```
 
@@ -280,11 +280,13 @@ Each backup includes:
 
 1. **Verify all backups:**
    ```bash
+   # TODO: verify-backup.sh script needs to be created
    ./scripts/verify-backup.sh
    ```
 
 2. **Find the most recent valid backup:**
    ```bash
+   # TODO: verify-backup.sh script needs to be created
    ./scripts/verify-backup.sh --alert-on-fail
    ```
 
@@ -303,7 +305,7 @@ Each backup includes:
 
 **Data Loss:** Depends on age of valid backup
 
-**Prevention:** Regular backup verification with `verify-backup.sh`
+**Prevention:** Regular backup verification with `verify-backup.sh` (TODO: script needs creation)
 
 ---
 
@@ -507,12 +509,13 @@ Each backup includes:
 
 ---
 
-### verify-backup.sh
+### verify-backup.sh (TODO: needs creation)
 
 **Purpose:** Verify backup integrity and test restoration
 
 **Usage:**
 ```bash
+# TODO: This script needs to be created
 ./scripts/verify-backup.sh [OPTIONS] [backup-timestamp]
 ```
 
@@ -527,6 +530,7 @@ Each backup includes:
 
 **Examples:**
 ```bash
+# TODO: verify-backup.sh needs to be created
 ./scripts/verify-backup.sh
 ./scripts/verify-backup.sh latest
 ./scripts/verify-backup.sh --full-test latest
@@ -547,7 +551,7 @@ Each backup includes:
 ### Regular Testing Schedule
 
 **Monthly:**
-- Full backup verification: `./scripts/verify-backup.sh --full-test latest`
+- Full backup verification: `./scripts/verify-backup.sh --full-test latest` (TODO: script needs creation)
 - Test restoration to temporary location
 - Document any issues
 
@@ -599,7 +603,7 @@ if [ ! -f ~/.claude/backups/emergent-learning/$(date +%Y%m%d)*.tar.gz ]; then
     # Send alert
 fi
 
-# Weekly verification
+# Weekly verification (TODO: verify-backup.sh needs creation)
 0 3 * * 0 ~/.claude/emergent-learning/scripts/verify-backup.sh --alert-on-fail --email admin@example.com
 ```
 

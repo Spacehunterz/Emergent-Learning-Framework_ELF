@@ -54,7 +54,7 @@ export REMOTE_BACKUP_DEST="myremote:emergent-learning-backups"
 
 **Created Scripts:**
 - `scripts/setup-automated-backups.sh` - Automated setup for cron/Task Scheduler
-- `scripts/check-backup-health.sh` - Monitoring script
+- `scripts/check-backup-health.sh` - Monitoring script (TODO: needs creation)
 - `scripts/run-backup-windows.bat` - Windows Task Scheduler wrapper
 
 **Schedule Configuration:**
@@ -103,7 +103,7 @@ export REMOTE_BACKUP_DEST="myremote:emergent-learning-backups"
 - Detailed reporting
 
 **Files:**
-- `scripts/verify-backup.sh` (existing, comprehensive)
+- `scripts/verify-backup.sh` (TODO: needs creation)
 - `scripts/backup-enhanced.sh` (auto-verification)
 
 ---
@@ -155,8 +155,8 @@ export REMOTE_BACKUP_DEST="myremote:emergent-learning-backups"
 - Data inconsistency resolution
 
 **Test Scripts:**
-- `scripts/test-recovery-simple.sh` (platform-compatible)
-- `scripts/test-all-recovery-scenarios.sh` (comprehensive)
+- `scripts/test-recovery-simple.sh` (platform-compatible) (TODO: needs creation)
+- `scripts/test-all-recovery-scenarios.sh` (comprehensive) (TODO: needs creation)
 
 ---
 
@@ -302,14 +302,14 @@ gpg --decrypt backup.tar.gz.gpg > backup.tar.gz
 1. `scripts/backup.sh` - Main backup script with remote sync
 2. `scripts/restore.sh` - Comprehensive restore with options
 3. `scripts/restore-from-git.sh` - Git-based recovery
-4. `scripts/verify-backup.sh` - Multi-level verification
+4. `scripts/verify-backup.sh` - Multi-level verification (TODO: needs creation)
 
 ### New Enhanced Scripts
 5. `scripts/backup-enhanced.sh` - Adds encryption and auto-verification
 6. `scripts/setup-automated-backups.sh` - Automated scheduling setup
-7. `scripts/check-backup-health.sh` - Monitoring and health checks
-8. `scripts/test-recovery-simple.sh` - Recovery scenario testing
-9. `scripts/test-all-recovery-scenarios.sh` - Comprehensive testing
+7. `scripts/check-backup-health.sh` - Monitoring and health checks (TODO: needs creation)
+8. `scripts/test-recovery-simple.sh` - Recovery scenario testing (TODO: needs creation)
+9. `scripts/test-all-recovery-scenarios.sh` - Comprehensive testing (TODO: needs creation)
 10. `scripts/run-backup-windows.bat` - Windows Task Scheduler wrapper
 
 ### Documentation
@@ -486,20 +486,21 @@ gpg --decrypt backup.tar.gz.gpg > backup.tar.gz
 
 4. **Test Recovery Procedures**
    ```bash
+   # TODO: test-recovery-simple.sh needs to be created
    ./scripts/test-recovery-simple.sh
    ```
 
 ### Ongoing Maintenance
 
 1. **Weekly:** Review backup logs
-2. **Monthly:** Run full verification with --full-test
+2. **Monthly:** Run full verification with --full-test (requires verify-backup.sh - TODO: needs creation)
 3. **Quarterly:** Perform disaster recovery drill
 4. **Annually:** Review and update documentation
 
 ### Monitoring
 
 1. Monitor backup logs: `~/.claude/backups/logs/`
-2. Check backup health: `./scripts/check-backup-health.sh`
+2. Check backup health: `./scripts/check-backup-health.sh` (TODO: needs creation)
 3. Set up email alerts for verification failures
 4. Review backup size trends
 
@@ -546,7 +547,7 @@ The system is **production-ready** and can survive:
 # Enhanced backup with encryption
 ./scripts/backup-enhanced.sh
 
-# Check backup health
+# Check backup health (TODO: script needs creation)
 ./scripts/check-backup-health.sh
 ```
 
@@ -567,6 +568,7 @@ The system is **production-ready** and can survive:
 
 ### Verification
 ```bash
+# TODO: verify-backup.sh script needs to be created
 # Verify latest backup
 ./scripts/verify-backup.sh latest
 
@@ -579,6 +581,7 @@ The system is **production-ready** and can survive:
 
 ### Testing
 ```bash
+# TODO: test scripts need to be created
 # Run recovery scenario tests
 ./scripts/test-recovery-simple.sh
 

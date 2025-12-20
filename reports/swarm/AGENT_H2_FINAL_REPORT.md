@@ -32,19 +32,19 @@ Transform the Emergent Learning Framework backup and recovery system from 9/10 t
    - Task Scheduler setup guide (Windows)
    - Automated verification scheduling
 
-3. **check-backup-health.sh**
+3. **check-backup-health.sh** (TODO: needs creation)
    - Backup health monitoring
    - Daily backup verification
    - Log file analysis
    - Alert generation
 
-4. **test-recovery-simple.sh**
+4. **test-recovery-simple.sh** (TODO: needs creation)
    - 5 recovery scenario tests
    - RTO measurements
    - Platform-compatible testing
    - Automated reporting
 
-5. **test-all-recovery-scenarios.sh**
+5. **test-all-recovery-scenarios.sh** (TODO: needs creation)
    - Comprehensive recovery testing
    - All 8 scenarios covered
    - Detailed RTO analysis
@@ -214,8 +214,8 @@ Monthly: 1st - Retained automatically
 - All under target RTOs ✓
 
 **Files:**
-- `scripts/test-recovery-simple.sh`
-- `scripts/test-all-recovery-scenarios.sh`
+- `scripts/test-recovery-simple.sh` (TODO: needs creation)
+- `scripts/test-all-recovery-scenarios.sh` (TODO: needs creation)
 - Test reports generated automatically
 
 ---
@@ -407,7 +407,7 @@ echo 'export BACKUP_ENCRYPTION_KEY="your@email.com"' >> ~/.bashrc
 ### Step 5: Test the System
 
 ```bash
-# Run test suite
+# Run test suite (TODO: script needs creation)
 ./scripts/test-recovery-simple.sh
 
 # Verify results
@@ -430,7 +430,7 @@ cat RECOVERY_TEST_*.md
 ### Step 7: Monitor Health
 
 ```bash
-# Check backup health regularly
+# Check backup health regularly (TODO: script needs creation)
 ./scripts/check-backup-health.sh
 
 # Review logs
@@ -480,9 +480,9 @@ tail -f ~/.claude/backups/logs/backup-daily.log
 ### New Scripts (Created by H2)
 - `scripts/backup-enhanced.sh` - Encryption and auto-verify
 - `scripts/setup-automated-backups.sh` - Scheduling setup
-- `scripts/check-backup-health.sh` - Health monitoring
-- `scripts/test-recovery-simple.sh` - Recovery testing
-- `scripts/test-all-recovery-scenarios.sh` - Comprehensive tests
+- `scripts/check-backup-health.sh` - Health monitoring (TODO: needs creation)
+- `scripts/test-recovery-simple.sh` - Recovery testing (TODO: needs creation)
+- `scripts/test-all-recovery-scenarios.sh` - Comprehensive tests (TODO: needs creation)
 - `scripts/run-backup-windows.bat` - Windows wrapper
 
 ### Documentation (Complete)

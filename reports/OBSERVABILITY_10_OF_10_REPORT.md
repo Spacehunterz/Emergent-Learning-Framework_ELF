@@ -131,7 +131,7 @@ alert_check_error_rate 10 1   # Alert if > 10% in last hour
 
 ### 2. Observability Tools
 
-#### Health Dashboard
+#### Health Dashboard (TODO: needs creation)
 **Location**: `~/.claude/emergent-learning/scripts/dashboard-simple.sh`
 
 **Features**:
@@ -143,7 +143,7 @@ alert_check_error_rate 10 1   # Alert if > 10% in last hour
 
 **Usage**:
 ```bash
-# One-time view
+# One-time view (TODO: script needs creation)
 ./dashboard-simple.sh
 
 # Auto-refresh every 5 seconds
@@ -379,7 +379,7 @@ STORAGE PROJECTION (30 days)
 
 ### Automated Test Suite
 
-**Script**: `verify-observability.sh`
+**Script**: `verify-observability.sh` (TODO: needs creation)
 
 **Tests Performed** (32 total):
 1. ✅ Core libraries exist (logging, metrics, alerts)
@@ -394,7 +394,7 @@ STORAGE PROJECTION (30 days)
 
 ### Live Demo
 
-**Script**: `demo-observability.sh`
+**Script**: `demo-observability.sh` (TODO: needs creation)
 
 **Demonstrates**:
 1. Structured logging with different levels
@@ -521,7 +521,7 @@ log_info "Script completed" correlation_id="$CORRELATION_ID"
 #### Monitoring System Health
 
 ```bash
-# View real-time dashboard
+# View real-time dashboard (TODO: script needs creation)
 ./scripts/dashboard-simple.sh
 
 # Check logs
@@ -606,10 +606,10 @@ cat alerts/alert_*.alert | grep "$CORRELATION_ID"
 - `scripts/lib/alerts.sh` - Alert system
 
 ### Tools
-- `scripts/dashboard-simple.sh` - Health dashboard
+- `scripts/dashboard-simple.sh` - Health dashboard (TODO: needs creation)
 - `scripts/rotate-logs.sh` - Log rotation
-- `scripts/demo-observability.sh` - Live demo
-- `scripts/verify-observability.sh` - Verification script
+- `scripts/demo-observability.sh` - Live demo (TODO: needs creation)
+- `scripts/verify-observability.sh` - Verification script (TODO: needs creation)
 - `scripts/patch-observability.sh` - Integration patcher
 
 ### Documentation

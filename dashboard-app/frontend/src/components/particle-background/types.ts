@@ -3,6 +3,7 @@ export interface Mouse {
   y: number
   radius: number
   isClicked: boolean
+  isRightClicked?: boolean
 }
 
 export interface ParticleInterface {

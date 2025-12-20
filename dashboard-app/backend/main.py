@@ -14,8 +14,13 @@ Run: uvicorn main:app --reload --port 8888
 
 import asyncio
 import logging
+import sys 
 from datetime import datetime
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,6 +43,9 @@ from routers import (
     fraud_router,
     workflows_router,
     context_router,
+    auth_router,
+    game_router,
+    setup_router
 )
 
 # Import router setup functions
@@ -67,6 +75,60 @@ app = FastAPI(
     description="Interactive dashboard for AI agent orchestration and learning",
     version="1.0.0"
 )
+
+# ==============================================================================
+# Background Task: Auto-Summarizer
+# ==============================================================================
+
+async def run_auto_summarizer():
+    """Background task to automatically summarize completed sessions."""
+    logger.info("Auto-summarizer background task started")
+    
+    # Path to summarizer script
+    summarizer_script = EMERGENT_LEARNING_PATH / "scripts" / "summarize-session.py"
+    
+    while True:
+        try:
+            # Wait 5 minutes before first run and between runs
+            # This allows the system to startup and sessions to complete
+            await asyncio.sleep(300) 
+            
+            logger.info("Running scheduled batch summarization...")
+            
+            # Check if script exists
+            if not summarizer_script.exists():
+                logger.warning(f"Summarizer script not found at {summarizer_script}")
+                continue
+
+            # Run batch summarization for sessions older than 30 minutes
+            # Limit 5 per batch to avoid overloading
+            cmd = [
+                sys.executable, str(summarizer_script),
+                "--batch",
+                "--older-than", "30m",
+                "--limit", "5"
+            ]
+            
+            # Run using asyncio subprocess
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await process.communicate()
+            
+            if process.returncode != 0:
+                logger.error(f"Auto-summarizer failed: {stderr.decode()}")
+            else:
+                output = stdout.decode().strip()
+                if "Summarized" in output:
+                    logger.info(f"Auto-summarizer: {output}")
+                
+        except Exception as e:
+            logger.error(f"Auto-summarizer error: {e}")
+            
+        # Run every 10 minutes (600s) + execution time
+        await asyncio.sleep(600)
 
 # CORS - restricted to local development origins only
 # SECURITY: Since backend is localhost-only, this primarily prevents
@@ -148,6 +210,9 @@ app.include_router(admin_router)
 app.include_router(fraud_router)
 app.include_router(workflows_router)
 app.include_router(context_router)
+app.include_router(auth_router)
+app.include_router(game_router)
+app.include_router(setup_router)
 
 
 # ==============================================================================
@@ -304,6 +369,7 @@ async def startup_event():
 
     # Start background monitoring
     asyncio.create_task(monitor_changes())
+    asyncio.create_task(run_auto_summarizer())
 
     # Start auto-capture background job
     asyncio.create_task(auto_capture.start())

@@ -155,11 +155,13 @@ cd ~/.claude/emergent-learning
 
 ### Test Recovery
 ```bash
+# TODO: test-recovery-simple.sh needs to be created
 ./scripts/test-recovery-simple.sh
 ```
 
 ### Check Health
 ```bash
+# TODO: check-backup-health.sh needs to be created
 ./scripts/check-backup-health.sh
 ```
 
@@ -172,11 +174,11 @@ cd ~/.claude/emergent-learning
 2. `backup-enhanced.sh` - With encryption
 3. `restore.sh` - Full restore
 4. `restore-from-git.sh` - Git recovery
-5. `verify-backup.sh` - Verification
+5. `verify-backup.sh` - Verification (TODO: needs creation)
 6. `setup-automated-backups.sh` - Scheduling
-7. `check-backup-health.sh` - Monitoring
-8. `test-recovery-simple.sh` - Testing
-9. `test-all-recovery-scenarios.sh` - Comprehensive tests
+7. `check-backup-health.sh` - Monitoring (TODO: needs creation)
+8. `test-recovery-simple.sh` - Testing (TODO: needs creation)
+9. `test-all-recovery-scenarios.sh` - Comprehensive tests (TODO: needs creation)
 10. `run-backup-windows.bat` - Windows wrapper
 11. Plus helper scripts and libraries
 
@@ -361,10 +363,10 @@ git checkout HEAD -- <file>
 # Manual backup
 ./scripts/backup.sh
 
-# Check health
+# Check health (TODO: script needs creation)
 ./scripts/check-backup-health.sh
 
-# Verify backups
+# Verify backups (TODO: script needs creation)
 ./scripts/verify-backup.sh
 ```
 

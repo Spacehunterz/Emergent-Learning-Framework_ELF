@@ -140,6 +140,21 @@ function getFilename(location: string): string {
 }
 
 /**
+ * FIXED: Generate stable orbit phase from location string hash.
+ * This prevents planets from jumping to new positions when data changes.
+ */
+function hashStringToAngle(str: string): number {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32bit integer
+  }
+  // Normalize to 0-2PI range
+  return (Math.abs(hash) % 1000) / 1000 * Math.PI * 2
+}
+
+/**
  * Extract unique heuristic categories from related_heuristics.
  */
 function extractHeuristicCategories(
@@ -182,7 +197,7 @@ function transformHotspotToBody(hotspot: ApiHotspot): CelestialBody {
     glowIntensity: calculateRecency(hotspot.last_activity),
     orbitRadius: 0, // Set later during hierarchy building
     orbitSpeed: ORBIT_SPEEDS.PLANET_BASE + calculateVolatility(hotspot) * 0.1, // Slow base + volatility
-    orbitPhase: Math.random() * Math.PI * 2, // Random starting angle
+    orbitPhase: hashStringToAngle(hotspot.location), // FIXED: stable phase from location hash
     heuristicCategories: extractHeuristicCategories(hotspot.related_heuristics),
     agents: hotspot.agents || [],
     agentCount: hotspot.agent_count || 0,

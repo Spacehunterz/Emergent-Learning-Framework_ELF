@@ -38,11 +38,13 @@ cd ~/.claude/emergent-learning
 
 **Check system health:**
 ```bash
+# TODO: check-backup-health.sh script needs to be created
 ./scripts/check-backup-health.sh
 ```
 
 **Test recovery:**
 ```bash
+# TODO: test-recovery-simple.sh script needs to be created
 ./scripts/test-recovery-simple.sh
 ```
 
@@ -73,7 +75,7 @@ cd ~/.claude/emergent-learning
 |--------|---------|-------|
 | `backup.sh` | Create backup | `./scripts/backup.sh` |
 | `restore.sh` | Restore backup | `./scripts/restore.sh latest` |
-| `verify-backup.sh` | Verify backups | `./scripts/verify-backup.sh` |
+| `verify-backup.sh` | Verify backups | `./scripts/verify-backup.sh` (TODO: needs to be created) |
 
 ### Enhanced Operations
 | Script | Purpose | Usage |
@@ -85,14 +87,14 @@ cd ~/.claude/emergent-learning
 | Script | Purpose | Usage |
 |--------|---------|-------|
 | `setup-automated-backups.sh` | Configure cron/scheduler | `./scripts/setup-automated-backups.sh` |
-| `check-backup-health.sh` | Monitor health | `./scripts/check-backup-health.sh` |
+| `check-backup-health.sh` | Monitor health | `./scripts/check-backup-health.sh` (TODO: needs to be created) |
 | `run-backup-windows.bat` | Windows wrapper | Run via Task Scheduler |
 
 ### Testing
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `test-recovery-simple.sh` | Quick tests | `./scripts/test-recovery-simple.sh` |
-| `test-all-recovery-scenarios.sh` | Full tests | `./scripts/test-all-recovery-scenarios.sh` |
+| `test-recovery-simple.sh` | Quick tests | `./scripts/test-recovery-simple.sh` (TODO: needs to be created) |
+| `test-all-recovery-scenarios.sh` | Full tests | `./scripts/test-all-recovery-scenarios.sh` (TODO: needs to be created) |
 
 ---
 
@@ -165,7 +167,7 @@ cd ~/.claude/emergent-learning
 
 ### Problem: Restore fails
 1. List backups: `./scripts/restore.sh list`
-2. Verify backup: `./scripts/verify-backup.sh <timestamp>`
+2. Verify backup: `./scripts/verify-backup.sh <timestamp>` (TODO: script needs to be created)
 3. Try --force flag: `./scripts/restore.sh --force <timestamp>`
 
 ### Problem: Verification warnings

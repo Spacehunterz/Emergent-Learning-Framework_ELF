@@ -21,7 +21,6 @@ export { OrbitPath } from './OrbitPath'
 export { PlanetRings } from './PlanetRings'
 
 // UI components
-export { SelectionOverlay } from './SelectionOverlay'
 export { CosmicLegend } from './CosmicLegend'
 export { CosmicFilters } from './CosmicFilters'
 export { CosmicDetailPanel } from './CosmicDetailPanel'
