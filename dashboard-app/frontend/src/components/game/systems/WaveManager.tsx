@@ -49,7 +49,7 @@ export const WaveManager = () => {
         phaseKills.current = 0
         eliteSpawned.current = false
 
-        console.log('[WaveManager] Starting asteroids phase...')
+        // Debug log removed
     }, [clearEnemies])
 
     // Immediate Preload (Asteroids) + Delayed Preload (Ships) to prevent lag spike
@@ -59,7 +59,7 @@ export const WaveManager = () => {
 
         // Load Heavy Ships in background after game has started (3s delay)
         const timeout = setTimeout(() => {
-            console.log('[WaveManager] Background loading heavy assets...')
+            // Debug log removed
             useGLTF.preload('/models/enemies/ship1.glb')
             useGLTF.preload('/models/enemies/ship2.glb')
         }, 3000)
@@ -164,7 +164,7 @@ export const WaveManager = () => {
         bossSpawned.current = true
 
         sound.playBossSpawn()
-        console.log('[WaveManager] SPAWNING MOTHERSHIP BOSS!')
+        // Debug log removed
 
         // Spawn CLOSE and in front - filling the screen
         // Position it so the player can see the full scale
@@ -226,12 +226,11 @@ export const WaveManager = () => {
                     lastSpawn.current = now
                     spawnAsteroid()
                     totalSpawned.current++
-                    console.log(`[WaveManager] Spawned asteroid ${totalSpawned.current}/8`)
                 }
 
                 // After spawning 8 and clearing the field - use FRESH count to avoid stale data
                 if (totalSpawned.current >= 8 && getFreshEnemyCount() === 0) {
-                    console.log('[WaveManager] ASTEROIDS CLEARED! Moving to drones...')
+                    // Debug log removed
                     clearEnemies()
                     totalSpawned.current = 0
                     setPhaseState('drones')
@@ -247,11 +246,10 @@ export const WaveManager = () => {
                     lastSpawn.current = now
                     spawnDrone()
                     totalSpawned.current++
-                    console.log(`[WaveManager] Spawned drone ${totalSpawned.current}/6`)
                 }
 
                 if (totalSpawned.current >= 6 && getFreshEnemyCount() === 0) {
-                    console.log('[WaveManager] DRONES CLEARED! Moving to fighters...')
+                    // Debug log removed
                     clearEnemies()
                     totalSpawned.current = 0
                     setPhaseState('fighters')
@@ -267,11 +265,10 @@ export const WaveManager = () => {
                     lastSpawn.current = now
                     spawnFighter()
                     totalSpawned.current++
-                    console.log(`[WaveManager] Spawned fighter ${totalSpawned.current}/4`)
                 }
 
                 if (totalSpawned.current >= 4 && getFreshEnemyCount() === 0) {
-                    console.log('[WaveManager] FIGHTERS CLEARED! Transitioning to elite phase...')
+                    // Debug log removed
                     totalSpawned.current = 0
                     eliteSpawned.current = false  // Reset for new elite phase
                     setPhaseState('elite')
@@ -284,7 +281,7 @@ export const WaveManager = () => {
                 // PHASE 4: ELITE - Spawn elite after a short delay, then kill to advance
                 // Spawn elite with delay to ensure phase transition is complete
                 if (!eliteSpawned.current && phaseElapsed > 500) {
-                    console.log('[WaveManager] Spawning ELITE...')
+                    // Debug log removed
                     spawnElite()
                     eliteSpawned.current = true
                 }
@@ -294,7 +291,7 @@ export const WaveManager = () => {
                     const eliteCount = useEnemyStore.getState().enemies.filter(e => e.type === 'elite').length
                     if (eliteCount === 0 && phaseElapsed > 1000) {
                         // Only advance if elite is actually dead (not just spawned)
-                        console.log('[WaveManager] ELITE DESTROYED! Boss approaching...')
+                        // Debug log removed
                         clearEnemies()
                         setPhaseState('boss_approaching')
                     }
@@ -317,7 +314,7 @@ export const WaveManager = () => {
                 const boss = enemies.find(e => e.type === 'boss')
 
                 if (!boss && bossSpawned.current) {
-                    console.log('[WaveManager] BOSS DEFEATED!')
+                    // Debug log removed
                     setPhaseState('victory')
                     addScore(10000)
                     sound.playLevelUp()
@@ -329,7 +326,7 @@ export const WaveManager = () => {
                 // PHASE 7: Victory
                 if (phaseElapsed > 3000) {
                     // Restart the cycle for endless mode
-                    console.log('[WaveManager] Restarting cycle...')
+                    // Debug log removed
                     clearEnemies()
                     bossSpawned.current = false
                     totalSpawned.current = 0

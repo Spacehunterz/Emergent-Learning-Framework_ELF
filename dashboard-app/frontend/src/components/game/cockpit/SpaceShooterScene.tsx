@@ -369,7 +369,7 @@ const EntityRenderer = React.memo(({ data }: { data: Enemy }) => {
     if (data.type === 'drone') return <DroneMesh data={data} />
     if (data.type === 'fighter') return <FighterMesh data={data} />
     return <FighterMesh data={data} /> // Default
-}, (prev, next) => prev.data === next.data) // Equality check based on reference identity
+}, (prev, next) => prev.data.id === next.data.id && prev.data.hp === next.data.hp) // Only re-render if ID or HP changes
 
 
 const GunRig = ({ gunRef, recoilImpulse }: { gunRef: React.RefObject<THREE.Group>, recoilImpulse: React.MutableRefObject<number> }) => {
@@ -581,7 +581,6 @@ export const SpaceShooterScene = () => {
             return
         }
         const elapsed = state.clock.getElapsedTime()
-        if (Math.round(elapsed * 60) % 120 === 0) console.log(`[SpaceShooterScene] Active Enemies: ${enemies.length}`)
 
         // Energy Regen
         if (!firing.current) {
