@@ -58,7 +58,7 @@ Copy the templates to your project:
 
 ```bash
 mkdir -p .coordination
-cp ~/.claude/plugins/agent-coordination/templates/* .coordination/
+cp ~/.claude/skills/agent-coordination/TEMPLATES/* .coordination/
 ```
 
 ### 2. Include in Subagent Prompts
@@ -174,7 +174,9 @@ The blackboard handles real-time coordination; Basic Memory provides persistent 
 ## Files
 
 ```
-~/.claude/plugins/agent-coordination/
+~/.claude/skills/agent-coordination/
+  TEMPLATES/            # Template files for coordination
+  SKILL.md              # This documentation
   hooks/
     hooks.json          # Hook definitions
     pre_task.py         # Pre-task context injection

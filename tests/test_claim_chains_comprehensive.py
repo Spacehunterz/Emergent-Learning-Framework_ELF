@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "coordinator"))
 from blackboard import Blackboard, BlockedError, ClaimChain
 
 
-class TestResults:
+class _TestResults:
     """Track test results."""
     def __init__(self):
         self.passed = 0
@@ -52,7 +52,7 @@ class TestResults:
         return self.failed == 0
 
 
-def test_basic_operations(bb: Blackboard, results: TestResults):
+def _test_basic_operations(bb: Blackboard, results: _TestResults):
     """Test 1: Basic claim chain operations."""
     print("\n=== Test 1: Basic Operations ===")
 
@@ -111,7 +111,7 @@ def test_basic_operations(bb: Blackboard, results: TestResults):
         results.record_fail("complete_chain() marks work done", str(e))
 
 
-def test_atomic_failure(bb: Blackboard, results: TestResults):
+def _test_atomic_failure(bb: Blackboard, results: _TestResults):
     """Test 2: Atomic failure - all or nothing claiming."""
     print("\n=== Test 2: Atomic Failure ===")
 
@@ -174,7 +174,7 @@ def test_atomic_failure(bb: Blackboard, results: TestResults):
     bb.release_chain("agent1", chain1.chain_id)
 
 
-def test_ttl_expiration(bb: Blackboard, results: TestResults):
+def _test_ttl_expiration(bb: Blackboard, results: _TestResults):
     """Test 3: TTL and expiration handling."""
     print("\n=== Test 3: TTL/Expiration ===")
 
@@ -250,7 +250,7 @@ def test_ttl_expiration(bb: Blackboard, results: TestResults):
         results.record_fail("get_all_active_chains() excludes expired", str(e))
 
 
-def test_concurrent_simulation(bb: Blackboard, results: TestResults):
+def _test_concurrent_simulation(bb: Blackboard, results: _TestResults):
     """Test 4: Simulate concurrent access from multiple agents."""
     print("\n=== Test 4: Concurrent Simulation ===")
 
@@ -322,7 +322,7 @@ def test_concurrent_simulation(bb: Blackboard, results: TestResults):
         results.record_fail("No race conditions with file locking", str(e))
 
 
-def test_edge_cases(bb: Blackboard, results: TestResults):
+def _test_edge_cases(bb: Blackboard, results: _TestResults):
     """Test 5: Edge cases and unusual scenarios."""
     print("\n=== Test 5: Edge Cases ===")
 
@@ -437,7 +437,7 @@ def test_edge_cases(bb: Blackboard, results: TestResults):
         results.record_fail("Wrong agent cannot complete chain", str(e))
 
 
-def test_performance(bb: Blackboard, results: TestResults):
+def _test_performance(bb: Blackboard, results: _TestResults):
     """Test 6: Performance observations."""
     print("\n=== Test 6: Performance ===")
 
@@ -475,7 +475,7 @@ def test_performance(bb: Blackboard, results: TestResults):
         results.record_fail("50 cycles performance", str(e))
 
 
-def test_stress(bb: Blackboard, results: TestResults):
+def _test_stress(bb: Blackboard, results: _TestResults):
     """Test 7: Stress tests."""
     print("\n=== Test 7: Stress Tests ===")
 
@@ -564,17 +564,17 @@ def main():
     bb = Blackboard(project_root=str(test_dir))
     bb.reset()  # Start fresh
 
-    results = TestResults()
+    results = _TestResults()
 
     try:
         # Run all test suites
-        test_basic_operations(bb, results)
-        test_atomic_failure(bb, results)
-        test_ttl_expiration(bb, results)
-        test_concurrent_simulation(bb, results)
-        test_edge_cases(bb, results)
-        test_performance(bb, results)
-        test_stress(bb, results)
+        _test_basic_operations(bb, results)
+        _test_atomic_failure(bb, results)
+        _test_ttl_expiration(bb, results)
+        _test_concurrent_simulation(bb, results)
+        _test_edge_cases(bb, results)
+        _test_performance(bb, results)
+        _test_stress(bb, results)
 
     finally:
         # Cleanup

@@ -33,6 +33,9 @@ export const WaveManager = () => {
     // Track kills per phase
     const phaseKills = useRef(0)
 
+    // Track if elite has been spawned (to prevent double-spawn)
+    const eliteSpawned = useRef(false)
+
     // Reset on mount
     useEffect(() => {
         clearEnemies()
@@ -44,6 +47,7 @@ export const WaveManager = () => {
         elapsedMs.current = 0
         phaseStartMs.current = 0
         phaseKills.current = 0
+        eliteSpawned.current = false
 
         console.log('[WaveManager] Starting asteroids phase...')
     }, [clearEnemies])
@@ -206,12 +210,12 @@ export const WaveManager = () => {
         // Track kills by detecting enemy count decreases (excluding despawns which also reduce count)
         const currentEnemyCount = enemies.length
 
-        // Helper: Check if phase is clear (no enemies left)
-        const isClear = currentEnemyCount === 0
+        // Helper: Get FRESH enemy count - MUST call this before phase transitions
+        // to avoid race conditions where spawning within the same frame makes
+        // the initial enemies snapshot stale
+        const getFreshEnemyCount = () => useEnemyStore.getState().enemies.length
 
         // Use switch to ensure only ONE phase logic runs per frame
-        // This prevents race conditions where spawning + phase change in same frame
-        // would cause isClear to still be true with stale enemies array
         switch (phaseRef.current) {
             case 'asteroids': {
                 // PHASE 1: ASTEROIDS - Spawn 8, then clear to advance
@@ -225,9 +229,10 @@ export const WaveManager = () => {
                     console.log(`[WaveManager] Spawned asteroid ${totalSpawned.current}/8`)
                 }
 
-                // After spawning 8 and clearing the field
-                if (totalSpawned.current >= 8 && isClear) {
+                // After spawning 8 and clearing the field - use FRESH count to avoid stale data
+                if (totalSpawned.current >= 8 && getFreshEnemyCount() === 0) {
                     console.log('[WaveManager] ASTEROIDS CLEARED! Moving to drones...')
+                    clearEnemies()
                     totalSpawned.current = 0
                     setPhaseState('drones')
                 }
@@ -245,8 +250,9 @@ export const WaveManager = () => {
                     console.log(`[WaveManager] Spawned drone ${totalSpawned.current}/6`)
                 }
 
-                if (totalSpawned.current >= 6 && isClear) {
+                if (totalSpawned.current >= 6 && getFreshEnemyCount() === 0) {
                     console.log('[WaveManager] DRONES CLEARED! Moving to fighters...')
+                    clearEnemies()
                     totalSpawned.current = 0
                     setPhaseState('fighters')
                 }
@@ -264,23 +270,34 @@ export const WaveManager = () => {
                     console.log(`[WaveManager] Spawned fighter ${totalSpawned.current}/4`)
                 }
 
-                if (totalSpawned.current >= 4 && isClear) {
-                    console.log('[WaveManager] FIGHTERS CLEARED! Spawning ELITE...')
+                if (totalSpawned.current >= 4 && getFreshEnemyCount() === 0) {
+                    console.log('[WaveManager] FIGHTERS CLEARED! Transitioning to elite phase...')
                     totalSpawned.current = 0
+                    eliteSpawned.current = false  // Reset for new elite phase
                     setPhaseState('elite')
-                    spawnElite()
+                    // Elite spawn moved to 'elite' case with delay for stability
                 }
                 break
             }
 
             case 'elite': {
-                // PHASE 4: ELITE - Kill the mini-boss to advance
-                // Re-check enemies count to avoid stale data after spawn
-                const eliteCount = useEnemyStore.getState().enemies.filter(e => e.type === 'elite').length
-                if (eliteCount === 0 && phaseElapsed > 500) {
-                    // Only advance if elite is actually dead (not just spawned)
-                    console.log('[WaveManager] ELITE DESTROYED! Boss approaching...')
-                    setPhaseState('boss_approaching')
+                // PHASE 4: ELITE - Spawn elite after a short delay, then kill to advance
+                // Spawn elite with delay to ensure phase transition is complete
+                if (!eliteSpawned.current && phaseElapsed > 500) {
+                    console.log('[WaveManager] Spawning ELITE...')
+                    spawnElite()
+                    eliteSpawned.current = true
+                }
+
+                // Check if elite is defeated (only after spawn)
+                if (eliteSpawned.current) {
+                    const eliteCount = useEnemyStore.getState().enemies.filter(e => e.type === 'elite').length
+                    if (eliteCount === 0 && phaseElapsed > 1000) {
+                        // Only advance if elite is actually dead (not just spawned)
+                        console.log('[WaveManager] ELITE DESTROYED! Boss approaching...')
+                        clearEnemies()
+                        setPhaseState('boss_approaching')
+                    }
                 }
                 break
             }
@@ -288,6 +305,7 @@ export const WaveManager = () => {
             case 'boss_approaching': {
                 // PHASE 5: Boss Approaching (dramatic pause)
                 if (phaseElapsed > 2500) {
+                    clearEnemies()
                     setPhaseState('boss_fight')
                     spawnMothership()
                 }
@@ -312,6 +330,7 @@ export const WaveManager = () => {
                 if (phaseElapsed > 3000) {
                     // Restart the cycle for endless mode
                     console.log('[WaveManager] Restarting cycle...')
+                    clearEnemies()
                     bossSpawned.current = false
                     totalSpawned.current = 0
                     setPhaseState('asteroids')

@@ -132,6 +132,10 @@ class FraudDetector:
             if total_apps < self.config.min_applications:
                 return None
 
+            # Guard against division by zero (defensive programming)
+            if total_apps == 0:
+                return None
+
             success_rate = row['times_validated'] / total_apps
 
             # Get domain baseline

@@ -1,8 +1,9 @@
-import { Vector3 } from 'three'
+import { Vector3, Quaternion } from 'three'
 import { useFrame } from '@react-three/fiber'
+import { useRef } from 'react'
 import { useGame } from '../../../context/GameContext'
 import { useProjectileStore } from './WeaponSystem'
-import { useEnemyStore } from './EnemySystem'
+import { useEnemyStore, EnemyType } from './EnemySystem'
 import { useExplosionStore } from './ExplosionManager'
 // import { usePlayerState } from '../cockpit/PlayerShip' // Circular dep? Better to move store to separate file or use event.
 import { useFloatingTextStore } from './FloatingTextManager'
@@ -13,14 +14,27 @@ import { useGameSettings } from './GameSettings'
 // We will emit a custom event "player-hit" or just use a global store if possible.
 // Let's use the window dispatch for now for loose coupling or just import the hook if it works.
 
+// Enemy firing configuration
+const ENEMY_FIRE_CONFIG: Record<EnemyType, { cooldown: number; speed: number; damage: number; range: number } | null> = {
+    drone: { cooldown: 2.5, speed: 60, damage: 5, range: 150 },
+    fighter: { cooldown: 1.8, speed: 80, damage: 8, range: 200 },
+    elite: { cooldown: 1.2, speed: 100, damage: 12, range: 250 },
+    boss: { cooldown: 0.8, speed: 70, damage: 15, range: 300 },
+    asteroid: null, // Asteroids don't shoot
+    scout: { cooldown: 3.0, speed: 50, damage: 4, range: 120 }
+}
+
 export const CollisionManager = () => {
-    const { projectiles, removeProjectile, updateProjectiles } = useProjectileStore()
+    const { projectiles, removeProjectile, updateProjectiles, spawnProjectile } = useProjectileStore()
     const { enemies, damageEnemy, tick } = useEnemyStore()
     const { spawnExplosion } = useExplosionStore()
     const { spawnText } = useFloatingTextStore()
     const { addScore } = useGame()
     const sound = useSound()
     const { isPaused } = useGameSettings()
+
+    // Track last fire time per enemy
+    const enemyLastFire = useRef<Map<string, number>>(new Map())
 
     useFrame((_, delta) => {
         if (isPaused) return
@@ -74,6 +88,38 @@ export const CollisionManager = () => {
                     }
                 }
             }
+
+            // --- ENEMY FIRING LOGIC ---
+            const fireConfig = ENEMY_FIRE_CONFIG[enemy.type]
+            if (fireConfig && distToPlayer < fireConfig.range) {
+                const now = Date.now()
+                const lastFire = enemyLastFire.current.get(enemy.id) || 0
+                const cooldownMs = fireConfig.cooldown * 1000
+
+                if (now - lastFire > cooldownMs) {
+                    enemyLastFire.current.set(enemy.id, now)
+
+                    // Fire at player (origin)
+                    const direction = new Vector3(0, 0, 0).sub(enemy.position).normalize()
+                    const velocity = direction.clone().multiplyScalar(fireConfig.speed)
+                    const rotation = new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), direction)
+
+                    spawnProjectile({
+                        id: `enemy-${enemy.id}-${now}`,
+                        position: enemy.position.clone(),
+                        rotation: rotation,
+                        velocity: velocity,
+                        damage: fireConfig.damage,
+                        owner: 'ENEMY',
+                        type: 'PLASMA',
+                        createdAt: now,
+                        lifetime: 4
+                    })
+
+                    // Play enemy laser sound
+                    sound.playLaser('enemy')
+                }
+            }
         })
 
         projectiles.forEach(p => {
@@ -108,7 +154,9 @@ export const CollisionManager = () => {
                         if (dead) {
                             console.log(`[Collision] ${e.type} DESTROYED!`)
                             spawnExplosion(e.position, e.type === 'boss' ? 'cyan' : 'orange', e.type === 'boss' ? 4 : 2)
-                            sound.playExplosion('large')
+                            // Small explosions for smaller enemies, large for bigger ones
+                            const isLargeExplosion = e.type === 'boss' || e.type === 'elite' || e.type === 'fighter'
+                            sound.playExplosion(isLargeExplosion ? 'large' : 'small')
                             // Score based on enemy type
                             const scores: Record<string, number> = {
                                 asteroid: 50,
@@ -134,6 +182,7 @@ export const CollisionManager = () => {
                             removeProjectile(p.id)
                             removeProjectile(otherP.id)
                             spawnExplosion(p.position, 'white', 0.3) // Tiny spark
+                            sound.playExplosion('small') // Small pop for bullet interception
                             spawnText(p.position, 'BLOCK', '#a1a1aa', 0.8)
                         }
                     }

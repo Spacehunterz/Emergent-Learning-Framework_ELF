@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Test the comment line filtering logic."""
 
+import pytest
+
 
 def is_comment_line(line: str) -> bool:
     """Check if a line is entirely a comment (not code with comment).
@@ -25,36 +27,51 @@ def is_comment_line(line: str) -> bool:
     return any(stripped.startswith(marker) for marker in comment_markers)
 
 
-# Test cases
-test_cases = [
-    ("# eval() is dangerous", True, "Python comment should be filtered"),
-    ("// This uses exec()", True, "JS comment should be filtered"),
-    ("/* eval() here */", True, "C comment start should be filtered"),
-    ("* eval() in comment body", True, "C comment body should be filtered"),
-    ('"""eval() in docstring"""', True, "Docstring should be filtered"),
-    ("eval(user_input)", False, "Code should NOT be filtered"),
-    ("exec(code)", False, "Code should NOT be filtered"),
-    ("x = eval(y)  # dangerous", False, "Mixed line should NOT be filtered"),
-    ("foo()  // comment", False, "Mixed line should NOT be filtered"),
-    ("    # This is a comment", True, "Indented comment should be filtered"),
-    ("", False, "Empty line should not be filtered"),
-    ("   ", False, "Whitespace line should not be filtered"),
-]
+class TestCommentLineDetection:
+    """Tests for is_comment_line function."""
 
-print("Testing comment line detection:\n")
-all_passed = True
+    def test_python_comment_is_filtered(self):
+        """Python comment should be filtered."""
+        assert is_comment_line("# eval() is dangerous") is True
 
-for line, expected, description in test_cases:
-    result = is_comment_line(line)
-    status = "PASS" if result == expected else "FAIL"
-    if status == "FAIL":
-        all_passed = False
-    print(f"{status}: {description}")
-    print(f"  Line: '{line}'")
-    print(f"  Expected: {expected}, Got: {result}\n")
+    def test_js_comment_is_filtered(self):
+        """JS comment should be filtered."""
+        assert is_comment_line("// This uses exec()") is True
 
-if all_passed:
-    print("All tests passed!")
-else:
-    print("Some tests failed!")
-    exit(1)
+    def test_c_comment_start_is_filtered(self):
+        """C comment start should be filtered."""
+        assert is_comment_line("/* eval() here */") is True
+
+    def test_c_comment_body_is_filtered(self):
+        """C comment body should be filtered."""
+        assert is_comment_line("* eval() in comment body") is True
+
+    def test_docstring_is_filtered(self):
+        """Docstring should be filtered."""
+        assert is_comment_line('"""eval() in docstring"""') is True
+
+    def test_code_is_not_filtered(self):
+        """Code should NOT be filtered."""
+        assert is_comment_line("eval(user_input)") is False
+        assert is_comment_line("exec(code)") is False
+
+    def test_mixed_line_with_trailing_comment_not_filtered(self):
+        """Mixed line should NOT be filtered."""
+        assert is_comment_line("x = eval(y)  # dangerous") is False
+        assert is_comment_line("foo()  // comment") is False
+
+    def test_indented_comment_is_filtered(self):
+        """Indented comment should be filtered."""
+        assert is_comment_line("    # This is a comment") is True
+
+    def test_empty_line_not_filtered(self):
+        """Empty line should not be filtered."""
+        assert is_comment_line("") is False
+
+    def test_whitespace_line_not_filtered(self):
+        """Whitespace line should not be filtered."""
+        assert is_comment_line("   ") is False
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

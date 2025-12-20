@@ -24,8 +24,7 @@ def test_readonly_database():
 
 def test_tag_count_limit():
     """Test tag count validation"""
-    print("
-Test 2: Tag count limits...")
+    print("\nTest 2: Tag count limits...")
     qs = QuerySystem()
     
     # Test with 60 tags (should fail)
@@ -43,8 +42,7 @@ Test 2: Tag count limits...")
 
 def test_input_validation():
     """Test input validation"""
-    print("
-Test 3: Input validation...")
+    print("\nTest 3: Input validation...")
     qs = QuerySystem()
     passed = 0
     total = 0
@@ -81,8 +79,7 @@ Test 3: Input validation...")
 
 def test_debug_mode():
     """Test debug mode"""
-    print("
-Test 4: Debug mode...")
+    print("\nTest 4: Debug mode...")
     try:
         qs = QuerySystem(debug=True)
         # Debug messages should print to stderr
@@ -95,8 +92,7 @@ Test 4: Debug mode...")
 
 def test_timeout():
     """Test custom timeout"""
-    print("
-Test 5: Custom timeout...")
+    print("\nTest 5: Custom timeout...")
     try:
         qs = QuerySystem(timeout=60)
         print("  ✓ Custom timeout set successfully")
@@ -127,8 +123,7 @@ def main():
             print(f"  ✗ Test crashed: {e}")
             results.append(False)
     
-    print("
-" + "="*60)
+    print("\n" + "="*60)
     print(f"Results: {sum(results)}/{len(results)} tests passed")
     print("="*60)
     

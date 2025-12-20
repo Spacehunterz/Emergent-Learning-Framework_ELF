@@ -274,9 +274,15 @@ async def _async_main(args: argparse.Namespace) -> int:
 
         elif args.experiments:
             result = await query_system.get_active_experiments(args.timeout)
+            if not result:
+                print("No active experiments found.")
+                return exit_code
 
         elif args.ceo_reviews:
             result = await query_system.get_pending_ceo_reviews(args.timeout)
+            if not result:
+                print("No pending CEO reviews.")
+                return exit_code
 
         elif args.stats:
             result = await query_system.get_statistics(args.timeout)

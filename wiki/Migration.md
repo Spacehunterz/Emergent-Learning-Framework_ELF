@@ -95,12 +95,18 @@ python ~/.claude/emergent-learning/query/query.py --validate
 ## Team Setup
 
 **Option 1: Individual instances (recommended)**
-```bash
-# Export valuable heuristics
-python query.py --export-heuristics > team-heuristics.json
 
-# Team members import
-python query.py --import-heuristics team-heuristics.json
+> **Note:** Export/import commands are planned but not yet implemented.
+> For now, manually share heuristics by copying from `memory/heuristics/` markdown files
+> or by sharing the `memory/index.db` database.
+
+```bash
+# PLANNED (not yet implemented):
+# python query.py --export-heuristics > team-heuristics.json
+# python query.py --import-heuristics team-heuristics.json
+
+# Current workaround: Copy heuristic markdown files
+cp ~/.claude/emergent-learning/memory/heuristics/*.md /shared/team-heuristics/
 ```
 
 **Option 2: Project golden rules**

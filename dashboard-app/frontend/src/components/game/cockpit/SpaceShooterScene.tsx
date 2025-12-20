@@ -18,6 +18,35 @@ import { PauseMenuXR } from '../ui/PauseMenuXR'
 import { FloatingTextRenderer } from '../systems/FloatingTextManager'
 import { useExplosionStore } from '../systems/ExplosionManager'
 
+// --- AMBIENCE CONTROLLER ---
+// Manages background ambience sound based on game state
+const AmbienceController = () => {
+    const sound = useSound()
+    const { isGameOver } = useGame()
+    const { isPaused } = useGameSettings()
+
+    useEffect(() => {
+        // Start ambience when component mounts (game starts)
+        sound.startAmbience()
+
+        // Cleanup: stop ambience when component unmounts (game ends)
+        return () => {
+            sound.stopAmbience()
+        }
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Stop ambience on game over or pause, restart when resumed
+    useEffect(() => {
+        if (isGameOver || isPaused) {
+            sound.stopAmbience()
+        } else {
+            sound.startAmbience()
+        }
+    }, [isGameOver, isPaused, sound])
+
+    return null
+}
+
 // --- CONSTANTS ---
 const INPUT = {
     yawSpeed: 0.003,
@@ -721,6 +750,9 @@ export const SpaceShooterScene = () => {
 
     return (
         <group>
+            {/* AMBIENCE SOUND CONTROLLER */}
+            <AmbienceController />
+
             {/* ENVIRONMENT */}
             <color attach="background" args={['#040714']} />
             <Stars radius={220} depth={90} count={7000} factor={1.35} saturation={0} fade={false} speed={0} />

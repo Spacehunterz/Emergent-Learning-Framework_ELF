@@ -1308,7 +1308,10 @@ class LifecycleManager:
                     s['confidence'] * s['times_validated'] for s in sources
                 ) / total_validations
             else:
-                merged_confidence = sum(s['confidence'] for s in sources) / len(sources)
+                if len(sources) > 0:
+                    merged_confidence = sum(s['confidence'] for s in sources) / len(sources)
+                else:
+                    merged_confidence = 0.0
 
             # Combine explanations
             explanations = [s['explanation'] for s in sources if s['explanation']]

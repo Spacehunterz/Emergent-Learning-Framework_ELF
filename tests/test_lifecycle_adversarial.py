@@ -67,6 +67,11 @@ class TestDatabase:
                 last_confidence_update DATETIME,
                 update_count_today INTEGER DEFAULT 0,
                 update_count_reset_date DATE,
+                -- Phase 2: EMA temporal smoothing columns
+                confidence_ema REAL,
+                ema_alpha REAL,
+                ema_warmup_remaining INTEGER DEFAULT 0,
+                last_ema_update DATETIME,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
@@ -82,6 +87,10 @@ class TestDatabase:
                 session_id TEXT,
                 agent_id TEXT,
                 rate_limited INTEGER DEFAULT 0,
+                -- Phase 2: EMA temporal smoothing columns
+                raw_target_confidence REAL,
+                smoothed_delta REAL,
+                alpha_used REAL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 

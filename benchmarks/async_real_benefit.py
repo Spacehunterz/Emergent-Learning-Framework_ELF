@@ -98,9 +98,11 @@ async def benchmark_context_building(qs: QuerySystem, rounds: int = 5):
         )
         async_times.append(time.perf_counter() - start)
 
+    sync_mean = sum(sync_times) / len(sync_times) * 1000 if len(sync_times) > 0 else 0.0
+    async_mean = sum(async_times) / len(async_times) * 1000 if len(async_times) > 0 else 0.0
     return {
-        "sync_mean_ms": sum(sync_times) / len(sync_times) * 1000,
-        "async_mean_ms": sum(async_times) / len(async_times) * 1000,
+        "sync_mean_ms": sync_mean,
+        "async_mean_ms": async_mean,
     }
 
 
@@ -127,9 +129,9 @@ async def main():
             async_times.append(async_time)
             print(f"  Round {i+1}: sync={sync_time*1000:.1f}ms, async={async_time*1000:.1f}ms")
 
-        sync_mean = sum(sync_times) / len(sync_times) * 1000
-        async_mean = sum(async_times) / len(async_times) * 1000
-        speedup = sync_mean / async_mean
+        sync_mean = sum(sync_times) / len(sync_times) * 1000 if len(sync_times) > 0 else 0.0
+        async_mean = sum(async_times) / len(async_times) * 1000 if len(async_times) > 0 else 0.0
+        speedup = sync_mean / async_mean if async_mean > 0 else 0.0
 
         print(f"\n  Sequential mean: {sync_mean:.1f}ms")
         print(f"  Concurrent mean: {async_mean:.1f}ms")
@@ -144,7 +146,7 @@ async def main():
         print(f"  Sequential: {results['sync_mean_ms']:.1f}ms")
         print(f"  Concurrent: {results['async_mean_ms']:.1f}ms")
 
-        ctx_speedup = results['sync_mean_ms'] / results['async_mean_ms']
+        ctx_speedup = results['sync_mean_ms'] / results['async_mean_ms'] if results['async_mean_ms'] > 0 else 0.0
         print(f"  Speedup: {ctx_speedup:.1f}x")
 
         # Summary

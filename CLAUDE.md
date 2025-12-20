@@ -78,18 +78,19 @@ TRY → BREAK → ANALYZE → LEARN → NEXT
 
 **ALWAYS begin work by querying the framework for relevant knowledge.**
 
-### Step 1: Check for Relevant Patterns
+### Step 1: Query the Building for Heuristics
 ```bash
-# Search for patterns related to your task
-find ~/.claude\emergent-learning\patterns -name "*.md" -type f
-# Or use grep to search content
-grep -r "relevant-keyword" ~/.claude\emergent-learning\patterns
+# Query for relevant heuristics and learnings
+python ~/.claude/emergent-learning/query/query.py --context
+
+# For domain-specific queries
+python ~/.claude/emergent-learning/query/query.py --domain [domain]
 ```
 
 ### Step 2: Review Golden Rules
 ```bash
 # Check the golden rules - these are hard-won lessons
-cat ~/.claude\emergent-learning\golden-rules\RULES.md
+cat ~/.claude\emergent-learning\memory\golden-rules.md
 ```
 
 ### Step 3: Check Recent Failures
@@ -107,7 +108,7 @@ ls -lt ~/.claude\emergent-learning\failure-analysis | head -10
 ## During Work: Record Observations
 
 ### When Something Works Well
-Create a success note in `success-stories/YYYY-MM-DD-brief-description.md`:
+Create a success note in `memory/successes/YYYY-MM-DD-brief-description.md`:
 
 ```markdown
 # [What Worked]
@@ -150,7 +151,15 @@ Create a failure analysis immediately in `failure-analysis/YYYY-MM-DD-brief-desc
 ```
 
 ### When You Discover a Reusable Pattern
-Document it in `patterns/category-name/pattern-name.md` following the established template.
+Record it as a heuristic using:
+```bash
+python ~/.claude/emergent-learning/scripts/record-heuristic.py \
+  --domain "domain" \
+  --rule "the heuristic" \
+  --explanation "why it works" \
+  --source observation \
+  --confidence 0.7
+```
 
 ---
 
@@ -179,31 +188,31 @@ Some decisions are beyond your scope. Create a CEO inbox item when:
 
 You can analyze any problem through four specialized lenses. Use these when:
 - Analyzing failures
-- Evaluating patterns
+- Evaluating heuristics
 - Making escalation recommendations
 - Reviewing complex decisions
 
 ### The Four Agents
 
-1. **Researcher** (`agents/researcher.md`)
+1. **Researcher** (`agents/researcher/personality.md`)
    - **Use when:** You need evidence, data, best practices
    - **Asks:** "What does the research say? What are the proven patterns?"
    - **Strength:** Finds authoritative knowledge
    - **Weakness:** Can be conservative, may miss innovation
 
-2. **Architect** (`agents/architect.md`)
+2. **Architect** (`agents/architect/personality.md`)
    - **Use when:** Designing systems, evaluating structure
    - **Asks:** "How does this scale? What are the dependencies?"
    - **Strength:** Systems thinking, long-term vision
    - **Weakness:** Can over-engineer simple problems
 
-3. **Creative** (`agents/creative.md`)
+3. **Creative** (`agents/creative/personality.md`)
    - **Use when:** Stuck on a problem, need fresh approaches
    - **Asks:** "What if we tried something completely different?"
    - **Strength:** Novel solutions, breaks conventional thinking
    - **Weakness:** Ideas may be impractical
 
-4. **Skeptic** (`agents/skeptic.md`)
+4. **Skeptic** (`agents/skeptic/personality.md`)
    - **Use when:** Validating solutions, finding flaws
    - **Asks:** "What could go wrong? What are we missing?"
    - **Strength:** Finds edge cases, prevents disasters
@@ -283,9 +292,9 @@ If a rule seems wrong:
 
 ### Your Responsibility
 1. **Query it** - Load relevant context before working
-2. **Use it** - Apply patterns and rules to your work
+2. **Use it** - Apply heuristics and rules to your work
 3. **Feed it** - Document failures, successes, and insights
-4. **Improve it** - Propose better patterns, clearer rules
+4. **Improve it** - Propose better heuristics, clearer rules
 5. **Respect it** - This is collective wisdom, not just guidelines
 
 ---
@@ -293,7 +302,7 @@ If a rule seems wrong:
 ## Practical Workflow
 
 ### Starting a Task
-1. Load relevant patterns and golden rules
+1. Load relevant heuristics and golden rules
 2. Check recent failures for related issues
 3. Apply known best practices
 4. Work carefully and observe results
@@ -307,14 +316,14 @@ If a rule seems wrong:
 
 ### Completing Successfully
 1. Document what worked in success stories
-2. Note any reusable patterns
-3. Update relevant pattern files if you improved them
+2. Note any reusable heuristics
+3. Consider recording new heuristics if you discovered improvements
 
 ### Facing Uncertainty
 1. Review agent perspectives for guidance
 2. If still unclear, escalate to CEO
 3. Document the decision once made
-4. Create a pattern to handle it next time
+4. Record a heuristic to handle it next time
 
 ---
 
@@ -373,23 +382,23 @@ python ~/.claude/emergent-learning/scripts/promote-heuristic.py --id 5
 emergent-learning/
 ├── CLAUDE.md              ← You are here
 ├── README.md              ← Framework overview
-├── golden-rules/
-│   └── RULES.md           ← Universal lessons (READ THESE)
-├── patterns/
-│   └── [category]/
-│       └── [name].md      ← Reusable solutions
+├── memory/
+│   ├── golden-rules.md    ← Universal lessons (READ THESE)
+│   └── successes/         ← What worked and why
+├── query/
+│   └── query.py           ← Query the building for heuristics
+├── scripts/
+│   └── record-heuristic.py ← Record new heuristics
 ├── failure-analysis/
 │   └── YYYY-MM-DD-*.md    ← What broke and why
-├── success-stories/
-│   └── YYYY-MM-DD-*.md    ← What worked and why
 ├── ceo-inbox/
 │   ├── TEMPLATE.md        ← Decision request template
 │   └── YYYY-MM-DD-*.md    ← Pending decisions
 └── agents/
-    ├── researcher.md      ← Evidence-based perspective
-    ├── architect.md       ← Systems thinking perspective
-    ├── creative.md        ← Innovation perspective
-    └── skeptic.md         ← Critical analysis perspective
+    ├── researcher/personality.md  ← Evidence-based perspective
+    ├── architect/personality.md   ← Systems thinking perspective
+    ├── creative/personality.md    ← Innovation perspective
+    └── skeptic/personality.md     ← Critical analysis perspective
 ```
 
 ---
@@ -398,7 +407,7 @@ emergent-learning/
 
 **This framework is not bureaucracy - it is memory.**
 
-Every failure analysis you write teaches the next Claude how to avoid that mistake. Every pattern you document saves future instances from reinventing the wheel. Every golden rule you propose makes the entire system smarter.
+Every failure analysis you write teaches the next Claude how to avoid that mistake. Every heuristic you record saves future instances from reinventing the wheel. Every golden rule you propose makes the entire system smarter.
 
 You are building institutional intelligence, one iteration at a time.
 

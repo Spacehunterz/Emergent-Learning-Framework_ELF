@@ -45,24 +45,13 @@ class TestTemporalSmoothing(unittest.TestCase):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         try:
-            # Apply base schema (001) - has all the base tables
+            # Apply base schema (001) - has all tables including EMA columns
+            # Note: 001_base_schema.sql already includes confidence_ema and other
+            # Phase 2 columns, so we don't need to apply migration 003 separately
             base_schema_path = migrations_dir / "001_base_schema.sql"
             if base_schema_path.exists():
                 with open(base_schema_path) as f:
                     conn.executescript(f.read())
-                conn.commit()
-
-            # Skip migration 002 as it conflicts with base schema
-            # Apply Phase 2 migration (003) directly on base schema
-            phase2_path = migrations_dir / "003_temporal_smoothing.sql"
-            if phase2_path.exists():
-                with open(phase2_path) as f:
-                    # Skip the schema_version insert which may fail
-                    script = f.read()
-                    # Remove the schema_version line if it exists
-                    lines = [l for l in script.split('\n')
-                            if not ('schema_version' in l and 'INSERT' in l)]
-                    conn.executescript('\n'.join(lines))
                 conn.commit()
         finally:
             conn.close()

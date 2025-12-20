@@ -43,6 +43,10 @@ else:
     except ImportError:
         fcntl = None
 
+# Limits to prevent unbounded growth
+MAX_LOG_SIZE_MB = 50  # Maximum event log file size in megabytes
+MAX_LOG_SIZE_BYTES = MAX_LOG_SIZE_MB * 1024 * 1024
+
 
 class EventLog:
     """
@@ -186,8 +190,21 @@ class EventLog:
 
         Thread-safe via O_APPEND atomic writes (no lock needed for append).
         Only sequence number generation uses a lock.
+
+        Raises:
+            IOError: If the event log file exceeds MAX_LOG_SIZE_MB
         """
         self._ensure_dir()
+
+        # Check file size before writing to prevent unbounded growth
+        if self.event_log_file.exists():
+            current_size = self.event_log_file.stat().st_size
+            if current_size >= MAX_LOG_SIZE_BYTES:
+                raise IOError(
+                    f"Event log file exceeds maximum size of {MAX_LOG_SIZE_MB}MB. "
+                    f"Current size: {current_size / (1024 * 1024):.2f}MB. "
+                    f"Consider archiving or rotating the log at: {self.event_log_file}"
+                )
 
         # Get unique sequence number (this part uses lock)
         seq = self._get_next_sequence()

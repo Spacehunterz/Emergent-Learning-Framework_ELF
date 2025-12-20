@@ -17,7 +17,7 @@ Natural language search through Claude Code session history.
 **Step 1:** Extract user prompts from session logs by running:
 
 ```bash
-python3 ~/.claude/commands/session-search.py
+python3 ~/.claude/emergent-learning/commands/session-search.py
 ```
 
 **Step 2:** Answer the user's natural language query based on the results.

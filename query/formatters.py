@@ -46,46 +46,54 @@ def generate_accountability_banner(summary: Dict[str, Any]) -> str:
         message = "Acceptable compliance level"
 
     # Build banner
+    # Banner inner width is 69 characters (71 total - 2 for borders)
+    INNER_WIDTH = 69
+
+    def pad_line(content: str) -> str:
+        """Pad content to fit banner width."""
+        return f"║{content:<{INNER_WIDTH}}║"
+
     banner = []
-    banner.append("╔═══════════════════════════════════════════════════════════════════════╗")
-    banner.append("║                    ACCOUNTABILITY TRACKING SYSTEM                     ║")
-    banner.append("║                     Golden Rule Violation Report                      ║")
-    banner.append("╠═══════════════════════════════════════════════════════════════════════╣")
-    banner.append(f"║  Period: Last {days} days                                                     ║")
-    banner.append(f"║  Total Violations: {total:<54} ║")
-    banner.append(f"║  Status: {status:<60} ║")
-    banner.append(f"║  {message:<68} ║")
-    banner.append("╠═══════════════════════════════════════════════════════════════════════╣")
+    banner.append("╔" + "═" * INNER_WIDTH + "╗")
+    banner.append(pad_line("ACCOUNTABILITY TRACKING SYSTEM".center(INNER_WIDTH)))
+    banner.append(pad_line("Golden Rule Violation Report".center(INNER_WIDTH)))
+    banner.append("╠" + "═" * INNER_WIDTH + "╣")
+    banner.append(pad_line(f"  Period: Last {days} days"))
+    banner.append(pad_line(f"  Total Violations: {total}"))
+    banner.append(pad_line(f"  Status: {status}"))
+    banner.append(pad_line(f"  {message}"))
+    banner.append("╠" + "═" * INNER_WIDTH + "╣")
 
     if by_rule:
-        banner.append("║  Violations by Rule:                                                  ║")
+        banner.append(pad_line("  Violations by Rule:"))
         for rule in by_rule[:5]:  # Top 5 rules
-            rule_line = f"║    Rule #{rule['rule_id']}: {rule['rule_name'][:35]:<35} ({rule['count']:>2}x) ║"
-            banner.append(rule_line)
+            rule_name = rule['rule_name'][:35]
+            rule_content = f"    Rule #{rule['rule_id']}: {rule_name:<35} ({rule['count']:>2}x)"
+            banner.append(pad_line(rule_content))
         if len(by_rule) > 5:
-            banner.append(f"║    ... and {len(by_rule) - 5} more                                                  ║")
-        banner.append("╠═══════════════════════════════════════════════════════════════════════╣")
+            banner.append(pad_line(f"    ... and {len(by_rule) - 5} more"))
+        banner.append("╠" + "═" * INNER_WIDTH + "╣")
 
     if recent:
-        banner.append("║  Recent Violations:                                                   ║")
+        banner.append(pad_line("  Recent Violations:"))
         for v in recent[:3]:  # Top 3 recent
             date_str = v['date'][:16] if v['date'] else "Unknown"
-            desc = v['description'][:45] if v['description'] else "No description"
-            banner.append(f"║    [{date_str}] Rule #{v['rule_id']:<2}                                   ║")
-            banner.append(f"║      {desc:<66} ║")
-        banner.append("╠═══════════════════════════════════════════════════════════════════════╣")
+            desc = v['description'][:60] if v['description'] else "No description"
+            banner.append(pad_line(f"    [{date_str}] Rule #{v['rule_id']}"))
+            banner.append(pad_line(f"      {desc}"))
+        banner.append("╠" + "═" * INNER_WIDTH + "╣")
 
     # Progressive consequences
     if total >= 10:
-        banner.append("║  ⚠️  CONSEQUENCES: CEO escalation auto-created in ceo-inbox/          ║")
+        banner.append(pad_line("  CONSEQUENCES: CEO escalation auto-created in ceo-inbox/"))
     elif total >= 5:
-        banner.append("║  ⚠️  CONSEQUENCES: Under probation - violations logged prominently    ║")
+        banner.append(pad_line("  CONSEQUENCES: Under probation - violations logged prominently"))
     elif total >= 3:
-        banner.append("║  ⚠️  CONSEQUENCES: Warning threshold - 2 more violations = probation  ║")
+        banner.append(pad_line("  CONSEQUENCES: Warning threshold - 2 more violations = probation"))
     else:
-        banner.append("║  ✓  STATUS: Acceptable compliance. Keep up good practices.            ║")
+        banner.append(pad_line("  STATUS: Acceptable compliance. Keep up good practices."))
 
-    banner.append("╚═══════════════════════════════════════════════════════════════════════╝")
+    banner.append("╚" + "═" * INNER_WIDTH + "╝")
 
     return "\n".join(banner)
 
