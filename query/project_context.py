@@ -1,10 +1,15 @@
 """
 Project context mixin for merging global + project learnings.
 
+DEPRECATION NOTICE (2025-12-20):
+This module implements the dual-database approach which is being deprecated.
+The new approach uses a single database with a 'project_path' column for
+location awareness. See query.py QuerySystem.__init__ current_location parameter.
+
 This module provides:
-- Project-aware context building
-- Merged heuristic queries (project + global)
-- Project-specific learning queries
+- Project-aware context building (DEPRECATED)
+- Merged heuristic queries (project + global) (DEPRECATED)
+- Project-specific learning queries (DEPRECATED)
 """
 
 import sqlite3

@@ -142,7 +142,8 @@ class QuerySystem(
     MAX_TOKENS = MAX_TOKENS
 
     def __init__(self, base_path: Optional[Path] = None, debug: bool = False,
-                 session_id: Optional[str] = None, agent_id: Optional[str] = None):
+                 session_id: Optional[str] = None, agent_id: Optional[str] = None,
+                 current_location: Optional[str] = None):
         """
         Initialize the query system (internal use).
 
@@ -153,10 +154,12 @@ class QuerySystem(
             debug: Enable debug logging
             session_id: Optional session ID for query logging
             agent_id: Optional agent ID for query logging
+            current_location: Current working directory for location-aware filtering
         """
         self.debug = debug
         self.session_id = session_id or os.environ.get('CLAUDE_SESSION_ID')
         self.agent_id = agent_id or os.environ.get('CLAUDE_AGENT_ID')
+        self.current_location = current_location or os.getcwd()
 
         if base_path is None:
             self.base_path = Path.home() / ".claude" / "emergent-learning"

@@ -152,7 +152,8 @@ class QuerySystem:
     MAX_TOKENS = MAX_TOKENS
 
     def __init__(self, base_path: Optional[str] = None, debug: bool = False,
-                 session_id: Optional[str] = None, agent_id: Optional[str] = None):
+                 session_id: Optional[str] = None, agent_id: Optional[str] = None,
+                 current_location: Optional[str] = None):
         """
         Initialize the query system.
 
@@ -162,12 +163,20 @@ class QuerySystem:
             debug: Enable debug logging
             session_id: Optional session ID for query logging (fallback to CLAUDE_SESSION_ID env var)
             agent_id: Optional agent ID for query logging (fallback to CLAUDE_AGENT_ID env var)
+            current_location: Optional current working directory for location-aware filtering.
+                             Defaults to os.getcwd(). Heuristics with matching project_path
+                             or NULL (global) will be returned.
         """
         self.debug = debug
 
         # Set session_id and agent_id with fallbacks
         self.session_id = session_id or os.environ.get('CLAUDE_SESSION_ID')
         self.agent_id = agent_id or os.environ.get('CLAUDE_AGENT_ID')
+
+        # Location awareness: capture current working directory for filtering
+        # Heuristics with project_path=NULL (global) are always returned
+        # Heuristics with project_path matching current location are also returned
+        self.current_location = current_location or os.getcwd()
 
         if base_path is None:
             home = Path.home()
@@ -579,12 +588,16 @@ class QuerySystem:
             limit = self._validate_limit(limit)
             timeout = timeout or self.DEFAULT_TIMEOUT
 
-            self._log_debug(f"Querying domain '{domain}' with limit {limit}")
+            self._log_debug(f"Querying domain '{domain}' with limit {limit}, location={self.current_location}")
             with TimeoutHandler(timeout):
-                # Get heuristics for domain
+                # Get heuristics for domain with location awareness
+                # Include global heuristics (project_path IS NULL) and location-specific ones
                 heuristics_query = (Heuristic
                     .select()
-                    .where(Heuristic.domain == domain)
+                    .where(
+                        (Heuristic.domain == domain) &
+                        ((Heuristic.project_path.is_null()) | (Heuristic.project_path == self.current_location))
+                    )
                     .order_by(Heuristic.confidence.desc(), Heuristic.times_validated.desc())
                     .limit(limit))
                 heuristics = [h.__data__.copy() for h in heuristics_query]
@@ -2045,7 +2058,8 @@ class QuerySystem:
 
                 # Task context with building header
                 building_header = "🏢 Building Status\n━━━━━━━━━━━━━━━━━━\n\n"
-                context_parts.insert(0, f"{building_header}# Task Context\n\n{task}\n\n---\n\n")
+                location_info = f"**Location:** `{self.current_location}`\n\n"
+                context_parts.insert(0, f"{building_header}{location_info}# Task Context\n\n{task}\n\n---\n\n")
 
             result = "".join(context_parts)
             self._log_debug(f"Built context with ~{len(result)//4} tokens")
