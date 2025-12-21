@@ -47,6 +47,9 @@ export const WaveManager = () => {
     const [, setPhase] = useState<GamePhase>('asteroid_intro')
     const phaseRef = useRef<GamePhase>('asteroid_intro')
 
+    // Stage tracking (1-4, cycles for endless mode)
+    const stageRef = useRef<1 | 2 | 3 | 4>(1)
+
     // Timers
     const lastAsteroidSpawn = useRef(0)
     const asteroidCount = useRef(0)
@@ -95,7 +98,7 @@ export const WaveManager = () => {
 
     // Spawn a single asteroid
     const spawnAsteroid = (formationIndex: number) => {
-        const dist = 180 + Math.random() * 80
+        const dist = 126 + Math.random() * 56 // 30% closer
         const z = -dist - Math.random() * 100
         const seed = Math.random()
         const { anchor, offset } = buildWallAnchor(
@@ -112,6 +115,7 @@ export const WaveManager = () => {
         spawnEnemy({
             id: `asteroid-${Date.now()}-${Math.random()}`,
             type: 'asteroid',
+            stage: stageRef.current,
             position: anchor.clone().add(offset),
             rotation: new Quaternion(),
             hp: GAME_CONFIG.ENEMIES.HP.ASTEROID,
@@ -130,7 +134,7 @@ export const WaveManager = () => {
 
     // Spawn a drone (small, fast)
     const spawnDrone = (formationIndex: number) => {
-        const dist = 150 + Math.random() * 50
+        const dist = 105 + Math.random() * 35 // 30% closer
         const z = -dist
         const seed = Math.random()
         const { anchor, offset } = buildWallAnchor(
@@ -147,6 +151,7 @@ export const WaveManager = () => {
         spawnEnemy({
             id: `drone-${Date.now()}-${Math.random()}`,
             type: 'drone',
+            stage: stageRef.current,
             position: anchor.clone().add(offset),
             rotation: new Quaternion(),
             hp: GAME_CONFIG.ENEMIES.HP.DRONE,
@@ -164,7 +169,7 @@ export const WaveManager = () => {
 
     // Spawn a fighter (medium, aggressive)
     const spawnFighter = (formationIndex: number) => {
-        const dist = 200 + Math.random() * 80
+        const dist = 140 + Math.random() * 56 // 30% closer
         const z = -dist
         const seed = Math.random()
         const { anchor, offset } = buildWallAnchor(
@@ -181,6 +186,7 @@ export const WaveManager = () => {
         spawnEnemy({
             id: `fighter-${Date.now()}-${Math.random()}`,
             type: 'fighter',
+            stage: stageRef.current,
             position: anchor.clone().add(offset),
             rotation: new Quaternion(),
             hp: GAME_CONFIG.ENEMIES.HP.FIGHTER,
@@ -198,7 +204,7 @@ export const WaveManager = () => {
 
     // Spawn an elite (mini-boss)
     const spawnElite = () => {
-        const z = -300 - Math.random() * 100
+        const z = -210 - Math.random() * 70 // 30% closer
         const seed = Math.random()
         const { anchor, offset } = buildWallAnchor(
             0,
@@ -214,6 +220,7 @@ export const WaveManager = () => {
         spawnEnemy({
             id: `elite-${Date.now()}-${Math.random()}`,
             type: 'elite',
+            stage: stageRef.current,
             position: anchor.clone().add(offset),
             rotation: new Quaternion(),
             hp: GAME_CONFIG.ENEMIES.HP.ELITE,
@@ -247,6 +254,7 @@ export const WaveManager = () => {
         spawnEnemy({
             id: `boss-mothership-${Date.now()}`,
             type: 'boss',
+            stage: stageRef.current,
             position: new Vector3(x, y, z),
             rotation: new Quaternion(),
             hp: GAME_CONFIG.ENEMIES.HP.BOSS,
@@ -401,10 +409,13 @@ export const WaveManager = () => {
             }
 
             case 'victory': {
-                // PHASE 7: Victory
+                // PHASE 7: Victory - advance to next stage
                 if (phaseElapsed > 3000) {
-                    // Restart the cycle for endless mode
-                    // Debug log removed
+                    // Advance stage (1 → 2 → 3 → 4 → 1 for endless mode)
+                    const nextStage = stageRef.current === 4 ? 1 : (stageRef.current + 1) as 1 | 2 | 3 | 4
+                    stageRef.current = nextStage
+
+                    // Restart the cycle with new stage
                     clearEnemies()
                     bossSpawned.current = false
                     totalSpawned.current = 0
