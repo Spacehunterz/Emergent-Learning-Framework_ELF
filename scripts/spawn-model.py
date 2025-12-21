@@ -232,7 +232,7 @@ Examples:
     parser.add_argument('--prompt', help='The prompt/task to send')
     parser.add_argument('--prompt-file', type=Path,
                        help='Read prompt from file (for swarm integration)')
-    parser.add_argument('--output', type=Path,
+    parser.add_argument('--output', '--output-file', type=Path, dest='output',
                        help='Write output to file (for swarm integration)')
     parser.add_argument('--file', help='Single file to include in context')
     parser.add_argument('--files', nargs='+', help='Multiple files to include')
