@@ -91,6 +91,10 @@ const AsteroidMesh = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null)
     const mainMatRef = useRef<THREE.MeshBasicMaterial>(null)
     const innerMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const ringRef = useRef<THREE.Mesh>(null)
+    const ringMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const shardRef = useRef<THREE.Mesh>(null)
+    const shardMatRef = useRef<THREE.MeshBasicMaterial>(null)
 
     const rotSpeed = useMemo(() => ({
         x: 0.3 + Math.random() * 0.4,
@@ -104,8 +108,10 @@ const AsteroidMesh = ({ data }: { data: Enemy }) => {
     const healthPct = data.hp / data.maxHp
     const color = healthPct > 0.5 ? '#ff6600' : healthPct > 0.25 ? '#ffff00' : '#ff0044'
 
-    useFrame((_, delta) => {
+    useFrame((state, delta) => {
         if (!ref.current) return
+        const t = state.clock.getElapsedTime()
+        const phase = data.seed * Math.PI * 2
         ref.current.position.copy(data.position)
         ref.current.rotation.x += rotSpeed.x * delta
         ref.current.rotation.y += rotSpeed.y * delta
@@ -118,6 +124,25 @@ const AsteroidMesh = ({ data }: { data: Enemy }) => {
         // Update material opacity
         if (mainMatRef.current) mainMatRef.current.opacity = 0.85 * ease
         if (innerMatRef.current) innerMatRef.current.opacity = 0.4 * ease
+        if (ringMatRef.current) ringMatRef.current.opacity = 0.5 * ease
+        if (shardMatRef.current) shardMatRef.current.opacity = 0.6 * ease
+
+        if (ringRef.current) {
+            ringRef.current.rotation.x += delta * 0.4
+            ringRef.current.rotation.y += delta * 0.6
+            const ringPulse = 0.9 + Math.sin(t * 2.3 + phase) * 0.08
+            ringRef.current.scale.setScalar(ringPulse)
+        }
+
+        if (shardRef.current) {
+            shardRef.current.position.set(
+                Math.cos(t * 1.6 + phase) * 2.4,
+                Math.sin(t * 1.8 + phase) * 2.2,
+                Math.sin(t * 1.3 + phase) * 1.6
+            )
+            shardRef.current.rotation.x += delta * 2
+            shardRef.current.rotation.y += delta * 1.4
+        }
     })
 
     return (
@@ -134,6 +159,16 @@ const AsteroidMesh = ({ data }: { data: Enemy }) => {
                 <tetrahedronGeometry args={[1, 0]} />
                 <meshBasicMaterial ref={innerMatRef} color="#ffffff" wireframe transparent opacity={0} />
             </mesh>
+            {/* Orbit ring */}
+            <mesh ref={ringRef} scale={1.4} rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[1.3, 0.05, 6, 10]} />
+                <meshBasicMaterial ref={ringMatRef} color="#00ffff" transparent opacity={0} />
+            </mesh>
+            {/* Orbiting shard */}
+            <mesh ref={shardRef} scale={0.5}>
+                <tetrahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial ref={shardMatRef} color="#ffffff" wireframe transparent opacity={0} />
+            </mesh>
         </group>
     )
 }
@@ -143,12 +178,18 @@ const DroneMesh = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null)
     const outerMatRef = useRef<THREE.MeshBasicMaterial>(null)
     const innerMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const haloRef = useRef<THREE.Mesh>(null)
+    const haloMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const finLeftRef = useRef<THREE.Mesh>(null)
+    const finRightRef = useRef<THREE.Mesh>(null)
 
     const healthPct = data.hp / data.maxHp
     const color = healthPct > 0.5 ? '#00ff88' : healthPct > 0.25 ? '#ffff00' : '#ff0044'
 
-    useFrame((_, delta) => {
+    useFrame((state, delta) => {
         if (!ref.current) return
+        const t = state.clock.getElapsedTime()
+        const phase = data.seed * Math.PI * 2
         ref.current.position.copy(data.position)
         ref.current.lookAt(0, 0, 0)
         ref.current.rotation.z += delta * 3 // Spin while facing player
@@ -160,6 +201,18 @@ const DroneMesh = ({ data }: { data: Enemy }) => {
         // Update material opacity
         if (outerMatRef.current) outerMatRef.current.opacity = 0.9 * ease
         if (innerMatRef.current) innerMatRef.current.opacity = 0.6 * ease
+        if (haloMatRef.current) {
+            const haloPulse = 0.85 + Math.sin(t * 3 + phase) * 0.12
+            haloMatRef.current.opacity = 0.5 * ease * (0.6 + haloPulse * 0.4)
+            if (haloRef.current) {
+                haloRef.current.rotation.z += delta * 1.4
+                haloRef.current.scale.setScalar(haloPulse)
+            }
+        }
+
+        const finPulse = 1 + Math.sin(t * 4 + phase) * 0.2
+        if (finLeftRef.current) finLeftRef.current.scale.y = finPulse
+        if (finRightRef.current) finRightRef.current.scale.y = finPulse
     })
 
     return (
@@ -174,6 +227,20 @@ const DroneMesh = ({ data }: { data: Enemy }) => {
                 <octahedronGeometry args={[1, 0]} />
                 <meshBasicMaterial ref={innerMatRef} color="#ffffff" wireframe transparent opacity={0} />
             </mesh>
+            {/* Halo ring */}
+            <mesh ref={haloRef} scale={11} rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[1, 0.06, 6, 12]} />
+                <meshBasicMaterial ref={haloMatRef} color="#66fff0" transparent opacity={0} />
+            </mesh>
+            {/* Energy fins */}
+            <mesh ref={finLeftRef} position={[-6.5, 0, 0]} scale={[0.6, 5, 1]}>
+                <boxGeometry args={[1, 1, 1]} />
+                <meshBasicMaterial color={color} wireframe transparent opacity={0.5} />
+            </mesh>
+            <mesh ref={finRightRef} position={[6.5, 0, 0]} scale={[0.6, 5, 1]}>
+                <boxGeometry args={[1, 1, 1]} />
+                <meshBasicMaterial color={color} wireframe transparent opacity={0.5} />
+            </mesh>
         </group>
     )
 }
@@ -182,21 +249,30 @@ const DroneMesh = ({ data }: { data: Enemy }) => {
 const FighterMesh = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null)
     const innerRef = useRef<THREE.Mesh>(null)
+    const wingLeftRef = useRef<THREE.Mesh>(null)
+    const wingRightRef = useRef<THREE.Mesh>(null)
+    const spineRef = useRef<THREE.Mesh>(null)
     const bodyMatRef = useRef<THREE.MeshBasicMaterial>(null)
     const wingMat1Ref = useRef<THREE.MeshBasicMaterial>(null)
     const wingMat2Ref = useRef<THREE.MeshBasicMaterial>(null)
     const coreMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const spineMatRef = useRef<THREE.MeshBasicMaterial>(null)
 
     const healthPct = data.hp / data.maxHp
     const color = healthPct > 0.5 ? '#ff00ff' : healthPct > 0.25 ? '#ffff00' : '#ff0044'
 
-    useFrame((_, delta) => {
+    useFrame((state, delta) => {
         if (!ref.current) return
+        const t = state.clock.getElapsedTime()
+        const phase = data.seed * Math.PI * 2
         ref.current.position.copy(data.position)
         ref.current.lookAt(0, 0, 0)
         if (innerRef.current) {
             innerRef.current.rotation.y += delta * 4
         }
+        const wingWobble = Math.sin(t * 1.6 + phase) * 0.12
+        if (wingLeftRef.current) wingLeftRef.current.rotation.z = Math.PI / 4 + wingWobble
+        if (wingRightRef.current) wingRightRef.current.rotation.z = -Math.PI / 4 - wingWobble
 
         // Per-enemy spawn animation
         const ease = getSpawnEase(data.createdAt)
@@ -207,6 +283,11 @@ const FighterMesh = ({ data }: { data: Enemy }) => {
         if (wingMat1Ref.current) wingMat1Ref.current.opacity = 0.7 * ease
         if (wingMat2Ref.current) wingMat2Ref.current.opacity = 0.7 * ease
         if (coreMatRef.current) coreMatRef.current.opacity = 0.8 * ease
+        if (spineMatRef.current) {
+            const spinePulse = 0.9 + Math.sin(t * 3 + phase) * 0.12
+            spineMatRef.current.opacity = 0.6 * ease * spinePulse
+            if (spineRef.current) spineRef.current.scale.setScalar(spinePulse)
+        }
     })
 
     return (
@@ -217,11 +298,11 @@ const FighterMesh = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={bodyMatRef} color={color} wireframe transparent opacity={0} />
             </mesh>
             {/* Wings - two flat diamonds */}
-            <mesh position={[12, 0, 0]} scale={[8, 2, 10]} rotation={[0, 0, Math.PI / 4]}>
+            <mesh ref={wingLeftRef} position={[12, 0, 0]} scale={[8, 2, 10]} rotation={[0, 0, Math.PI / 4]}>
                 <octahedronGeometry args={[1, 0]} />
                 <meshBasicMaterial ref={wingMat1Ref} color={color} wireframe transparent opacity={0} />
             </mesh>
-            <mesh position={[-12, 0, 0]} scale={[8, 2, 10]} rotation={[0, 0, -Math.PI / 4]}>
+            <mesh ref={wingRightRef} position={[-12, 0, 0]} scale={[8, 2, 10]} rotation={[0, 0, -Math.PI / 4]}>
                 <octahedronGeometry args={[1, 0]} />
                 <meshBasicMaterial ref={wingMat2Ref} color={color} wireframe transparent opacity={0} />
             </mesh>
@@ -229,6 +310,11 @@ const FighterMesh = ({ data }: { data: Enemy }) => {
             <mesh ref={innerRef} scale={5}>
                 <icosahedronGeometry args={[1, 0]} />
                 <meshBasicMaterial ref={coreMatRef} color="#00ffff" wireframe transparent opacity={0} />
+            </mesh>
+            {/* Energy spine */}
+            <mesh ref={spineRef} scale={9} rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[1, 0.08, 8, 16]} />
+                <meshBasicMaterial ref={spineMatRef} color="#00ffff" transparent opacity={0} />
             </mesh>
         </group>
     )
@@ -239,20 +325,26 @@ const EliteMesh = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null)
     const ring1Ref = useRef<THREE.Mesh>(null)
     const ring2Ref = useRef<THREE.Mesh>(null)
+    const satellitesRef = useRef<THREE.Group>(null)
+    const pulseRef = useRef<THREE.Mesh>(null)
     const centerMatRef = useRef<THREE.MeshBasicMaterial>(null)
     const ring1MatRef = useRef<THREE.MeshBasicMaterial>(null)
     const ring2MatRef = useRef<THREE.MeshBasicMaterial>(null)
     const innerMatRef = useRef<THREE.MeshBasicMaterial>(null)
+    const pulseMatRef = useRef<THREE.MeshBasicMaterial>(null)
 
     const healthPct = data.hp / data.maxHp
     const color = healthPct > 0.5 ? '#ffaa00' : healthPct > 0.25 ? '#ff6600' : '#ff0044'
 
-    useFrame((_, delta) => {
+    useFrame((state, delta) => {
         if (!ref.current) return
+        const t = state.clock.getElapsedTime()
+        const phase = data.seed * Math.PI * 2
         ref.current.position.copy(data.position)
         ref.current.lookAt(0, 0, 0)
         if (ring1Ref.current) ring1Ref.current.rotation.x += delta * 2
         if (ring2Ref.current) ring2Ref.current.rotation.y += delta * 2.5
+        if (satellitesRef.current) satellitesRef.current.rotation.y += delta * 1.2
 
         // Per-enemy spawn animation
         const ease = getSpawnEase(data.createdAt)
@@ -263,6 +355,11 @@ const EliteMesh = ({ data }: { data: Enemy }) => {
         if (ring1MatRef.current) ring1MatRef.current.opacity = 0.8 * ease
         if (ring2MatRef.current) ring2MatRef.current.opacity = 0.8 * ease
         if (innerMatRef.current) innerMatRef.current.opacity = 0.7 * ease
+        if (pulseMatRef.current) {
+            const pulse = 0.9 + Math.sin(t * 2 + phase) * 0.08
+            pulseMatRef.current.opacity = 0.5 * ease
+            if (pulseRef.current) pulseRef.current.scale.setScalar(pulse)
+        }
     })
 
     return (
@@ -287,6 +384,26 @@ const EliteMesh = ({ data }: { data: Enemy }) => {
                 <icosahedronGeometry args={[1, 0]} />
                 <meshBasicMaterial ref={innerMatRef} color="#ffffff" wireframe transparent opacity={0} />
             </mesh>
+            {/* Pulse shell */}
+            <mesh ref={pulseRef} scale={18}>
+                <icosahedronGeometry args={[1, 0]} />
+                <meshBasicMaterial ref={pulseMatRef} color="#00ffff" wireframe transparent opacity={0} />
+            </mesh>
+            {/* Orbiting satellites */}
+            <group ref={satellitesRef}>
+                <mesh position={[38, 0, 0]} scale={3}>
+                    <sphereGeometry args={[1, 6, 6]} />
+                    <meshBasicMaterial color="#ffffff" transparent opacity={0.6} />
+                </mesh>
+                <mesh position={[-38, 0, 0]} scale={3}>
+                    <sphereGeometry args={[1, 6, 6]} />
+                    <meshBasicMaterial color="#ffffff" transparent opacity={0.6} />
+                </mesh>
+                <mesh position={[0, 0, 38]} scale={3}>
+                    <sphereGeometry args={[1, 6, 6]} />
+                    <meshBasicMaterial color="#ffffff" transparent opacity={0.6} />
+                </mesh>
+            </group>
         </group>
     )
 }
@@ -297,11 +414,12 @@ const EliteMesh = ({ data }: { data: Enemy }) => {
 const BossMesh = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null)
     const innerRef = useRef<THREE.Group>(null)
-    const time = useRef(0)
+    const shieldRef = useRef<THREE.Mesh>(null)
+    const shieldMatRef = useRef<THREE.MeshBasicMaterial>(null)
 
-    useFrame((_, delta) => {
+    useFrame((state, delta) => {
         if (!ref.current) return
-        time.current += delta
+        const t = state.clock.getElapsedTime()
 
         // WARP IN EFFECT
         const age = Date.now() - (data.createdAt || 0)
@@ -324,6 +442,13 @@ const BossMesh = ({ data }: { data: Enemy }) => {
         if (innerRef.current) {
             innerRef.current.rotation.x += delta * 0.3
             innerRef.current.rotation.y += delta * 0.5
+        }
+
+        if (shieldRef.current) {
+            shieldRef.current.scale.setScalar(1 + Math.sin(t * 0.8) * 0.03)
+        }
+        if (shieldMatRef.current) {
+            shieldMatRef.current.opacity = 0.25 + Math.sin(t * 1.1) * 0.08
         }
     })
 
@@ -357,6 +482,12 @@ const BossMesh = ({ data }: { data: Enemy }) => {
             <mesh scale={8}>
                 <sphereGeometry args={[1, 8, 8]} />
                 <meshBasicMaterial color={baseColor} transparent opacity={0.6} />
+            </mesh>
+
+            {/* Energy shield */}
+            <mesh ref={shieldRef} scale={65}>
+                <sphereGeometry args={[1, 12, 12]} />
+                <meshBasicMaterial ref={shieldMatRef} color={baseColor} wireframe transparent opacity={0.25} />
             </mesh>
         </group>
     )

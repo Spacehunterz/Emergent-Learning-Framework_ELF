@@ -11,6 +11,32 @@ import { useGameSettings } from './GameSettings'
 // Game phases - one enemy type at a time
 type GamePhase = 'asteroid_intro' | 'asteroids' | 'drones' | 'fighters' | 'elite' | 'boss_approaching' | 'boss_fight' | 'victory'
 
+const FORMATIONS = {
+    asteroid: { total: 8, columns: 4, spacingX: 90, spacingY: 60, baseY: 60 },
+    drone: { total: 6, columns: 3, spacingX: 80, spacingY: 50, baseY: 35 },
+    fighter: { total: 4, columns: 2, spacingX: 110, spacingY: 70, baseY: 35 },
+    elite: { total: 1, columns: 1, spacingX: 0, spacingY: 0, baseY: 45 }
+}
+
+const buildWallAnchor = (index: number, total: number, columns: number, spacingX: number, spacingY: number, baseY: number, z: number, seed: number) => {
+    const rows = Math.ceil(total / columns)
+    const row = Math.floor(index / columns)
+    const col = index % columns
+    const centerCol = (columns - 1) / 2
+    const centerRow = (rows - 1) / 2
+
+    const x = (col - centerCol) * spacingX
+    const y = baseY + (row - centerRow) * spacingY
+
+    const jitterX = Math.sin(seed * Math.PI * 2) * spacingX * 0.15
+    const jitterY = Math.cos(seed * Math.PI * 2) * spacingY * 0.15
+
+    return {
+        anchor: new Vector3(x, y, z),
+        offset: new Vector3(jitterX, jitterY, 0)
+    }
+}
+
 export const WaveManager = () => {
     const { levelUp, addScore } = useGame()
     const { spawnEnemy, clearEnemies } = useEnemyStore()
@@ -68,93 +94,138 @@ export const WaveManager = () => {
     }, [])
 
     // Spawn a single asteroid
-    const spawnAsteroid = () => {
-        const angle = (Math.random() - 0.5) * Math.PI * 2.0
+    const spawnAsteroid = (formationIndex: number) => {
         const dist = 180 + Math.random() * 80
-        const x = Math.sin(angle) * dist * 2.5
         const z = -dist - Math.random() * 100
-        const y = (Math.random() - 0.5) * 180 + 60
+        const seed = Math.random()
+        const { anchor, offset } = buildWallAnchor(
+            formationIndex,
+            FORMATIONS.asteroid.total,
+            FORMATIONS.asteroid.columns,
+            FORMATIONS.asteroid.spacingX,
+            FORMATIONS.asteroid.spacingY,
+            FORMATIONS.asteroid.baseY,
+            z,
+            seed
+        )
 
         spawnEnemy({
             id: `asteroid-${Date.now()}-${Math.random()}`,
             type: 'asteroid',
-            position: new Vector3(x, y, z),
+            position: anchor.clone().add(offset),
             rotation: new Quaternion(),
             hp: GAME_CONFIG.ENEMIES.HP.ASTEROID,
             maxHp: GAME_CONFIG.ENEMIES.HP.ASTEROID,
             velocity: new Vector3(0, 0, 0),
             isDead: false,
             aiPattern: 'drift',
-            seed: Math.random(),
-            createdAt: Date.now()
+            seed,
+            createdAt: Date.now(),
+            wallAnchor: anchor,
+            wallOffset: offset,
+            wallPhase: seed * Math.PI * 2
         })
         asteroidCount.current++
     }
 
     // Spawn a drone (small, fast)
-    const spawnDrone = () => {
-        const angle = (Math.random() - 0.5) * Math.PI * 1.5
+    const spawnDrone = (formationIndex: number) => {
         const dist = 150 + Math.random() * 50
-        const x = Math.sin(angle) * dist * 1.5
         const z = -dist
-        const y = (Math.random() - 0.5) * 100 + 30
+        const seed = Math.random()
+        const { anchor, offset } = buildWallAnchor(
+            formationIndex,
+            FORMATIONS.drone.total,
+            FORMATIONS.drone.columns,
+            FORMATIONS.drone.spacingX,
+            FORMATIONS.drone.spacingY,
+            FORMATIONS.drone.baseY,
+            z,
+            seed
+        )
 
         spawnEnemy({
             id: `drone-${Date.now()}-${Math.random()}`,
             type: 'drone',
-            position: new Vector3(x, y, z),
+            position: anchor.clone().add(offset),
             rotation: new Quaternion(),
             hp: GAME_CONFIG.ENEMIES.HP.DRONE,
             maxHp: GAME_CONFIG.ENEMIES.HP.DRONE,
             velocity: new Vector3(0, 0, 0),
             isDead: false,
             aiPattern: 'strafe',
-            seed: Math.random(),
-            createdAt: Date.now()
+            seed,
+            createdAt: Date.now(),
+            wallAnchor: anchor,
+            wallOffset: offset,
+            wallPhase: seed * Math.PI * 2
         })
     }
 
     // Spawn a fighter (medium, aggressive)
-    const spawnFighter = () => {
-        const angle = (Math.random() - 0.5) * Math.PI
+    const spawnFighter = (formationIndex: number) => {
         const dist = 200 + Math.random() * 80
-        const x = Math.sin(angle) * dist * 2
         const z = -dist
-        const y = (Math.random() - 0.5) * 80 + 20
+        const seed = Math.random()
+        const { anchor, offset } = buildWallAnchor(
+            formationIndex,
+            FORMATIONS.fighter.total,
+            FORMATIONS.fighter.columns,
+            FORMATIONS.fighter.spacingX,
+            FORMATIONS.fighter.spacingY,
+            FORMATIONS.fighter.baseY,
+            z,
+            seed
+        )
 
         spawnEnemy({
             id: `fighter-${Date.now()}-${Math.random()}`,
             type: 'fighter',
-            position: new Vector3(x, y, z),
+            position: anchor.clone().add(offset),
             rotation: new Quaternion(),
             hp: GAME_CONFIG.ENEMIES.HP.FIGHTER,
             maxHp: GAME_CONFIG.ENEMIES.HP.FIGHTER,
             velocity: new Vector3(0, 0, 0),
             isDead: false,
             aiPattern: 'swoop',
-            seed: Math.random(),
-            createdAt: Date.now()
+            seed,
+            createdAt: Date.now(),
+            wallAnchor: anchor,
+            wallOffset: offset,
+            wallPhase: seed * Math.PI * 2
         })
     }
 
     // Spawn an elite (mini-boss)
     const spawnElite = () => {
-        const x = (Math.random() - 0.5) * 200
         const z = -300 - Math.random() * 100
-        const y = Math.random() * 60 + 20
+        const seed = Math.random()
+        const { anchor, offset } = buildWallAnchor(
+            0,
+            FORMATIONS.elite.total,
+            FORMATIONS.elite.columns,
+            FORMATIONS.elite.spacingX,
+            FORMATIONS.elite.spacingY,
+            FORMATIONS.elite.baseY,
+            z,
+            seed
+        )
 
         spawnEnemy({
             id: `elite-${Date.now()}-${Math.random()}`,
             type: 'elite',
-            position: new Vector3(x, y, z),
+            position: anchor.clone().add(offset),
             rotation: new Quaternion(),
             hp: GAME_CONFIG.ENEMIES.HP.ELITE,
             maxHp: GAME_CONFIG.ENEMIES.HP.ELITE,
             velocity: new Vector3(0, 0, 0),
             isDead: false,
             aiPattern: 'circle',
-            seed: Math.random(),
-            createdAt: Date.now()
+            seed,
+            createdAt: Date.now(),
+            wallAnchor: anchor,
+            wallOffset: offset,
+            wallPhase: seed * Math.PI * 2
         })
     }
 
@@ -171,6 +242,7 @@ export const WaveManager = () => {
         const x = 0
         const y = 10
         const z = -600 // Start WAY back for long approach
+        const seed = Math.random()
 
         spawnEnemy({
             id: `boss-mothership-${Date.now()}`,
@@ -182,8 +254,11 @@ export const WaveManager = () => {
             velocity: new Vector3(0, 0, 0),
             isDead: false,
             aiPattern: 'direct', // Slow approach
-            seed: Math.random(),
-            createdAt: Date.now()
+            seed,
+            createdAt: Date.now(),
+            wallAnchor: new Vector3(x, y, z),
+            wallOffset: new Vector3(0, 0, 0),
+            wallPhase: seed * Math.PI * 2
         })
 
         levelUp()
@@ -223,8 +298,9 @@ export const WaveManager = () => {
 
                 // Only spawn more if we haven't spawned enough yet
                 if (totalSpawned.current < 8 && now - lastSpawn.current > 1500 && currentCount < 4) {
+                    const formationIndex = totalSpawned.current
                     lastSpawn.current = now
-                    spawnAsteroid()
+                    spawnAsteroid(formationIndex)
                     totalSpawned.current++
                 }
 
@@ -243,8 +319,9 @@ export const WaveManager = () => {
                 const currentCount = enemies.filter(e => e.type === 'drone').length
 
                 if (totalSpawned.current < 6 && now - lastSpawn.current > 2000 && currentCount < 3) {
+                    const formationIndex = totalSpawned.current
                     lastSpawn.current = now
-                    spawnDrone()
+                    spawnDrone(formationIndex)
                     totalSpawned.current++
                 }
 
@@ -262,8 +339,9 @@ export const WaveManager = () => {
                 const currentCount = enemies.filter(e => e.type === 'fighter').length
 
                 if (totalSpawned.current < 4 && now - lastSpawn.current > 3000 && currentCount < 2) {
+                    const formationIndex = totalSpawned.current
                     lastSpawn.current = now
-                    spawnFighter()
+                    spawnFighter(formationIndex)
                     totalSpawned.current++
                 }
 
