@@ -5,11 +5,16 @@ Swarm Orchestrator - Run unlimited agents without context exhaustion.
 This script generates agent prompts that enforce file-based output,
 ensuring context stays flat regardless of how many agents you spawn.
 
+Supports multi-model agents: claude, gemini, codex
+- Claude agents: Use Task tool (native subagents)
+- Gemini/Codex agents: Use spawn-model.py (external CLIs)
+
 Usage:
     python run-swarm.py --config swarm.yaml
     python run-swarm.py --config swarm.yaml --init-only  # Just create .coordination
     python run-swarm.py --list-results                    # Show all agent results
     python run-swarm.py --summary                         # Summarize all results
+    python run-swarm.py --detect-models                   # Show available AI CLIs
 
 The key insight: agents write full output to files, return only paths.
 Context grows by ~20 tokens per agent instead of ~2000.
@@ -20,9 +25,18 @@ import json
 import os
 import sys
 import yaml
+import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
+
+# Add query directory to path for model detection
+sys.path.insert(0, str(Path(__file__).parent.parent / 'query'))
+try:
+    from model_detection import detect_installed_models, suggest_model_for_task
+    HAS_MODEL_DETECTION = True
+except ImportError:
+    HAS_MODEL_DETECTION = False
 # Force UTF-8 output on Windowsif sys.platform == "win32":    try:        sys.stdout.reconfigure(encoding="utf-8", errors="replace")        sys.stderr.reconfigure(encoding="utf-8", errors="replace")    except: pass
 
 SWARM_RESULTS_DIR = ".coordination/swarm-results"
@@ -94,21 +108,25 @@ created: "{timestamp}"
 # Coordination directory (created automatically)
 coordination_dir: ".coordination"
 
+# Multi-model support: {available_models}
+# Claude models (sonnet, opus, haiku): Use Task tool (native)
+# External models (gemini, codex): Use spawn-model.py
+
 # Agent definitions
 agents:
-  - name: "agent-1"
-    description: "Brief description of what this agent does"
+  - name: "designer"
+    description: "Design and plan the implementation"
     scope:
-      - "src/components/feature-1/"
+      - "docs/"
     task: |
       Your detailed task description here.
       Be specific about what needs to be done.
-    model: "sonnet"  # sonnet, opus, or haiku
+    model: "sonnet"  # Claude: sonnet, opus, haiku | External: gemini, codex
 
-  - name: "agent-2"
-    description: "Another agent"
+  - name: "implementer"
+    description: "Implement the designs"
     scope:
-      - "src/services/"
+      - "src/"
     task: |
       Another task description.
     model: "haiku"
@@ -118,6 +136,7 @@ strategy:
   mode: "parallel"        # parallel or sequential
   batch_size: 5           # For parallel: max concurrent agents
   compact_between: false  # Run /compact between batches
+  auto_route: false       # Auto-suggest models based on task content
 '''
 
 
@@ -207,7 +226,30 @@ Remember: Write results to file, return only the path. This is mandatory.
     return prompt
 
 
-def generate_orchestrator_instructions(config: dict) -> str:
+def is_claude_model(model: str) -> bool:
+    """Check if model is a Claude variant (uses Task tool)."""
+    return model.lower() in ['sonnet', 'opus', 'haiku', 'claude']
+
+
+def is_external_model(model: str) -> bool:
+    """Check if model is external (uses spawn-model.py)."""
+    return model.lower() in ['gemini', 'codex']
+
+
+def get_available_models_string() -> str:
+    """Get string of available models for display."""
+    if not HAS_MODEL_DETECTION:
+        return "claude (sonnet, opus, haiku)"
+
+    models = detect_installed_models()
+    available = []
+    for name, info in models.items():
+        if info.get('installed'):
+            available.append(name)
+    return ', '.join(available) if available else 'claude only'
+
+
+def generate_orchestrator_instructions(config: dict, available_models: Dict[str, Any] = None) -> str:
     swarm_name = config.get("name", "unnamed-swarm")
     agents = config.get("agents", [])
     strategy = config.get("strategy", {})
@@ -215,16 +257,37 @@ def generate_orchestrator_instructions(config: dict) -> str:
     batch_size = strategy.get("batch_size", 5)
     compact_between = strategy.get("compact_between", False)
 
+    # Detect available models
+    if available_models is None and HAS_MODEL_DETECTION:
+        available_models = detect_installed_models()
+
+    # Categorize agents by model type
+    claude_agents = [a for a in agents if is_claude_model(a.get("model", "sonnet"))]
+    external_agents = [a for a in agents if is_external_model(a.get("model", ""))]
+
     agent_list = []
     for i, agent in enumerate(agents, 1):
         model = agent.get("model", "sonnet")
-        agent_list.append(f'{i}. **{agent["name"]}** ({model}): {agent.get("description", "No description")}')
+        model_type = "Task tool" if is_claude_model(model) else "spawn-model.py"
+        agent_list.append(f'{i}. **{agent["name"]}** ({model} via {model_type}): {agent.get("description", "No description")}')
 
     instructions = f'''# Swarm Orchestration Instructions
 
 ## Swarm: {swarm_name}
 Generated: {datetime.now().isoformat()}
 
+## Available Models
+'''
+
+    if available_models:
+        for name, info in available_models.items():
+            if info.get('installed'):
+                version = info.get('version', 'unknown')
+                instructions += f"- **{name}**: v{version} [ready]\n"
+            else:
+                instructions += f"- **{name}**: not installed\n"
+
+    instructions += f'''
 ## Agents to Spawn
 
 {chr(10).join(agent_list)}
@@ -234,6 +297,8 @@ Generated: {datetime.now().isoformat()}
 - **Mode:** {mode}
 - **Batch size:** {batch_size}
 - **Compact between batches:** {compact_between}
+- **Claude agents:** {len(claude_agents)}
+- **External agents (gemini/codex):** {len(external_agents)}
 
 ## How to Execute
 
@@ -244,13 +309,12 @@ python ~/.claude/emergent-learning/scripts/run-swarm.py --config swarm.yaml --in
 
 ### Step 2: Spawn Agents
 
-{"Spawn all agents in parallel:" if mode == "parallel" else "Spawn agents sequentially:"}
-
 '''
 
-    if mode == "parallel":
-        instructions += "Use a single message with multiple Task tool calls:\n\n"
-        for agent in agents:
+    # Claude agents section
+    if claude_agents:
+        instructions += "**Claude Agents** (via Task tool):\n\n"
+        for agent in claude_agents:
             model = agent.get("model", "sonnet")
             instructions += f'''```
 Task tool:
@@ -262,19 +326,18 @@ Task tool:
 ```
 
 '''
-    else:
-        instructions += "Spawn one at a time, wait for completion:\n\n"
-        for agent in agents:
-            model = agent.get("model", "sonnet")
-            instructions += f'''```
-Task tool:
-  description: "{agent['name']}"
-  subagent_type: "general-purpose"
-  model: "{model}"
-  run_in_background: true
-  prompt: [See generated prompt for {agent['name']}]
 
-# Wait for completion with TaskOutput, then proceed to next
+    # External agents section
+    if external_agents:
+        instructions += "**External Agents** (via spawn-model.py):\n\n"
+        for agent in external_agents:
+            model = agent.get("model", "gemini")
+            instructions += f'''```bash
+# Run {agent['name']} with {model}
+python ~/.claude/emergent-learning/scripts/spawn-model.py \\
+  --model {model} \\
+  --prompt-file .coordination/swarm-prompts/{agent['name']}-prompt.md \\
+  --output .coordination/swarm-results/{agent['name']}-result.md
 ```
 
 '''
@@ -438,14 +501,57 @@ def summarize_results(project_root: Path) -> None:
         print()
 
 
+def detect_models_cli() -> None:
+    """CLI command to detect and display available models."""
+    print("\n" + "=" * 50)
+    print("MULTI-MODEL DETECTION")
+    print("=" * 50 + "\n")
+
+    if not HAS_MODEL_DETECTION:
+        print("[!] Model detection module not available")
+        print("    Claude is always available (current session)")
+        return
+
+    models = detect_installed_models()
+
+    for name, info in models.items():
+        if info.get('installed'):
+            version = info.get('version', 'unknown')
+            path = info.get('path', 'current session')
+            strengths = ', '.join(info.get('strengths', [])[:3])
+            print(f"[OK] {name}")
+            print(f"     Version: {version}")
+            print(f"     Path: {path}")
+            print(f"     Strengths: {strengths}")
+            print()
+        else:
+            print(f"[ ] {name} - not installed")
+            print()
+
+    # Summary
+    available = [n for n, i in models.items() if i.get('installed')]
+    print("-" * 50)
+    print(f"Available for swarm: {', '.join(available)}")
+    print("\nIn swarm.yaml, use:")
+    print("  - Claude: model: sonnet | opus | haiku")
+    if 'gemini' in available:
+        print("  - Gemini: model: gemini")
+    if 'codex' in available:
+        print("  - Codex:  model: codex")
+    print()
+
+
 def create_template(output_path: Path) -> None:
     timestamp = datetime.now().isoformat()
+    available_models = get_available_models_string()
     content = SWARM_CONFIG_TEMPLATE.format(
         swarm_name="my-swarm",
-        timestamp=timestamp
+        timestamp=timestamp,
+        available_models=available_models
     )
     output_path.write_text(content)
     print(f"[OK] Created swarm config template: {output_path}")
+    print(f"     Available models: {available_models}")
 
 
 def main():
@@ -460,9 +566,14 @@ def main():
     parser.add_argument("--generate-prompts", action="store_true", help="Generate agent prompts to stdout")
     parser.add_argument("--agent", type=str, help="Generate prompt for specific agent only")
     parser.add_argument("--output-dir", type=Path, help="Directory to write generated prompts")
+    parser.add_argument("--detect-models", action="store_true", help="Detect available AI CLIs")
 
     args = parser.parse_args()
     project_root = get_project_root()
+
+    if args.detect_models:
+        detect_models_cli()
+        return
 
     if args.create_template:
         create_template(args.create_template)
@@ -483,6 +594,7 @@ def main():
     if not args.config:
         parser.print_help()
         print("\nExamples:")
+        print("  python run-swarm.py --detect-models                   # Check available AI CLIs")
         print("  python run-swarm.py --create-template swarm.yaml")
         print("  python run-swarm.py --config swarm.yaml --init-only")
         print("  python run-swarm.py --config swarm.yaml --generate-prompts")

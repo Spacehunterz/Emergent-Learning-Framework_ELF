@@ -221,12 +221,19 @@ Examples:
 
   # Get JSON output
   python spawn-model.py --model gemini --prompt "..." --format json
+
+  # Swarm integration - read prompt from file, write output to file
+  python spawn-model.py --model gemini --prompt-file agent-prompt.md --output result.md
 """
     )
 
     parser.add_argument('--model', choices=['gemini', 'codex', 'auto'],
                        default='auto', help='Model to use (default: auto)')
-    parser.add_argument('--prompt', required=True, help='The prompt/task to send')
+    parser.add_argument('--prompt', help='The prompt/task to send')
+    parser.add_argument('--prompt-file', type=Path,
+                       help='Read prompt from file (for swarm integration)')
+    parser.add_argument('--output', type=Path,
+                       help='Write output to file (for swarm integration)')
     parser.add_argument('--file', help='Single file to include in context')
     parser.add_argument('--files', nargs='+', help='Multiple files to include')
     parser.add_argument('--mode', default='exec',
@@ -242,6 +249,19 @@ Examples:
 
     args = parser.parse_args()
 
+    # Handle prompt from file (for swarm integration)
+    prompt = args.prompt
+    if args.prompt_file:
+        if args.prompt_file.exists():
+            prompt = args.prompt_file.read_text(encoding='utf-8')
+        else:
+            print(f"Error: Prompt file not found: {args.prompt_file}", file=sys.stderr)
+            sys.exit(1)
+
+    if not prompt:
+        print("Error: No prompt provided (use --prompt or --prompt-file)", file=sys.stderr)
+        sys.exit(1)
+
     # Collect files
     files = []
     if args.file:
@@ -256,7 +276,7 @@ Examples:
     if model == 'auto':
         if detect_installed_models:
             models = detect_installed_models()
-            suggestion = suggest_model_for_task(args.prompt, files, models)
+            suggestion = suggest_model_for_task(prompt, files, models)
             model = suggestion['suggested']
 
             if not args.quiet:
@@ -270,7 +290,7 @@ Examples:
                 print("Auto-detection unavailable, defaulting to claude", file=sys.stderr)
 
     # Build full prompt with file contents if provided
-    full_prompt = args.prompt
+    full_prompt = prompt
     if files:
         full_prompt += "\n\n---\nFiles:\n"
         for filepath in files:
@@ -291,7 +311,7 @@ Examples:
         # Claude is the current session - just return the prompt for it to handle
         result = {
             'success': True,
-            'output': f"[Route to Claude - current session]\n\nTask: {args.prompt}",
+            'output': f"[Route to Claude - current session]\n\nTask: {prompt}",
             'error': None,
             'model': 'claude'
         }
@@ -314,9 +334,22 @@ Examples:
 
     # Record learning if requested
     if args.record and result['success']:
-        record_model_learning(model, args.prompt, True)
+        record_model_learning(model, prompt, True)
 
-    # Output result
+    # Write output to file if specified (for swarm integration)
+    if args.output:
+        try:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            if result['success']:
+                args.output.write_text(result['output'], encoding='utf-8')
+            else:
+                args.output.write_text(f"ERROR: {result['error']}", encoding='utf-8')
+            if not args.quiet:
+                print(f"Output written to: {args.output}", file=sys.stderr)
+        except Exception as e:
+            print(f"Error writing output file: {e}", file=sys.stderr)
+
+    # Output result (also print to stdout unless quiet)
     if args.format == 'json':
         print(json.dumps(result, indent=2))
     else:
