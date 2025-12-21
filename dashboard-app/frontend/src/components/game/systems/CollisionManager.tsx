@@ -9,6 +9,7 @@ import { useExplosionStore } from './ExplosionManager'
 import { useFloatingTextStore } from './FloatingTextManager'
 import { useSound } from './SoundManager'
 import { useGameSettings } from './GameSettings'
+import { usePickupStore, PICKUP_HIT_RADIUS } from './PickupSystem'
 // For now, let's just assume we can get the player state or dispatch an event.
 // Actually, let's simple export the store from a new PlayerSystem file if we could, but for speed:
 // We will emit a custom event "player-hit" or just use a global store if possible.
@@ -32,6 +33,7 @@ export const CollisionManager = () => {
     const { addScore } = useGame()
     const sound = useSound()
     const { isPaused } = useGameSettings()
+    const pickups = usePickupStore(s => s.pickups)
 
     // Track last fire time per enemy
     const enemyLastFire = useRef<Map<string, number>>(new Map())
@@ -181,6 +183,27 @@ export const CollisionManager = () => {
                     }
                 })
 
+                // Check vs Pickups - shoot to collect!
+                const PICKUP_HIT_RADIUS_SQ = PICKUP_HIT_RADIUS * PICKUP_HIT_RADIUS
+                for (const pickup of pickups) {
+                    const distSq = p.position.distanceToSquared(pickup.position)
+                    if (distSq < PICKUP_HIT_RADIUS_SQ) {
+                        removeProjectile(p.id)
+                        spawnExplosion(pickup.position, pickup.type === 'health' ? 'red' : pickup.type === 'shield' ? 'blue' : 'orange', 0.8)
+                        sound.playExplosion('small')
+
+                        // Dispatch pickup-collected event with type and value
+                        window.dispatchEvent(new CustomEvent('pickup-collected', {
+                            detail: {
+                                type: pickup.type,
+                                value: pickup.value,
+                                id: pickup.id
+                            }
+                        }))
+                        break
+                    }
+                }
+
             } else {
                 // ENEMY PROJECTILE vs PLAYER
                 // Player is at 0,0,0
@@ -189,8 +212,15 @@ export const CollisionManager = () => {
                     spawnExplosion(p.position, 'blue', 1) // Shield hit effect
                     sound.playShieldHit()
 
-                    // Dispatch Shield Damage Event
-                    window.dispatchEvent(new CustomEvent('player-hit', { detail: { damage: p.damage } }))
+                    // Dispatch Shield Damage Event - include projectile info for reflection
+                    window.dispatchEvent(new CustomEvent('player-hit', {
+                        detail: {
+                            damage: p.damage,
+                            projectileId: p.id,
+                            projectilePosition: p.position.clone(),
+                            projectileVelocity: p.velocity.clone()
+                        }
+                    }))
                 }
             }
         })

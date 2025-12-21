@@ -6,6 +6,7 @@ export type EnemyType = 'drone' | 'scout' | 'fighter' | 'boss' | 'asteroid' | 'e
 export interface Enemy {
     id: string
     type: EnemyType
+    stage: 1 | 2 | 3 | 4
     position: Vector3
     rotation: Quaternion
     hp: number
@@ -20,6 +21,12 @@ export interface Enemy {
     wallPhase: number
 }
 
+// Helper to get spawn ease for animations
+export const getSpawnEase = (createdAt: number, duration = 500) => {
+    const elapsed = Date.now() - createdAt
+    return Math.min(1, elapsed / duration)
+}
+
 interface EnemyState {
     enemies: Enemy[]
     spawnEnemy: (enemy: Enemy) => void
@@ -31,6 +38,7 @@ interface EnemyState {
 }
 
 import { GAME_CONFIG } from '../config/GameConstants'
+import { spawnHealthPickup, spawnShieldPickup, spawnWeaponPickup } from './PickupSystem'
 
 export const useEnemyStore = create<EnemyState>((set, get) => ({
     enemies: [],
@@ -52,6 +60,20 @@ export const useEnemyStore = create<EnemyState>((set, get) => ({
         if (enemy.hp <= 0) {
             enemy.hp = 0
             enemy.isDead = true
+
+            // Random pickup drops from all enemies (stage 2+)
+            if (enemy.stage > 1) {
+                const roll = Math.random()
+                // Drop chances: health 20%, shield 15%, weapon 5%
+                if (roll < 0.20) {
+                    spawnHealthPickup(enemy.position.clone(), 20) // 1/5 of max hull
+                } else if (roll < 0.35) {
+                    spawnShieldPickup(enemy.position.clone(), 20) // 1/5 of max shield
+                } else if (roll < 0.40) {
+                    spawnWeaponPickup(enemy.position.clone(), 30) // 30 second turbo
+                }
+            }
+
             // Only set state when we need to remove the enemy
             set({ enemies: enemies.filter(e => e.hp > 0) })
             return true

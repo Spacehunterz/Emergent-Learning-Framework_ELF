@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Stars } from '@react-three/drei'
+import { Stars, Html } from '@react-three/drei'
 import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
 import { useGame } from '../../../context/GameContext'
@@ -15,8 +15,21 @@ import { WaveManager } from '../systems/WaveManager'
 import { ExplosionRenderer } from '../systems/ExplosionManager'
 import { useGameSettings } from '../systems/GameSettings'
 import { PauseMenuXR } from '../ui/PauseMenuXR'
+import { GameOverScreen } from '../ui/GameOverScreen'
 import { FloatingTextRenderer } from '../systems/FloatingTextManager'
 import { useExplosionStore } from '../systems/ExplosionManager'
+import { PickupRenderer, usePickupStore } from '../systems/PickupSystem'
+
+// Stage-specific enemy meshes
+import {
+    Stage2Asteroid, Stage2Drone, Stage2Fighter, Stage2Elite, Stage2Boss
+} from '../enemies/Stage2Enemies'
+import {
+    Stage3Asteroid, Stage3Drone, Stage3Fighter, Stage3Elite, Stage3Boss
+} from '../enemies/Stage3Enemies'
+import {
+    Stage4Asteroid, Stage4Drone, Stage4Fighter, Stage4Elite, Stage4Boss
+} from '../enemies/Stage4Enemies'
 
 // --- AMBIENCE CONTROLLER ---
 // Manages background ambience sound based on game state
@@ -101,7 +114,7 @@ const AsteroidMesh = ({ data }: { data: Enemy }) => {
         y: 0.2 + Math.random() * 0.3,
         z: 0.1 + Math.random() * 0.2
     }), [])
-    const baseScale = useMemo(() => 12 + Math.random() * 8, [])
+    const baseScale = useMemo(() => 36 + Math.random() * 24, []) // 2x size
     const geoType = useMemo(() => Math.floor(data.seed * 3), [data.seed])
 
     // Health-based color
@@ -196,7 +209,7 @@ const DroneMesh = ({ data }: { data: Enemy }) => {
 
         // Per-enemy spawn animation
         const ease = getSpawnEase(data.createdAt)
-        ref.current.scale.setScalar(ease)
+        ref.current.scale.setScalar(ease * 3) // 2x size
 
         // Update material opacity
         if (outerMatRef.current) outerMatRef.current.opacity = 0.9 * ease
@@ -276,7 +289,7 @@ const FighterMesh = ({ data }: { data: Enemy }) => {
 
         // Per-enemy spawn animation
         const ease = getSpawnEase(data.createdAt)
-        ref.current.scale.setScalar(ease)
+        ref.current.scale.setScalar(ease * 3) // 2x size
 
         // Update material opacity
         if (bodyMatRef.current) bodyMatRef.current.opacity = 0.85 * ease
@@ -348,7 +361,7 @@ const EliteMesh = ({ data }: { data: Enemy }) => {
 
         // Per-enemy spawn animation
         const ease = getSpawnEase(data.createdAt)
-        ref.current.scale.setScalar(ease)
+        ref.current.scale.setScalar(ease * 3) // 2x size
 
         // Update material opacity
         if (centerMatRef.current) centerMatRef.current.opacity = 0.9 * ease
@@ -494,24 +507,160 @@ const BossMesh = ({ data }: { data: Enemy }) => {
 }
 
 const EntityRenderer = React.memo(({ data }: { data: Enemy }) => {
-    if (data.type === 'asteroid') return <AsteroidMesh data={data} />
-    if (data.type === 'boss') return <BossMesh data={data} />
-    if (data.type === 'elite') return <EliteMesh data={data} />
-    if (data.type === 'drone') return <DroneMesh data={data} />
-    if (data.type === 'fighter') return <FighterMesh data={data} />
-    return <FighterMesh data={data} /> // Default
-}, (prev, next) => prev.data.id === next.data.id && prev.data.hp === next.data.hp) // Only re-render if ID or HP changes
+    const stage = data.stage || 1
+
+    // Stage 1: Original meshes
+    if (stage === 1) {
+        if (data.type === 'asteroid') return <AsteroidMesh data={data} />
+        if (data.type === 'boss') return <BossMesh data={data} />
+        if (data.type === 'elite') return <EliteMesh data={data} />
+        if (data.type === 'drone') return <DroneMesh data={data} />
+        if (data.type === 'fighter') return <FighterMesh data={data} />
+        return <FighterMesh data={data} />
+    }
+
+    // Stage 2: Cyber themed (blue/purple)
+    if (stage === 2) {
+        if (data.type === 'asteroid') return <Stage2Asteroid data={data} />
+        if (data.type === 'boss') return <Stage2Boss data={data} />
+        if (data.type === 'elite') return <Stage2Elite data={data} />
+        if (data.type === 'drone') return <Stage2Drone data={data} />
+        if (data.type === 'fighter') return <Stage2Fighter data={data} />
+        return <Stage2Fighter data={data} />
+    }
+
+    // Stage 3: Organic themed (green/pink)
+    if (stage === 3) {
+        if (data.type === 'asteroid') return <Stage3Asteroid data={data} />
+        if (data.type === 'boss') return <Stage3Boss data={data} />
+        if (data.type === 'elite') return <Stage3Elite data={data} />
+        if (data.type === 'drone') return <Stage3Drone data={data} />
+        if (data.type === 'fighter') return <Stage3Fighter data={data} />
+        return <Stage3Fighter data={data} />
+    }
+
+    // Stage 4: Void themed (purple/white)
+    if (data.type === 'asteroid') return <Stage4Asteroid data={data} />
+    if (data.type === 'boss') return <Stage4Boss data={data} />
+    if (data.type === 'elite') return <Stage4Elite data={data} />
+    if (data.type === 'drone') return <Stage4Drone data={data} />
+    if (data.type === 'fighter') return <Stage4Fighter data={data} />
+    return <Stage4Fighter data={data} />
+}, (prev, next) => prev.data.id === next.data.id && prev.data.hp === next.data.hp && prev.data.stage === next.data.stage)
 
 
-const GunRig = ({ gunRef, recoilImpulse }: { gunRef: React.RefObject<THREE.Group>, recoilImpulse: React.MutableRefObject<number> }) => {
-    const innerRef = useRef<THREE.Group>(null)
+// Shield bubble visual - activates on right click
+const ShieldBubble = ({ active, flash }: {
+    active: React.MutableRefObject<boolean>,
+    flash: React.MutableRefObject<number>
+}) => {
+    const shieldRef = useRef<THREE.Mesh>(null)
+    const matRef = useRef<THREE.MeshBasicMaterial>(null)
 
     useFrame((_, delta) => {
+        if (!shieldRef.current || !matRef.current) return
+
+        const targetOpacity = active.current ? 0.25 + flash.current * 0.5 : 0
+        matRef.current.opacity = THREE.MathUtils.lerp(matRef.current.opacity, targetOpacity, delta * 10)
+
+        // Pulse effect when active
+        if (active.current) {
+            const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.02
+            shieldRef.current.scale.setScalar(pulse)
+        }
+
+        // Flash color: normal = blue, hit = white
+        if (flash.current > 0.1) {
+            matRef.current.color.setHex(0xffffff)
+        } else {
+            matRef.current.color.setHex(0x4488ff)
+        }
+    })
+
+    return (
+        <mesh ref={shieldRef} position={[0, 0, -3]} scale={1}>
+            <sphereGeometry args={[4, 24, 16]} />
+            <meshBasicMaterial
+                ref={matRef}
+                color="#4488ff"
+                transparent
+                opacity={0}
+                side={THREE.BackSide}
+                depthWrite={false}
+            />
+        </mesh>
+    )
+}
+
+const GunRig = ({ gunRef, recoilImpulse, weaponEnergy }: {
+    gunRef: React.RefObject<THREE.Group>,
+    recoilImpulse: React.MutableRefObject<number>,
+    weaponEnergy: React.MutableRefObject<number>
+}) => {
+    const innerRef = useRef<THREE.Group>(null)
+    const tipMat1Ref = useRef<THREE.MeshBasicMaterial>(null)
+    const tipMat2Ref = useRef<THREE.MeshBasicMaterial>(null)
+    const smoke1Ref = useRef<THREE.Group>(null)
+    const smoke2Ref = useRef<THREE.Group>(null)
+
+    // Smoke particle positions (reused each frame)
+    const smokeParticles = useMemo(() =>
+        Array.from({ length: 6 }, () => ({
+            offset: new THREE.Vector3(),
+            life: Math.random()
+        })), [])
+
+    useFrame((state, delta) => {
         if (!innerRef.current) return
+        const t = state.clock.getElapsedTime()
+
         // Decay impulse
         recoilImpulse.current = THREE.MathUtils.lerp(recoilImpulse.current, 0, delta * 10)
-        // Apply to local Z
         innerRef.current.position.z = recoilImpulse.current
+
+        // Heat level (0 = cool, 1 = overheated)
+        const heat = 1 - (weaponEnergy.current / 100)
+        const isOverheated = weaponEnergy.current < 20
+
+        // Barrel tip color: blue (cool) → orange → red (hot)
+        const tipColor = new THREE.Color()
+        if (heat < 0.3) {
+            tipColor.setHex(0x38bdf8) // Blue
+        } else if (heat < 0.6) {
+            tipColor.lerpColors(new THREE.Color(0x38bdf8), new THREE.Color(0xffa500), (heat - 0.3) / 0.3)
+        } else {
+            tipColor.lerpColors(new THREE.Color(0xffa500), new THREE.Color(0xff2200), (heat - 0.6) / 0.4)
+        }
+
+        if (tipMat1Ref.current) tipMat1Ref.current.color.copy(tipColor)
+        if (tipMat2Ref.current) tipMat2Ref.current.color.copy(tipColor)
+
+        // Smoke effect when overheated
+        const smokeOpacity = isOverheated ? 0.4 : 0
+        ;[smoke1Ref, smoke2Ref].forEach((smokeRef, gunIdx) => {
+            if (!smokeRef.current) return
+            smokeRef.current.children.forEach((child, i) => {
+                if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
+                    // Animate smoke rising
+                    const particle = smokeParticles[i]
+                    particle.life += delta * 2
+                    if (particle.life > 1) {
+                        particle.life = 0
+                        particle.offset.set(
+                            (Math.random() - 0.5) * 0.15,
+                            0,
+                            (Math.random() - 0.5) * 0.15
+                        )
+                    }
+                    child.position.y = particle.life * 0.5
+                    child.position.x = particle.offset.x + Math.sin(t * 3 + i) * 0.03
+                    child.position.z = particle.offset.z
+                    const scale = 0.1 + particle.life * 0.2 // 2x size
+                    child.scale.setScalar(scale)
+                    child.material.opacity = smokeOpacity * (1 - particle.life)
+                }
+            })
+        })
     })
 
     return (
@@ -527,8 +676,17 @@ const GunRig = ({ gunRef, recoilImpulse }: { gunRef: React.RefObject<THREE.Group
                     </mesh>
                     <mesh position={[0, 0, -1.2]}>
                         <sphereGeometry args={[0.14, 12, 12]} />
-                        <meshBasicMaterial color="#38bdf8" />
+                        <meshBasicMaterial ref={tipMat1Ref} color="#38bdf8" />
                     </mesh>
+                    {/* Smoke particles */}
+                    <group ref={smoke1Ref} position={[0, 0, -1.2]}>
+                        {[0,1,2].map(i => (
+                            <mesh key={i}>
+                                <sphereGeometry args={[1, 6, 6]} />
+                                <meshBasicMaterial color="#888888" transparent opacity={0} />
+                            </mesh>
+                        ))}
+                    </group>
                 </group>
                 <group position={GUN_OFFSETS[1].toArray()}>
                     <mesh rotation={[Math.PI / 2, 0, 0]}>
@@ -537,8 +695,17 @@ const GunRig = ({ gunRef, recoilImpulse }: { gunRef: React.RefObject<THREE.Group
                     </mesh>
                     <mesh position={[0, 0, -1.2]}>
                         <sphereGeometry args={[0.14, 12, 12]} />
-                        <meshBasicMaterial color="#38bdf8" />
+                        <meshBasicMaterial ref={tipMat2Ref} color="#38bdf8" />
                     </mesh>
+                    {/* Smoke particles */}
+                    <group ref={smoke2Ref} position={[0, 0, -1.2]}>
+                        {[0,1,2].map(i => (
+                            <mesh key={i}>
+                                <sphereGeometry args={[1, 6, 6]} />
+                                <meshBasicMaterial color="#888888" transparent opacity={0} />
+                            </mesh>
+                        ))}
+                    </group>
                 </group>
             </group>
         </group>
@@ -549,7 +716,7 @@ export const SpaceShooterScene = () => {
     const { camera, gl } = useThree()
     const mode = useXR((state) => state.mode)
     const isPresenting = mode === 'immersive-vr'
-    const { rechargeShields, damageShields, shields, level, score, viewMode, setGameOver, triggerPlayerHit } = useGame()
+    const { rechargeShields, damageShields, shields, level, score, viewMode, setGameOver, triggerPlayerHit, isGameOver } = useGame()
     const { isPaused } = useGameSettings()
     const isStaticView = viewMode === 'static'
 
@@ -580,6 +747,14 @@ export const SpaceShooterScene = () => {
     const weaponEnergy = useRef(100)
     const canFire = useRef(true)
 
+    // Weapon boost state - turbo shot mode
+    const weaponBoostEnd = useRef(0) // Timestamp when boost ends
+    const isWeaponBoosted = () => Date.now() < weaponBoostEnd.current
+
+    // Shield system - right click to activate
+    const shieldActive = useRef(false)
+    const shieldFlash = useRef(0) // Flash intensity on hit
+
     const tempVecA = useMemo(() => new THREE.Vector3(), [])
     const tempVecB = useMemo(() => new THREE.Vector3(), [])
     const tempVecC = useMemo(() => new THREE.Vector3(), [])
@@ -596,8 +771,42 @@ export const SpaceShooterScene = () => {
     // PLAYER DAMAGE HANDLER - Listens for player-hit events from CollisionManager
     // This handles damage in cockpit mode where PlayerShip component isn't mounted
     useEffect(() => {
-        const handlePlayerHit = (event: CustomEvent<{ damage: number }>) => {
+        const handlePlayerHit = (event: CustomEvent<{
+            damage: number,
+            projectileId?: string,
+            projectilePosition?: THREE.Vector3,
+            projectileVelocity?: THREE.Vector3
+        }>) => {
             const damage = event.detail.damage || 10
+
+            // If shield is active, block damage and flash
+            if (shieldActive.current && shields > 0) {
+                shieldFlash.current = 1 // Trigger flash effect
+                damageShields(damage * 0.5) // Shield takes reduced damage
+                sound.playShieldHit()
+
+                // REFLECT the projectile back at enemies!
+                if (event.detail.projectilePosition && event.detail.projectileVelocity) {
+                    const reflectedVelocity = event.detail.projectileVelocity.clone().negate().multiplyScalar(1.5) // Faster return
+                    const reflectedDir = reflectedVelocity.clone().normalize()
+                    const reflectedRot = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), reflectedDir)
+
+                    spawnProjectile({
+                        id: `reflect-${Date.now()}-${Math.random()}`,
+                        position: event.detail.projectilePosition.clone(),
+                        rotation: reflectedRot,
+                        velocity: reflectedVelocity,
+                        damage: damage * 2, // Reflected shots do double damage
+                        owner: 'PLAYER', // Now owned by player so it can hit enemies
+                        type: 'PLASMA',
+                        createdAt: Date.now(),
+                        lifetime: 3
+                    })
+                }
+
+                return // Block the hit
+            }
+
             triggerPlayerHit() // Update lastHitTime for visual feedback
 
             // Check shields first
@@ -622,24 +831,56 @@ export const SpaceShooterScene = () => {
 
         window.addEventListener('player-hit', handlePlayerHit as EventListener)
         return () => window.removeEventListener('player-hit', handlePlayerHit as EventListener)
-    }, [shields, damageShields, setGameOver, triggerPlayerHit, sound, spawnExplosion])
+    }, [shields, damageShields, setGameOver, triggerPlayerHit, sound, spawnExplosion, spawnProjectile])
+
+    // PICKUP COLLECTED HANDLER - for shoot-to-collect pickups
+    useEffect(() => {
+        const { removePickup } = usePickupStore.getState()
+
+        const handlePickupCollected = (event: CustomEvent<{ type: string, value: number, id: string }>) => {
+            const { type, value, id } = event.detail
+            removePickup(id) // Remove the pickup from store
+
+            if (type === 'health') {
+                hullRef.current = Math.min(100, hullRef.current + value)
+            } else if (type === 'shield') {
+                rechargeShields(value)
+            } else if (type === 'weapon') {
+                // Activate weapon boost for value seconds
+                weaponBoostEnd.current = Date.now() + value * 1000
+            }
+        }
+
+        window.addEventListener('pickup-collected', handlePickupCollected as EventListener)
+        return () => window.removeEventListener('pickup-collected', handlePickupCollected as EventListener)
+    }, [rechargeShields])
 
     // INPUT HANDLING
     useEffect(() => {
         const handlePointerDown = (event: PointerEvent) => {
             if (isPresenting || isPaused) return
-            if (event.button !== 0) return
-            firing.current = true
-            if (!isStaticView && document.pointerLockElement !== gl.domElement) {
-                // requestPointerLock returns a Promise - handle rejection gracefully
-                gl.domElement.requestPointerLock()?.catch?.(() => {
-                    // Pointer lock may fail in certain contexts (XR, iframe, etc.) - game still works without it
-                })
+            // Left click = fire
+            if (event.button === 0) {
+                firing.current = true
+                if (!isStaticView && document.pointerLockElement !== gl.domElement) {
+                    // requestPointerLock returns a Promise - handle rejection gracefully
+                    gl.domElement.requestPointerLock()?.catch?.(() => {
+                        // Pointer lock may fail in certain contexts (XR, iframe, etc.) - game still works without it
+                    })
+                }
+            }
+            // Right click = shield
+            if (event.button === 2) {
+                shieldActive.current = true
             }
         }
-        const handlePointerUp = () => {
+        const handlePointerUp = (event: PointerEvent) => {
             if (isPresenting || isPaused) return
-            firing.current = false
+            if (event.button === 0) firing.current = false
+            if (event.button === 2) shieldActive.current = false
+        }
+        const handleContextMenu = (event: Event) => {
+            event.preventDefault() // Prevent right-click menu
         }
         const handleMouseMove = (event: MouseEvent) => {
             if (isPresenting || isPaused) return
@@ -677,6 +918,7 @@ export const SpaceShooterScene = () => {
         window.addEventListener('mousemove', handleMouseMove)
         window.addEventListener('keydown', handleKeyDown)
         window.addEventListener('keyup', handleKeyUp)
+        window.addEventListener('contextmenu', handleContextMenu)
         document.addEventListener('pointerlockchange', handlePointerLockChange)
 
         return () => {
@@ -685,6 +927,7 @@ export const SpaceShooterScene = () => {
             window.removeEventListener('mousemove', handleMouseMove)
             window.removeEventListener('keydown', handleKeyDown)
             window.removeEventListener('keyup', handleKeyUp)
+            window.removeEventListener('contextmenu', handleContextMenu)
             document.removeEventListener('pointerlockchange', handlePointerLockChange)
         }
     }, [gl, isPresenting, isPaused, isStaticView])
@@ -743,6 +986,20 @@ export const SpaceShooterScene = () => {
 
 
         rechargeShields(delta * 3)
+
+        // Shield drain when active
+        if (shieldActive.current && shields > 0) {
+            damageShields(delta * 15) // Drains shields while held
+            if (shields <= 0) {
+                shieldActive.current = false // Auto-deactivate when depleted
+            }
+        }
+
+        // Shield flash decay
+        if (shieldFlash.current > 0) {
+            shieldFlash.current = Math.max(0, shieldFlash.current - delta * 5)
+        }
+
         const isVr = isPresenting
         isVrRef.current = isVr
 
@@ -799,22 +1056,28 @@ export const SpaceShooterScene = () => {
         }
 
         // --- FIRING LOGIC ---
-        if (firing.current && elapsed - lastShot.current > LASER.cooldown) {
-            if (!canFire.current || weaponEnergy.current < LASER.energyCost) {
+        // Turbo mode: faster fire rate (0.15s cooldown), no energy cost, more damage
+        const boosted = isWeaponBoosted()
+        const fireCooldown = boosted ? 0.15 : LASER.cooldown
+        const fireDamage = boosted ? 30 : 15
+        const fireEnergyCost = boosted ? 0 : LASER.energyCost
+
+        if (firing.current && elapsed - lastShot.current > fireCooldown) {
+            if (!boosted && (!canFire.current || weaponEnergy.current < fireEnergyCost)) {
                 // Out of energy sound?
                 firing.current = false // Stop trying to fire automatically
                 canFire.current = false // Lockout until regen
                 return
             }
 
-            // Consume Energy
-            weaponEnergy.current -= LASER.energyCost
+            // Consume Energy (none if boosted)
+            weaponEnergy.current -= fireEnergyCost
 
             lastShot.current = elapsed
             sound.playLaser('player')
 
             // RECOIL
-            recoilImpulse.current = 0.4
+            recoilImpulse.current = boosted ? 0.2 : 0.4
 
             // CAMERA SHAKE REMOVED
 
@@ -842,7 +1105,7 @@ export const SpaceShooterScene = () => {
                     position: tempVecB.clone(),
                     rotation: projectileRot,
                     velocity: tempVecC.clone(),
-                    damage: 15, // Increased from 1
+                    damage: fireDamage, // 15 normal, 30 boosted
                     owner: 'PLAYER',
                     type: 'PLASMA',
                     createdAt: Date.now(),
@@ -872,7 +1135,8 @@ export const SpaceShooterScene = () => {
             </group>
 
             {/* COCKPIT and GUNS */}
-            <GunRig gunRef={gunRigRef} recoilImpulse={recoilImpulse} />
+            <GunRig gunRef={gunRigRef} recoilImpulse={recoilImpulse} weaponEnergy={weaponEnergy} />
+            <ShieldBubble active={shieldActive} flash={shieldFlash} />
 
             {/* SYSTEMS MOUNTED HERE */}
             <CollisionManager />
@@ -880,6 +1144,11 @@ export const SpaceShooterScene = () => {
             <ExplosionRenderer />
             <FloatingTextRenderer />
             <ProjectileRenderer />
+            <PickupRenderer
+                onHeal={(amount) => { hullRef.current = Math.min(100, hullRef.current + amount) }}
+                onShield={(amount) => { rechargeShields(amount) }}
+                onWeaponBoost={(duration) => { weaponBoostEnd.current = Date.now() + duration * 1000 }}
+            />
 
             {/* ENTITY RENDERING */}
             {enemies.map(enemy => (
@@ -887,6 +1156,13 @@ export const SpaceShooterScene = () => {
             ))}
 
             <PauseMenuXR />
+
+            {/* Game Over Screen - HTML overlay */}
+            {isGameOver && (
+                <Html fullscreen>
+                    <GameOverScreen />
+                </Html>
+            )}
         </group>
     )
 }
