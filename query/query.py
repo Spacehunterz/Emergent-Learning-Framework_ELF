@@ -134,6 +134,25 @@ except ImportError:
     except ImportError:
         PLAN_POSTMORTEM_AVAILABLE = False
 
+# Multi-model detection for orchestration
+try:
+    from query.model_detection import (
+        detect_installed_models,
+        format_models_for_context,
+        suggest_model_for_task
+    )
+    MODEL_DETECTION_AVAILABLE = True
+except ImportError:
+    try:
+        from model_detection import (
+            detect_installed_models,
+            format_models_for_context,
+            suggest_model_for_task
+        )
+        MODEL_DETECTION_AVAILABLE = True
+    except ImportError:
+        MODEL_DETECTION_AVAILABLE = False
+
 # Fix Windows console encoding for Unicode characters
 setup_windows_console()
 
@@ -2059,7 +2078,18 @@ class QuerySystem:
                 # Task context with building header
                 building_header = "🏢 Building Status\n━━━━━━━━━━━━━━━━━━\n\n"
                 location_info = f"**Location:** `{self.current_location}`\n\n"
-                context_parts.insert(0, f"{building_header}{location_info}# Task Context\n\n{task}\n\n---\n\n")
+
+                # Multi-model detection (if available)
+                model_info = ""
+                if MODEL_DETECTION_AVAILABLE:
+                    try:
+                        detected_models = detect_installed_models()
+                        model_info = format_models_for_context(detected_models)
+                        self._log_debug(f"Model detection successful, {len(model_info)} chars")
+                    except Exception as e:
+                        self._log_debug(f"Model detection failed: {e}")
+
+                context_parts.insert(0, f"{building_header}{location_info}{model_info}# Task Context\n\n{task}\n\n---\n\n")
 
             result = "".join(context_parts)
             self._log_debug(f"Built context with ~{len(result)//4} tokens")
