@@ -52,6 +52,23 @@ try:
 except ImportError:
     pass
 
+# Multi-model detection (optional)
+MODEL_DETECTION_AVAILABLE = False
+try:
+    try:
+        from query.model_detection import (
+            detect_installed_models,
+            format_models_for_context
+        )
+    except ImportError:
+        from model_detection import (
+            detect_installed_models,
+            format_models_for_context
+        )
+    MODEL_DETECTION_AVAILABLE = True
+except ImportError:
+    pass
+
 
 def get_depth_limits(depth: str) -> dict:
     """Get query limits based on depth level."""
@@ -620,6 +637,16 @@ class ContextBuilderMixin:
                 # Add location awareness header
                 location_info = f"**Location:** `{self.current_location}`\n\n"
                 building_header += location_info
+
+                # Multi-model detection (if available)
+                if MODEL_DETECTION_AVAILABLE:
+                    try:
+                        detected_models = detect_installed_models()
+                        model_info = format_models_for_context(detected_models)
+                        building_header += model_info
+                        self._log_debug(f"Model detection successful, {len(model_info)} chars")
+                    except Exception as e:
+                        self._log_debug(f"Model detection failed: {e}")
 
                 context_parts.insert(0, f"{building_header}# Task Context\n\n{task}\n\n---\n\n")
 
