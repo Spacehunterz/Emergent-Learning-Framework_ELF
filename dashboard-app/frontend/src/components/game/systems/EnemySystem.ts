@@ -6,7 +6,7 @@ export type EnemyType = 'drone' | 'scout' | 'fighter' | 'boss' | 'asteroid' | 'e
 export interface Enemy {
     id: string
     type: EnemyType
-    stage: 1 | 2 | 3 | 4
+    stage: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
     position: Vector3
     rotation: Quaternion
     hp: number
@@ -60,6 +60,11 @@ export const useEnemyStore = create<EnemyState>((set, get) => ({
         if (enemy.hp <= 0) {
             enemy.hp = 0
             enemy.isDead = true
+
+            // Dispatch enemy-killed event for overcharge system
+            window.dispatchEvent(new CustomEvent('enemy-killed', {
+                detail: { type: enemy.type, stage: enemy.stage }
+            }))
 
             // Random pickup drops from all enemies (stage 2+)
             if (enemy.stage > 1) {

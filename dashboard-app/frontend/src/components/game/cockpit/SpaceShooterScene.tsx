@@ -30,6 +30,24 @@ import {
 import {
     Stage4Asteroid, Stage4Drone, Stage4Fighter, Stage4Elite, Stage4Boss
 } from '../enemies/Stage4Enemies'
+import {
+    Stage5Asteroid, Stage5Drone, Stage5Fighter, Stage5Elite, Stage5Boss
+} from '../enemies/Stage5Enemies'
+import {
+    Stage6Asteroid, Stage6Drone, Stage6Fighter, Stage6Elite, Stage6Boss
+} from '../enemies/Stage6Enemies'
+import {
+    Stage7Asteroid, Stage7Drone, Stage7Fighter, Stage7Elite, Stage7Boss
+} from '../enemies/Stage7Enemies'
+import {
+    Stage8Asteroid, Stage8Drone, Stage8Fighter, Stage8Elite, Stage8Boss
+} from '../enemies/Stage8Enemies'
+import {
+    Stage9Asteroid, Stage9Drone, Stage9Fighter, Stage9Elite, Stage9Boss
+} from '../enemies/Stage9Enemies'
+import {
+    Stage10Asteroid, Stage10Drone, Stage10Fighter, Stage10Elite, Stage10Boss
+} from '../enemies/Stage10Enemies'
 
 // --- AMBIENCE CONTROLLER ---
 // Manages background ambience sound based on game state
@@ -540,12 +558,72 @@ const EntityRenderer = React.memo(({ data }: { data: Enemy }) => {
     }
 
     // Stage 4: Void themed (purple/white)
-    if (data.type === 'asteroid') return <Stage4Asteroid data={data} />
-    if (data.type === 'boss') return <Stage4Boss data={data} />
-    if (data.type === 'elite') return <Stage4Elite data={data} />
-    if (data.type === 'drone') return <Stage4Drone data={data} />
-    if (data.type === 'fighter') return <Stage4Fighter data={data} />
-    return <Stage4Fighter data={data} />
+    if (stage === 4) {
+        if (data.type === 'asteroid') return <Stage4Asteroid data={data} />
+        if (data.type === 'boss') return <Stage4Boss data={data} />
+        if (data.type === 'elite') return <Stage4Elite data={data} />
+        if (data.type === 'drone') return <Stage4Drone data={data} />
+        if (data.type === 'fighter') return <Stage4Fighter data={data} />
+        return <Stage4Fighter data={data} />
+    }
+
+    // Stage 5: Solar/Fire themed (orange/yellow/red)
+    if (stage === 5) {
+        if (data.type === 'asteroid') return <Stage5Asteroid data={data} />
+        if (data.type === 'boss') return <Stage5Boss data={data} />
+        if (data.type === 'elite') return <Stage5Elite data={data} />
+        if (data.type === 'drone') return <Stage5Drone data={data} />
+        if (data.type === 'fighter') return <Stage5Fighter data={data} />
+        return <Stage5Fighter data={data} />
+    }
+
+    // Stage 6: Ice/Crystal themed (blue/cyan/purple)
+    if (stage === 6) {
+        if (data.type === 'asteroid') return <Stage6Asteroid data={data} />
+        if (data.type === 'boss') return <Stage6Boss data={data} />
+        if (data.type === 'elite') return <Stage6Elite data={data} />
+        if (data.type === 'drone') return <Stage6Drone data={data} />
+        if (data.type === 'fighter') return <Stage6Fighter data={data} />
+        return <Stage6Fighter data={data} />
+    }
+
+    // Stage 7: Ancient/Relic themed (tan/bronze/gold)
+    if (stage === 7) {
+        if (data.type === 'asteroid') return <Stage7Asteroid data={data} />
+        if (data.type === 'boss') return <Stage7Boss data={data} />
+        if (data.type === 'elite') return <Stage7Elite data={data} />
+        if (data.type === 'drone') return <Stage7Drone data={data} />
+        if (data.type === 'fighter') return <Stage7Fighter data={data} />
+        return <Stage7Fighter data={data} />
+    }
+
+    // Stage 8: Swarm/Insect themed (green/yellow)
+    if (stage === 8) {
+        if (data.type === 'asteroid') return <Stage8Asteroid data={data} />
+        if (data.type === 'boss') return <Stage8Boss data={data} />
+        if (data.type === 'elite') return <Stage8Elite data={data} />
+        if (data.type === 'drone') return <Stage8Drone data={data} />
+        if (data.type === 'fighter') return <Stage8Fighter data={data} />
+        return <Stage8Fighter data={data} />
+    }
+
+    // Stage 9: Mechanical/Steampunk themed (copper/brass/bronze)
+    if (stage === 9) {
+        if (data.type === 'asteroid') return <Stage9Asteroid data={data} />
+        if (data.type === 'boss') return <Stage9Boss data={data} />
+        if (data.type === 'elite') return <Stage9Elite data={data} />
+        if (data.type === 'drone') return <Stage9Drone data={data} />
+        if (data.type === 'fighter') return <Stage9Fighter data={data} />
+        return <Stage9Fighter data={data} />
+    }
+
+    // Stage 10: Cosmic/Nebula themed (purple/pink/cyan) - also default fallback
+    if (data.type === 'asteroid') return <Stage10Asteroid data={data} />
+    if (data.type === 'boss') return <Stage10Boss data={data} />
+    if (data.type === 'elite') return <Stage10Elite data={data} />
+    if (data.type === 'drone') return <Stage10Drone data={data} />
+    if (data.type === 'fighter') return <Stage10Fighter data={data} />
+    return <Stage10Fighter data={data} />
 }, (prev, next) => prev.data.id === next.data.id && prev.data.hp === next.data.hp && prev.data.stage === next.data.stage)
 
 
@@ -751,6 +829,9 @@ export const SpaceShooterScene = () => {
     const weaponBoostEnd = useRef(0) // Timestamp when boost ends
     const isWeaponBoosted = () => Date.now() < weaponBoostEnd.current
 
+    // Overcharge system - builds from kills, middle mouse to activate turbo burst
+    const overchargeRef = useRef(0) // 0-100, full = 30s turbo
+
     // Shield system - right click to activate
     const shieldActive = useRef(false)
     const shieldFlash = useRef(0) // Flash intensity on hit
@@ -855,6 +936,27 @@ export const SpaceShooterScene = () => {
         return () => window.removeEventListener('pickup-collected', handlePickupCollected as EventListener)
     }, [rechargeShields])
 
+    // ENEMY KILLED HANDLER - builds overcharge from kills
+    useEffect(() => {
+        const handleEnemyKilled = (event: CustomEvent<{ type: string, stage: number }>) => {
+            const { type } = event.detail
+            // Different enemy types give different overcharge amounts
+            let chargeGain = 0
+            switch (type) {
+                case 'asteroid': chargeGain = 3; break
+                case 'drone': chargeGain = 5; break
+                case 'fighter': chargeGain = 8; break
+                case 'elite': chargeGain = 15; break
+                case 'boss': chargeGain = 30; break
+                default: chargeGain = 5
+            }
+            overchargeRef.current = Math.min(100, overchargeRef.current + chargeGain)
+        }
+
+        window.addEventListener('enemy-killed', handleEnemyKilled as EventListener)
+        return () => window.removeEventListener('enemy-killed', handleEnemyKilled as EventListener)
+    }, [])
+
     // INPUT HANDLING
     useEffect(() => {
         const handlePointerDown = (event: PointerEvent) => {
@@ -867,6 +969,16 @@ export const SpaceShooterScene = () => {
                     gl.domElement.requestPointerLock()?.catch?.(() => {
                         // Pointer lock may fail in certain contexts (XR, iframe, etc.) - game still works without it
                     })
+                }
+            }
+            // Middle click = activate overcharge turbo burst
+            if (event.button === 1) {
+                if (overchargeRef.current > 0) {
+                    // Duration scales with charge: 100% = 30s, 50% = 15s, etc.
+                    const durationSeconds = (overchargeRef.current / 100) * 30
+                    weaponBoostEnd.current = Date.now() + durationSeconds * 1000
+                    overchargeRef.current = 0 // Consume all charge
+                    sound.playLevelUp() // Satisfying activation sound
                 }
             }
             // Right click = shield
@@ -972,6 +1084,7 @@ export const SpaceShooterScene = () => {
         // For now, energy is the big one.
 
         hudRef.current.integrity = hullRef.current
+        hudRef.current.overcharge = overchargeRef.current
 
         const boss = enemies.find(e => e.type === 'boss')
         if (boss) {

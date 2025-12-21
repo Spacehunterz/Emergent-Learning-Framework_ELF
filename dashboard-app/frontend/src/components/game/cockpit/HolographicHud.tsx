@@ -10,6 +10,7 @@ export interface HudData {
     energy: number // 0-100
     shields: number // 0-100
     integrity: number // 0-100
+    overcharge: number // 0-100 - builds from kills, middle mouse to activate turbo
     score: number
     level: number
 }
@@ -22,6 +23,7 @@ export const DEFAULT_HUD_DATA: HudData = {
     energy: 100,
     shields: 100,
     integrity: 100,
+    overcharge: 0,
     score: 0,
     level: 1
 }
@@ -31,6 +33,7 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
     const shieldBarRef = useRef<THREE.Group>(null)
     const hullBarRef = useRef<THREE.Group>(null)
     const energyBarRef = useRef<THREE.Group>(null)
+    const overchargeBarRef = useRef<THREE.Group>(null)
     const bossBarRef = useRef<THREE.Group>(null)
 
     // Refs for Text components (Troika-three-text instances)
@@ -58,6 +61,10 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
         if (energyBarRef.current) {
             const target = Math.max(0, data.energy / 100)
             energyBarRef.current.scale.x = THREE.MathUtils.lerp(energyBarRef.current.scale.x, target, delta * 10)
+        }
+        if (overchargeBarRef.current) {
+            const target = Math.max(0, data.overcharge / 100)
+            overchargeBarRef.current.scale.x = THREE.MathUtils.lerp(overchargeBarRef.current.scale.x, target, delta * 8)
         }
 
         // Boss Bar Logic
@@ -191,6 +198,29 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                         <mesh position={[0.5, 0, 0]}>
                             <planeGeometry args={[1, 0.05]} />
                             <meshBasicMaterial color="#facc15" toneMapped={false} />
+                        </mesh>
+                    </group>
+                </group>
+
+                {/* Overcharge Bar (Magenta) - builds from kills, middle mouse to activate */}
+                <group position={[0, -0.30, 0]}>
+                    <Text
+                        position={[-0.6, 0, 0]}
+                        fontSize={0.08}
+                        color="#e879f9"
+                        anchorX="right"
+                        anchorY="middle"
+                    >
+                        OVERCHARGE
+                    </Text>
+                    <mesh position={[0, 0, 0]}>
+                        <planeGeometry args={[1, 0.06]} />
+                        <meshBasicMaterial color="#4a044e" transparent opacity={0.5} />
+                    </mesh>
+                    <group ref={overchargeBarRef} position={[-0.5, 0, 0.01]} scale-x={0}>
+                        <mesh position={[0.5, 0, 0]}>
+                            <planeGeometry args={[1, 0.05]} />
+                            <meshBasicMaterial color="#e879f9" toneMapped={false} />
                         </mesh>
                     </group>
                 </group>

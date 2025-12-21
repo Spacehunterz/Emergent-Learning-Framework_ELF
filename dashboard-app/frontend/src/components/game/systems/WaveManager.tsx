@@ -47,8 +47,8 @@ export const WaveManager = () => {
     const [, setPhase] = useState<GamePhase>('asteroid_intro')
     const phaseRef = useRef<GamePhase>('asteroid_intro')
 
-    // Stage tracking (1-4, cycles for endless mode)
-    const stageRef = useRef<1 | 2 | 3 | 4>(1)
+    // Stage tracking (1-10, cycles for endless mode)
+    const stageRef = useRef<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10>(1)
 
     // Timers
     const lastAsteroidSpawn = useRef(0)
@@ -411,8 +411,8 @@ export const WaveManager = () => {
             case 'victory': {
                 // PHASE 7: Victory - advance to next stage
                 if (phaseElapsed > 3000) {
-                    // Advance stage (1 → 2 → 3 → 4 → 1 for endless mode)
-                    const nextStage = stageRef.current === 4 ? 1 : (stageRef.current + 1) as 1 | 2 | 3 | 4
+                    // Advance stage (1 → 2 → ... → 10 → 1 for endless mode)
+                    const nextStage = stageRef.current === 10 ? 1 : (stageRef.current + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
                     stageRef.current = nextStage
 
                     // Restart the cycle with new stage
