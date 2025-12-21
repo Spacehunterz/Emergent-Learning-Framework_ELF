@@ -5,11 +5,12 @@ import { useGame } from '../../../context/GameContext'
 import { useProjectileStore } from './WeaponSystem'
 import { useEnemyStore, EnemyType } from './EnemySystem'
 import { useExplosionStore } from './ExplosionManager'
-// import { usePlayerState } from '../cockpit/PlayerShip' // Circular dep? Better to move store to separate file or use event.
+import { useDeathEffectsStore } from './DeathEffectsManager'
 import { useFloatingTextStore } from './FloatingTextManager'
 import { useSound } from './SoundManager'
 import { useGameSettings } from './GameSettings'
 import { usePickupStore, PICKUP_HIT_RADIUS } from './PickupSystem'
+import { usePlayerWeaponStore } from './PlayerWeaponStore'
 // For now, let's just assume we can get the player state or dispatch an event.
 // Actually, let's simple export the store from a new PlayerSystem file if we could, but for speed:
 // We will emit a custom event "player-hit" or just use a global store if possible.
@@ -29,8 +30,10 @@ export const CollisionManager = () => {
     const { projectiles, removeProjectile, updateProjectiles, spawnProjectile } = useProjectileStore()
     const { enemies, damageEnemy, tick } = useEnemyStore()
     const { spawnExplosion } = useExplosionStore()
+    const { spawnDeathEffect } = useDeathEffectsStore()
     const { spawnText } = useFloatingTextStore()
     const { addScore } = useGame()
+    const addCredits = usePlayerWeaponStore(s => s.addCredits)
     const sound = useSound()
     const { isPaused } = useGameSettings()
     const pickups = usePickupStore(s => s.pickups)
@@ -112,7 +115,7 @@ export const CollisionManager = () => {
                         velocity: velocity,
                         damage: fireConfig.damage,
                         owner: 'ENEMY',
-                        type: 'PLASMA',
+                        type: 'enemy_plasma',
                         createdAt: now,
                         lifetime: 4
                     })
@@ -148,22 +151,51 @@ export const CollisionManager = () => {
 
                         const dead = damageEnemy(e.id, p.damage)
                         if (dead) {
-                            spawnExplosion(e.position, e.type === 'boss' ? 'cyan' : 'orange', e.type === 'boss' ? 4 : 2)
-                            // Small explosions for smaller enemies, large for bigger ones
-                            const isLargeExplosion = e.type === 'boss' || e.type === 'elite' || e.type === 'fighter'
-                            sound.playExplosion(isLargeExplosion ? 'large' : 'small')
-                            // Score based on enemy type
-                            const scores: Record<string, number> = {
-                                asteroid: 50,
-                                drone: 100,
-                                fighter: 200,
-                                elite: 1000,
-                                boss: 5000
+                            // Spawn death effect based on enemy type
+                            const deathColors: Record<string, string> = {
+                                asteroid: '#ff6600',
+                                drone: '#00ff88',
+                                fighter: '#ff00ff',
+                                elite: '#ffaa00',
+                                boss: '#00ffff',
+                                scout: '#00ff88'
                             }
-                            const score = scores[e.type] || 100
+                            const deathScales: Record<string, number> = {
+                                asteroid: 1.5,
+                                drone: 0.8,
+                                fighter: 1.2,
+                                elite: 2.5,
+                                boss: 5,
+                                scout: 0.6
+                            }
+                            spawnDeathEffect(
+                                e.position.clone(),
+                                e.type,
+                                e.stage,
+                                deathColors[e.type] || '#ff6600',
+                                deathScales[e.type] || 1
+                            )
+
+                            // Also spawn legacy explosion for extra visual impact
+                            spawnExplosion(e.position, e.type === 'boss' ? 'cyan' : 'orange', e.type === 'boss' ? 4 : 2)
+
+                            // Play enemy-specific death sound
+                            sound.playEnemyDeath(e.type)
+
+                            // Score and credits based on enemy type
+                            const rewards: Record<string, { score: number, credits: number }> = {
+                                asteroid: { score: 50, credits: 25 },
+                                drone: { score: 100, credits: 50 },
+                                scout: { score: 100, credits: 50 },
+                                fighter: { score: 200, credits: 100 },
+                                elite: { score: 1000, credits: 500 },
+                                boss: { score: 5000, credits: 2500 }
+                            }
+                            const reward = rewards[e.type] || { score: 100, credits: 50 }
                             tempTextPos.copy(e.position).addScalar(2)
-                            spawnText(tempTextPos, `+${score}`, '#fbbf24', 1.5)
-                            addScore(score)
+                            spawnText(tempTextPos, `+${reward.score}`, '#fbbf24', 1.5)
+                            addScore(reward.score)
+                            addCredits(reward.credits)
                         }
                         break
                     }

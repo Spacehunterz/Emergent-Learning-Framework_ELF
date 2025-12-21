@@ -13,12 +13,15 @@ import { useProjectileStore } from '../systems/WeaponSystem'
 import { useSound } from '../systems/SoundManager'
 import { WaveManager } from '../systems/WaveManager'
 import { ExplosionRenderer } from '../systems/ExplosionManager'
+import { DeathEffectsRenderer } from '../systems/DeathEffectsManager'
 import { useGameSettings } from '../systems/GameSettings'
 import { PauseMenuXR } from '../ui/PauseMenuXR'
 import { GameOverScreen } from '../ui/GameOverScreen'
 import { FloatingTextRenderer } from '../systems/FloatingTextManager'
 import { useExplosionStore } from '../systems/ExplosionManager'
 import { PickupRenderer, usePickupStore } from '../systems/PickupSystem'
+import { usePlayerWeaponStore } from '../systems/PlayerWeaponStore'
+import { WEAPON_TYPES } from '../systems/WeaponTypes'
 
 // Stage-specific enemy meshes
 import {
@@ -87,8 +90,8 @@ const INPUT = {
 
 const LIMITS = {
     yaw: Math.PI / 2,
-    pitchMin: -Math.PI / 12, // Allow looking down ~15 degrees
-    pitchMax: Math.PI / 2.1
+    pitchMin: -Math.PI / 6, // Allow looking down ~30 degrees
+    pitchMax: Math.PI / 3   // Allow looking up ~60 degrees (was ~85, too extreme)
 }
 
 const LASER = {
@@ -795,7 +798,8 @@ export const SpaceShooterScene = () => {
     const mode = useXR((state) => state.mode)
     const isPresenting = mode === 'immersive-vr'
     const { rechargeShields, damageShields, shields, level, score, viewMode, setGameOver, triggerPlayerHit, isGameOver } = useGame()
-    const { isPaused } = useGameSettings()
+    const { isPaused, showMainMenu } = useGameSettings()
+    const isGamePaused = isPaused || showMainMenu // Combine pause states
     const isStaticView = viewMode === 'static'
 
     // SYSTEMS & STORES
@@ -803,6 +807,11 @@ export const SpaceShooterScene = () => {
     const { spawnProjectile } = useProjectileStore()
     const { spawnExplosion } = useExplosionStore()
     const sound = useSound()
+
+    // Player weapon system
+    const equippedWeaponId = usePlayerWeaponStore(s => s.equippedWeaponId)
+    const getEffectiveStats = usePlayerWeaponStore(s => s.getEffectiveStats)
+    const equippedWeapon = WEAPON_TYPES[equippedWeaponId] || WEAPON_TYPES.plasma_bolt
 
     // Local hull tracking for cockpit mode (shields come from GameContext)
     const hullRef = useRef(100)
@@ -879,7 +888,7 @@ export const SpaceShooterScene = () => {
                         velocity: reflectedVelocity,
                         damage: damage * 2, // Reflected shots do double damage
                         owner: 'PLAYER', // Now owned by player so it can hit enemies
-                        type: 'PLASMA',
+                        type: 'standard',
                         createdAt: Date.now(),
                         lifetime: 3
                     })
@@ -960,7 +969,7 @@ export const SpaceShooterScene = () => {
     // INPUT HANDLING
     useEffect(() => {
         const handlePointerDown = (event: PointerEvent) => {
-            if (isPresenting || isPaused) return
+            if (isPresenting || isGamePaused) return
             // Left click = fire
             if (event.button === 0) {
                 firing.current = true
@@ -987,7 +996,7 @@ export const SpaceShooterScene = () => {
             }
         }
         const handlePointerUp = (event: PointerEvent) => {
-            if (isPresenting || isPaused) return
+            if (isPresenting || isGamePaused) return
             if (event.button === 0) firing.current = false
             if (event.button === 2) shieldActive.current = false
         }
@@ -995,7 +1004,7 @@ export const SpaceShooterScene = () => {
             event.preventDefault() // Prevent right-click menu
         }
         const handleMouseMove = (event: MouseEvent) => {
-            if (isPresenting || isPaused) return
+            if (isPresenting || isGamePaused) return
             if (isStaticView) {
                 const normX = (event.clientX / window.innerWidth) * 2 - 1
                 const normY = (event.clientY / window.innerHeight) * 2 - 1
@@ -1010,16 +1019,20 @@ export const SpaceShooterScene = () => {
             targetAngles.current.pitch = THREE.MathUtils.clamp(targetAngles.current.pitch, LIMITS.pitchMin, LIMITS.pitchMax)
         }
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (isPaused) return
+            if (isGamePaused) return
             if (event.code === 'Space') firing.current = true
         }
         const handleKeyUp = (event: KeyboardEvent) => {
-            if (isPaused) return
+            if (isGamePaused) return
             if (event.code === 'Space') firing.current = false
         }
         const handlePointerLockChange = () => {
+            const wasLocked = pointerLocked.current
             pointerLocked.current = document.pointerLockElement === gl.domElement
-            if (!pointerLocked.current && !isPresenting && !isStaticView) {
+
+            // Sync targetAngles to aimAngles on ANY pointer lock change
+            // This prevents the camera from snapping back to old positions
+            if (!isPresenting && !isStaticView) {
                 targetAngles.current.yaw = aimAngles.current.yaw
                 targetAngles.current.pitch = aimAngles.current.pitch
             }
@@ -1042,16 +1055,16 @@ export const SpaceShooterScene = () => {
             window.removeEventListener('contextmenu', handleContextMenu)
             document.removeEventListener('pointerlockchange', handlePointerLockChange)
         }
-    }, [gl, isPresenting, isPaused, isStaticView])
+    }, [gl, isPresenting, isGamePaused, isStaticView])
 
     useEffect(() => {
-        if (isPaused && document.pointerLockElement === gl.domElement) {
+        if (isGamePaused && document.pointerLockElement === gl.domElement) {
             document.exitPointerLock()
         }
-        if (isPaused) {
+        if (isGamePaused) {
             firing.current = false
         }
-    }, [gl, isPaused])
+    }, [gl, isGamePaused])
 
     useEffect(() => {
         if (isStaticView && document.pointerLockElement === gl.domElement) {
@@ -1062,7 +1075,7 @@ export const SpaceShooterScene = () => {
     const recoilImpulse = useRef(0)
 
     useFrame((state, delta) => {
-        if (isPaused) {
+        if (isGamePaused) {
             firing.current = false
             return
         }
@@ -1169,11 +1182,15 @@ export const SpaceShooterScene = () => {
         }
 
         // --- FIRING LOGIC ---
+        // Get equipped weapon's effective stats (with upgrades applied)
+        const weaponStats = getEffectiveStats(equippedWeaponId)
+        const baseFireCooldown = 1 / equippedWeapon.fireRate // Convert shots/sec to seconds
+
         // Turbo mode: faster fire rate (0.15s cooldown), no energy cost, more damage
         const boosted = isWeaponBoosted()
-        const fireCooldown = boosted ? 0.15 : LASER.cooldown
-        const fireDamage = boosted ? 30 : 15
-        const fireEnergyCost = boosted ? 0 : LASER.energyCost
+        const fireCooldown = boosted ? 0.15 : baseFireCooldown
+        const fireDamage = boosted ? weaponStats.damage * 2 : weaponStats.damage
+        const fireEnergyCost = boosted ? 0 : weaponStats.energyCost
 
         if (firing.current && elapsed - lastShot.current > fireCooldown) {
             if (!boosted && (!canFire.current || weaponEnergy.current < fireEnergyCost)) {
@@ -1194,7 +1211,8 @@ export const SpaceShooterScene = () => {
 
             // CAMERA SHAKE REMOVED
 
-            tempVecC.copy(aimDir.current).multiplyScalar(LASER.speed)
+            const weaponSpeed = equippedWeapon.speed
+            tempVecC.copy(aimDir.current).multiplyScalar(weaponSpeed)
             // Spawn dual bolts
             // CONVERGENT AIM: Calculate point 100m in front of camera
             const convergeDist = 100
@@ -1207,7 +1225,7 @@ export const SpaceShooterScene = () => {
                 tempVecB.copy(offset).applyQuaternion(rotation).add(tempVecA)
 
                 // Velocity Vector: (Target - Muzzle).normalize() * speed
-                tempVecC.copy(targetPoint).sub(tempVecB).normalize().multiplyScalar(LASER.speed)
+                tempVecC.copy(targetPoint).sub(tempVecB).normalize().multiplyScalar(weaponSpeed)
 
                 // Align projectile: Visual points +Z, so align +Z to velocity dir
                 const dir = tempVecC.clone().normalize()
@@ -1218,11 +1236,13 @@ export const SpaceShooterScene = () => {
                     position: tempVecB.clone(),
                     rotation: projectileRot,
                     velocity: tempVecC.clone(),
-                    damage: fireDamage, // 15 normal, 30 boosted
+                    damage: fireDamage,
                     owner: 'PLAYER',
-                    type: 'PLASMA',
+                    type: equippedWeapon.projectileType,
                     createdAt: Date.now(),
-                    lifetime: LASER.lifetime
+                    lifetime: LASER.lifetime,
+                    colors: equippedWeapon.colors,
+                    special: equippedWeapon.special
                 })
             }
         }
@@ -1255,6 +1275,7 @@ export const SpaceShooterScene = () => {
             <CollisionManager />
             <WaveManager />
             <ExplosionRenderer />
+            <DeathEffectsRenderer />
             <FloatingTextRenderer />
             <ProjectileRenderer />
             <PickupRenderer

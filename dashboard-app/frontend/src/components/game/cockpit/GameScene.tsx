@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { XR } from '@react-three/xr'
 import { SpaceShooterScene } from './SpaceShooterScene'
 import { PauseMenu } from '../ui/PauseMenu'
+import { MainMenu } from '../ui/MainMenu'
 import { useGameSettings } from '../systems/GameSettings'
 import { xrStore } from '../../xr/xrStore'
 
@@ -45,7 +46,7 @@ class GameErrorBoundary extends Component<{ children: ReactNode }, { hasError: b
 }
 
 export const GameScene = () => {
-    const { isPaused, setPaused } = useGameSettings()
+    const { isPaused, setPaused, showMainMenu } = useGameSettings()
     const [vrSupported, setVrSupported] = useState(false)
 
     useEffect(() => {
@@ -94,8 +95,12 @@ export const GameScene = () => {
     return (
         <GameErrorBoundary>
             <div className="fixed inset-0 z-50 bg-black">
-                <PauseMenu />
-                {vrSupported && (
+                {/* Main Menu Overlay */}
+                <MainMenu />
+
+                {/* Only show pause menu and VR button when not in main menu */}
+                {!showMainMenu && <PauseMenu />}
+                {!showMainMenu && vrSupported && (
                     <button
                         onClick={() => xrStore.enterVR()}
                         className="!absolute !bottom-6 !left-1/2 !-translate-x-1/2 !z-[60] !bg-slate-900/90 !border !border-indigo-500/50 !text-indigo-100 !font-mono !tracking-widest !uppercase !px-6 !py-3 !rounded-lg hover:!bg-indigo-900/80 transition-colors"
