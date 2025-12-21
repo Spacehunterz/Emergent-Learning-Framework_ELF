@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Vector3, Quaternion } from 'three'
+import { Vector3, Quaternion, MathUtils } from 'three'
 
 export type EnemyType = 'drone' | 'scout' | 'fighter' | 'boss' | 'asteroid' | 'elite'
 
@@ -15,6 +15,9 @@ export interface Enemy {
     aiPattern: 'direct' | 'strafe' | 'circle' | 'swoop' | 'drift'
     seed: number
     createdAt: number
+    wallAnchor: Vector3
+    wallOffset: Vector3
+    wallPhase: number
 }
 
 interface EnemyState {
@@ -84,45 +87,54 @@ export const useEnemyStore = create<EnemyState>((set, get) => ({
                 continue
             }
 
-            if (e.aiPattern === 'strafe') {
-                const strafeSpeed = e.type === 'fighter'
-                    ? GAME_CONFIG.ENEMIES.SPEEDS.STRAFE_ADVANCE_FIGHTER
-                    : GAME_CONFIG.ENEMIES.SPEEDS.STRAFE_ADVANCE_DRONE
-                z += strafeSpeed * delta
-                x += Math.sin(time * 2 + e.seed) * 30 * delta
-                y += Math.cos(time * 1.5 + e.seed) * 15 * delta
-            } else if (e.aiPattern === 'circle') {
-                const angle = Math.atan2(x, z)
-                const dist = Math.sqrt(x * x + z * z)
-                const newDist = dist - (5 * delta)
-                const newAngle = angle + (1 * delta)
-                x = Math.sin(newAngle) * newDist
-                z = Math.cos(newAngle) * newDist
-                y += Math.sin(time + e.seed) * 10 * delta
-            } else if (e.aiPattern === 'swoop') {
-                const diveSpeed = GAME_CONFIG.ENEMIES.SPEEDS.SWOOP_DIVE * delta
-                z += diveSpeed
-                if (z < -20 && z > -60) {
-                    y -= 20 * delta
-                } else if (z > -10) {
-                    y += 20 * delta
-                }
-            } else if (e.aiPattern === 'drift') {
-                const driftSpeed = GAME_CONFIG.ENEMIES.SPEEDS.DRIFT * delta
-                z += driftSpeed * 1.2
-                x += Math.sin(time * 0.5 + e.seed) * 5 * delta
-                y += Math.cos(time * 0.8 + e.seed) * 3 * delta
-            } else if (e.type === 'asteroid') {
-                const speed = GAME_CONFIG.ENEMIES.SPEEDS.ASTEROID * delta
-                z += speed
-            } else {
-                const speed = e.type === 'fighter'
-                    ? GAME_CONFIG.ENEMIES.SPEEDS.FIGHTER
-                    : GAME_CONFIG.ENEMIES.SPEEDS.DRONE
-                z += speed * delta
-                x += Math.cos(time * 3 + e.seed) * 10 * delta
-                y += Math.sin(time * 3 + e.seed) * 10 * delta
+            if (!e.wallAnchor) {
+                e.wallAnchor = e.position.clone()
+                e.wallOffset = new Vector3()
+                e.wallPhase = e.seed * Math.PI * 2
             }
+
+            const anchor = e.wallAnchor
+            const offset = e.wallOffset
+            const phase = e.wallPhase
+
+            let swayX = Math.sin(time * 0.9 + phase) * 2
+            let swayY = Math.cos(time * 1.1 + phase) * 2
+            let swayZ = Math.sin(time * 0.6 + phase) * 1.2
+
+            if (e.aiPattern === 'strafe') {
+                swayX += Math.sin(time * 2.1 + phase) * 8
+                swayY += Math.cos(time * 1.6 + phase) * 3
+            } else if (e.aiPattern === 'circle') {
+                swayX += Math.cos(time * 1.0 + phase) * 6
+                swayY += Math.sin(time * 1.0 + phase) * 6
+            } else if (e.aiPattern === 'swoop') {
+                swayY += Math.sin(time * 1.5 + phase) * 8
+                swayZ += Math.sin(time * 1.2 + phase) * 2.5
+            } else if (e.aiPattern === 'drift') {
+                swayX += Math.sin(time * 0.5 + phase) * 5
+                swayY += Math.cos(time * 0.7 + phase) * 4
+                swayZ += Math.sin(time * 0.4 + phase) * 2
+            } else {
+                swayX += Math.cos(time * 1.3 + phase) * 3
+                swayY += Math.sin(time * 1.2 + phase) * 3
+            }
+
+            if (e.type === 'asteroid') {
+                swayX += Math.sin(time * 0.35 + phase) * 6
+                swayY += Math.cos(time * 0.45 + phase) * 6
+                swayZ += Math.sin(time * 0.3 + phase) * 2.5
+            }
+
+            const typeScale = e.type === 'elite' ? 1.4 : e.type === 'fighter' ? 1.2 : e.type === 'asteroid' ? 1.6 : 1
+            const follow = e.type === 'asteroid' ? 1.6 : e.type === 'elite' ? 2.6 : 3
+
+            const targetX = anchor.x + offset.x + (swayX * typeScale)
+            const targetY = anchor.y + offset.y + (swayY * typeScale)
+            const targetZ = Math.min(anchor.z + offset.z + (swayZ * typeScale), -8)
+
+            x = MathUtils.lerp(x, targetX, delta * follow)
+            y = MathUtils.lerp(y, targetY, delta * follow)
+            z = MathUtils.lerp(z, targetZ, delta * follow)
 
             // Movement Constraint
             if (y < -10) y = -10
