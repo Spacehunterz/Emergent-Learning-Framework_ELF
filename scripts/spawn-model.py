@@ -23,6 +23,7 @@ import sys
 import os
 import json
 import yaml
+import shlex
 import re
 from pathlib import Path
 from datetime import datetime
@@ -85,11 +86,24 @@ def run_gemini(prompt: str, timeout: int = 120) -> Dict[str, Any]:
 
 
 def run_codex(prompt: str, timeout: int = 120, mode: str = 'exec') -> Dict[str, Any]:
-    """Run a prompt through Codex CLI."""
+    """Run a prompt through Codex CLI.
+
+    Codex CLI usage: codex exec "your prompt here"
+    The prompt should be properly escaped for shell execution.
+    """
     try:
         # Use shell=True on Windows for proper .CMD file resolution
         use_shell = sys.platform == 'win32'
-        cmd = f'codex {mode} "{prompt}"' if use_shell else ['codex', mode, prompt]
+
+        if use_shell:
+            # Windows: escape the prompt for CMD shell
+            # Replace double quotes with escaped quotes, handle special chars
+            escaped_prompt = prompt.replace('"', '\\"').replace('\n', ' ')
+            cmd = f'codex {mode} "{escaped_prompt}"'
+        else:
+            # Unix: use shlex for proper escaping, or pass as list (safer)
+            cmd = ['codex', mode, prompt]
+
         result = subprocess.run(
             cmd,
             capture_output=True,
