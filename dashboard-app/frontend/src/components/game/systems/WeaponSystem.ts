@@ -2,6 +2,19 @@ import { create } from 'zustand'
 import { Vector3, Quaternion } from 'three'
 import { GameItem } from './ItemDatabase'
 
+// Projectile types matching WeaponTypes.ts projectileType values
+export type ProjectileType =
+    | 'standard'           // Basic plasma bolt
+    | 'expanding_wave'     // Ripple cannon - expands outward
+    | 'chain'              // Chain lightning - bounces between targets
+    | 'piercing'           // Ballistic railgun - goes through enemies
+    | 'spread'             // Plasma scatter - shotgun pellets
+    | 'gravity'            // Gravitas anchor - gravity well
+    | 'grid'               // Photon lattice - laser grid
+    | 'delayed_burst'      // Nova spike - sticks then explodes
+    | 'spiral'             // Phase winder - spiraling double-hit
+    | 'enemy_plasma'       // Enemy default projectile
+
 export interface Projectile {
     id: string
     position: Vector3
@@ -9,9 +22,43 @@ export interface Projectile {
     velocity: Vector3
     damage: number
     owner: 'PLAYER' | 'ENEMY'
-    type: 'PLASMA' | 'MINING'
+    type: ProjectileType
     createdAt: number
     lifetime: number // seconds
+    colors?: string[] // Weapon colors for rendering
+    // Special properties for advanced projectiles
+    special?: {
+        // Expanding wave
+        currentRadius?: number
+        maxRadius?: number
+        expandRate?: number
+        // Chain lightning
+        bounceCount?: number
+        maxBounces?: number
+        bounceRange?: number
+        hitEnemies?: string[]
+        // Piercing
+        pierceCount?: number
+        // Gravity well
+        isDeployed?: boolean
+        pullRadius?: number
+        pullStrength?: number
+        // Grid
+        gridSize?: number
+        lineCount?: number
+        // Delayed burst
+        stuckToEnemy?: string
+        stickTimer?: number
+        explosionRadius?: number
+        explosionDamage?: number
+        // Spiral
+        spiralPhase?: number
+        spiralRadius?: number
+        spiralSpeed?: number
+        hitsRemaining?: number
+        // Colors for rendering
+        colors?: string[]
+    }
 }
 
 interface ProjectileState {

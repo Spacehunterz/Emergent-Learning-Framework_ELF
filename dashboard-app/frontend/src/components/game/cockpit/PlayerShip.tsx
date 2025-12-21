@@ -324,7 +324,7 @@ export const PlayerShip = () => {
                         velocity: tempVector2.current.clone().multiplyScalar(GAME_CONFIG.WEAPONS.PLAYER_PLASMA.SPEED),
                         damage: GAME_CONFIG.WEAPONS.PLAYER_PLASMA.DAMAGE,
                         owner: 'PLAYER',
-                        type: 'PLASMA',
+                        type: 'standard',
                         createdAt: Date.now(),
                         lifetime: GAME_CONFIG.WEAPONS.PLAYER_PLASMA.LIFETIME
                     })

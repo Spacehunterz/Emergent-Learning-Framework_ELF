@@ -129,13 +129,13 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                 </mesh>
             </group>
 
-            {/* Left Panel: Status */}
-            <group position={[-1.2, -0.6, 0]} rotation={[0, 0.2, 0]}>
+            {/* Left Panel: Status (75% scale, positioned to avoid gun barrels) */}
+            <group position={[-1.4, -0.55, 0]} rotation={[0, 0.2, 0]}>
                 {/* Shield Bar (Cyan) */}
-                <group position={[0, 0.15, 0]}>
+                <group position={[0, 0.11, 0]}>
                     <Text
-                        position={[-0.6, 0, 0]}
-                        fontSize={0.08}
+                        position={[-0.45, 0, 0]}
+                        fontSize={0.06}
                         color="#38bdf8"
                         anchorX="right"
                         anchorY="middle"
@@ -144,13 +144,13 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                     </Text>
                     {/* Bar Background */}
                     <mesh position={[0, 0, 0]}>
-                        <planeGeometry args={[1, 0.06]} />
+                        <planeGeometry args={[0.75, 0.045]} />
                         <meshBasicMaterial color="#0c4a6e" transparent opacity={0.5} />
                     </mesh>
                     {/* Bar Fill */}
-                    <group ref={shieldBarRef} position={[-0.5, 0, 0.01]}>
-                        <mesh position={[0.5, 0, 0]}>
-                            <planeGeometry args={[1, 0.05]} />
+                    <group ref={shieldBarRef} position={[-0.375, 0, 0.01]}>
+                        <mesh position={[0.375, 0, 0]}>
+                            <planeGeometry args={[0.75, 0.038]} />
                             <meshBasicMaterial color="#38bdf8" toneMapped={false} />
                         </mesh>
                     </group>
@@ -159,8 +159,8 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                 {/* Hull Bar (Red) */}
                 <group position={[0, 0, 0]}>
                     <Text
-                        position={[-0.6, 0, 0]}
-                        fontSize={0.08}
+                        position={[-0.45, 0, 0]}
+                        fontSize={0.06}
                         color="#f43f5e"
                         anchorX="right"
                         anchorY="middle"
@@ -168,22 +168,22 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                         INTEGRITY
                     </Text>
                     <mesh position={[0, 0, 0]}>
-                        <planeGeometry args={[1, 0.06]} />
+                        <planeGeometry args={[0.75, 0.045]} />
                         <meshBasicMaterial color="#881337" transparent opacity={0.5} />
                     </mesh>
-                    <group ref={hullBarRef} position={[-0.5, 0, 0.01]}>
-                        <mesh position={[0.5, 0, 0]}>
-                            <planeGeometry args={[1, 0.05]} />
+                    <group ref={hullBarRef} position={[-0.375, 0, 0.01]}>
+                        <mesh position={[0.375, 0, 0]}>
+                            <planeGeometry args={[0.75, 0.038]} />
                             <meshBasicMaterial color="#f43f5e" toneMapped={false} />
                         </mesh>
                     </group>
                 </group>
 
                 {/* Energy Bar (Yellow) */}
-                <group position={[0, -0.15, 0]}>
+                <group position={[0, -0.11, 0]}>
                     <Text
-                        position={[-0.6, 0, 0]}
-                        fontSize={0.08}
+                        position={[-0.45, 0, 0]}
+                        fontSize={0.06}
                         color="#facc15"
                         anchorX="right"
                         anchorY="middle"
@@ -191,22 +191,22 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                         ENERGY
                     </Text>
                     <mesh position={[0, 0, 0]}>
-                        <planeGeometry args={[1, 0.06]} />
+                        <planeGeometry args={[0.75, 0.045]} />
                         <meshBasicMaterial color="#422006" transparent opacity={0.5} />
                     </mesh>
-                    <group ref={energyBarRef} position={[-0.5, 0, 0.01]}>
-                        <mesh position={[0.5, 0, 0]}>
-                            <planeGeometry args={[1, 0.05]} />
+                    <group ref={energyBarRef} position={[-0.375, 0, 0.01]}>
+                        <mesh position={[0.375, 0, 0]}>
+                            <planeGeometry args={[0.75, 0.038]} />
                             <meshBasicMaterial color="#facc15" toneMapped={false} />
                         </mesh>
                     </group>
                 </group>
 
                 {/* Overcharge Bar (Magenta) - builds from kills, middle mouse to activate */}
-                <group position={[0, -0.30, 0]}>
+                <group position={[0, -0.22, 0]}>
                     <Text
-                        position={[-0.6, 0, 0]}
-                        fontSize={0.08}
+                        position={[-0.45, 0, 0]}
+                        fontSize={0.06}
                         color="#e879f9"
                         anchorX="right"
                         anchorY="middle"
@@ -214,24 +214,24 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                         OVERCHARGE
                     </Text>
                     <mesh position={[0, 0, 0]}>
-                        <planeGeometry args={[1, 0.06]} />
+                        <planeGeometry args={[0.75, 0.045]} />
                         <meshBasicMaterial color="#4a044e" transparent opacity={0.5} />
                     </mesh>
-                    <group ref={overchargeBarRef} position={[-0.5, 0, 0.01]} scale-x={0}>
-                        <mesh position={[0.5, 0, 0]}>
-                            <planeGeometry args={[1, 0.05]} />
+                    <group ref={overchargeBarRef} position={[-0.375, 0, 0.01]} scale-x={0}>
+                        <mesh position={[0.375, 0, 0]}>
+                            <planeGeometry args={[0.75, 0.038]} />
                             <meshBasicMaterial color="#e879f9" toneMapped={false} />
                         </mesh>
                     </group>
                 </group>
             </group>
 
-            {/* Right Panel: Data */}
-            <group position={[1.2, -0.6, 0]} rotation={[0, -0.2, 0]}>
+            {/* Right Panel: Data (75% scale, positioned to avoid gun barrels) */}
+            <group position={[1.4, -0.55, 0]} rotation={[0, -0.2, 0]}>
                 <Text
                     ref={scoreTextRef}
-                    position={[0, 0.15, 0]}
-                    fontSize={0.12}
+                    position={[0, 0.11, 0]}
+                    fontSize={0.09}
                     color="#facc15"
                     anchorX="left"
                     anchorY="middle"
@@ -241,7 +241,7 @@ export const HolographicHud = ({ hudRef }: { hudRef: React.MutableRefObject<HudD
                 <Text
                     ref={levelTextRef}
                     position={[0, 0, 0]}
-                    fontSize={0.09}
+                    fontSize={0.068}
                     color="#ffffff"
                     anchorX="left"
                     anchorY="middle"

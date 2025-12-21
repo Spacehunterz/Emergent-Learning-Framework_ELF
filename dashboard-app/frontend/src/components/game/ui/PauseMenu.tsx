@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
+import { ShoppingCart } from 'lucide-react'
 import { useGameSettings } from '../systems/GameSettings'
 import { useGame } from '../../../context/GameContext'
+import { WeaponShop } from './WeaponShop'
+import { usePlayerWeaponStore } from '../systems/PlayerWeaponStore'
 
 export const PauseMenu = () => {
     const {
@@ -10,10 +13,14 @@ export const PauseMenu = () => {
     } = useGameSettings()
     const { setGameEnabled } = useGame()
     const [exitHint, setExitHint] = useState(false)
+    const [shopOpen, setShopOpen] = useState(false)
+    const credits = usePlayerWeaponStore(s => s.credits)
 
     useEffect(() => {
         if (isPaused) {
             setExitHint(false)
+        } else {
+            setShopOpen(false) // Close shop when unpausing
         }
     }, [isPaused])
 
@@ -86,12 +93,25 @@ export const PauseMenu = () => {
                     </div>
                 </div>
 
+                {/* Credits Display */}
+                <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-center justify-between">
+                    <span className="text-sm text-yellow-400">CREDITS</span>
+                    <span className="text-xl font-bold text-yellow-400 font-mono">{credits.toLocaleString()}</span>
+                </div>
+
                 <div className="mt-6 grid gap-3">
                     <button
                         onClick={handleResume}
                         className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 rounded text-white font-bold"
                     >
                         RESUME
+                    </button>
+                    <button
+                        onClick={() => setShopOpen(true)}
+                        className="w-full py-3 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 rounded text-white font-bold flex items-center justify-center gap-2"
+                    >
+                        <ShoppingCart className="w-5 h-5" />
+                        WEAPON SHOP
                     </button>
                     <button
                         onClick={handleExitToDashboard}
@@ -113,6 +133,9 @@ export const PauseMenu = () => {
                     </div>
                 )}
             </div>
+
+            {/* Weapon Shop Modal */}
+            <WeaponShop isOpen={shopOpen} onClose={() => setShopOpen(false)} />
         </div>
     )
 }
