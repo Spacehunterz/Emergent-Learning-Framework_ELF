@@ -47,7 +47,7 @@ const StandardProjectile = React.memo(({ data }: { data: Projectile }) => {
     )
 })
 
-// Expanding wave projectile (Ripple Cannon)
+// Expanding wave projectile (Ripple Cannon) - vertical wave that expands outward
 const ExpandingWaveProjectile = React.memo(({ data }: { data: Projectile }) => {
     const groupRef = useRef<THREE.Group>(null)
     const ringRef = useRef<THREE.Mesh>(null)
@@ -67,8 +67,8 @@ const ExpandingWaveProjectile = React.memo(({ data }: { data: Projectile }) => {
 
     return (
         <group ref={groupRef}>
-            {/* Expanding ring */}
-            <mesh ref={ringRef} rotation={[Math.PI / 2, 0, 0]}>
+            {/* Expanding ring - vertical orientation (faces forward, expands in Y/X plane) */}
+            <mesh ref={ringRef}>
                 <ringGeometry args={[8, 10, 32]} />
                 <meshBasicMaterial
                     color={colors[0]}
@@ -79,8 +79,8 @@ const ExpandingWaveProjectile = React.memo(({ data }: { data: Projectile }) => {
                     depthWrite={false}
                 />
             </mesh>
-            {/* Inner glow */}
-            <mesh rotation={[Math.PI / 2, 0, 0]}>
+            {/* Inner glow - vertical orientation */}
+            <mesh>
                 <ringGeometry args={[0, 8, 32]} />
                 <meshBasicMaterial
                     color={colors[1]}
@@ -174,13 +174,13 @@ const PiercingProjectile = React.memo(({ data }: { data: Projectile }) => {
                 <cylinderGeometry args={[0.1, 0.3, 20, 6]} />
                 <meshBasicMaterial color={colors[1]} toneMapped={false} />
             </mesh>
-            {/* Trail effect */}
-            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 15, 0]}>
-                <cylinderGeometry args={[0.05, 0.1, 30, 6]} />
+            {/* Trail effect - positioned behind the main beam */}
+            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 12]}>
+                <cylinderGeometry args={[0.03, 0.08, 24, 6]} />
                 <meshBasicMaterial
                     color={colors[0]}
                     transparent
-                    opacity={0.5}
+                    opacity={0.4}
                     blending={THREE.AdditiveBlending}
                     depthWrite={false}
                 />
@@ -425,14 +425,22 @@ const DelayedBurstProjectile = React.memo(({ data }: { data: Projectile }) => {
     )
 })
 
-// Spiral projectile (Phase Winder)
+// Spiral projectile (Phase Winder) - ENHANCED: larger, more distinctive visual
 const SpiralProjectile = React.memo(({ data }: { data: Projectile }) => {
     const groupRef = useRef<THREE.Group>(null)
+    const bridgeRef = useRef<THREE.Mesh>(null)
+    const core1Ref = useRef<THREE.Mesh>(null)
+    const core2Ref = useRef<THREE.Mesh>(null)
+    const halo1Ref = useRef<THREE.Mesh>(null)
+    const halo2Ref = useRef<THREE.Mesh>(null)
     const phaseRef = useRef(data.special?.spiralPhase || 0)
+    const pulseRef = useRef(0)
 
     useFrame((_, delta) => {
         const spiralSpeed = data.special?.spiralSpeed || 15
         phaseRef.current += delta * spiralSpeed
+        pulseRef.current += delta * 20 // Pulse animation
+
         if (groupRef.current) {
             groupRef.current.position.copy(data.position)
             // Add spiral offset
@@ -440,39 +448,97 @@ const SpiralProjectile = React.memo(({ data }: { data: Projectile }) => {
             groupRef.current.position.x += Math.cos(phaseRef.current) * spiralRadius
             groupRef.current.position.y += Math.sin(phaseRef.current) * spiralRadius
         }
+
+        // Animate pulse scale
+        const pulseScale = 1 + Math.sin(pulseRef.current) * 0.15
+        if (core1Ref.current) core1Ref.current.scale.setScalar(pulseScale)
+        if (core2Ref.current) core2Ref.current.scale.setScalar(pulseScale)
+        if (halo1Ref.current) halo1Ref.current.scale.setScalar(pulseScale * 1.3)
+        if (halo2Ref.current) halo2Ref.current.scale.setScalar(pulseScale * 1.3)
+
+        // Spin the energy bridge
+        if (bridgeRef.current) {
+            bridgeRef.current.rotation.z = phaseRef.current * 0.5
+        }
     })
 
     const colors = data.colors || ['#e879f9', '#22d3ee', '#ffffff']
 
     return (
         <group ref={groupRef} quaternion={data.rotation}>
-            {/* Twin cores */}
-            <mesh position={[1, 0, 0]}>
-                <sphereGeometry args={[0.6, 8, 8]} />
+            {/* PRIMARY CORES - Large glowing orbs */}
+            <mesh ref={core1Ref} position={[2.5, 0, 0]}>
+                <sphereGeometry args={[1.2, 12, 12]} />
                 <meshBasicMaterial color={colors[0]} toneMapped={false} />
             </mesh>
-            <mesh position={[-1, 0, 0]}>
-                <sphereGeometry args={[0.6, 8, 8]} />
+            <mesh ref={core2Ref} position={[-2.5, 0, 0]}>
+                <sphereGeometry args={[1.2, 12, 12]} />
                 <meshBasicMaterial color={colors[1]} toneMapped={false} />
             </mesh>
-            {/* Connecting beam */}
-            <mesh>
-                <cylinderGeometry args={[0.2, 0.2, 2, 6]} />
+
+            {/* OUTER GLOW HALOS around cores */}
+            <mesh ref={halo1Ref} position={[2.5, 0, 0]}>
+                <sphereGeometry args={[1.8, 8, 8]} />
                 <meshBasicMaterial
-                    color={colors[2]}
+                    color={colors[0]}
                     transparent
-                    opacity={0.8}
+                    opacity={0.4}
                     blending={THREE.AdditiveBlending}
                     depthWrite={false}
                 />
             </mesh>
-            {/* Trail glow */}
-            <mesh rotation={[Math.PI / 2, 0, 0]}>
-                <cylinderGeometry args={[0.8, 0.3, 6, 8]} />
+            <mesh ref={halo2Ref} position={[-2.5, 0, 0]}>
+                <sphereGeometry args={[1.8, 8, 8]} />
+                <meshBasicMaterial
+                    color={colors[1]}
+                    transparent
+                    opacity={0.4}
+                    blending={THREE.AdditiveBlending}
+                    depthWrite={false}
+                />
+            </mesh>
+
+            {/* ENERGY BRIDGE connecting cores - rotating */}
+            <mesh ref={bridgeRef}>
+                <cylinderGeometry args={[0.4, 0.4, 5, 8]} />
+                <meshBasicMaterial
+                    color={colors[2]}
+                    transparent
+                    opacity={0.9}
+                    blending={THREE.AdditiveBlending}
+                    depthWrite={false}
+                />
+            </mesh>
+
+            {/* SPIRAL TRAILS - long plasma tails */}
+            <mesh rotation={[Math.PI / 2, 0, 0]} position={[1.5, 0, 0]}>
+                <coneGeometry args={[0.8, 8, 6]} />
                 <meshBasicMaterial
                     color={colors[0]}
                     transparent
-                    opacity={0.3}
+                    opacity={0.5}
+                    blending={THREE.AdditiveBlending}
+                    depthWrite={false}
+                />
+            </mesh>
+            <mesh rotation={[Math.PI / 2, 0, 0]} position={[-1.5, 0, 0]}>
+                <coneGeometry args={[0.8, 8, 6]} />
+                <meshBasicMaterial
+                    color={colors[1]}
+                    transparent
+                    opacity={0.5}
+                    blending={THREE.AdditiveBlending}
+                    depthWrite={false}
+                />
+            </mesh>
+
+            {/* CENTER GLOW */}
+            <mesh>
+                <sphereGeometry args={[0.8, 8, 8]} />
+                <meshBasicMaterial
+                    color={colors[2]}
+                    transparent
+                    opacity={0.7}
                     blending={THREE.AdditiveBlending}
                     depthWrite={false}
                 />

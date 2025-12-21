@@ -27,6 +27,7 @@ export const Stage9Asteroid = ({ data }: { data: Enemy }) => {
 
     useFrame((state, delta) => {
         if (!ref.current) return;
+        const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -35,9 +36,22 @@ export const Stage9Asteroid = ({ data }: { data: Enemy }) => {
         ref.current.rotation.z += rotSpeed.z * delta;
         ref.current.scale.setScalar(ease * 36);
 
+        // Random position jitter
+        if (Math.random() > 0.98) {
+            ref.current.position.x += (Math.random() - 0.5) * 4;
+            ref.current.position.y += (Math.random() - 0.5) * 4;
+        }
+
         if (mainMatRef.current) {
-            mainMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            mainMatRef.current.opacity = ease * 0.9;
+            // Color cycling/flashing
+            const glitch = Math.random() > 0.92;
+            if (glitch) {
+                mainMatRef.current.color.set(['#C97A2B', '#E1B67A', '#5A3A24'][Math.floor(Math.random() * 3)]);
+            } else {
+                mainMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
+            }
+            // Pulsing opacity
+            mainMatRef.current.opacity = ease * (0.9 + Math.sin(t * 8) * 0.1);
         }
 
         // Embedded gear rotates
@@ -77,6 +91,12 @@ export const Stage9Drone = ({ data }: { data: Enemy }) => {
     const bodyMatRef = useRef<THREE.MeshBasicMaterial>(null);
     const turbineRef = useRef<THREE.Mesh>(null);
     const indicatorRefs = useRef<(THREE.Mesh | null)[]>([]);
+    const trailRefs = useRef<(THREE.Mesh | null)[]>([]);
+    const trailPositions = useRef<THREE.Vector3[]>([]);
+
+    useMemo(() => {
+        trailPositions.current = Array.from({ length: 4 }, () => new THREE.Vector3());
+    }, []);
 
     useFrame((state, delta) => {
         if (!ref.current) return;
@@ -87,10 +107,30 @@ export const Stage9Drone = ({ data }: { data: Enemy }) => {
         ref.current.lookAt(0, 0, 0);
         ref.current.scale.setScalar(ease * 18);
 
+        // Jerky discrete movement
+        if (Math.random() > 0.96) {
+            ref.current.position.x += (Math.random() - 0.5) * 2.5;
+            ref.current.position.y += (Math.random() - 0.5) * 2.5;
+        }
+
         if (bodyMatRef.current) {
             bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
             bodyMatRef.current.opacity = ease * 0.9;
         }
+
+        // Update ghost trail
+        for (let i = trailPositions.current.length - 1; i > 0; i--) {
+            trailPositions.current[i].copy(trailPositions.current[i - 1]);
+        }
+        trailPositions.current[0].copy(data.position);
+
+        trailRefs.current.forEach((trail, i) => {
+            if (!trail) return;
+            trail.position.copy(trailPositions.current[i]);
+            if (trail.material instanceof THREE.MeshBasicMaterial) {
+                trail.material.opacity = 0.35 - i * 0.08;
+            }
+        });
 
         // Turbine spins rapidly
         if (turbineRef.current) {
@@ -132,6 +172,17 @@ export const Stage9Drone = ({ data }: { data: Enemy }) => {
                 <ringGeometry args={[0.3, 1, 6]} />
                 <meshBasicMaterial color="#5A3A24" wireframe transparent opacity={0.7} side={THREE.DoubleSide} />
             </mesh>
+            {/* Ghost trail */}
+            {[0, 1, 2, 3].map(i => (
+                <mesh
+                    key={i}
+                    ref={el => trailRefs.current[i] = el}
+                    scale={0.35 - i * 0.05}
+                >
+                    <coneGeometry args={[1, 2, 4]} />
+                    <meshBasicMaterial color="#E1B67A" transparent opacity={0.3} />
+                </mesh>
+            ))}
         </group>
     );
 };
@@ -141,6 +192,7 @@ export const Stage9Drone = ({ data }: { data: Enemy }) => {
  */
 export const Stage9Fighter = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null);
+    const partsRef = useRef<THREE.Group>(null);
     const bodyMatRef = useRef<THREE.MeshBasicMaterial>(null);
     const wingLeftRef = useRef<THREE.Mesh>(null);
     const wingRightRef = useRef<THREE.Mesh>(null);
@@ -156,9 +208,29 @@ export const Stage9Fighter = ({ data }: { data: Enemy }) => {
         ref.current.lookAt(0, 0, 0);
         ref.current.scale.setScalar(ease * 24);
 
+        // Visibility flickering
+        const visible = Math.sin(t * 18) > -0.85;
+        ref.current.visible = visible;
+
+        // Parts get displaced randomly
+        if (partsRef.current && Math.random() > 0.92) {
+            partsRef.current.children.forEach((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.position.x = (Math.random() - 0.5) * 0.2;
+                    child.position.y = (Math.random() - 0.5) * 0.2;
+                }
+            });
+        }
+
         if (bodyMatRef.current) {
-            bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            bodyMatRef.current.opacity = ease;
+            // Color flashing
+            const colorFlash = Math.random() > 0.93;
+            if (colorFlash) {
+                bodyMatRef.current.color.set(['#C97A2B', '#E1B67A', '#5A3A24'][Math.floor(Math.random() * 3)]);
+            } else {
+                bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
+            }
+            bodyMatRef.current.opacity = ease * (Math.random() > 0.15 ? 1 : 0.4);
         }
 
         // Wings flap in short strokes
@@ -174,34 +246,36 @@ export const Stage9Fighter = ({ data }: { data: Enemy }) => {
 
     return (
         <group ref={ref} scale={0}>
-            {/* Double-pyramid body */}
-            <mesh rotation={[Math.PI / 2, 0, 0]} scale={[0.5, 1.4, 0.5]}>
-                <octahedronGeometry args={[1, 0]} />
-                <meshBasicMaterial ref={bodyMatRef} color="#C97A2B" wireframe transparent opacity={0} />
-            </mesh>
-            {/* Hinged wing plates */}
-            <mesh ref={wingLeftRef} position={[-1, 0, 0]} rotation={[0, 0, -0.3]} scale={[1, 0.1, 0.7]}>
-                <boxGeometry args={[1, 1, 1]} />
-                <meshBasicMaterial color="#E1B67A" wireframe transparent opacity={0.7} />
-            </mesh>
-            <mesh ref={wingRightRef} position={[1, 0, 0]} rotation={[0, 0, 0.3]} scale={[1, 0.1, 0.7]}>
-                <boxGeometry args={[1, 1, 1]} />
-                <meshBasicMaterial color="#E1B67A" wireframe transparent opacity={0.7} />
-            </mesh>
-            {/* Central axle */}
-            <mesh ref={axleRef} rotation={[0, 0, Math.PI / 2]} scale={[0.15, 2.5, 0.15]}>
-                <cylinderGeometry args={[1, 1, 1, 8]} />
-                <meshBasicMaterial color="#5A3A24" wireframe transparent opacity={0.6} />
-            </mesh>
-            {/* Hinge joints */}
-            <mesh position={[-0.5, 0, 0]} scale={0.2}>
-                <sphereGeometry args={[1, 6, 6]} />
-                <meshBasicMaterial color="#E1B67A" transparent opacity={0.8} />
-            </mesh>
-            <mesh position={[0.5, 0, 0]} scale={0.2}>
-                <sphereGeometry args={[1, 6, 6]} />
-                <meshBasicMaterial color="#E1B67A" transparent opacity={0.8} />
-            </mesh>
+            <group ref={partsRef}>
+                {/* Double-pyramid body */}
+                <mesh rotation={[Math.PI / 2, 0, 0]} scale={[0.5, 1.4, 0.5]}>
+                    <octahedronGeometry args={[1, 0]} />
+                    <meshBasicMaterial ref={bodyMatRef} color="#C97A2B" wireframe transparent opacity={0} />
+                </mesh>
+                {/* Hinged wing plates */}
+                <mesh ref={wingLeftRef} position={[-1, 0, 0]} rotation={[0, 0, -0.3]} scale={[1, 0.1, 0.7]}>
+                    <boxGeometry args={[1, 1, 1]} />
+                    <meshBasicMaterial color="#E1B67A" wireframe transparent opacity={0.7} />
+                </mesh>
+                <mesh ref={wingRightRef} position={[1, 0, 0]} rotation={[0, 0, 0.3]} scale={[1, 0.1, 0.7]}>
+                    <boxGeometry args={[1, 1, 1]} />
+                    <meshBasicMaterial color="#E1B67A" wireframe transparent opacity={0.7} />
+                </mesh>
+                {/* Central axle */}
+                <mesh ref={axleRef} rotation={[0, 0, Math.PI / 2]} scale={[0.15, 2.5, 0.15]}>
+                    <cylinderGeometry args={[1, 1, 1, 8]} />
+                    <meshBasicMaterial color="#5A3A24" wireframe transparent opacity={0.6} />
+                </mesh>
+                {/* Hinge joints */}
+                <mesh position={[-0.5, 0, 0]} scale={0.2}>
+                    <sphereGeometry args={[1, 6, 6]} />
+                    <meshBasicMaterial color="#E1B67A" transparent opacity={0.8} />
+                </mesh>
+                <mesh position={[0.5, 0, 0]} scale={0.2}>
+                    <sphereGeometry args={[1, 6, 6]} />
+                    <meshBasicMaterial color="#E1B67A" transparent opacity={0.8} />
+                </mesh>
+            </group>
         </group>
     );
 };
@@ -234,11 +308,16 @@ export const Stage9Elite = ({ data }: { data: Enemy }) => {
         if (cog1Ref.current) cog1Ref.current.rotation.z += delta * 1.5;
         if (cog2Ref.current) cog2Ref.current.rotation.z -= delta * 2;
 
-        // Pistons pump in sync
+        // Pistons pump in sync with jittering
         pistonRefs.current.forEach((piston, i) => {
             if (!piston) return;
             const pump = Math.sin(t * 4 + i * Math.PI) * 0.3;
             piston.scale.y = 1 + pump;
+            // Fragment jitter
+            if (Math.random() > 0.92) {
+                piston.position.x += (Math.random() - 0.5) * 0.15;
+                piston.position.z += (Math.random() - 0.5) * 0.15;
+            }
         });
     });
 

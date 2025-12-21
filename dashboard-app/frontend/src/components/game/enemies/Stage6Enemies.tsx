@@ -36,9 +36,22 @@ export const Stage6Asteroid = ({ data }: { data: Enemy }) => {
         ref.current.rotation.z += rotSpeed.z * delta;
         ref.current.scale.setScalar(ease * 36);
 
+        // Random position jitter (occasional teleport-like movement)
+        if (Math.random() > 0.98) {
+            ref.current.position.x += (Math.random() - 0.5) * 4;
+            ref.current.position.y += (Math.random() - 0.5) * 4;
+        }
+
         if (mainMatRef.current) {
-            mainMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            mainMatRef.current.opacity = ease * 0.85;
+            // Color cycling/flashing (switch between stage colors randomly)
+            const glitch = Math.random() > 0.92;
+            if (glitch) {
+                mainMatRef.current.color.set(['#6ECFFF', '#B8F7FF', '#7B9CFF'][Math.floor(Math.random() * 3)]);
+            } else {
+                mainMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
+            }
+            // Pulsing opacity
+            mainMatRef.current.opacity = ease * (0.85 + Math.sin(t * 8) * 0.15);
         }
 
         // Lattice brightness ripples
@@ -77,6 +90,12 @@ export const Stage6Drone = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null);
     const bodyMatRef = useRef<THREE.MeshBasicMaterial>(null);
     const keelRef = useRef<THREE.Mesh>(null);
+    const trailRefs = useRef<(THREE.Mesh | null)[]>([]);
+    const trailPositions = useRef<THREE.Vector3[]>([]);
+
+    useMemo(() => {
+        trailPositions.current = Array.from({ length: 4 }, () => new THREE.Vector3());
+    }, []);
 
     useFrame((state, delta) => {
         if (!ref.current) return;
@@ -88,10 +107,30 @@ export const Stage6Drone = ({ data }: { data: Enemy }) => {
         ref.current.rotation.z += delta * 6; // Quick roll
         ref.current.scale.setScalar(ease * 18);
 
+        // Jerky discrete movement
+        if (Math.random() > 0.96) {
+            ref.current.position.x += (Math.random() - 0.5) * 2.5;
+            ref.current.position.y += (Math.random() - 0.5) * 2.5;
+        }
+
         if (bodyMatRef.current) {
             bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
             bodyMatRef.current.opacity = ease * 0.9;
         }
+
+        // Update ghost trail
+        for (let i = trailPositions.current.length - 1; i > 0; i--) {
+            trailPositions.current[i].copy(trailPositions.current[i - 1]);
+        }
+        trailPositions.current[0].copy(data.position);
+
+        trailRefs.current.forEach((trail, i) => {
+            if (!trail) return;
+            trail.position.copy(trailPositions.current[i]);
+            if (trail.material instanceof THREE.MeshBasicMaterial) {
+                trail.material.opacity = 0.35 - i * 0.08;
+            }
+        });
 
         // Keel shimmer wave
         if (keelRef.current && keelRef.current.material instanceof THREE.MeshBasicMaterial) {
@@ -116,6 +155,17 @@ export const Stage6Drone = ({ data }: { data: Enemy }) => {
                 <coneGeometry args={[1, 1, 4]} />
                 <meshBasicMaterial color="#7B9CFF" wireframe transparent opacity={0.5} />
             </mesh>
+            {/* Ghost trail */}
+            {[0, 1, 2, 3].map(i => (
+                <mesh
+                    key={i}
+                    ref={el => trailRefs.current[i] = el}
+                    scale={0.35 - i * 0.05}
+                >
+                    <coneGeometry args={[1, 2.5, 4]} />
+                    <meshBasicMaterial color="#B8F7FF" transparent opacity={0.3} />
+                </mesh>
+            ))}
         </group>
     );
 };
@@ -125,6 +175,7 @@ export const Stage6Drone = ({ data }: { data: Enemy }) => {
  */
 export const Stage6Fighter = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null);
+    const partsRef = useRef<THREE.Group>(null);
     const bodyMatRef = useRef<THREE.MeshBasicMaterial>(null);
     const wingLeftRef = useRef<THREE.Mesh>(null);
     const wingRightRef = useRef<THREE.Mesh>(null);
@@ -140,9 +191,29 @@ export const Stage6Fighter = ({ data }: { data: Enemy }) => {
         ref.current.lookAt(0, 0, 0);
         ref.current.scale.setScalar(ease * 24);
 
+        // Visibility flickering
+        const visible = Math.sin(t * 18) > -0.85;
+        ref.current.visible = visible;
+
+        // Parts get displaced randomly
+        if (partsRef.current && Math.random() > 0.92) {
+            partsRef.current.children.forEach((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.position.x = (Math.random() - 0.5) * 0.2;
+                    child.position.y = (Math.random() - 0.5) * 0.2;
+                }
+            });
+        }
+
         if (bodyMatRef.current) {
-            bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            bodyMatRef.current.opacity = ease;
+            // Color flashing
+            const colorFlash = Math.random() > 0.93;
+            if (colorFlash) {
+                bodyMatRef.current.color.set(['#6ECFFF', '#B8F7FF', '#7B9CFF'][Math.floor(Math.random() * 3)]);
+            } else {
+                bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
+            }
+            bodyMatRef.current.opacity = ease * (Math.random() > 0.15 ? 1 : 0.4);
         }
 
         // Wings flex slightly
@@ -158,29 +229,31 @@ export const Stage6Fighter = ({ data }: { data: Enemy }) => {
 
     return (
         <group ref={ref} scale={0}>
-            {/* Double-pyramid body */}
-            <mesh rotation={[Math.PI / 2, 0, 0]} scale={[0.5, 1.5, 0.5]}>
-                <octahedronGeometry args={[1, 0]} />
-                <meshBasicMaterial ref={bodyMatRef} color="#6ECFFF" wireframe transparent opacity={0} />
-            </mesh>
-            {/* Thin icicle wings */}
-            <mesh ref={wingLeftRef} position={[-1, 0, 0]} rotation={[0, 0, -0.4]} scale={[1.5, 0.08, 0.3]}>
-                <coneGeometry args={[1, 1, 4]} />
-                <meshBasicMaterial color="#B8F7FF" wireframe transparent opacity={0.7} />
-            </mesh>
-            <mesh ref={wingRightRef} position={[1, 0, 0]} rotation={[0, 0, 0.4]} scale={[1.5, 0.08, 0.3]}>
-                <coneGeometry args={[1, 1, 4]} />
-                <meshBasicMaterial color="#B8F7FF" wireframe transparent opacity={0.7} />
-            </mesh>
-            {/* Split tail */}
-            <mesh position={[-0.3, 0, 1]} rotation={[Math.PI / 2, 0, -0.2]} scale={[0.1, 0.6, 0.1]}>
-                <coneGeometry args={[1, 1, 4]} />
-                <meshBasicMaterial ref={tailMatRef} color="#7B9CFF" wireframe transparent opacity={0.5} />
-            </mesh>
-            <mesh position={[0.3, 0, 1]} rotation={[Math.PI / 2, 0, 0.2]} scale={[0.1, 0.6, 0.1]}>
-                <coneGeometry args={[1, 1, 4]} />
-                <meshBasicMaterial color="#7B9CFF" wireframe transparent opacity={0.5} />
-            </mesh>
+            <group ref={partsRef}>
+                {/* Double-pyramid body */}
+                <mesh rotation={[Math.PI / 2, 0, 0]} scale={[0.5, 1.5, 0.5]}>
+                    <octahedronGeometry args={[1, 0]} />
+                    <meshBasicMaterial ref={bodyMatRef} color="#6ECFFF" wireframe transparent opacity={0} />
+                </mesh>
+                {/* Thin icicle wings */}
+                <mesh ref={wingLeftRef} position={[-1, 0, 0]} rotation={[0, 0, -0.4]} scale={[1.5, 0.08, 0.3]}>
+                    <coneGeometry args={[1, 1, 4]} />
+                    <meshBasicMaterial color="#B8F7FF" wireframe transparent opacity={0.7} />
+                </mesh>
+                <mesh ref={wingRightRef} position={[1, 0, 0]} rotation={[0, 0, 0.4]} scale={[1.5, 0.08, 0.3]}>
+                    <coneGeometry args={[1, 1, 4]} />
+                    <meshBasicMaterial color="#B8F7FF" wireframe transparent opacity={0.7} />
+                </mesh>
+                {/* Split tail */}
+                <mesh position={[-0.3, 0, 1]} rotation={[Math.PI / 2, 0, -0.2]} scale={[0.1, 0.6, 0.1]}>
+                    <coneGeometry args={[1, 1, 4]} />
+                    <meshBasicMaterial ref={tailMatRef} color="#7B9CFF" wireframe transparent opacity={0.5} />
+                </mesh>
+                <mesh position={[0.3, 0, 1]} rotation={[Math.PI / 2, 0, 0.2]} scale={[0.1, 0.6, 0.1]}>
+                    <coneGeometry args={[1, 1, 4]} />
+                    <meshBasicMaterial color="#7B9CFF" wireframe transparent opacity={0.5} />
+                </mesh>
+            </group>
         </group>
     );
 };
@@ -213,7 +286,7 @@ export const Stage6Elite = ({ data }: { data: Enemy }) => {
             bodyMatRef.current.opacity = 0.6 + Math.sin(t * 6 + data.seed) * 0.2 + Math.sin(t * 11) * 0.1;
         }
 
-        // Shards orbit at staggered speeds
+        // Shards orbit at staggered speeds with jittering
         shardRefs.current.forEach((shard, i) => {
             if (!shard) return;
             const d = shardData[i];
@@ -224,6 +297,12 @@ export const Stage6Elite = ({ data }: { data: Enemy }) => {
                 Math.sin(angle) * d.radius
             );
             shard.rotation.y = angle;
+            // Fragment jitter
+            if (Math.random() > 0.92) {
+                shard.position.x += (Math.random() - 0.5) * 0.4;
+                shard.position.y += (Math.random() - 0.5) * 0.4;
+                shard.position.z += (Math.random() - 0.5) * 0.4;
+            }
         });
     });
 

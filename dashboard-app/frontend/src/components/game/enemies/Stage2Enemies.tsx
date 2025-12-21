@@ -37,13 +37,27 @@ export const Stage2Asteroid = ({ data }: { data: Enemy }) => {
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
+
+        // Random position jitter (glitch effect)
+        if (Math.random() > 0.98) {
+            ref.current.position.x += (Math.random() - 0.5) * 3;
+            ref.current.position.y += (Math.random() - 0.5) * 3;
+        }
+
         ref.current.rotation.y += delta * 0.3;
         ref.current.rotation.x += delta * 0.15;
         ref.current.scale.setScalar(ease * 36); // 2x size
 
         if (mainMatRef.current) {
-            mainMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            mainMatRef.current.opacity = ease * 0.9;
+            // Color cycling/flashing
+            const glitch = Math.random() > 0.92;
+            if (glitch) {
+                mainMatRef.current.color.set(['#00ffff', '#8a2be2', '#ff00ff'][Math.floor(Math.random() * 3)]);
+            } else {
+                mainMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
+            }
+            // Pulsing opacity
+            mainMatRef.current.opacity = ease * (0.85 + Math.sin(t * 8) * 0.1);
         }
 
         fragmentRefs.current.forEach((frag, i) => {
@@ -52,6 +66,13 @@ export const Stage2Asteroid = ({ data }: { data: Enemy }) => {
             frag.rotation.z += delta * fragments[i].rotSpeed * 0.7;
             const pulse = 1 + Math.sin(t * 3 + i) * 0.15;
             frag.scale.setScalar(fragments[i].scale * pulse);
+
+            // Orbiting/jittering fragments
+            if (Math.random() > 0.93) {
+                frag.position.x += (Math.random() - 0.5) * 0.3;
+                frag.position.y += (Math.random() - 0.5) * 0.3;
+                frag.position.z += (Math.random() - 0.5) * 0.3;
+            }
         });
     });
 
@@ -86,10 +107,16 @@ export const Stage2Drone = ({ data }: { data: Enemy }) => {
     const bodyMatRef = useRef<THREE.MeshBasicMaterial>(null);
     const rotorRefs = useRef<(THREE.Mesh | null)[]>([]);
     const beamMatRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+    const trailRefs = useRef<(THREE.Mesh | null)[]>([]);
+    const trailPositions = useRef<THREE.Vector3[]>([]);
 
     const rotorPositions = useMemo(() => [
         [1.8, 0, 1.8], [1.8, 0, -1.8], [-1.8, 0, -1.8], [-1.8, 0, 1.8]
     ] as [number, number, number][], []);
+
+    useMemo(() => {
+        trailPositions.current = Array.from({ length: 4 }, () => new THREE.Vector3());
+    }, []);
 
     useFrame((state, delta) => {
         if (!ref.current) return;
@@ -99,6 +126,11 @@ export const Stage2Drone = ({ data }: { data: Enemy }) => {
         ref.current.position.copy(data.position);
         ref.current.lookAt(0, 0, 0);
         ref.current.scale.setScalar(ease * 18); // 2x size
+
+        // Jerky discrete movement
+        if (Math.random() > 0.96) {
+            ref.current.position.x += (Math.random() - 0.5) * 2;
+        }
 
         if (bodyMatRef.current) {
             bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
@@ -113,6 +145,20 @@ export const Stage2Drone = ({ data }: { data: Enemy }) => {
             if (mat) {
                 const pulse = 0.4 + Math.sin(t * 8 + i * Math.PI / 2) * 0.4;
                 mat.opacity = pulse * ease;
+            }
+        });
+
+        // Update ghost trail
+        for (let i = trailPositions.current.length - 1; i > 0; i--) {
+            trailPositions.current[i].copy(trailPositions.current[i - 1]);
+        }
+        trailPositions.current[0].copy(data.position);
+
+        trailRefs.current.forEach((trail, i) => {
+            if (!trail) return;
+            trail.position.copy(trailPositions.current[i]);
+            if (trail.material instanceof THREE.MeshBasicMaterial) {
+                trail.material.opacity = (0.4 - i * 0.1) * ease;
             }
         });
     });
@@ -152,6 +198,17 @@ export const Stage2Drone = ({ data }: { data: Enemy }) => {
                     </mesh>
                 );
             })}
+            {/* Ghost trail */}
+            {[0, 1, 2, 3].map(i => (
+                <mesh
+                    key={`trail-${i}`}
+                    ref={el => trailRefs.current[i] = el}
+                    scale={0.3 - i * 0.05}
+                >
+                    <icosahedronGeometry args={[1, 0]} />
+                    <meshBasicMaterial color="#8a2be2" transparent opacity={0} />
+                </mesh>
+            ))}
         </group>
     );
 };
@@ -174,9 +231,13 @@ export const Stage2Fighter = ({ data }: { data: Enemy }) => {
         ref.current.lookAt(0, 0, 0);
         ref.current.scale.setScalar(ease * 24); // 2x size
 
+        // Visibility flickering
+        const visible = Math.sin(t * 18) > -0.85;
+        ref.current.visible = visible;
+
         if (bodyMatRef.current) {
             bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            bodyMatRef.current.opacity = ease;
+            bodyMatRef.current.opacity = ease * (Math.random() > 0.15 ? 0.9 : 0.4);
         }
 
         // Animate ribbon waves

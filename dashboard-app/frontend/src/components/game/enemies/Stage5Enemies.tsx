@@ -31,20 +31,40 @@ export const Stage5Asteroid = ({ data }: { data: Enemy }) => {
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
+
+        // Random position jitter (glitch effect)
+        if (Math.random() > 0.98) {
+            ref.current.position.x += (Math.random() - 0.5) * 3;
+            ref.current.position.y += (Math.random() - 0.5) * 3;
+        }
+
         ref.current.rotation.x += rotSpeed.x * delta;
         ref.current.rotation.y += rotSpeed.y * delta;
         ref.current.rotation.z += rotSpeed.z * delta;
         ref.current.scale.setScalar(ease * 36);
 
         if (mainMatRef.current) {
-            mainMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            mainMatRef.current.opacity = ease * 0.9;
+            // Color cycling/flashing
+            const glitch = Math.random() > 0.92;
+            if (glitch) {
+                mainMatRef.current.color.set(['#FF6A00', '#FFD200', '#FF2D55'][Math.floor(Math.random() * 3)]);
+            } else {
+                mainMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
+            }
+            // Pulsing opacity
+            mainMatRef.current.opacity = ease * (0.85 + Math.sin(t * 7) * 0.1);
         }
 
         // Core pulses on 2-beat cycle
         if (coreRef.current) {
             const pulse = 0.6 + Math.sin(t * 4 + data.seed) * 0.4;
             coreRef.current.scale.setScalar(pulse);
+
+            // Jittering core
+            if (Math.random() > 0.94) {
+                coreRef.current.position.x = (Math.random() - 0.5) * 0.2;
+                coreRef.current.position.y = (Math.random() - 0.5) * 0.2;
+            }
         }
     });
 
@@ -76,6 +96,12 @@ export const Stage5Drone = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null);
     const bodyMatRef = useRef<THREE.MeshBasicMaterial>(null);
     const finRefs = useRef<(THREE.Mesh | null)[]>([]);
+    const trailRefs = useRef<(THREE.Mesh | null)[]>([]);
+    const trailPositions = useRef<THREE.Vector3[]>([]);
+
+    useMemo(() => {
+        trailPositions.current = Array.from({ length: 4 }, () => new THREE.Vector3());
+    }, []);
 
     useFrame((state, delta) => {
         if (!ref.current) return;
@@ -87,6 +113,11 @@ export const Stage5Drone = ({ data }: { data: Enemy }) => {
         ref.current.rotation.z += delta * 8; // Rapid spin
         ref.current.scale.setScalar(ease * 18);
 
+        // Jerky discrete movement
+        if (Math.random() > 0.96) {
+            ref.current.position.x += (Math.random() - 0.5) * 2;
+        }
+
         if (bodyMatRef.current) {
             bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
             bodyMatRef.current.opacity = ease * 0.9;
@@ -97,6 +128,20 @@ export const Stage5Drone = ({ data }: { data: Enemy }) => {
             if (!fin) return;
             const flicker = 0.8 + Math.sin(t * 12 + i * 2) * 0.2;
             fin.scale.setScalar(flicker);
+        });
+
+        // Update ghost trail
+        for (let i = trailPositions.current.length - 1; i > 0; i--) {
+            trailPositions.current[i].copy(trailPositions.current[i - 1]);
+        }
+        trailPositions.current[0].copy(data.position);
+
+        trailRefs.current.forEach((trail, i) => {
+            if (!trail) return;
+            trail.position.copy(trailPositions.current[i]);
+            if (trail.material instanceof THREE.MeshBasicMaterial) {
+                trail.material.opacity = (0.4 - i * 0.1) * ease;
+            }
         });
     });
 
@@ -118,6 +163,17 @@ export const Stage5Drone = ({ data }: { data: Enemy }) => {
                 >
                     <boxGeometry args={[1, 1, 1]} />
                     <meshBasicMaterial color="#FFD200" wireframe transparent opacity={0.7} />
+                </mesh>
+            ))}
+            {/* Ghost trail */}
+            {[0, 1, 2, 3].map(i => (
+                <mesh
+                    key={`trail-${i}`}
+                    ref={el => trailRefs.current[i] = el}
+                    scale={0.3 - i * 0.05}
+                >
+                    <coneGeometry args={[1, 2, 4]} />
+                    <meshBasicMaterial color="#FF2D55" transparent opacity={0} />
                 </mesh>
             ))}
         </group>
@@ -144,9 +200,13 @@ export const Stage5Fighter = ({ data }: { data: Enemy }) => {
         ref.current.lookAt(0, 0, 0);
         ref.current.scale.setScalar(ease * 24);
 
+        // Visibility flickering
+        const visible = Math.sin(t * 18) > -0.85;
+        ref.current.visible = visible;
+
         if (bodyMatRef.current) {
             bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            bodyMatRef.current.opacity = ease;
+            bodyMatRef.current.opacity = ease * (Math.random() > 0.15 ? 0.9 : 0.4);
         }
 
         // Wings oscillate
@@ -206,12 +266,25 @@ export const Stage5Elite = ({ data }: { data: Enemy }) => {
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
+
+        // Random position jitter
+        if (Math.random() > 0.97) {
+            ref.current.position.x += (Math.random() - 0.5) * 3;
+            ref.current.position.y += (Math.random() - 0.5) * 3;
+        }
+
         ref.current.rotation.y += delta * 0.3;
         ref.current.scale.setScalar(ease * 36);
 
         if (bodyMatRef.current) {
-            bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            bodyMatRef.current.opacity = ease;
+            // Color cycling
+            const glitch = Math.random() > 0.92;
+            if (glitch) {
+                bodyMatRef.current.color.set(['#FF6A00', '#FFD200'][Math.floor(Math.random() * 2)]);
+            } else {
+                bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
+            }
+            bodyMatRef.current.opacity = ease * (0.9 + Math.sin(t * 6) * 0.1);
         }
 
         // Rings counter-rotate
@@ -222,6 +295,11 @@ export const Stage5Elite = ({ data }: { data: Enemy }) => {
         if (spikesRef.current) {
             const pulse = 1 + Math.sin(t * 3 + data.seed) * 0.15;
             spikesRef.current.scale.setScalar(pulse);
+
+            // Jitter spikes
+            if (Math.random() > 0.94) {
+                spikesRef.current.rotation.z += (Math.random() - 0.5) * 0.3;
+            }
         }
     });
 
@@ -277,10 +355,23 @@ export const Stage5Boss = ({ data }: { data: Enemy }) => {
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
+
+        // Random teleport jitter
+        if (Math.random() > 0.98) {
+            ref.current.position.x += (Math.random() - 0.5) * 5;
+            ref.current.position.y += (Math.random() - 0.5) * 5;
+        }
+
         ref.current.scale.setScalar(ease * 15);
 
         if (coreMatRef.current) {
-            coreMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
+            // Color glitching
+            const glitch = Math.random() > 0.91;
+            if (glitch) {
+                coreMatRef.current.color.set(['#FF6A00', '#FFD200', '#FF2D55'][Math.floor(Math.random() * 3)]);
+            } else {
+                coreMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
+            }
             // Core throbs
             coreMatRef.current.opacity = 0.7 + Math.sin(t * 2) * 0.2;
         }

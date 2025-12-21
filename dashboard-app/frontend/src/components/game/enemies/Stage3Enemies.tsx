@@ -31,6 +31,13 @@ export const Stage3Asteroid = ({ data }: { data: Enemy }) => {
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
+
+        // Random position jitter (glitch effect)
+        if (Math.random() > 0.98) {
+            ref.current.position.x += (Math.random() - 0.5) * 3;
+            ref.current.position.y += (Math.random() - 0.5) * 3;
+        }
+
         ref.current.rotation.y += delta * 0.15;
 
         // Organic pulsing
@@ -38,8 +45,15 @@ export const Stage3Asteroid = ({ data }: { data: Enemy }) => {
         ref.current.scale.setScalar(ease * 30 * pulse); // 2x size
 
         if (mainMatRef.current) {
-            mainMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            mainMatRef.current.opacity = ease * 0.9;
+            // Color cycling/flashing
+            const glitch = Math.random() > 0.92;
+            if (glitch) {
+                mainMatRef.current.color.set(['#00ff7f', '#ffc0cb', '#ff69b4'][Math.floor(Math.random() * 3)]);
+            } else {
+                mainMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
+            }
+            // Pulsing opacity
+            mainMatRef.current.opacity = ease * (0.85 + Math.sin(t * 7) * 0.1);
         }
 
         // Animate tendrils
@@ -48,6 +62,12 @@ export const Stage3Asteroid = ({ data }: { data: Enemy }) => {
             const wave = Math.sin(t * 2 + tendrils[i].seed) * 0.4;
             tendril.rotation.z = wave;
             tendril.scale.y = 0.8 + Math.sin(t * 3 + i) * 0.2;
+
+            // Jittering tendrils
+            if (Math.random() > 0.94) {
+                tendril.position.x += (Math.random() - 0.5) * 0.2;
+                tendril.position.y += (Math.random() - 0.5) * 0.2;
+            }
         });
     });
 
@@ -84,12 +104,18 @@ export const Stage3Drone = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null);
     const bodyMatRef = useRef<THREE.MeshBasicMaterial>(null);
     const tentacleRefs = useRef<(THREE.Mesh | null)[]>([]);
+    const trailRefs = useRef<(THREE.Mesh | null)[]>([]);
+    const trailPositions = useRef<THREE.Vector3[]>([]);
 
     const tentacles = useMemo(() => Array.from({ length: 8 }, (_, i) => ({
         angle: (i / 8) * Math.PI * 2,
         length: 2 + Math.random() * 1.5,
         phase: Math.random() * Math.PI * 2,
     })), []);
+
+    useMemo(() => {
+        trailPositions.current = Array.from({ length: 4 }, () => new THREE.Vector3());
+    }, []);
 
     useFrame((state, delta) => {
         if (!ref.current) return;
@@ -99,6 +125,11 @@ export const Stage3Drone = ({ data }: { data: Enemy }) => {
         ref.current.position.copy(data.position);
         ref.current.rotation.y += delta * 0.3;
         ref.current.scale.setScalar(ease * 18); // 2x size
+
+        // Jerky discrete movement
+        if (Math.random() > 0.96) {
+            ref.current.position.x += (Math.random() - 0.5) * 2;
+        }
 
         // Body pulse (jellyfish swimming motion)
         const bodyPulse = 0.85 + Math.sin(t * 2.5 + data.seed) * 0.15;
@@ -115,6 +146,20 @@ export const Stage3Drone = ({ data }: { data: Enemy }) => {
             const wave = Math.sin(t * 3 + tentacles[i].phase) * 0.4;
             tent.rotation.x = wave;
             tent.rotation.z = Math.sin(t * 2 + i) * 0.2;
+        });
+
+        // Update ghost trail
+        for (let i = trailPositions.current.length - 1; i > 0; i--) {
+            trailPositions.current[i].copy(trailPositions.current[i - 1]);
+        }
+        trailPositions.current[0].copy(data.position);
+
+        trailRefs.current.forEach((trail, i) => {
+            if (!trail) return;
+            trail.position.copy(trailPositions.current[i]);
+            if (trail.material instanceof THREE.MeshBasicMaterial) {
+                trail.material.opacity = (0.4 - i * 0.1) * ease;
+            }
         });
     });
 
@@ -137,6 +182,17 @@ export const Stage3Drone = ({ data }: { data: Enemy }) => {
                     scale={[0.05, t.length, 0.05]}>
                     <cylinderGeometry args={[1, 0.2, 1, 4]} />
                     <meshBasicMaterial color="#ff69b4" wireframe transparent opacity={0.6} />
+                </mesh>
+            ))}
+            {/* Ghost trail */}
+            {[0, 1, 2, 3].map(i => (
+                <mesh
+                    key={`trail-${i}`}
+                    ref={el => trailRefs.current[i] = el}
+                    scale={0.3 - i * 0.05}
+                >
+                    <sphereGeometry args={[1, 8, 6]} />
+                    <meshBasicMaterial color="#ffc0cb" transparent opacity={0} />
                 </mesh>
             ))}
         </group>
@@ -162,9 +218,13 @@ export const Stage3Fighter = ({ data }: { data: Enemy }) => {
         ref.current.lookAt(0, 0, 0);
         ref.current.scale.setScalar(ease * 24); // 2x size
 
+        // Visibility flickering
+        const visible = Math.sin(t * 18) > -0.85;
+        ref.current.visible = visible;
+
         if (bodyMatRef.current) {
             bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            bodyMatRef.current.opacity = ease;
+            bodyMatRef.current.opacity = ease * (Math.random() > 0.15 ? 0.9 : 0.4);
         }
 
         // Undulating wing motion

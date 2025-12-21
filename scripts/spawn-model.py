@@ -89,28 +89,47 @@ def run_codex(prompt: str, timeout: int = 120, mode: str = 'exec') -> Dict[str, 
     """Run a prompt through Codex CLI.
 
     Codex CLI usage: codex exec "your prompt here"
-    The prompt should be properly escaped for shell execution.
+    For long prompts (>4000 chars), uses stdin to avoid command line limits.
     """
     try:
         # Use shell=True on Windows for proper .CMD file resolution
         use_shell = sys.platform == 'win32'
 
-        if use_shell:
-            # Windows: escape the prompt for CMD shell
-            # Replace double quotes with escaped quotes, handle special chars
-            escaped_prompt = prompt.replace('"', '\\"').replace('\n', ' ')
-            cmd = f'codex {mode} "{escaped_prompt}"'
-        else:
-            # Unix: use shlex for proper escaping, or pass as list (safer)
-            cmd = ['codex', mode, prompt]
+        # Windows has ~8191 char command line limit - use stdin for long prompts
+        use_stdin = len(prompt) > 4000
 
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            shell=use_shell
-        )
+        if use_stdin:
+            # Use stdin for long prompts to avoid command line length limits
+            if use_shell:
+                cmd = f'codex {mode}'
+            else:
+                cmd = ['codex', mode]
+
+            result = subprocess.run(
+                cmd,
+                input=prompt,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                shell=use_shell
+            )
+        else:
+            # Short prompts can use command line args
+            if use_shell:
+                # Windows: escape the prompt for CMD shell
+                escaped_prompt = prompt.replace('"', '\\"').replace('\n', ' ')
+                cmd = f'codex {mode} "{escaped_prompt}"'
+            else:
+                # Unix: use shlex for proper escaping, or pass as list (safer)
+                cmd = ['codex', mode, prompt]
+
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                shell=use_shell
+            )
 
         # Extract just the response from codex output (skip headers)
         output = result.stdout

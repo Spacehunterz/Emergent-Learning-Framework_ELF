@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useGame } from '../../context/GameContext';
 
 export const UfoCursor: React.FC = () => {
-    const { activeShip, isGameEnabled, activeTrail } = useGame(); // Hook into Game System
+    const { activeShip, isGameEnabled, activeTrail, isMenuOpen } = useGame(); // Hook into Game System
 
     const [position, setPosition] = useState({ x: -100, y: -100 });
     const [isBeamActive, setIsBeamActive] = useState(false); // Right Click
@@ -26,14 +26,15 @@ export const UfoCursor: React.FC = () => {
 
     // Toggle cursors
     useEffect(() => {
-        // Only hide cursor if we have a ship active
-        if (activeShip !== 'default') {
+        // Only hide cursor if we have a ship active AND menu is NOT open
+        // When menu is open, show cursor so user can click menu items
+        if (activeShip !== 'default' && !isMenuOpen) {
             document.body.classList.add('cosmic-cursor-hidden');
         } else {
             document.body.classList.remove('cosmic-cursor-hidden');
         }
         return () => window.removeEventListener('contextmenu', preventMenu);
-    }, [activeShip]);
+    }, [activeShip, isMenuOpen]);
 
     // Prevent Context Menu on Right Click if in UFO mode
     const preventMenu = useCallback((e: MouseEvent) => {
