@@ -81,3 +81,93 @@ export {
     Stage10Elite,
     Stage10Boss
 } from './Stage10Enemies';
+
+// Stage 11: Toxic/Radiation themed (green/yellow) - radioactive glow, unstable
+export {
+    Stage11Asteroid,
+    Stage11Drone,
+    Stage11Fighter,
+    Stage11Elite,
+    Stage11Boss
+} from './Stage11Enemies';
+
+// Stage 12: Electric/Plasma themed (blue/white) - arcs, energy, conductors
+export {
+    Stage12Asteroid,
+    Stage12Drone,
+    Stage12Fighter,
+    Stage12Elite,
+    Stage12Boss
+} from './Stage12Enemies';
+
+// Stage 13: Shadow/Dark Matter themed (black/purple) - void, absorption, tendrils
+export {
+    Stage13Asteroid,
+    Stage13Drone,
+    Stage13Fighter,
+    Stage13Elite,
+    Stage13Boss
+} from './Stage13Enemies';
+
+// Stage 14: Mineral/Geode themed (magenta/cyan/yellow) - crystals, shimmer
+export {
+    Stage14Asteroid,
+    Stage14Drone,
+    Stage14Fighter,
+    Stage14Elite,
+    Stage14Boss
+} from './Stage14Enemies';
+
+// Stage 15: Fungal/Spore themed (brown/coral) - mushrooms, organic, pulsing
+export {
+    Stage15Asteroid,
+    Stage15Drone,
+    Stage15Fighter,
+    Stage15Elite,
+    Stage15Boss
+} from './Stage15Enemies';
+
+// Stage 16: Abyssal/Deep Sea themed (dark blue/aqua) - bioluminescent, tentacles
+export {
+    Stage16Asteroid,
+    Stage16Drone,
+    Stage16Fighter,
+    Stage16Elite,
+    Stage16Boss
+} from './Stage16Enemies';
+
+// Stage 17: Volcanic/Magma themed (red/orange/black) - lava, obsidian, eruptions
+export {
+    Stage17Asteroid,
+    Stage17Drone,
+    Stage17Fighter,
+    Stage17Elite,
+    Stage17Boss
+} from './Stage17Enemies';
+
+// Stage 18: Temporal/Glitch themed (cyan/magenta/white) - flickering, unstable, artifacts
+export {
+    Stage18Asteroid,
+    Stage18Drone,
+    Stage18Fighter,
+    Stage18Elite,
+    Stage18Boss
+} from './Stage18Enemies';
+
+// Stage 19: Holy/Angelic themed (white/gold/light blue) - radiant, wings, halos
+export {
+    Stage19Asteroid,
+    Stage19Drone,
+    Stage19Fighter,
+    Stage19Elite,
+    Stage19Boss
+} from './Stage19Enemies';
+
+// Stage 20: Demonic/Hellfire themed (red/black/orange) - flames, horns, infernal
+export {
+    Stage20Asteroid,
+    Stage20Drone,
+    Stage20Fighter,
+    Stage20Elite,
+    Stage20Boss
+} from './Stage20Enemies';

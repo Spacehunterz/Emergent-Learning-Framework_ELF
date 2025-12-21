@@ -35,6 +35,13 @@ export const Stage4Asteroid = ({ data }: { data: Enemy }) => {
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
+
+        // Random position jitter (glitch effect)
+        if (Math.random() > 0.98) {
+            ref.current.position.x += (Math.random() - 0.5) * 4;
+            ref.current.position.y += (Math.random() - 0.5) * 4;
+        }
+
         ref.current.scale.setScalar(ease * 36); // 2x size
 
         // Reality warp effect - slight position oscillation
@@ -43,8 +50,15 @@ export const Stage4Asteroid = ({ data }: { data: Enemy }) => {
         ref.current.position.z += Math.cos(t * 2.3 + data.seed) * 0.1;
 
         if (mainMatRef.current) {
-            mainMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            mainMatRef.current.opacity = ease * 0.85;
+            // Color cycling/flashing
+            const glitch = Math.random() > 0.91;
+            if (glitch) {
+                mainMatRef.current.color.set(['#ffffff', '#9370db', '#4b0082'][Math.floor(Math.random() * 3)]);
+            } else {
+                mainMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
+            }
+            // Pulsing opacity
+            mainMatRef.current.opacity = ease * (0.8 + Math.sin(t * 7) * 0.1);
         }
 
         // Inner cubes rotate on different axes
@@ -55,6 +69,13 @@ export const Stage4Asteroid = ({ data }: { data: Enemy }) => {
             // Phase through each other effect
             const phaseScale = 1 + Math.sin(t * 2 + i * Math.PI / 2) * 0.1;
             cube.scale.setScalar(c.scale * phaseScale);
+
+            // Jittering cubes
+            if (Math.random() > 0.92) {
+                cube.position.x = (Math.random() - 0.5) * 0.3;
+                cube.position.y = (Math.random() - 0.5) * 0.3;
+                cube.position.z = (Math.random() - 0.5) * 0.3;
+            }
         });
     });
 
@@ -96,11 +117,17 @@ export const Stage4Drone = ({ data }: { data: Enemy }) => {
     const ref = useRef<THREE.Group>(null);
     const bodyMatRef = useRef<THREE.MeshBasicMaterial>(null);
     const afterimageRefs = useRef<(THREE.Mesh | null)[]>([]);
+    const trailRefs = useRef<(THREE.Mesh | null)[]>([]);
+    const trailPositions = useRef<THREE.Vector3[]>([]);
 
     const afterimages = useMemo(() => Array.from({ length: 5 }, (_, i) => ({
         offset: (i + 1) * 0.3,
         opacity: 0.6 - i * 0.1,
     })), []);
+
+    useMemo(() => {
+        trailPositions.current = Array.from({ length: 4 }, () => new THREE.Vector3());
+    }, []);
 
     useFrame((state, delta) => {
         if (!ref.current) return;
@@ -111,6 +138,11 @@ export const Stage4Drone = ({ data }: { data: Enemy }) => {
         ref.current.position.copy(data.position);
         ref.current.lookAt(0, 0, 0);
         ref.current.scale.setScalar(ease * 15); // 2x size
+
+        // Jerky discrete movement
+        if (Math.random() > 0.95) {
+            ref.current.position.x += (Math.random() - 0.5) * 3;
+        }
 
         // Phase shift flicker
         const flicker = Math.sin(t * 10 + phase) > 0.8 ? 0.3 : 1;
@@ -126,6 +158,20 @@ export const Stage4Drone = ({ data }: { data: Enemy }) => {
             img.position.z = -a.offset;
             img.scale.setScalar(1 - a.offset * 0.3);
             (img.material as THREE.MeshBasicMaterial).opacity = a.opacity * ease * flicker;
+        });
+
+        // Update ghost trail
+        for (let i = trailPositions.current.length - 1; i > 0; i--) {
+            trailPositions.current[i].copy(trailPositions.current[i - 1]);
+        }
+        trailPositions.current[0].copy(data.position);
+
+        trailRefs.current.forEach((trail, i) => {
+            if (!trail) return;
+            trail.position.copy(trailPositions.current[i]);
+            if (trail.material instanceof THREE.MeshBasicMaterial) {
+                trail.material.opacity = (0.3 - i * 0.07) * ease;
+            }
         });
     });
 
@@ -146,6 +192,17 @@ export const Stage4Drone = ({ data }: { data: Enemy }) => {
                 <mesh key={i} ref={el => afterimageRefs.current[i] = el} scale={1}>
                     <tetrahedronGeometry args={[1, 0]} />
                     <meshBasicMaterial color="#9370db" wireframe transparent opacity={0} />
+                </mesh>
+            ))}
+            {/* Ghost trail */}
+            {[0, 1, 2, 3].map(i => (
+                <mesh
+                    key={`trail-${i}`}
+                    ref={el => trailRefs.current[i] = el}
+                    scale={0.25 - i * 0.04}
+                >
+                    <tetrahedronGeometry args={[1, 0]} />
+                    <meshBasicMaterial color="#4b0082" transparent opacity={0} />
                 </mesh>
             ))}
         </group>
@@ -170,13 +227,17 @@ export const Stage4Fighter = ({ data }: { data: Enemy }) => {
         ref.current.lookAt(0, 0, 0);
         ref.current.scale.setScalar(ease * 21); // 2x size
 
+        // Visibility flickering
+        const visible = Math.sin(t * 16) > -0.85;
+        ref.current.visible = visible;
+
         // Rift pulsing
         const riftPulse = 0.8 + Math.sin(t * 3 + phase) * 0.2;
         ref.current.children[0].scale.setScalar(riftPulse);
 
         if (riftMatRef.current) {
             riftMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            riftMatRef.current.opacity = ease * 0.85;
+            riftMatRef.current.opacity = ease * (Math.random() > 0.12 ? 0.85 : 0.3);
         }
 
         // Claws reaching out
@@ -238,9 +299,21 @@ export const Stage4Elite = ({ data }: { data: Enemy }) => {
         ref.current.rotation.y += delta * 0.1;
         ref.current.scale.setScalar(ease * 30); // 2x size
 
+        // Random position jitter
+        if (Math.random() > 0.97) {
+            ref.current.position.x += (Math.random() - 0.5) * 3;
+            ref.current.position.y += (Math.random() - 0.5) * 3;
+        }
+
         if (bodyMatRef.current) {
-            bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            bodyMatRef.current.opacity = ease;
+            // Color cycling
+            const glitch = Math.random() > 0.92;
+            if (glitch) {
+                bodyMatRef.current.color.set(['#ffffff', '#9370db'][Math.floor(Math.random() * 2)]);
+            } else {
+                bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
+            }
+            bodyMatRef.current.opacity = ease * (0.9 + Math.sin(t * 6) * 0.1);
         }
 
         // Aura layers pulse outward
@@ -263,6 +336,12 @@ export const Stage4Elite = ({ data }: { data: Enemy }) => {
                 Math.sin(angle) * radius
             );
             orb.rotation.y += delta * 3;
+
+            // Jittering orbs
+            if (Math.random() > 0.93) {
+                orb.position.x += (Math.random() - 0.5) * 0.4;
+                orb.position.y += (Math.random() - 0.5) * 0.4;
+            }
         });
     });
 
@@ -324,13 +403,26 @@ export const Stage4Boss = ({ data }: { data: Enemy }) => {
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
+
+        // Random teleport jitter
+        if (Math.random() > 0.98) {
+            ref.current.position.x += (Math.random() - 0.5) * 6;
+            ref.current.position.y += (Math.random() - 0.5) * 6;
+        }
+
         ref.current.rotation.y += delta * 0.05;
         ref.current.rotation.x = Math.sin(t * 0.3) * 0.1;
         ref.current.scale.setScalar(ease * 20);
 
         if (coreMatRef.current) {
-            coreMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
-            coreMatRef.current.opacity = ease;
+            // Color glitching
+            const glitch = Math.random() > 0.9;
+            if (glitch) {
+                coreMatRef.current.color.set(['#ffffff', '#9370db', '#4b0082'][Math.floor(Math.random() * 3)]);
+            } else {
+                coreMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
+            }
+            coreMatRef.current.opacity = ease * (0.85 + Math.sin(t * 5) * 0.15);
         }
 
         // Eyes look around and blink

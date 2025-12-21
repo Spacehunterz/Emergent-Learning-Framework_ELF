@@ -51,6 +51,36 @@ import {
 import {
     Stage10Asteroid, Stage10Drone, Stage10Fighter, Stage10Elite, Stage10Boss
 } from '../enemies/Stage10Enemies'
+import {
+    Stage11Asteroid, Stage11Drone, Stage11Fighter, Stage11Elite, Stage11Boss
+} from '../enemies/Stage11Enemies'
+import {
+    Stage12Asteroid, Stage12Drone, Stage12Fighter, Stage12Elite, Stage12Boss
+} from '../enemies/Stage12Enemies'
+import {
+    Stage13Asteroid, Stage13Drone, Stage13Fighter, Stage13Elite, Stage13Boss
+} from '../enemies/Stage13Enemies'
+import {
+    Stage14Asteroid, Stage14Drone, Stage14Fighter, Stage14Elite, Stage14Boss
+} from '../enemies/Stage14Enemies'
+import {
+    Stage15Asteroid, Stage15Drone, Stage15Fighter, Stage15Elite, Stage15Boss
+} from '../enemies/Stage15Enemies'
+import {
+    Stage16Asteroid, Stage16Drone, Stage16Fighter, Stage16Elite, Stage16Boss
+} from '../enemies/Stage16Enemies'
+import {
+    Stage17Asteroid, Stage17Drone, Stage17Fighter, Stage17Elite, Stage17Boss
+} from '../enemies/Stage17Enemies'
+import {
+    Stage18Asteroid, Stage18Drone, Stage18Fighter, Stage18Elite, Stage18Boss
+} from '../enemies/Stage18Enemies'
+import {
+    Stage19Asteroid, Stage19Drone, Stage19Fighter, Stage19Elite, Stage19Boss
+} from '../enemies/Stage19Enemies'
+import {
+    Stage20Asteroid, Stage20Drone, Stage20Fighter, Stage20Elite, Stage20Boss
+} from '../enemies/Stage20Enemies'
 
 // --- AMBIENCE CONTROLLER ---
 // Manages background ambience sound based on game state
@@ -104,8 +134,8 @@ const LASER = {
 }
 
 const GUN_OFFSETS = [
-    new THREE.Vector3(-2.2, -1.2, -1.0), // Wider and lower
-    new THREE.Vector3(2.2, -1.2, -1.0)
+    new THREE.Vector3(-2.2, -1.2, -3.5), // Barrel tip position (forward of camera)
+    new THREE.Vector3(2.2, -1.2, -3.5)   // Barrel tip position (forward of camera)
 ]
 
 // --- WIREFRAME VISUAL COMPONENTS ---
@@ -151,14 +181,30 @@ const AsteroidMesh = ({ data }: { data: Enemy }) => {
         ref.current.rotation.y += rotSpeed.y * delta
         ref.current.rotation.z += rotSpeed.z * delta
 
+        // Random position jitter (occasional teleport-like movement)
+        if (Math.random() > 0.98) {
+            ref.current.position.x += (Math.random() - 0.5) * 4
+            ref.current.position.y += (Math.random() - 0.5) * 4
+        }
+
         // Per-enemy spawn animation
         const ease = getSpawnEase(data.createdAt)
         ref.current.scale.setScalar(baseScale * ease)
 
-        // Update material opacity
-        if (mainMatRef.current) mainMatRef.current.opacity = 0.85 * ease
+        // Update material opacity with pulsing effect
+        const pulse = 0.85 + Math.sin(t * 6 + phase) * 0.15
+        if (mainMatRef.current) {
+            // Color cycling/flashing
+            const glitch = Math.random() > 0.92
+            if (glitch) {
+                mainMatRef.current.color.set(['#ff6600', '#ffff00', '#ff0044'][Math.floor(Math.random() * 3)])
+            } else {
+                mainMatRef.current.color.set(color)
+            }
+            mainMatRef.current.opacity = pulse * ease
+        }
         if (innerMatRef.current) innerMatRef.current.opacity = 0.4 * ease
-        if (ringMatRef.current) ringMatRef.current.opacity = 0.5 * ease
+        if (ringMatRef.current) ringMatRef.current.opacity = (0.5 + Math.sin(t * 8) * 0.2) * ease
         if (shardMatRef.current) shardMatRef.current.opacity = 0.6 * ease
 
         if (ringRef.current) {
@@ -176,6 +222,11 @@ const AsteroidMesh = ({ data }: { data: Enemy }) => {
             )
             shardRef.current.rotation.x += delta * 2
             shardRef.current.rotation.y += delta * 1.4
+            // Jitter shard fragments
+            if (Math.random() > 0.95) {
+                shardRef.current.position.x += (Math.random() - 0.5) * 0.5
+                shardRef.current.position.y += (Math.random() - 0.5) * 0.5
+            }
         }
     })
 
@@ -228,13 +279,27 @@ const DroneMesh = ({ data }: { data: Enemy }) => {
         ref.current.lookAt(0, 0, 0)
         ref.current.rotation.z += delta * 3 // Spin while facing player
 
+        // Random position jitter (jerky discrete movement like Stage 18)
+        if (Math.random() > 0.95) {
+            ref.current.position.x += (Math.random() - 0.5) * 3
+            ref.current.position.y += (Math.random() - 0.5) * 2
+        }
+
         // Per-enemy spawn animation
         const ease = getSpawnEase(data.createdAt)
         ref.current.scale.setScalar(ease * 3) // 2x size
 
-        // Update material opacity
-        if (outerMatRef.current) outerMatRef.current.opacity = 0.9 * ease
-        if (innerMatRef.current) innerMatRef.current.opacity = 0.6 * ease
+        // Update material opacity with color cycling
+        if (outerMatRef.current) {
+            const glitch = Math.random() > 0.9
+            if (glitch) {
+                outerMatRef.current.color.set(['#00ff88', '#ffff00', '#00ffff'][Math.floor(Math.random() * 3)])
+            } else {
+                outerMatRef.current.color.set(color)
+            }
+            outerMatRef.current.opacity = (0.9 + Math.sin(t * 8) * 0.1) * ease
+        }
+        if (innerMatRef.current) innerMatRef.current.opacity = (0.6 + Math.sin(t * 6 + phase) * 0.2) * ease
         if (haloMatRef.current) {
             const haloPulse = 0.85 + Math.sin(t * 3 + phase) * 0.12
             haloMatRef.current.opacity = 0.5 * ease * (0.6 + haloPulse * 0.4)
@@ -245,8 +310,15 @@ const DroneMesh = ({ data }: { data: Enemy }) => {
         }
 
         const finPulse = 1 + Math.sin(t * 4 + phase) * 0.2
-        if (finLeftRef.current) finLeftRef.current.scale.y = finPulse
-        if (finRightRef.current) finRightRef.current.scale.y = finPulse
+        if (finLeftRef.current) {
+            finLeftRef.current.scale.y = finPulse
+            // Jitter fins
+            if (Math.random() > 0.9) finLeftRef.current.position.x = -6.5 + (Math.random() - 0.5) * 0.5
+        }
+        if (finRightRef.current) {
+            finRightRef.current.scale.y = finPulse
+            if (Math.random() > 0.9) finRightRef.current.position.x = 6.5 + (Math.random() - 0.5) * 0.5
+        }
     })
 
     return (
@@ -301,22 +373,52 @@ const FighterMesh = ({ data }: { data: Enemy }) => {
         const phase = data.seed * Math.PI * 2
         ref.current.position.copy(data.position)
         ref.current.lookAt(0, 0, 0)
+
+        // Visibility flickering (like Stage 18 fighter)
+        const visible = Math.sin(t * 20 + phase) > -0.8
+        ref.current.visible = visible
+
+        // Random position jitter
+        if (Math.random() > 0.97) {
+            ref.current.position.x += (Math.random() - 0.5) * 4
+            ref.current.position.y += (Math.random() - 0.5) * 3
+        }
+
         if (innerRef.current) {
             innerRef.current.rotation.y += delta * 4
         }
         const wingWobble = Math.sin(t * 1.6 + phase) * 0.12
-        if (wingLeftRef.current) wingLeftRef.current.rotation.z = Math.PI / 4 + wingWobble
-        if (wingRightRef.current) wingRightRef.current.rotation.z = -Math.PI / 4 - wingWobble
+        if (wingLeftRef.current) {
+            wingLeftRef.current.rotation.z = Math.PI / 4 + wingWobble
+            // Wing jitter
+            if (Math.random() > 0.92) {
+                wingLeftRef.current.position.x = 12 + (Math.random() - 0.5) * 0.5
+            }
+        }
+        if (wingRightRef.current) {
+            wingRightRef.current.rotation.z = -Math.PI / 4 - wingWobble
+            if (Math.random() > 0.92) {
+                wingRightRef.current.position.x = -12 + (Math.random() - 0.5) * 0.5
+            }
+        }
 
         // Per-enemy spawn animation
         const ease = getSpawnEase(data.createdAt)
         ref.current.scale.setScalar(ease * 3) // 2x size
 
-        // Update material opacity
-        if (bodyMatRef.current) bodyMatRef.current.opacity = 0.85 * ease
-        if (wingMat1Ref.current) wingMat1Ref.current.opacity = 0.7 * ease
-        if (wingMat2Ref.current) wingMat2Ref.current.opacity = 0.7 * ease
-        if (coreMatRef.current) coreMatRef.current.opacity = 0.8 * ease
+        // Update material opacity with color cycling
+        if (bodyMatRef.current) {
+            const glitch = Math.random() > 0.88
+            if (glitch) {
+                bodyMatRef.current.color.set(['#ff00ff', '#00ffff', '#ffff00'][Math.floor(Math.random() * 3)])
+            } else {
+                bodyMatRef.current.color.set(color)
+            }
+            bodyMatRef.current.opacity = (0.85 + Math.sin(t * 10) * 0.15) * ease
+        }
+        if (wingMat1Ref.current) wingMat1Ref.current.opacity = (0.7 + Math.sin(t * 8 + phase) * 0.2) * ease
+        if (wingMat2Ref.current) wingMat2Ref.current.opacity = (0.7 + Math.sin(t * 8 + phase) * 0.2) * ease
+        if (coreMatRef.current) coreMatRef.current.opacity = (0.8 + Math.sin(t * 12) * 0.2) * ease
         if (spineMatRef.current) {
             const spinePulse = 0.9 + Math.sin(t * 3 + phase) * 0.12
             spineMatRef.current.opacity = 0.6 * ease * spinePulse
@@ -376,6 +478,13 @@ const EliteMesh = ({ data }: { data: Enemy }) => {
         const phase = data.seed * Math.PI * 2
         ref.current.position.copy(data.position)
         ref.current.lookAt(0, 0, 0)
+
+        // Random position jitter (glitch effect)
+        if (Math.random() > 0.97) {
+            ref.current.position.x += (Math.random() - 0.5) * 5
+            ref.current.position.y += (Math.random() - 0.5) * 5
+        }
+
         if (ring1Ref.current) ring1Ref.current.rotation.x += delta * 2
         if (ring2Ref.current) ring2Ref.current.rotation.y += delta * 2.5
         if (satellitesRef.current) satellitesRef.current.rotation.y += delta * 1.2
@@ -384,11 +493,17 @@ const EliteMesh = ({ data }: { data: Enemy }) => {
         const ease = getSpawnEase(data.createdAt)
         ref.current.scale.setScalar(ease * 3) // 2x size
 
-        // Update material opacity
-        if (centerMatRef.current) centerMatRef.current.opacity = 0.9 * ease
-        if (ring1MatRef.current) ring1MatRef.current.opacity = 0.8 * ease
-        if (ring2MatRef.current) ring2MatRef.current.opacity = 0.8 * ease
-        if (innerMatRef.current) innerMatRef.current.opacity = 0.7 * ease
+        // Color cycling/flashing
+        const glitch = Math.random() > 0.92
+        if (centerMatRef.current) {
+            if (glitch) {
+                centerMatRef.current.color.set(['#ffaa00', '#ff00ff', '#00ffff'][Math.floor(Math.random() * 3)])
+            }
+            centerMatRef.current.opacity = ease * (glitch ? 0.5 : 0.9)
+        }
+        if (ring1MatRef.current) ring1MatRef.current.opacity = ease * (0.7 + Math.sin(t * 8) * 0.1)
+        if (ring2MatRef.current) ring2MatRef.current.opacity = ease * (0.7 + Math.sin(t * 8 + 1) * 0.1)
+        if (innerMatRef.current) innerMatRef.current.opacity = ease * (0.6 + Math.sin(t * 6) * 0.1)
         if (pulseMatRef.current) {
             const pulse = 0.9 + Math.sin(t * 2 + phase) * 0.08
             pulseMatRef.current.opacity = 0.5 * ease
@@ -470,19 +585,33 @@ const BossMesh = ({ data }: { data: Enemy }) => {
         } else {
             ref.current.position.copy(data.position)
             ref.current.scale.set(1, 1, 1)
+
+            // Random teleport jitter (menacing glitch effect)
+            if (Math.random() > 0.98) {
+                ref.current.position.x += (Math.random() - 0.5) * 8
+                ref.current.position.y += (Math.random() - 0.5) * 8
+            }
         }
 
-        // Rotate inner structure
+        // Rotate inner structure with variable speed
         if (innerRef.current) {
-            innerRef.current.rotation.x += delta * 0.3
-            innerRef.current.rotation.y += delta * 0.5
+            const rotSpeed = Math.random() > 0.95 ? 2 : 1
+            innerRef.current.rotation.x += delta * 0.3 * rotSpeed
+            innerRef.current.rotation.y += delta * 0.5 * rotSpeed
         }
 
         if (shieldRef.current) {
             shieldRef.current.scale.setScalar(1 + Math.sin(t * 0.8) * 0.03)
+            // Occasional shield flicker
+            shieldRef.current.visible = Math.random() > 0.02
         }
         if (shieldMatRef.current) {
-            shieldMatRef.current.opacity = 0.25 + Math.sin(t * 1.1) * 0.08
+            // Pulsing opacity with color cycling
+            const glitch = Math.random() > 0.92
+            if (glitch) {
+                shieldMatRef.current.color.set(['#00ffff', '#ff00ff', '#ffff00'][Math.floor(Math.random() * 3)])
+            }
+            shieldMatRef.current.opacity = (0.25 + Math.sin(t * 1.1) * 0.08) * (glitch ? 1.5 : 1)
         }
     })
 
@@ -620,13 +749,113 @@ const EntityRenderer = React.memo(({ data }: { data: Enemy }) => {
         return <Stage9Fighter data={data} />
     }
 
-    // Stage 10: Cosmic/Nebula themed (purple/pink/cyan) - also default fallback
-    if (data.type === 'asteroid') return <Stage10Asteroid data={data} />
-    if (data.type === 'boss') return <Stage10Boss data={data} />
-    if (data.type === 'elite') return <Stage10Elite data={data} />
-    if (data.type === 'drone') return <Stage10Drone data={data} />
-    if (data.type === 'fighter') return <Stage10Fighter data={data} />
-    return <Stage10Fighter data={data} />
+    // Stage 10: Cosmic/Nebula themed (purple/pink/cyan)
+    if (stage === 10) {
+        if (data.type === 'asteroid') return <Stage10Asteroid data={data} />
+        if (data.type === 'boss') return <Stage10Boss data={data} />
+        if (data.type === 'elite') return <Stage10Elite data={data} />
+        if (data.type === 'drone') return <Stage10Drone data={data} />
+        if (data.type === 'fighter') return <Stage10Fighter data={data} />
+        return <Stage10Fighter data={data} />
+    }
+
+    // Stage 11: Toxic/Radiation themed (green/yellow)
+    if (stage === 11) {
+        if (data.type === 'asteroid') return <Stage11Asteroid data={data} />
+        if (data.type === 'boss') return <Stage11Boss data={data} />
+        if (data.type === 'elite') return <Stage11Elite data={data} />
+        if (data.type === 'drone') return <Stage11Drone data={data} />
+        if (data.type === 'fighter') return <Stage11Fighter data={data} />
+        return <Stage11Fighter data={data} />
+    }
+
+    // Stage 12: Electric/Plasma themed (blue/white)
+    if (stage === 12) {
+        if (data.type === 'asteroid') return <Stage12Asteroid data={data} />
+        if (data.type === 'boss') return <Stage12Boss data={data} />
+        if (data.type === 'elite') return <Stage12Elite data={data} />
+        if (data.type === 'drone') return <Stage12Drone data={data} />
+        if (data.type === 'fighter') return <Stage12Fighter data={data} />
+        return <Stage12Fighter data={data} />
+    }
+
+    // Stage 13: Shadow/Dark Matter themed (black/purple)
+    if (stage === 13) {
+        if (data.type === 'asteroid') return <Stage13Asteroid data={data} />
+        if (data.type === 'boss') return <Stage13Boss data={data} />
+        if (data.type === 'elite') return <Stage13Elite data={data} />
+        if (data.type === 'drone') return <Stage13Drone data={data} />
+        if (data.type === 'fighter') return <Stage13Fighter data={data} />
+        return <Stage13Fighter data={data} />
+    }
+
+    // Stage 14: Mineral/Geode themed (magenta/cyan/yellow)
+    if (stage === 14) {
+        if (data.type === 'asteroid') return <Stage14Asteroid data={data} />
+        if (data.type === 'boss') return <Stage14Boss data={data} />
+        if (data.type === 'elite') return <Stage14Elite data={data} />
+        if (data.type === 'drone') return <Stage14Drone data={data} />
+        if (data.type === 'fighter') return <Stage14Fighter data={data} />
+        return <Stage14Fighter data={data} />
+    }
+
+    // Stage 15: Fungal/Spore themed (brown/coral)
+    if (stage === 15) {
+        if (data.type === 'asteroid') return <Stage15Asteroid data={data} />
+        if (data.type === 'boss') return <Stage15Boss data={data} />
+        if (data.type === 'elite') return <Stage15Elite data={data} />
+        if (data.type === 'drone') return <Stage15Drone data={data} />
+        if (data.type === 'fighter') return <Stage15Fighter data={data} />
+        return <Stage15Fighter data={data} />
+    }
+
+    // Stage 16: Abyssal/Deep Sea themed (dark blue/aqua)
+    if (stage === 16) {
+        if (data.type === 'asteroid') return <Stage16Asteroid data={data} />
+        if (data.type === 'boss') return <Stage16Boss data={data} />
+        if (data.type === 'elite') return <Stage16Elite data={data} />
+        if (data.type === 'drone') return <Stage16Drone data={data} />
+        if (data.type === 'fighter') return <Stage16Fighter data={data} />
+        return <Stage16Fighter data={data} />
+    }
+
+    // Stage 17: Volcanic/Magma themed (red/orange/black)
+    if (stage === 17) {
+        if (data.type === 'asteroid') return <Stage17Asteroid data={data} />
+        if (data.type === 'boss') return <Stage17Boss data={data} />
+        if (data.type === 'elite') return <Stage17Elite data={data} />
+        if (data.type === 'drone') return <Stage17Drone data={data} />
+        if (data.type === 'fighter') return <Stage17Fighter data={data} />
+        return <Stage17Fighter data={data} />
+    }
+
+    // Stage 18: Temporal/Glitch themed (cyan/magenta/white)
+    if (stage === 18) {
+        if (data.type === 'asteroid') return <Stage18Asteroid data={data} />
+        if (data.type === 'boss') return <Stage18Boss data={data} />
+        if (data.type === 'elite') return <Stage18Elite data={data} />
+        if (data.type === 'drone') return <Stage18Drone data={data} />
+        if (data.type === 'fighter') return <Stage18Fighter data={data} />
+        return <Stage18Fighter data={data} />
+    }
+
+    // Stage 19: Holy/Angelic themed (white/gold)
+    if (stage === 19) {
+        if (data.type === 'asteroid') return <Stage19Asteroid data={data} />
+        if (data.type === 'boss') return <Stage19Boss data={data} />
+        if (data.type === 'elite') return <Stage19Elite data={data} />
+        if (data.type === 'drone') return <Stage19Drone data={data} />
+        if (data.type === 'fighter') return <Stage19Fighter data={data} />
+        return <Stage19Fighter data={data} />
+    }
+
+    // Stage 20: Demonic/Hellfire themed (red/black/orange) - also default fallback
+    if (data.type === 'asteroid') return <Stage20Asteroid data={data} />
+    if (data.type === 'boss') return <Stage20Boss data={data} />
+    if (data.type === 'elite') return <Stage20Elite data={data} />
+    if (data.type === 'drone') return <Stage20Drone data={data} />
+    if (data.type === 'fighter') return <Stage20Fighter data={data} />
+    return <Stage20Fighter data={data} />
 }, (prev, next) => prev.data.id === next.data.id && prev.data.hp === next.data.hp && prev.data.stage === next.data.stage)
 
 
@@ -1218,8 +1447,8 @@ export const SpaceShooterScene = () => {
             const convergeDist = 100
             const targetPoint = tempVecA.clone().add(aimDir.current.clone().multiplyScalar(convergeDist))
 
-            // Spawn dual bolts
-            for (const offset of GUN_OFFSETS) {
+            // Spawn dual bolts - one from each barrel
+            GUN_OFFSETS.forEach((offset, barrelIndex) => {
                 const rotation = camera.quaternion
                 // Muzzle Position
                 tempVecB.copy(offset).applyQuaternion(rotation).add(tempVecA)
@@ -1230,6 +1459,13 @@ export const SpaceShooterScene = () => {
                 // Align projectile: Visual points +Z, so align +Z to velocity dir
                 const dir = tempVecC.clone().normalize()
                 const projectileRot = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir)
+
+                // Clone special properties and add barrel-specific offsets
+                // For spiral weapons, offset phase by PI so they're 180 degrees apart
+                const specialProps = equippedWeapon.special ? {
+                    ...equippedWeapon.special,
+                    spiralPhase: (equippedWeapon.special.spiralPhase || 0) + (barrelIndex * Math.PI)
+                } : undefined
 
                 spawnProjectile({
                     id: `p-${Date.now()}-${Math.random()}`,
@@ -1242,9 +1478,9 @@ export const SpaceShooterScene = () => {
                     createdAt: Date.now(),
                     lifetime: LASER.lifetime,
                     colors: equippedWeapon.colors,
-                    special: equippedWeapon.special
+                    special: specialProps
                 })
-            }
+            })
         }
     })
 
