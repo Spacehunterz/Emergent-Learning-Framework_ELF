@@ -134,8 +134,8 @@ const LASER = {
 }
 
 const GUN_OFFSETS = [
-    new THREE.Vector3(-2.2, -1.2, -3.5), // Barrel tip position (forward of camera)
-    new THREE.Vector3(2.2, -1.2, -3.5)   // Barrel tip position (forward of camera)
+    new THREE.Vector3(-3.2, -2.0, -3.5), // Lowered to mount height
+    new THREE.Vector3(3.2, -2.0, -3.5)
 ]
 
 // --- WIREFRAME VISUAL COMPONENTS ---
@@ -947,42 +947,102 @@ const GunRig = ({ gunRef, recoilImpulse, weaponEnergy }: {
 
         // Smoke effect when overheated
         const smokeOpacity = isOverheated ? 0.4 : 0
-        ;[smoke1Ref, smoke2Ref].forEach((smokeRef, gunIdx) => {
-            if (!smokeRef.current) return
-            smokeRef.current.children.forEach((child, i) => {
-                if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
-                    // Animate smoke rising
-                    const particle = smokeParticles[i]
-                    particle.life += delta * 2
-                    if (particle.life > 1) {
-                        particle.life = 0
-                        particle.offset.set(
-                            (Math.random() - 0.5) * 0.15,
-                            0,
-                            (Math.random() - 0.5) * 0.15
-                        )
+            ;[smoke1Ref, smoke2Ref].forEach((smokeRef, gunIdx) => {
+                if (!smokeRef.current) return
+                smokeRef.current.children.forEach((child, i) => {
+                    if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
+                        // Animate smoke rising
+                        const particle = smokeParticles[i]
+                        particle.life += delta * 2
+                        if (particle.life > 1) {
+                            particle.life = 0
+                            particle.offset.set(
+                                (Math.random() - 0.5) * 0.15,
+                                0,
+                                (Math.random() - 0.5) * 0.15
+                            )
+                        }
+                        child.position.y = particle.life * 0.5
+                        child.position.x = particle.offset.x + Math.sin(t * 3 + i) * 0.03
+                        child.position.z = particle.offset.z
+                        const scale = 0.1 + particle.life * 0.2 // 2x size
+                        child.scale.setScalar(scale)
+                        child.material.opacity = smokeOpacity * (1 - particle.life)
                     }
-                    child.position.y = particle.life * 0.5
-                    child.position.x = particle.offset.x + Math.sin(t * 3 + i) * 0.03
-                    child.position.z = particle.offset.z
-                    const scale = 0.1 + particle.life * 0.2 // 2x size
-                    child.scale.setScalar(scale)
-                    child.material.opacity = smokeOpacity * (1 - particle.life)
-                }
+                })
             })
-        })
     })
 
     return (
         <group ref={gunRef}>
+            {/* --- HIGH TECH DASHBOARD V2 --- */}
+            {/* Main Console Slab - Lowered slightly */}
+            {/* Main Console Slab - HALF HEIGHT to reveal guns */}
+            <mesh position={[0, -2.25, -2.5]}>
+                <boxGeometry args={[14, 0.7, 2]} />
+                <meshStandardMaterial color="#0f172a" metalness={0.8} roughness={0.3} />
+            </mesh>
+
+            {/* HUD Frame - Cyan Neon Box - Frames the HUD panels */}
+            <group position={[0, -1.05, -1.75]}>
+                {/* Top Bar */}
+                <mesh position={[0, 0.2, 0]}>
+                    <boxGeometry args={[2.62, 0.02, 0.05]} />
+                    <meshBasicMaterial color="#0ea5e9" toneMapped={false} />
+                </mesh>
+                {/* Bottom Bar */}
+                <mesh position={[0, -0.25, -.1]}>
+                    <boxGeometry args={[2.8, 0.02, 0.05]} />
+                    <meshBasicMaterial color="#0ea5e9" toneMapped={false} />
+                </mesh>
+                {/* Left Bar */}
+                <mesh position={[-1.3, 0, 0]}>
+                    <boxGeometry args={[0.02, 0.4, 0.05]} />
+                    <meshBasicMaterial color="#0ea5e9" toneMapped={false} />
+                </mesh>
+                {/* Right Bar */}
+                <mesh position={[1.3, 0, 0]}>
+                    <boxGeometry args={[0.02, 0.4, 0.05]} />
+                    <meshBasicMaterial color="#0ea5e9" toneMapped={false} />
+                </mesh>
+            </group>
+
+            {/* HUD Glass Backing Plate (Center) */}
+            <mesh position={[0, -1.15, -.85]} rotation={[-0.1, 0, 0]}>
+                <planeGeometry args={[10, 1.5]} />
+                <meshBasicMaterial color="#000000" transparent opacity={0.4} />
+            </mesh>
+
+            {/* Gun Mounts - Widened to x=3.2 */}
+            <mesh position={[-3.2, -2.0, -2.8]}>
+                <boxGeometry args={[1, 0.6, 3]} />
+                <meshStandardMaterial color="#1e293b" metalness={0.6} roughness={0.4} />
+            </mesh>
+            <mesh position={[3.2, -2.0, -2.8]}>
+                <boxGeometry args={[1, 0.6, 3]} />
+                <meshStandardMaterial color="#1e293b" metalness={0.6} roughness={0.4} />
+            </mesh>
+
+            {/* Side Pillars - Angled - Widened to frame view */}
+            <mesh position={[-6.5, 0, -2.5]} rotation={[0, 0, -0.15]}>
+                <boxGeometry args={[1.5, 7, 2]} />
+                <meshStandardMaterial color="#020617" metalness={0.5} roughness={0.2} />
+            </mesh>
+            <mesh position={[6.5, 0, -2.5]} rotation={[0, 0, 0.15]}>
+                <boxGeometry args={[1.5, 7, 2]} />
+                <meshStandardMaterial color="#020617" metalness={0.5} roughness={0.2} />
+            </mesh>
+
             <group ref={innerRef} name="RecoilContainer">
                 {/* Lit from behind/above to ensure visibility */}
                 <pointLight position={[0, 1, 0.5]} intensity={0.5} distance={5} color="#ffffff" />
                 <pointLight position={[0, 0.4, -6]} intensity={1.2} distance={140} color="#dbeafe" />
+
+                {/* Left Gun */}
                 <group position={GUN_OFFSETS[0].toArray()}>
                     <mesh rotation={[Math.PI / 2, 0, 0]}>
-                        <cylinderGeometry args={[0.08, 0.16, 2.8]} />
-                        <meshStandardMaterial color="#a1a1aa" metalness={0.2} roughness={0.8} />
+                        <cylinderGeometry args={[0.08, 0.16, 3.2]} />
+                        <meshStandardMaterial color="#94a3b8" metalness={0.4} roughness={0.6} />
                     </mesh>
                     <mesh position={[0, 0, -1.2]}>
                         <sphereGeometry args={[0.14, 12, 12]} />
@@ -990,18 +1050,20 @@ const GunRig = ({ gunRef, recoilImpulse, weaponEnergy }: {
                     </mesh>
                     {/* Smoke particles */}
                     <group ref={smoke1Ref} position={[0, 0, -1.2]}>
-                        {[0,1,2].map(i => (
+                        {[0, 1, 2].map(i => (
                             <mesh key={i}>
                                 <sphereGeometry args={[1, 6, 6]} />
-                                <meshBasicMaterial color="#888888" transparent opacity={0} />
+                                <meshBasicMaterial color="#cccccc" transparent opacity={0} />
                             </mesh>
                         ))}
                     </group>
                 </group>
+
+                {/* Right Gun */}
                 <group position={GUN_OFFSETS[1].toArray()}>
                     <mesh rotation={[Math.PI / 2, 0, 0]}>
-                        <cylinderGeometry args={[0.08, 0.16, 2.8]} />
-                        <meshStandardMaterial color="#a1a1aa" metalness={0.2} roughness={0.8} />
+                        <cylinderGeometry args={[0.08, 0.16, 3.2]} />
+                        <meshStandardMaterial color="#94a3b8" metalness={0.4} roughness={0.6} />
                     </mesh>
                     <mesh position={[0, 0, -1.2]}>
                         <sphereGeometry args={[0.14, 12, 12]} />
@@ -1009,10 +1071,10 @@ const GunRig = ({ gunRef, recoilImpulse, weaponEnergy }: {
                     </mesh>
                     {/* Smoke particles */}
                     <group ref={smoke2Ref} position={[0, 0, -1.2]}>
-                        {[0,1,2].map(i => (
+                        {[0, 1, 2].map(i => (
                             <mesh key={i}>
                                 <sphereGeometry args={[1, 6, 6]} />
-                                <meshBasicMaterial color="#888888" transparent opacity={0} />
+                                <meshBasicMaterial color="#cccccc" transparent opacity={0} />
                             </mesh>
                         ))}
                     </group>
@@ -1040,10 +1102,18 @@ export const SpaceShooterScene = () => {
     // Player weapon system
     const equippedWeaponId = usePlayerWeaponStore(s => s.equippedWeaponId)
     const getEffectiveStats = usePlayerWeaponStore(s => s.getEffectiveStats)
+    const shipUpgrades = usePlayerWeaponStore(s => s.shipUpgrades)
     const equippedWeapon = WEAPON_TYPES[equippedWeaponId] || WEAPON_TYPES.plasma_bolt
 
+    // GAME STATS - Scaled by Upgrades
+    const maxHull = 100 + (shipUpgrades?.hull || 0) * 25
+    const maxShields = 100 + (shipUpgrades?.shield || 0) * 25
+    const maxEnergy = 100 + (shipUpgrades?.energy || 0) * 20
+    const powerDuration = 30 + (shipUpgrades?.power || 0) * 10 // Base 30s + 10s per level
+
     // Local hull tracking for cockpit mode (shields come from GameContext)
-    const hullRef = useRef(100)
+    // Fixed HUD scaling issue by normalizing values
+    const hullRef = useRef(maxHull)
 
     // REFS
     const aimQuat = useRef(new THREE.Quaternion())
@@ -1060,7 +1130,7 @@ export const SpaceShooterScene = () => {
     // HUD REF - Zero render updates
     const hudRef = useRef<HudData>(DEFAULT_HUD_DATA)
 
-    const weaponEnergy = useRef(100)
+    const weaponEnergy = useRef(maxEnergy)
     const canFire = useRef(true)
 
     // Weapon boost state - turbo shot mode
@@ -1068,7 +1138,7 @@ export const SpaceShooterScene = () => {
     const isWeaponBoosted = () => Date.now() < weaponBoostEnd.current
 
     // Overcharge system - builds from kills, middle mouse to activate turbo burst
-    const overchargeRef = useRef(0) // 0-100, full = 30s turbo
+    const overchargeRef = useRef(0) // 0-100, full = 30s turbo (scaled by powerDuration)
 
     // Shield system - right click to activate
     const shieldActive = useRef(false)
@@ -1161,7 +1231,7 @@ export const SpaceShooterScene = () => {
             removePickup(id) // Remove the pickup from store
 
             if (type === 'health') {
-                hullRef.current = Math.min(100, hullRef.current + value)
+                hullRef.current = Math.min(maxHull, hullRef.current + value)
             } else if (type === 'shield') {
                 rechargeShields(value)
             } else if (type === 'weapon') {
@@ -1212,8 +1282,8 @@ export const SpaceShooterScene = () => {
             // Middle click = activate overcharge turbo burst
             if (event.button === 1) {
                 if (overchargeRef.current > 0) {
-                    // Duration scales with charge: 100% = 30s, 50% = 15s, etc.
-                    const durationSeconds = (overchargeRef.current / 100) * 30
+                    // Duration scales with charge: 100% = powerDuration (30s+), 50% = half, etc.
+                    const durationSeconds = (overchargeRef.current / 100) * powerDuration
                     weaponBoostEnd.current = Date.now() + durationSeconds * 1000
                     overchargeRef.current = 0 // Consume all charge
                     sound.playLevelUp() // Satisfying activation sound
@@ -1312,20 +1382,15 @@ export const SpaceShooterScene = () => {
 
         // Energy Regen
         if (!firing.current) {
-            weaponEnergy.current = Math.min(100, weaponEnergy.current + LASER.regenRate * delta)
+            weaponEnergy.current = Math.min(maxEnergy, weaponEnergy.current + LASER.regenRate * delta)
             if (weaponEnergy.current > 20) canFire.current = true // Re-enable if above threshold
         }
 
         // --- HUD UPDATES (Per Frame, mutable) ---
-        hudRef.current.energy = weaponEnergy.current
-        hudRef.current.shields = shields // Note: shields is state, but we read it here. 
-        // Ideally shields would be a ref too for true zero-render, but it changes rarely compared to position/energy.
-        // Actually shields IS state, so this whole component re-renders when shields change. 
-        // That is acceptable for 'hit' events, but not for 'energy' or 'time'.
-        // To fix shields re-rendering, we'd need to move shields to a store/ref.
-        // For now, energy is the big one.
-
-        hudRef.current.integrity = hullRef.current
+        // Normalize to 0-100 scale for UI bars
+        hudRef.current.energy = (weaponEnergy.current / maxEnergy) * 100
+        hudRef.current.shields = (shields / maxShields) * 100
+        hudRef.current.integrity = (hullRef.current / maxHull) * 100
         hudRef.current.overcharge = overchargeRef.current
 
         const boss = enemies.find(e => e.type === 'boss')

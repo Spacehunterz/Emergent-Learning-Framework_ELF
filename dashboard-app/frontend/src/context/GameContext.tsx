@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { usePlayerWeaponStore } from '../components/game/systems/PlayerWeaponStore';
 
 
 
@@ -160,8 +161,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const toggleGameMode = () => setGameEnabled(!state.isGameEnabled);
     const setActiveShip = (ship: 'default' | 'star_ship' | 'drone' | 'glitch') => setState(prev => ({ ...prev, activeShip: ship }));
     const setActiveTrail = (trail: 'none' | 'cyan' | 'star' | 'plasma' | 'fire') => setState(prev => ({ ...prev, activeTrail: trail }));
-    const rechargeShields = (amount: number) => setState(prev => ({ ...prev, shields: Math.min(100, prev.shields + amount) }));
-    const resetShields = () => setState(prev => ({ ...prev, shields: 100 }));
+
+    // Get Upgrades
+    const shipUpgrades = usePlayerWeaponStore(s => s.shipUpgrades)
+    const maxShields = 100 + (shipUpgrades?.shield || 0) * 25 // +25 per level
+
+    const rechargeShields = (amount: number) => setState(prev => ({ ...prev, shields: Math.min(maxShields, prev.shields + amount) }));
+    const resetShields = () => setState(prev => ({ ...prev, shields: maxShields }));
     const levelUp = () => setState(prev => ({ ...prev, level: prev.level + 1 }));
 
     const setGameOver = (isOver: boolean) => setState(prev => ({ ...prev, isGameOver: isOver }));
@@ -171,7 +177,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isGameOver: false,
         score: 0,
         level: 1,
-        shields: 100
+        shields: maxShields
     }));
 
     // Update damage logic to trigger Game Over instead of disabling game

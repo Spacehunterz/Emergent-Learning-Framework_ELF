@@ -68,11 +68,6 @@ const TurretCockpit = ({ lastShotTime }: { lastShotTime: number }) => {
     // FIXED: Use refs for animation state to avoid React reconciliation every frame
     const recoilRef = useRef(0)
     const [displayRecoil, setDisplayRecoil] = useState(0) // Only for visual updates when significant
-    const { shields, maxShields, hull, maxHull } = usePlayerState()
-
-    // Derived percentages
-    const shieldPct = shields / maxShields
-    const hullPct = hull / maxHull
 
     // Recoil Impulse Logic
     useEffect(() => {
@@ -98,77 +93,38 @@ const TurretCockpit = ({ lastShotTime }: { lastShotTime: number }) => {
         <group>
             {/* PHYSICAL COCKPIT STRUCTURE (3D Geometry) */}
 
-            {/* Main Window Frame (Torus Cage) - REMOVED */}
-
-
-            {/* Side Struts (Pillars) */}
-            <mesh position={[-2.5, 0, -1.5]} rotation={[0, 0, 0.2]}>
-                <cylinderGeometry args={[0.1, 0.15, 3]} />
-                <meshStandardMaterial color="#333" roughness={0.3} metalness={0.9} />
+            {/* Side Struts (Pillars) - Moved out to frame the view */}
+            <mesh position={[-3.5, 0, -2]} rotation={[0, 0, 0.1]}>
+                <cylinderGeometry args={[0.2, 0.3, 4]} />
+                <meshStandardMaterial color="#222" roughness={0.7} metalness={0.8} />
             </mesh>
-            <mesh position={[2.5, 0, -1.5]} rotation={[0, 0, -0.2]}>
-                <cylinderGeometry args={[0.1, 0.15, 3]} />
-                <meshStandardMaterial color="#333" roughness={0.3} metalness={0.9} />
+            <mesh position={[3.5, 0, -2]} rotation={[0, 0, -0.1]}>
+                <cylinderGeometry args={[0.2, 0.3, 4]} />
+                <meshStandardMaterial color="#222" roughness={0.7} metalness={0.8} />
             </mesh>
 
-            {/* Dashboard Console (Bottom) */}
-            <group position={[0, -2, -2]} rotation={[-0.2, 0, 0]}>
-                {/* Console Main Body */}
+            {/* Dashboard Console (Bottom Slab) 
+                Matching the sketch: A dark grey area at the bottom.
+                Positioned lower to give a clear view.
+            */}
+            <group position={[0, -2.2, -3]} rotation={[-0.1, 0, 0]}>
                 <mesh>
-                    <boxGeometry args={[4, 1, 1.5]} />
-                    <meshStandardMaterial color="#111" roughness={0.5} metalness={0.5} />
+                    <boxGeometry args={[12, 1.5, 3]} />
+                    <meshBasicMaterial color="#333" />
                 </mesh>
-
-                {/* --- 3D GAUGES --- */}
-
-                {/* 1. SHIELD BAR (Left) */}
-                <group position={[-1.2, 0.51, 0.2]}>
-                    <mesh rotation={[-1.57, 0, 0]}>
-                        <planeGeometry args={[1, 0.1]} />
-                        <meshBasicMaterial color="#333" /> {/* Backing */}
-                    </mesh>
-                    <mesh position={[-0.5 + (0.5 * shieldPct), 0.01, 0]} rotation={[-1.57, 0, 0]}>
-                        <planeGeometry args={[1 * shieldPct, 0.08]} />
-                        <meshBasicMaterial color="cyan" />
-                    </mesh>
-                    <Html position={[0, 0.1, 0]} transform rotation={[-1.5, 0, 0]} scale={0.2}>
-                        <div className="font-mono text-cyan-400 text-xs select-none">SHIELDS</div>
-                    </Html>
-                </group>
-
-                {/* 2. WEAPON STATUS (Center) */}
-                <group position={[0, 0.51, 0.2]}>
-                    <mesh rotation={[-1.57, 0, 0]}>
-                        <ringGeometry args={[0.15, 0.2, 32]} />
-                        <meshBasicMaterial color="lime" />
-                    </mesh>
-                    {/* Inner pulse light */}
-                    <mesh position={[0, 0.01, 0]} rotation={[-1.57, 0, 0]}>
-                        <circleGeometry args={[0.1, 32]} />
-                        <meshBasicMaterial color={recoil > 0.1 ? "white" : "#004400"} />
-                    </mesh>
-                </group>
-
-                {/* 3. HULL INTEGRITY (Right) */}
-                <group position={[1.2, 0.51, 0.2]}>
-                    <mesh rotation={[-1.57, 0, 0]}>
-                        <planeGeometry args={[1, 0.1]} />
-                        <meshBasicMaterial color="#333" /> {/* Backing */}
-                    </mesh>
-                    <mesh position={[-0.5 + (0.5 * hullPct), 0.01, 0]} rotation={[-1.57, 0, 0]}>
-                        <planeGeometry args={[1 * hullPct, 0.08]} />
-                        <meshBasicMaterial color={hullPct < 0.3 ? "red" : "orange"} />
-                    </mesh>
-                    <Html position={[0, 0.1, 0]} transform rotation={[-1.5, 0, 0]} scale={0.2}>
-                        <div className="font-mono text-orange-400 text-xs select-none">HULL</div>
-                    </Html>
-                </group>
-
+                {/* Thin trim line */}
+                <mesh position={[0, 0.76, 0.5]}>
+                    <boxGeometry args={[12, 0.05, 0.1]} />
+                    <meshStandardMaterial color="#444" roughness={0.5} metalness={0.5} />
+                </mesh>
             </group>
 
-            {/* Cannons */}
-            <Cannon position={[-2.5, -2, -3]} recoil={recoil} />
-            <Cannon position={[2.5, -2, -3]} recoil={recoil} />
+            {/* Cannons 
+                Positioned so they look like they are mounted on/near the dashboard but not clipping.
+                Moved slightly wider and up to clear the console surface (y=-1.45).
+            */}
+            <Cannon position={[-2.2, -1.2, -3.5]} recoil={recoil} />
+            <Cannon position={[2.2, -1.2, -3.5]} recoil={recoil} />
         </group>
     )
 }

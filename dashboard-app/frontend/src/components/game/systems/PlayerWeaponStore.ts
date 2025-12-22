@@ -34,6 +34,16 @@ interface PlayerWeaponState {
     }
     getUpgradeCost: (weaponId: string, upgradeType: 'damage' | 'fireRate' | 'energy') => number
     getUpgradeLevel: (weaponId: string, upgradeType: 'damage' | 'fireRate' | 'energy') => number
+
+    // Ship Upgrades
+    shipUpgrades: {
+        shield: number // 0-5
+        hull: number   // 0-5
+        energy: number // 0-5
+        power: number  // 0-5
+    }
+    upgradeShipSystem: (type: 'shield' | 'hull' | 'energy' | 'power') => boolean
+    getShipUpgradeCost: (type: 'shield' | 'hull' | 'energy' | 'power') => number
 }
 
 // Upgrade costs scale with level
@@ -216,6 +226,39 @@ export const usePlayerWeaponStore = create<PlayerWeaponState>((set, get) => ({
                 return Math.round((1 - upgrades.energyEfficiency) / 0.08)
         }
         return 0
+    },
+
+    // --- SHIP SYSTEM UPGRADES ---
+    shipUpgrades: {
+        shield: 0,
+        hull: 0,
+        energy: 0,
+        power: 0
+    },
+
+    upgradeShipSystem: (type) => {
+        const state = get()
+        const currentLevel = state.shipUpgrades[type]
+        if (currentLevel >= MAX_UPGRADE_LEVEL) return false
+
+        const cost = getUpgradeCostForLevel(currentLevel)
+        if (state.credits < cost) return false
+
+        set({
+            credits: state.credits - cost,
+            shipUpgrades: {
+                ...state.shipUpgrades,
+                [type]: currentLevel + 1
+            }
+        })
+        return true
+    },
+
+    getShipUpgradeCost: (type) => {
+        const state = get()
+        const currentLevel = state.shipUpgrades[type]
+        if (currentLevel >= MAX_UPGRADE_LEVEL) return -1
+        return getUpgradeCostForLevel(currentLevel)
     }
 }))
 
