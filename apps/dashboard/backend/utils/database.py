@@ -14,7 +14,17 @@ from dataclasses import dataclass
 
 
 # Database paths
-EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
+# Database paths
+def get_base_path() -> Path:
+    env_path = os.environ.get('ELF_BASE_PATH')
+    if env_path: return Path(env_path)
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / '.coordination').exists() or (parent / '.git').exists():
+            return parent
+    return Path.home() / ".claude" / "emergent-learning"
+
+EMERGENT_LEARNING_PATH = get_base_path()
 GLOBAL_DB_PATH = EMERGENT_LEARNING_PATH / "memory" / "index.db"
 
 # Legacy alias

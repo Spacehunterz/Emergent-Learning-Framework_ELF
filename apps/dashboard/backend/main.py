@@ -57,14 +57,36 @@ from routers.fraud import set_paths as set_fraud_paths
 from routers.workflows import set_paths as set_workflows_paths
 
 # Paths
-EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
+# Paths
+import os
+def get_base_path() -> Path:
+    env_path = os.environ.get('ELF_BASE_PATH')
+    if env_path: return Path(env_path)
+    # apps/dashboard/backend/main.py -> root is ../../../
+    current = Path(__file__).resolve()
+    # Check parents for markers
+    for parent in current.parents:
+        if (parent / '.coordination').exists() or (parent / '.git').exists():
+            return parent
+    return Path.home() / ".claude" / "emergent-learning"
+
+EMERGENT_LEARNING_PATH = get_base_path()
 FRONTEND_PATH = Path(__file__).parent.parent / "frontend" / "dist"
 
 # Import database initialization (must come after EMERGENT_LEARNING_PATH is defined)
-# Import from the query system, not the local models.py (which is Pydantic models)
+# Import from the query system
 import sys
-sys.path.insert(0, str(EMERGENT_LEARNING_PATH))
-from query.models import initialize_database, create_tables
+# Add src to path to allow importing query package
+if (EMERGENT_LEARNING_PATH / "src").exists():
+    sys.path.insert(0, str(EMERGENT_LEARNING_PATH / "src"))
+else:
+    sys.path.insert(0, str(EMERGENT_LEARNING_PATH))
+
+try:
+    from query.models import initialize_database, create_tables
+except ImportError:
+    # Try fully qualified if src not in path or other issue
+    from src.query.models import initialize_database, create_tables
 
 # Import session indexing
 from session_index import SessionIndex

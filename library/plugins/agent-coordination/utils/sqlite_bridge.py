@@ -23,8 +23,24 @@ class SQLiteBridge:
     """Bridge findings to SQLite for historical queries."""
 
     def __init__(self):
-        home = Path.home()
-        self.db_path = home / ".claude" / "emergent-learning" / "memory" / "index.db"
+        import os
+        # Dynamic path detection
+        env_path = os.environ.get('ELF_BASE_PATH')
+        if env_path: 
+             base = Path(env_path)
+        else:
+            base = None
+            current = Path(__file__)
+            # library/plugins/agent-coordination/utils/sqlite_bridge.py -> root is ../../../../../
+            # Check 5 levels up for root
+            for parent in current.parents:
+                if (parent / '.coordination').exists() or (parent / '.git').exists():
+                    base = parent
+                    break
+            if base is None:
+                base = Path.home() / ".claude" / "emergent-learning"
+
+        self.db_path = base / "memory" / "index.db"
         self._connection = None
 
     def _get_connection(self):

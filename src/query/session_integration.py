@@ -31,7 +31,19 @@ except ImportError:
     WINDOWS = False
 
 # Paths
-EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
+# Paths
+try:
+    from .config_loader import get_base_path
+    EMERGENT_LEARNING_PATH = get_base_path()
+except ImportError:
+    # Fallback if run directly and relative import fails
+    # Try absolute import if in python path
+    try:
+        from src.query.config_loader import get_base_path
+        EMERGENT_LEARNING_PATH = get_base_path()
+    except ImportError:
+         # Fallback to default
+        EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
 SESSIONS_PATH = EMERGENT_LEARNING_PATH / "sessions"
 LOGS_PATH = SESSIONS_PATH / "logs"
 PROCESSED_MARKER = SESSIONS_PATH / ".processed"

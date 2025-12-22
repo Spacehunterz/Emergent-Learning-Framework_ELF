@@ -37,7 +37,13 @@ try:
     HAS_MODEL_DETECTION = True
 except ImportError:
     HAS_MODEL_DETECTION = False
-# Force UTF-8 output on Windowsif sys.platform == "win32":    try:        sys.stdout.reconfigure(encoding="utf-8", errors="replace")        sys.stderr.reconfigure(encoding="utf-8", errors="replace")    except: pass
+# Force UTF-8 output on Windows
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except:
+        pass
 
 SWARM_RESULTS_DIR = ".coordination/swarm-results"
 AGENT_LOG = ".coordination/AGENT_LOG.md"

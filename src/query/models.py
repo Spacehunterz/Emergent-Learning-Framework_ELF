@@ -44,7 +44,12 @@ async def initialize_database(db_path: Optional[str] = None) -> Manager:
     global manager
 
     if db_path is None:
-        db_path = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
+        try:
+            from .config_loader import get_base_path
+            db_path = get_base_path() / "memory" / "index.db"
+        except ImportError:
+            # Fallback
+            db_path = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
     else:
         db_path = Path(db_path).expanduser()
 
@@ -146,7 +151,12 @@ def initialize_database_sync(db_path: Optional[str] = None) -> Manager:
     global manager
 
     if db_path is None:
-        db_path = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
+        try:
+            from .config_loader import get_base_path
+            db_path = get_base_path() / "memory" / "index.db"
+        except ImportError:
+            # Fallback
+            db_path = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
     else:
         db_path = Path(db_path).expanduser()
 
