@@ -59,16 +59,16 @@ export function useDashboardData() {
       // Refresh stats
       api.get('/api/stats').then(data => {
         if (data) setStats(data)
-      }).catch(() => {})
+      }).catch(() => { })
       // Refresh runs
       api.get('/api/runs?limit=100').then(data => {
         if (data) setRuns(data)
-      }).catch(() => {})
+      }).catch(() => { })
       // Refresh events
       api.get('/api/events?limit=100').then(data => {
         if (data) setEvents(data)
-      }).catch(() => {})
-    }, 10000)
+      }).catch(() => { })
+    }, 30000)
 
     return () => clearInterval(interval)
   }, [loadData, api])

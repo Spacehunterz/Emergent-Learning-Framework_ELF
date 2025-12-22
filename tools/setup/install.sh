@@ -38,7 +38,7 @@ PYTHON_CMD=$(detect_python)
 install_venv() {
     local venv_dir="$ELF_DIR/.venv"
     # requirements.txt is at root of repo, not in ELF_DIR
-    local requirements="$SCRIPT_DIR/../requirements.txt"
+    local requirements="$SCRIPT_DIR/../../requirements.txt"
     # Fallback: check if it's in ELF_DIR (for in-place installs)
     if [ ! -f "$requirements" ]; then
         requirements="$ELF_DIR/requirements.txt"
@@ -120,6 +120,10 @@ install_venv() {
         fi
     fi
 
+    # Install package in editable mode to support src layout
+    echo "[ELF] Installing project in editable mode..."
+    "$VENV_PYTHON" -m pip install -e "$SCRIPT_DIR/../.." 2>&1 || echo "[ELF] Warning: Failed to install editable package"
+
     # Final verification - can we import the core dependency?
     if ! "$VENV_PYTHON" -c "import peewee_aio" 2>/dev/null; then
         echo "[ELF] Warning: Core dependency peewee_aio not available."
@@ -134,13 +138,33 @@ install_venv() {
 VENV_PYTHON=""
 
 install_commands() {
-    for file in "$SCRIPT_DIR/commands/"*; do
+    for file in "$SCRIPT_DIR/../../library/commands/"*; do
         [ -f "$file" ] || continue
         filename=$(basename "$file")
         if [ ! -f "$CLAUDE_DIR/commands/$filename" ]; then
             cp "$file" "$CLAUDE_DIR/commands/$filename"
         fi
     done
+}
+
+install_core_files() {
+    echo "[ELF] Installing core files to $ELF_DIR..."
+    mkdir -p "$ELF_DIR"
+    
+    # Copy src contents (flattening)
+    if [ -d "$SCRIPT_DIR/../../src" ]; then
+        cp -r "$SCRIPT_DIR/../../src/"* "$ELF_DIR/"
+    fi
+    
+    # Copy dashboard
+    if [ -d "$SCRIPT_DIR/../../apps/dashboard" ]; then
+        # Clean destination if exists to avoid merge issues
+        rm -rf "$ELF_DIR/dashboard-app"
+        cp -r "$SCRIPT_DIR/../../apps/dashboard" "$ELF_DIR/dashboard-app"
+    fi
+
+    # Copy hooks (if strictly needed outside of src, but they are in src now)
+    # install_settings uses ELF_DIR/hooks, so copying src/* handles it.
 }
 
 install_settings() {
@@ -293,6 +317,7 @@ case "$MODE" in
             echo "[ELF] Merged with existing config (backup: CLAUDE.md.backup)"
         fi
         install_commands
+        install_core_files
         install_venv
         install_settings
         install_git_hooks
@@ -303,8 +328,9 @@ case "$MODE" in
         if [ -f "$CLAUDE_DIR/CLAUDE.md" ]; then
             cp "$CLAUDE_DIR/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md.backup"
         fi
-        cp "$SCRIPT_DIR/CLAUDE.md.template" "$CLAUDE_DIR/CLAUDE.md"
+        cp "$SCRIPT_DIR/../../templates/CLAUDE.md.template" "$CLAUDE_DIR/CLAUDE.md"
         install_commands
+        install_core_files
         install_venv
         install_settings
         install_git_hooks
@@ -316,6 +342,7 @@ case "$MODE" in
         echo "[ELF] Skipping CLAUDE.md modification"
         echo "[ELF] Warning: ELF may not function correctly without CLAUDE.md instructions"
         install_commands
+        install_core_files
         install_venv
         install_settings
         install_git_hooks
@@ -354,6 +381,7 @@ case "$MODE" in
         fi
 
         install_commands
+        install_core_files
         install_venv
         install_settings
         install_git_hooks

@@ -10,8 +10,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-WATCHER_DIR="$PROJECT_DIR/watcher"
+PROJECT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
+WATCHER_DIR="$PROJECT_DIR/src/watcher"
 LAUNCHER_SCRIPT="$WATCHER_DIR/launcher.py"
 
 # Detect Python command

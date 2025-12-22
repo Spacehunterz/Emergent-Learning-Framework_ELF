@@ -6,6 +6,27 @@ test.describe('Emergent Learning Dashboard', () => {
     await page.goto('/');
     // Wait for initial load
     await page.waitForLoadState('networkidle');
+
+    // Switch to Grid View if we are in Cosmic View
+    // Look for the Cosmic View toggle button (globe icon) or check if we are in cosmic mode
+    // Ideally we click the "Grid" button in the toggle
+    try {
+      const gridBtn = page.getByTitle('Grid View');
+      if (await gridBtn.isVisible()) {
+        await gridBtn.click();
+        // Wait for a key element of Grid View to appear to ensure clean state
+        try {
+          await page.locator('h3:has-text("Hot Spots")').waitFor({ state: 'visible', timeout: 3000 });
+          console.log('Switched to Grid View and confirmed');
+        } catch (e) {
+          console.log('Warning: Hot Spots not found after switching to Grid View');
+        }
+      } else {
+        console.log('Grid View button not visible');
+      }
+    } catch (e) {
+      console.log('Error switching to Grid View:', e);
+    }
   });
 
   test('loads and displays header', async ({ page }) => {

@@ -16,41 +16,58 @@ async def get_stats():
 
         stats = {}
 
-        # Counts
-        cursor.execute("SELECT COUNT(*) FROM workflow_runs")
-        stats["total_runs"] = cursor.fetchone()[0]
+        # Consolidate main stats into a single query for performance
+        try:
+            cursor.execute("""
+                SELECT
+                    (SELECT COUNT(*) FROM workflow_runs) as total_runs,
+                    (SELECT COUNT(*) FROM node_executions) as total_executions,
+                    (SELECT COUNT(*) FROM trails) as total_trails,
+                    (SELECT COUNT(*) FROM heuristics) as total_heuristics,
+                    (SELECT COUNT(*) FROM heuristics WHERE is_golden = 1) as golden_rules,
+                    (SELECT COUNT(*) FROM learnings) as total_learnings,
+                    (SELECT COUNT(*) FROM learnings WHERE type = 'failure') as failures,
+                    (SELECT COUNT(*) FROM learnings WHERE type = 'success') as successes,
+                    (SELECT COUNT(*) FROM decisions) as total_decisions,
+                    (SELECT COUNT(*) FROM decisions WHERE status = 'accepted') as accepted_decisions,
+                    (SELECT COUNT(*) FROM decisions WHERE status = 'superseded') as superseded_decisions,
+                    (SELECT COUNT(*) FROM workflow_runs WHERE status = 'completed') as successful_runs,
+                    (SELECT COUNT(*) FROM workflow_runs WHERE status IN ('failed', 'cancelled')) as failed_runs,
+                    (SELECT AVG(confidence) FROM heuristics) as avg_confidence,
+                    (SELECT SUM(times_validated) FROM heuristics) as total_validations,
+                    (SELECT SUM(times_violated) FROM heuristics) as total_violations,
+                    (SELECT COUNT(*) FROM metrics WHERE timestamp > datetime('now', '-1 hour')) as metrics_last_hour,
+                    (SELECT COUNT(*) FROM workflow_runs WHERE created_at > datetime('now', '-24 hours')) as runs_today,
+                    (SELECT COUNT(*) FROM building_queries) as total_queries,
+                    (SELECT COUNT(*) FROM building_queries WHERE created_at > datetime('now', '-24 hours')) as queries_today,
+                    (SELECT AVG(duration_ms) FROM building_queries WHERE duration_ms IS NOT NULL) as avg_query_duration_ms,
+                    (SELECT COUNT(*) FROM invariants) as total_invariants,
+                    (SELECT COUNT(*) FROM invariants WHERE status = 'active') as active_invariants,
+                    (SELECT COUNT(*) FROM invariants WHERE status = 'violated') as violated_invariants,
+                    (SELECT SUM(violation_count) FROM invariants) as total_invariant_violations
+            """)
+            row = cursor.fetchone()
+            keys = [
+                "total_runs", "total_executions", "total_trails", "total_heuristics", "golden_rules",
+                "total_learnings", "failures", "successes", "total_decisions", "accepted_decisions",
+                "superseded_decisions", "successful_runs", "failed_runs", "avg_confidence",
+                "total_validations", "total_violations", "metrics_last_hour", "runs_today",
+                "total_queries", "queries_today", "avg_query_duration_ms", "total_invariants",
+                "active_invariants", "violated_invariants", "total_invariant_violations"
+            ]
+            # Map values to keys, defaulting None to 0 for counts/sums if appropriate
+            for i, key in enumerate(keys):
+                val = row[i]
+                if val is None and key.startswith(("total_", "avg_", "metrics_", "runs_", "active_", "violated_", "failures", "successes", "golden_rules")):
+                     val = 0
+                stats[key] = val
 
-        cursor.execute("SELECT COUNT(*) FROM node_executions")
-        stats["total_executions"] = cursor.fetchone()[0]
+        except Exception as e:
+             # Fallback if the massive query fails (unlikely, but safe)
+             print(f"Stats query failed: {e}")
+             return {}
 
-        cursor.execute("SELECT COUNT(*) FROM trails")
-        stats["total_trails"] = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM heuristics")
-        stats["total_heuristics"] = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM heuristics WHERE is_golden = 1")
-        stats["golden_rules"] = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM learnings")
-        stats["total_learnings"] = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM learnings WHERE type = 'failure'")
-        stats["failures"] = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM learnings WHERE type = 'success'")
-        stats["successes"] = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM decisions")
-        stats["total_decisions"] = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM decisions WHERE status = 'accepted'")
-        stats["accepted_decisions"] = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM decisions WHERE status = 'superseded'")
-        stats["superseded_decisions"] = cursor.fetchone()[0]
-
-        # Spike reports stats
+        # Spike reports stats (Separate safe query as table might not exist)
         try:
             cursor.execute("SELECT COUNT(*) FROM spike_reports")
             stats["total_spike_reports"] = cursor.fetchone()[0]
@@ -64,66 +81,6 @@ async def get_stats():
             stats["total_spike_reports"] = 0
             stats["avg_spike_usefulness"] = 0
             stats["total_spike_time_invested"] = 0
-
-        # Get actual run success/failure counts from workflow_runs status
-        cursor.execute("SELECT COUNT(*) FROM workflow_runs WHERE status = 'completed'")
-        stats["successful_runs"] = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM workflow_runs WHERE status IN ('failed', 'cancelled')")
-        stats["failed_runs"] = cursor.fetchone()[0]
-
-        # Averages
-        cursor.execute("SELECT AVG(confidence) FROM heuristics")
-        stats["avg_confidence"] = cursor.fetchone()[0] or 0
-
-        cursor.execute("SELECT SUM(times_validated) FROM heuristics")
-        stats["total_validations"] = cursor.fetchone()[0] or 0
-
-        cursor.execute("SELECT SUM(times_violated) FROM heuristics")
-        stats["total_violations"] = cursor.fetchone()[0] or 0
-
-        # Recent activity
-        cursor.execute("""
-            SELECT COUNT(*) FROM metrics
-            WHERE timestamp > datetime('now', '-1 hour')
-        """)
-        stats["metrics_last_hour"] = cursor.fetchone()[0]
-
-        # Runs today (actual workflow runs in last 24 hours)
-        cursor.execute("""
-            SELECT COUNT(*) FROM workflow_runs
-            WHERE created_at > datetime('now', '-24 hours')
-        """)
-        stats["runs_today"] = cursor.fetchone()[0]
-
-        # Query statistics
-        cursor.execute("SELECT COUNT(*) FROM building_queries")
-        stats["total_queries"] = cursor.fetchone()[0]
-
-        cursor.execute("""
-            SELECT COUNT(*) FROM building_queries
-            WHERE created_at > datetime('now', '-24 hours')
-        """)
-        stats["queries_today"] = cursor.fetchone()[0]
-
-        cursor.execute("""
-            SELECT AVG(duration_ms) FROM building_queries
-            WHERE duration_ms IS NOT NULL
-        """)
-        stats["avg_query_duration_ms"] = cursor.fetchone()[0] or 0
-
-        # Invariant statistics
-        cursor.execute("SELECT COUNT(*) FROM invariants")
-        stats["total_invariants"] = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM invariants WHERE status = 'active'")
-        stats["active_invariants"] = cursor.fetchone()[0]
-
-        cursor.execute("SELECT COUNT(*) FROM invariants WHERE status = 'violated'")
-        stats["violated_invariants"] = cursor.fetchone()[0]
-
-        cursor.execute("SELECT SUM(violation_count) FROM invariants")
-        stats["total_invariant_violations"] = cursor.fetchone()[0] or 0
 
         return stats
 

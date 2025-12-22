@@ -947,7 +947,7 @@ const GunRig = ({ gunRef, recoilImpulse, weaponEnergy }: {
 
         // Smoke effect when overheated
         const smokeOpacity = isOverheated ? 0.4 : 0
-            ;[smoke1Ref, smoke2Ref].forEach((smokeRef, gunIdx) => {
+            ;[smoke1Ref, smoke2Ref].forEach((smokeRef) => {
                 if (!smokeRef.current) return
                 smokeRef.current.children.forEach((child, i) => {
                     if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
@@ -1326,7 +1326,8 @@ export const SpaceShooterScene = () => {
             if (event.code === 'Space') firing.current = false
         }
         const handlePointerLockChange = () => {
-            const wasLocked = pointerLocked.current
+            // const wasLocked = pointerLocked.current // Unused
+
             pointerLocked.current = document.pointerLockElement === gl.domElement
 
             // Sync targetAngles to aimAngles on ANY pointer lock change

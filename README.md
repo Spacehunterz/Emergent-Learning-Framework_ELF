@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/header.gif" alt="Emergent Learning Framework" width="100%">
+  <img src="docs/assets/header.gif" alt="Emergent Learning Framework" width="100%">
 </p>
 
 # Emergent Learning Framework
@@ -60,15 +60,15 @@ Claude: [Queries building, starts dashboard, returns golden rules + heuristics]
 | **Async Watcher** | Background Haiku monitors your work, escalates to Opus only when needed. 95% cheaper than constant Opus monitoring |
 
 ### Hotspots
-![Hotspots](assets/Hotspots.png)
+![Hotspots](docs/assets/Hotspots.png)
 Treemap of file activity - see which files get touched most and spot anomalies at a glance.
 
 ### Graph
-![Graph](assets/graph.png)
+![Graph](docs/assets/graph.png)
 Interactive knowledge graph showing how heuristics connect across domains.
 
 ### Analytics
-![Analytics](assets/analytics.png)
+![Analytics](docs/assets/analytics.png)
 Track learning velocity, success rates, and confidence trends over time.
 
 ### Cross-Session Continuity
@@ -110,7 +110,7 @@ A background Haiku agent monitors coordination state every 30 seconds. When it d
 └─────────────────┘                 └─────────────────┘
 ```
 
-Runs automatically - no user interaction required. See [watcher/README.md](watcher/README.md) for configuration and details.
+Runs automatically - no user interaction required. See [src/watcher/README.md](src/watcher/README.md) for configuration and details.
 
 ## How It Works
 

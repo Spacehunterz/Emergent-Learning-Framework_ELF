@@ -35,7 +35,7 @@ export const CosmicSettingsProvider: React.FC<{ children: React.ReactNode }> = (
     });
 
     const [viewMode, setViewMode] = useState<ViewMode>(() => {
-        return (localStorage.getItem('cosmic_viewMode') as ViewMode) || 'cosmic';
+        return (localStorage.getItem('cosmic_viewMode') as ViewMode) || 'grid';
     });
 
 

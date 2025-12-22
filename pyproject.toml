@@ -36,8 +36,8 @@ dev = [
     "mypy>=1.0.0",
 ]
 
-[tool.setuptools]
-packages = ["src.emergent-learning"]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools.package-data]
 "*" = ["*.md", "*.json", "*.sql"]

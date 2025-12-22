@@ -1,7 +1,8 @@
-import { Suspense, Component, ReactNode, useEffect, useState } from 'react'
+import { Suspense, Component, ReactNode, useEffect, useState, lazy } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { XR } from '@react-three/xr'
-import { SpaceShooterScene } from './SpaceShooterScene'
+// Lazy load the heavy 3D game component
+const SpaceShooterScene = lazy(() => import('./SpaceShooterScene').then(module => ({ default: module.SpaceShooterScene })))
 import { PauseMenu } from '../ui/PauseMenu'
 import { MainMenu } from '../ui/MainMenu'
 import { useGameSettings } from '../systems/GameSettings'

@@ -1,0 +1,345 @@
+
+Running 16 tests using 8 workers
+
+[1A[2K[1/16] [chromium] › dashboard.spec.ts:75:3 › Emergent Learning Dashboard › query interface accepts input
+[1A[2K[2/16] [chromium] › dashboard.spec.ts:18:3 › Emergent Learning Dashboard › displays stats bar with metrics
+[1A[2K[3/16] [chromium] › dashboard.spec.ts:55:3 › Emergent Learning Dashboard › overview tab shows key sections
+[1A[2K[4/16] [chromium] › dashboard.spec.ts:62:3 › Emergent Learning Dashboard › heuristics panel loads and displays data
+[1A[2K[5/16] [chromium] › dashboard.spec.ts:92:3 › Emergent Learning Dashboard › hotspot treemap section exists
+[1A[2K[6/16] [chromium] › dashboard.spec.ts:27:3 › Emergent Learning Dashboard › navigation tabs work
+[1A[2K[7/16] [chromium] › dashboard.spec.ts:86:3 › Emergent Learning Dashboard › connection status indicator shows
+[1A[2K[8/16] [chromium] › dashboard.spec.ts:11:3 › Emergent Learning Dashboard › loads and displays header
+[1A[2K[9/16] [chromium] › dashboard.spec.ts:100:3 › Emergent Learning Dashboard › domain filter dropdown exists
+[1A[2K  1) [chromium] › dashboard.spec.ts:11:3 › Emergent Learning Dashboard › loads and displays header ─
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('Agent Intelligence Dashboard')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByText('Agent Intelligence Dashboard')[22m
+
+
+      13 |     await expect(page.locator('header')).toBeVisible();
+      14 |     await expect(page.getByText('Emergent Learning')).toBeVisible();
+    > 15 |     await expect(page.getByText('Agent Intelligence Dashboard')).toBeVisible();
+         |                                                                  ^
+      16 |   });
+      17 |
+      18 |   test('displays stats bar with metrics', async ({ page }) => {
+        at C:\Users\Evede\.gemini\antigravity\scratch\emergent-learning\apps\dashboard\tests\dashboard.spec.ts:15:66
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\dashboard-Emergent-Learnin-2ee27-d-loads-and-displays-header-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\dashboard-Emergent-Learnin-2ee27-d-loads-and-displays-header-chromium\error-context.md
+
+
+[1A[2K[10/16] [chromium] › dashboard.spec.ts:108:8 › Emergent Learning Dashboard › runs panel loads when clicked
+[1A[2K  2) [chromium] › dashboard.spec.ts:27:3 › Emergent Learning Dashboard › navigation tabs work ──────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('nav')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('nav')[22m
+
+
+      28 |     // Wait for header to be fully loaded
+      29 |     await expect(page.locator('header')).toBeVisible();
+    > 30 |     await expect(page.locator('nav')).toBeVisible();
+         |                                       ^
+      31 |
+      32 |     // Click on Heuristics tab - find button in nav containing this text
+      33 |     const heuristicsBtn = page.locator('nav button', { hasText: 'Heuristics' });
+        at C:\Users\Evede\.gemini\antigravity\scratch\emergent-learning\apps\dashboard\tests\dashboard.spec.ts:30:39
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\dashboard-Emergent-Learning-Dashboard-navigation-tabs-work-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\dashboard-Emergent-Learning-Dashboard-navigation-tabs-work-chromium\error-context.md
+
+
+[1A[2K  3) [chromium] › dashboard.spec.ts:55:3 › Emergent Learning Dashboard › overview tab shows key sections 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('h3:has-text("Hot Spots")')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('h3:has-text("Hot Spots")')[22m
+
+
+      55 |   test('overview tab shows key sections', async ({ page }) => {
+      56 |     // Should be on overview by default - look for the Hot Spots heading
+    > 57 |     await expect(page.locator('h3:has-text("Hot Spots")')).toBeVisible();
+         |                                                            ^
+      58 |     await expect(page.locator('h3:has-text("Golden Rules")')).toBeVisible();
+      59 |     await expect(page.locator('h3:has-text("Anomalies")')).toBeVisible();
+      60 |   });
+        at C:\Users\Evede\.gemini\antigravity\scratch\emergent-learning\apps\dashboard\tests\dashboard.spec.ts:57:60
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\dashboard-Emergent-Learnin-3ba94-view-tab-shows-key-sections-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\dashboard-Emergent-Learnin-3ba94-view-tab-shows-key-sections-chromium\error-context.md
+
+
+[1A[2K  4) [chromium] › dashboard.spec.ts:75:3 › Emergent Learning Dashboard › query interface accepts input 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("Query")')[22m
+
+
+      74 |
+      75 |   test('query interface accepts input', async ({ page }) => {
+    > 76 |     await page.click('button:has-text("Query")');
+         |                ^
+      77 |
+      78 |     // Find the search input
+      79 |     const searchInput = page.getByPlaceholder('Ask anything about your learning data...');
+        at C:\Users\Evede\.gemini\antigravity\scratch\emergent-learning\apps\dashboard\tests\dashboard.spec.ts:76:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\dashboard-Emergent-Learnin-97fd6-ery-interface-accepts-input-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\dashboard-Emergent-Learnin-97fd6-ery-interface-accepts-input-chromium\error-context.md
+
+
+[1A[2K  5) [chromium] › dashboard.spec.ts:62:3 › Emergent Learning Dashboard › heuristics panel loads and displays data 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("Heuristics")')[22m
+
+
+      61 |
+      62 |   test('heuristics panel loads and displays data', async ({ page }) => {
+    > 63 |     await page.click('button:has-text("Heuristics")');
+         |                ^
+      64 |
+      65 |     // Wait for heuristics to load
+      66 |     await page.waitForTimeout(1000);
+        at C:\Users\Evede\.gemini\antigravity\scratch\emergent-learning\apps\dashboard\tests\dashboard.spec.ts:63:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\dashboard-Emergent-Learnin-19079-nel-loads-and-displays-data-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\dashboard-Emergent-Learnin-19079-nel-loads-and-displays-data-chromium\error-context.md
+
+
+[1A[2K  6) [chromium] › dashboard.spec.ts:18:3 › Emergent Learning Dashboard › displays stats bar with metrics 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('[class*="bg-slate-800"][class*="rounded-lg"][class*="p-4"]').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('[class*="bg-slate-800"][class*="rounded-lg"][class*="p-4"]').first()[22m
+
+
+      22 |     // Check that stats cards are rendered
+      23 |     const statsCards = page.locator('[class*="bg-slate-800"][class*="rounded-lg"][class*="p-4"]');
+    > 24 |     await expect(statsCards.first()).toBeVisible();
+         |                                      ^
+      25 |   });
+      26 |
+      27 |   test('navigation tabs work', async ({ page }) => {
+        at C:\Users\Evede\.gemini\antigravity\scratch\emergent-learning\apps\dashboard\tests\dashboard.spec.ts:24:38
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\dashboard-Emergent-Learnin-f14f2-lays-stats-bar-with-metrics-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\dashboard-Emergent-Learnin-f14f2-lays-stats-bar-with-metrics-chromium\error-context.md
+
+
+[1A[2K[11/16] [chromium] › dashboard.spec.ts:139:3 › Emergent Learning Dashboard › API endpoints respond correctly
+[1A[2K[12/16] [chromium] › dashboard.spec.ts:125:3 › Emergent Learning Dashboard › timeline view loads when clicked
+[1A[2K  7) [chromium] › dashboard.spec.ts:100:3 › Emergent Learning Dashboard › domain filter dropdown exists 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('select').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('select').first()[22m
+
+
+      101 |     // Check for the domain/scent filter
+      102 |     const filterSelect = page.locator('select').first();
+    > 103 |     await expect(filterSelect).toBeVisible();
+          |                                ^
+      104 |   });
+      105 |
+      106 |   // Note: Runs panel navigation is covered by the 'navigation tabs work' test
+        at C:\Users\Evede\.gemini\antigravity\scratch\emergent-learning\apps\dashboard\tests\dashboard.spec.ts:103:32
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\dashboard-Emergent-Learnin-4c7e1-main-filter-dropdown-exists-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\dashboard-Emergent-Learnin-4c7e1-main-filter-dropdown-exists-chromium\error-context.md
+
+
+[1A[2K[13/16] [chromium] › dashboard.spec.ts:166:3 › Emergent Learning Dashboard › natural language query works
+[1A[2K[14/16] [chromium] › dashboard.spec.ts:180:3 › Emergent Learning Dashboard › export endpoint works
+[1A[2K[15/16] [chromium] › dashboard.spec.ts:187:3 › Emergent Learning Dashboard › heuristic promote/demote endpoints exist
+[1A[2K[16/16] [chromium] › verify_game.spec.ts:3:1 › Game Mode and Cursors
+[1A[2K  8) [chromium] › dashboard.spec.ts:92:3 › Emergent Learning Dashboard › hotspot treemap section exists 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('h3:has-text("Hot Spots")')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('h3:has-text("Hot Spots")')[22m
+
+
+      92 |   test('hotspot treemap section exists', async ({ page }) => {
+      93 |     // Check for the Hot Spots section heading
+    > 94 |     await expect(page.locator('h3:has-text("Hot Spots")')).toBeVisible();
+         |                                                            ^
+      95 |
+      96 |     // Check for the filter dropdown
+      97 |     await expect(page.locator('select').first()).toBeVisible();
+        at C:\Users\Evede\.gemini\antigravity\scratch\emergent-learning\apps\dashboard\tests\dashboard.spec.ts:94:60
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\dashboard-Emergent-Learnin-b62c8-spot-treemap-section-exists-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\dashboard-Emergent-Learnin-b62c8-spot-treemap-section-exists-chromium\error-context.md
+
+
+[1A[2K  9) [chromium] › dashboard.spec.ts:125:3 › Emergent Learning Dashboard › timeline view loads when clicked 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('nav')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('nav')[22m
+
+
+      125 |   test('timeline view loads when clicked', async ({ page }) => {
+      126 |     // Wait for header/nav to be ready
+    > 127 |     await expect(page.locator('nav')).toBeVisible();
+          |                                       ^
+      128 |
+      129 |     const timelineBtn = page.locator('nav button', { hasText: 'Timeline' });
+      130 |     await expect(timelineBtn).toBeVisible();
+        at C:\Users\Evede\.gemini\antigravity\scratch\emergent-learning\apps\dashboard\tests\dashboard.spec.ts:127:39
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\dashboard-Emergent-Learnin-7c310-ine-view-loads-when-clicked-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\dashboard-Emergent-Learnin-7c310-ine-view-loads-when-clicked-chromium\error-context.md
+
+
+[1A[2K  10) [chromium] › verify_game.spec.ts:3:1 › Game Mode and Cursors ─────────────────────────────────
+
+    Error: page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:5173/
+    Call log:
+    [2m  - navigating to "http://localhost:5173/", waiting until "load"[22m
+
+
+      3 | test('Game Mode and Cursors', async ({ page }) => {
+      4 |     // 1. Go to Dashboard
+    > 5 |     await page.goto('http://localhost:5173');
+        |                ^
+      6 |
+      7 |     // 2. Open Game Menu (CMD+K or Button - finding button is safer)
+      8 |     // Assuming there's a menu button or keybinding. Let's try the keybinding 'k' with meta
+        at C:\Users\Evede\.gemini\antigravity\scratch\emergent-learning\apps\dashboard\tests\verify_game.spec.ts:5:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\verify_game-Game-Mode-and-Cursors-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[1A[2K  11) [chromium] › dashboard.spec.ts:166:3 › Emergent Learning Dashboard › natural language query works 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      3 | test.describe('Emergent Learning Dashboard', () => {
+      4 |
+    > 5 |   test.beforeEach(async ({ page }) => {
+        |        ^
+      6 |     await page.goto('/');
+      7 |     // Wait for initial load
+      8 |     await page.waitForLoadState('networkidle');
+        at C:\Users\Evede\.gemini\antigravity\scratch\emergent-learning\apps\dashboard\tests\dashboard.spec.ts:5:8
+
+    Error: page.waitForLoadState: Test timeout of 30000ms exceeded.
+
+       6 |     await page.goto('/');
+       7 |     // Wait for initial load
+    >  8 |     await page.waitForLoadState('networkidle');
+         |                ^
+       9 |   });
+      10 |
+      11 |   test('loads and displays header', async ({ page }) => {
+        at C:\Users\Evede\.gemini\antigravity\scratch\emergent-learning\apps\dashboard\tests\dashboard.spec.ts:8:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\dashboard-Emergent-Learnin-1a500-atural-language-query-works-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\dashboard-Emergent-Learnin-1a500-atural-language-query-works-chromium\error-context.md
+
+
+[1A[2K  11 failed
+    [chromium] › dashboard.spec.ts:11:3 › Emergent Learning Dashboard › loads and displays header ──
+    [chromium] › dashboard.spec.ts:18:3 › Emergent Learning Dashboard › displays stats bar with metrics 
+    [chromium] › dashboard.spec.ts:27:3 › Emergent Learning Dashboard › navigation tabs work ───────
+    [chromium] › dashboard.spec.ts:55:3 › Emergent Learning Dashboard › overview tab shows key sections 
+    [chromium] › dashboard.spec.ts:62:3 › Emergent Learning Dashboard › heuristics panel loads and displays data 
+    [chromium] › dashboard.spec.ts:75:3 › Emergent Learning Dashboard › query interface accepts input 
+    [chromium] › dashboard.spec.ts:92:3 › Emergent Learning Dashboard › hotspot treemap section exists 
+    [chromium] › dashboard.spec.ts:100:3 › Emergent Learning Dashboard › domain filter dropdown exists 
+    [chromium] › dashboard.spec.ts:125:3 › Emergent Learning Dashboard › timeline view loads when clicked 
+    [chromium] › dashboard.spec.ts:166:3 › Emergent Learning Dashboard › natural language query works 
+    [chromium] › verify_game.spec.ts:3:1 › Game Mode and Cursors ───────────────────────────────────
+  1 skipped
+  4 passed (1.3m)
