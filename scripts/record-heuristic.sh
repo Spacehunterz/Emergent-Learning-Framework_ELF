@@ -1,11 +1,18 @@
 #!/bin/bash
 # Record a heuristic in the Emergent Learning Framework
 #
+# REQUIREMENTS: sqlite3 CLI or Python 3
+#   - If sqlite3 not found, automatically falls back to Python implementation
+#   - Python implementation works on all platforms (macOS, Linux, Windows)
+#
 # Usage (interactive): ./record-heuristic.sh
 # Usage (non-interactive):
 #   HEURISTIC_DOMAIN="domain" HEURISTIC_RULE="rule" ./record-heuristic.sh
 #   Or: ./record-heuristic.sh --domain "domain" --rule "rule" --explanation "why"
 #   Optional: --source failure|success|observation --confidence 0.8
+#
+# If sqlite3 CLI is not available, use Python alternative directly:
+#   ./record-heuristic.py --domain "domain" --rule "rule" --explanation "why"
 
 set -e
 
@@ -150,7 +157,34 @@ preflight_check() {
     fi
 
     if ! command -v sqlite3 &> /dev/null; then
-        log "ERROR" "sqlite3 command not found"
+        log "WARN" "sqlite3 CLI not found - attempting Python fallback"
+
+        # Try Python alternative
+        if command -v python3 &> /dev/null || command -v python &> /dev/null; then
+            log "INFO" "Switching to Python implementation (record-heuristic.py)"
+
+            # Build Python command with same arguments
+            python_script="$SCRIPT_DIR/record-heuristic.py"
+            if [ -f "$python_script" ]; then
+                # Re-execute using Python with original arguments
+                "$python_script" "$@"
+                exit $?
+            fi
+        fi
+
+        # If we get here, neither sqlite3 CLI nor Python is available
+        log "ERROR" "Neither sqlite3 CLI nor Python found"
+        echo "ERROR: This script requires either sqlite3 CLI or Python 3" >&2
+        echo "" >&2
+        echo "Options:" >&2
+        echo "  1. Install sqlite3 CLI:" >&2
+        echo "     - macOS: brew install sqlite" >&2
+        echo "     - Linux: sudo apt-get install sqlite3" >&2
+        echo "     - Windows: Download from https://www.sqlite.org/download.html or use Python alternative below" >&2
+        echo "" >&2
+        echo "  2. Use Python implementation (cross-platform):" >&2
+        echo "     $SCRIPT_DIR/record-heuristic.py --domain ... --rule ... --explanation ..." >&2
+        echo "" >&2
         exit 1
     fi
 
