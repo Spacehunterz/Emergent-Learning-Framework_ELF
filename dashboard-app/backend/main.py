@@ -60,6 +60,12 @@ from routers.workflows import set_paths as set_workflows_paths
 EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
 FRONTEND_PATH = Path(__file__).parent.parent / "frontend" / "dist"
 
+# Import database initialization (must come after EMERGENT_LEARNING_PATH is defined)
+# Import from the query system, not the local models.py (which is Pydantic models)
+import sys
+sys.path.insert(0, str(EMERGENT_LEARNING_PATH))
+from query.models import initialize_database, create_tables
+
 # Import session indexing
 from session_index import SessionIndex
 
@@ -359,6 +365,18 @@ async def startup_event():
         logger.info(f"Project context detected: {ctx.project_name} at {ctx.project_root}")
     else:
         logger.info("No project context - using global scope only")
+
+    # Initialize Peewee database and create tables
+    # MUST happen before monitor_changes() tries to query metrics table
+    try:
+        await initialize_database()
+        logger.info("Peewee database initialized")
+
+        await create_tables()
+        logger.info("All database tables created/verified")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}", exc_info=True)
+        raise
 
     # Initial session index scan
     try:
