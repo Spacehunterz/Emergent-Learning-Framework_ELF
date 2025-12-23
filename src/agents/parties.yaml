@@ -8,7 +8,7 @@
 #   - workflow: How agents interact (parallel, sequential, iterative)
 #
 # Usage:
-#   python scripts/get-party.py --party code-review
+#   python tools/scripts/get-party.py --party code-review
 #   Or query: python query.py --party code-review
 
 parties:
