@@ -32,7 +32,8 @@ from typing import Dict, List, Optional, Tuple
 
 # Resolve paths
 SCRIPT_DIR = Path(__file__).resolve().parent
-BASE_DIR = SCRIPT_DIR.parent
+TOOLS_DIR = SCRIPT_DIR.parent
+BASE_DIR = TOOLS_DIR.parent  # Repo root (tools/scripts -> tools -> repo)
 MEMORY_DIR = BASE_DIR / "memory"
 DB_PATH = MEMORY_DIR / "index.db"
 GOLDEN_RULES_PATH = MEMORY_DIR / "golden-rules.md"

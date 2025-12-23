@@ -19,7 +19,8 @@ from datetime import datetime
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-BASE_DIR = SCRIPT_DIR.parent
+TOOLS_DIR = SCRIPT_DIR.parent
+BASE_DIR = TOOLS_DIR.parent  # Repo root (tools/scripts -> tools -> repo)
 DB_PATH = BASE_DIR / "memory" / "index.db"
 
 

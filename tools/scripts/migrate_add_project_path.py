@@ -16,7 +16,8 @@ from datetime import datetime
 
 # Resolve paths
 SCRIPT_DIR = Path(__file__).resolve().parent
-BASE_DIR = SCRIPT_DIR.parent
+TOOLS_DIR = SCRIPT_DIR.parent
+BASE_DIR = TOOLS_DIR.parent  # Repo root (tools/scripts -> tools -> repo)
 MEMORY_DIR = BASE_DIR / "memory"
 DB_PATH = MEMORY_DIR / "index.db"
 MIGRATIONS_LOG = MEMORY_DIR / "migrations.log"

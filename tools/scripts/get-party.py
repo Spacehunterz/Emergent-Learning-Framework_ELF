@@ -34,8 +34,9 @@ except ImportError:
 
 # Resolve paths
 SCRIPT_DIR = Path(__file__).resolve().parent
-BASE_DIR = SCRIPT_DIR.parent
-AGENTS_DIR = BASE_DIR / "agents"
+TOOLS_DIR = SCRIPT_DIR.parent
+BASE_DIR = TOOLS_DIR.parent  # Repo root (tools/scripts -> tools -> repo)
+AGENTS_DIR = BASE_DIR / "src" / "agents"
 PARTIES_PATH = AGENTS_DIR / "parties.yaml"
 
 
@@ -43,7 +44,7 @@ def load_parties() -> Dict[str, Any]:
     """Load party definitions from YAML file (with custom merge)."""
     # Try to use config_loader for merged parties
     try:
-        sys.path.insert(0, str(BASE_DIR / 'query'))
+        sys.path.insert(0, str(BASE_DIR / 'src' / 'query'))
         from config_loader import load_all_parties
         return load_all_parties()
     except ImportError:

@@ -36,11 +36,12 @@ from typing import Dict, Any
 
 # Resolve paths
 SCRIPT_DIR = Path(__file__).resolve().parent
-BASE_DIR = SCRIPT_DIR.parent
+TOOLS_DIR = SCRIPT_DIR.parent
+BASE_DIR = TOOLS_DIR.parent  # Repo root (tools/scripts -> tools -> repo)
 WORKFLOWS_DIR = BASE_DIR / 'workflows'
 
 # Add query module to path
-sys.path.insert(0, str(BASE_DIR / 'query'))
+sys.path.insert(0, str(BASE_DIR / 'src' / 'query'))
 
 from workflow_engine import WorkflowEngine, list_workflows
 
