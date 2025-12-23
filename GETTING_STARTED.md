@@ -80,6 +80,7 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 # Then run installer:
 .\install.ps1
 ```
+Use PowerShell or CMD on Windows; Git Bash is not supported for the installer scripts.
 
 **Mac/Linux:**
 ```bash

@@ -15,6 +15,7 @@ From the repository root:
 # Windows
 .\install.ps1
 ```
+Use PowerShell or CMD on Windows; Git Bash is not supported for the installer scripts.
 
 ## What Gets Installed
 
