@@ -15,6 +15,8 @@ Claude Code learns from your failures and successes, building institutional know
 ./install.ps1             # Windows
 ```
 
+**Windows:** Run the installer from PowerShell or CMD; Git Bash is not supported.
+
 **Default path:** `~/.claude/emergent-learning` (override with `ELF_BASE_PATH` to run from a different location).
 
 **New to ELF?** See the [Getting Started Guide](GETTING_STARTED.md) for detailed step-by-step instructions including prerequisites and troubleshooting.
@@ -231,7 +233,7 @@ Full documentation in the [Wiki](https://github.com/Spacehunterz/Emergent-Learni
 
 ## Troubleshooting
 
-### Dashboard fails on Windows with Git Bash (Issue #11)
+### Windows Git Bash not supported (Issue #11)
 
 If you see `Cannot find module @rollup/rollup-win32-x64-msvc` when starting the dashboard:
 
