@@ -1,22 +1,22 @@
 ---
 name: checkin
-description: Load and review Emergent Learning Framework context, institutional knowledge, golden rules, and recent session history. Use this to query the building for relevant heuristics before starting tasks, to understand active experiments and decisions, and to maintain continuity across sessions.
+description: Load and review Emergent Learning Framework context, institutional knowledge, golden rules, and recent session history. Runs the checkin workflow interactively with banner, context loading, and dashboard/multi-model prompts.
 license: MIT
 ---
 
 # ELF Checkin Command
 
-Load Emergent Learning Framework (ELF) context - institutional knowledge, golden rules, heuristics, and recent session history.
+Interactive workflow to load the building context before starting work.
 
-## Purpose
+## What It Does
 
-The `/checkin` command queries the ELF knowledge system to:
-
-- **Load golden rules** - Constitutional principles and hard-won lessons
-- **Get relevant heuristics** - Domain-specific knowledge and patterns
-- **Review recent work** - Previous session summaries and context
-- **Check active decisions** - Pending CEO review items
-- **Understand experiments** - Active research and trials
+The `/checkin` command:
+- Shows the ELF banner with ASCII art
+- Queries the building for golden rules and heuristics
+- Displays relevant context for your domains
+- Asks if you want to launch the dashboard
+- Asks if you want to see multi-model support options
+- Loads recent session summary
 
 ## Usage
 
@@ -26,76 +26,60 @@ The `/checkin` command queries the ELF knowledge system to:
 /checkin debugging
 ```
 
-## Implementation
+## Execution
 
-When user invokes `/checkin`:
+This skill runs the actual workflow engine:
 
-1. **Query ELF Context**
-   ```bash
-   python ~/.claude/emergent-learning/query/query.py --context
-   ```
-
-2. **Show Golden Rules** (TIER 1 - Always loaded)
-   - Constitutional principles
-   - Proven patterns
-   - High-confidence rules
-
-3. **Show Relevant Heuristics** (TIER 2 - Query-matched)
-   - Domain-specific knowledge
-   - Tag-based matches
-   - Confidence scores
-
-4. **Show Recent Sessions** (TIER 3 - Context)
-   - Last session summary
-   - What was accomplished
-   - Where work left off
-
-5. **Check Status**
-   - Active experiments
-   - Pending CEO decisions
-   - Framework health
-
-## Domain Queries
-
-If user specifies a domain:
 ```bash
-python ~/.claude/emergent-learning/query/query.py --domain [architecture|debugging|coordination|communication]
+python ~/.claude/emergent-learning/scripts/run-workflow.py --workflow checkin --start
 ```
 
-## What the Building Contains
+The workflow engine handles:
+- Step execution and progress tracking
+- Banner display on first checkin
+- Interactive Y/n prompts for dashboard and multi-model
+- Dashboard launch on user request
+- Context loading from the building
+- Session summary display
 
-- **Golden Rules** (`memory/golden-rules.md`) - Universal lessons
-- **Heuristics** (`memory/heuristics/`) - Reusable patterns  
-- **Failures** (`failure-analysis/`) - What went wrong and why
-- **Successes** (`memory/successes/`) - What worked
-- **Sessions** (`memory/sessions/`) - Previous work summaries
-- **CEO Inbox** (`ceo-inbox/`) - Pending decisions
+## Workflow Steps
 
-## Golden Rules (Always Loaded)
+1. **Display Banner** - Show ELF ASCII art
+2. **Load Context** - Query the building (`query.py --context`)
+3. **Show Golden Rules** - Display active rules (TIER 1)
+4. **Show Heuristics** - Display relevant knowledge (TIER 2)
+5. **Show Session Summary** - Display recent work (TIER 3)
+6. **Dashboard Question** - Ask "Start Dashboard? [Y/n]"
+7. **Multi-Model Question** - Ask "Show multi-model setup? [Y/n]"
+8. **Complete** - Print "Ready to work!" and exit
 
-The system includes 12 golden rules. Key ones:
-- **Query Before Acting** - Check existing knowledge first
-- **Document Failures Immediately** - Record lessons while fresh
-- **Trust User Reality Over Tool Metadata** - Believe user reports
-- **No External APIs** - Subscription-only model
-- **Always Use Async Subagents** - Never block on spawn
+## Domain-Specific Context
 
-## Output Format
+Pass a domain to focus on that area:
+- `checkin architecture` - Architecture-focused heuristics
+- `checkin debugging` - Debugging techniques
+- `checkin coordination` - Team coordination patterns
+- `checkin communication` - Communication best practices
 
-The checkin displays:
-1. Building status and available models
-2. Golden rules count and key rules
-3. Relevant heuristics for your domains
-4. Recent session summary
-5. Active experiments/decisions summary
+This will run `query.py --domain [domain]` to get focused context.
 
-## Integration with ELF
+## Interactive Prompts
 
-The building is your external memory. Each Claude instance:
-1. Queries context before working
-2. Records failures as they happen
-3. Documents successes and learnings
-4. Proposes improvements to golden rules
-5. Contributes to institutional knowledge
+**Dashboard**: "Start ELF Dashboard? [Y/n]"
+- Y/yes/enter: Launches `~/.claude/emergent-learning/dashboard-app/run-dashboard.sh`
+- N/no: Skips dashboard
 
-This creates a feedback loop where each iteration gets smarter.
+**Multi-Model**: "Show multi-model support options? [Y/n]"  
+- Y/yes/enter: Shows available models and setup instructions
+- N/no: Skips multi-model info
+
+## Integration with Building
+
+The checkin workflow is your gateway to the building's knowledge:
+- **Golden Rules** - Constitutional principles (always loaded)
+- **Heuristics** - Reusable patterns and knowledge
+- **Failures** - What went wrong and lessons learned
+- **Successes** - What worked and can be replicated
+- **Sessions** - Previous work summaries for continuity
+
+Running checkin at the start of each session ensures you're working with current institutional knowledge.
