@@ -5,7 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+cd "$SCRIPT_DIR/../.."
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -59,8 +59,9 @@ fi
 # Run migrations
 echo ""
 echo -e "${YELLOW}[3/3]${NC} Running database migrations..."
-if [ -f "scripts/migrate_db.py" ]; then
-    python3 scripts/migrate_db.py memory/index.db || python scripts/migrate_db.py memory/index.db
+if [ -f "tools/scripts/migrate_db.py" ]; then
+    python3 tools/scripts/migrate_db.py memory/index.db || python tools/scripts/migrate_db.py memory/index.db
+
 else
     echo "  No migration script found, skipping"
 fi

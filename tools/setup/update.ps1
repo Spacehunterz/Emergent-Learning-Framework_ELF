@@ -3,7 +3,8 @@
 
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $ScriptDir
+# CD to repo root (grandparent of tools/setup)
+Set-Location (Join-Path $ScriptDir "..\..")
 
 Write-Host "================================" -ForegroundColor Cyan
 Write-Host "  ELF Update" -ForegroundColor Cyan
@@ -26,7 +27,7 @@ if (Test-Path "VERSION") {
 Write-Host ""
 Write-Host "[1/3] Backing up database..." -ForegroundColor Yellow
 $backupDate = Get-Date -Format "yyyyMMdd-HHmmss"
-$dbPath = Join-Path $ScriptDir "memory\index.db"
+$dbPath = Join-Path "memory" "index.db"
 if (Test-Path $dbPath) {
     Copy-Item $dbPath "$dbPath.backup.$backupDate"
     Write-Host "  Backed up to: index.db.backup.$backupDate" -ForegroundColor Gray
@@ -58,10 +59,10 @@ if ($stashed) {
 # Run migrations
 Write-Host ""
 Write-Host "[3/3] Running database migrations..." -ForegroundColor Yellow
-$migratePath = Join-Path $ScriptDir "scripts\migrate_db.py"
+$migratePath = Join-Path (Get-Location) "tools\scripts\migrate_db.py"
 if (Test-Path $migratePath) {
     $pythonCmd = if (Get-Command python3 -ErrorAction SilentlyContinue) { "python3" } else { "python" }
-    & $pythonCmd $migratePath (Join-Path $ScriptDir "memory\index.db")
+    & $pythonCmd $migratePath (Join-Path "memory" "index.db")
 } else {
     Write-Host "  No migration script found, skipping" -ForegroundColor Gray
 }

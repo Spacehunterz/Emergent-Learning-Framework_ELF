@@ -2,6 +2,7 @@
 #
 # Emergent Learning Framework - Setup Script
 # Supports: --mode fresh|merge|replace|skip
+#           --core-only, --no-dashboard, --no-swarm
 #
 # Cross-platform: Works on Windows (Git Bash/MSYS2), Linux, and macOS
 #
@@ -11,17 +12,58 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
 ELF_DIR="$CLAUDE_DIR/emergent-learning"
+# SCRIPT_DIR is tools/setup, so repo root is two levels up
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 BASE_DIR="${ELF_BASE_PATH:-$REPO_ROOT}"
-MODE="${1#--mode=}"
-MODE="${MODE:-interactive}"
 
-mkdir -p "$BASE_DIR/.coordination"
+MODE="interactive"
+CORE_ONLY=false
+NO_DASHBOARD=false
+NO_SWARM=false
 
-# If called with --mode flag, extract it
-if [ "$1" = "--mode" ]; then
-    MODE="$2"
+# Argument parsing
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --mode=*)
+            MODE="${1#--mode=}"
+            shift
+            ;;
+        --mode)
+            MODE="$2"
+            shift 2
+            ;;
+        --core-only)
+            CORE_ONLY=true
+            NO_DASHBOARD=true
+            NO_SWARM=true
+            shift
+            ;;
+        --no-dashboard)
+            NO_DASHBOARD=true
+            shift
+            ;;
+        --no-swarm)
+            NO_SWARM=true
+            shift
+            ;;
+        *)
+            # Allow positional mode argument for backward compatibility if it matches known modes
+            if [[ "$1" =~ ^(fresh|merge|replace|skip|interactive)$ ]]; then
+                MODE="$1"
+            fi
+            shift
+            ;;
+    esac
+done
+
+if [ "$CORE_ONLY" = true ]; then
+    NO_DASHBOARD=true
+    NO_SWARM=true
 fi
+
+# Ensure .coordination exists in both Base Dir (active workspace) and ELF_DIR (installed location)
+mkdir -p "$BASE_DIR/.coordination"
+mkdir -p "$ELF_DIR/.coordination"
 
 # Create directories
 mkdir -p "$CLAUDE_DIR/commands"
@@ -219,7 +261,7 @@ install_venv() {
         fi
     fi
 
-    # Install package in editable mode to support src layout
+    # Install project in editable mode
     echo "[ELF] Installing project in editable mode..."
     "$VENV_PYTHON" -m pip install -e "$SCRIPT_DIR/../.." 2>&1 || echo "[ELF] Warning: Failed to install editable package"
 
@@ -254,16 +296,31 @@ install_core_files() {
     if [ -d "$SCRIPT_DIR/../../src" ]; then
         cp -r "$SCRIPT_DIR/../../src/"* "$ELF_DIR/"
     fi
+    # Also copy elf_paths.py explicit check (though it is in src, ensuring presence)
+    if [ -f "$SCRIPT_DIR/../../src/elf_paths.py" ]; then
+        cp "$SCRIPT_DIR/../../src/elf_paths.py" "$ELF_DIR/"
+    fi
     
+    # Copy scripts
+    mkdir -p "$ELF_DIR/scripts"
+    if [ -d "$SCRIPT_DIR/../../tools/scripts" ]; then
+        cp "$SCRIPT_DIR/../../tools/scripts/"*.sh "$ELF_DIR/scripts/" 2>/dev/null || true
+        cp "$SCRIPT_DIR/../../tools/scripts/"*.py "$ELF_DIR/scripts/" 2>/dev/null || true
+    fi
+
     # Copy dashboard
-    if [ -d "$SCRIPT_DIR/../../apps/dashboard" ]; then
+    if [ "$NO_DASHBOARD" = false ] && [ -d "$SCRIPT_DIR/../../apps/dashboard" ]; then
         # Clean destination if exists to avoid merge issues
         rm -rf "$ELF_DIR/dashboard-app"
         cp -r "$SCRIPT_DIR/../../apps/dashboard" "$ELF_DIR/dashboard-app"
     fi
 
-    # Copy hooks (if strictly needed outside of src, but they are in src now)
-    # install_settings uses ELF_DIR/hooks, so copying src/* handles it.
+    # Copy swarm components
+    if [ "$NO_SWARM" = false ]; then
+        # Swarm agents are in src/agents, so they are copied with src/*
+        # Conductor is in src/conductor, copied with src/*
+        :
+    fi
 }
 
 install_settings() {
@@ -385,23 +442,49 @@ PYTHON_SCRIPT
 }
 
 install_git_hooks() {
-    # Install git pre-commit hook for invariant enforcement
+    # Install git pre-commit hook enforcement
     local git_hooks_dir="$ELF_DIR/.git/hooks"
 
-    if [ -d "$git_hooks_dir" ]; then
-        if [ -f "$SCRIPT_DIR/git-hooks/pre-commit" ]; then
-            cp "$SCRIPT_DIR/git-hooks/pre-commit" "$git_hooks_dir/pre-commit"
-            chmod +x "$git_hooks_dir/pre-commit"
-            echo "[ELF] Git pre-commit hook installed (invariant enforcement)"
-        fi
+    if [ -d "$git_hooks_dir" ] && [ -f "$SCRIPT_DIR/git-hooks/pre-commit" ]; then
+        cp "$SCRIPT_DIR/git-hooks/pre-commit" "$git_hooks_dir/pre-commit"
+        chmod +x "$git_hooks_dir/pre-commit"
+        echo "[ELF] Git pre-commit hook installed"
+    fi
+}
+
+copy_template() {
+    local template_src="$SCRIPT_DIR/../../templates/CLAUDE.md.template"
+    local dest="$CLAUDE_DIR/CLAUDE.md"
+    
+    if [ ! -f "$template_src" ]; then
+        echo "[ELF] Warning: Template not found at $template_src"
+        return
+    fi
+    
+    cp "$template_src" "$dest"
+    
+    # Replace placeholder or hardcoded path with actual base directory
+    # If ELF_BASE_PATH is set, replace default path with it
+    if [ "$ELF_DIR" != "$HOME/.claude/emergent-learning" ]; then
+         # Need to escape slashes for sed
+         ESCAPED_TARGET=$(echo "$ELF_DIR" | sed 's/\//\\\//g')
+         ESCAPED_DEFAULT="~\/.claude\/emergent-learning"
+         
+         # Replace on Linux/Mac (sed -i works differently on Mac)
+         if [[ "$OSTYPE" == "darwin"* ]]; then
+             sed -i '' "s/$ESCAPED_DEFAULT/$ESCAPED_TARGET/g" "$dest"
+         else
+             sed -i "s/$ESCAPED_DEFAULT/$ESCAPED_TARGET/g" "$dest"
+         fi
     fi
 }
 
 case "$MODE" in
     fresh)
         # New user - install everything
-        cp "$SCRIPT_DIR/CLAUDE.md.template" "$CLAUDE_DIR/CLAUDE.md"
+        copy_template
         install_commands
+        install_core_files
         install_venv
         install_settings
         install_git_hooks
@@ -420,7 +503,7 @@ case "$MODE" in
                 echo "# EMERGENT LEARNING FRAMEWORK - AUTO-APPENDED"
                 echo "# =============================================="
                 echo ""
-                cat "$SCRIPT_DIR/CLAUDE.md.template"
+                cat "$SCRIPT_DIR/../../templates/CLAUDE.md.template"
             } > "$CLAUDE_DIR/CLAUDE.md.new"
             mv "$CLAUDE_DIR/CLAUDE.md.new" "$CLAUDE_DIR/CLAUDE.md"
             echo "[ELF] Merged with existing config (backup: CLAUDE.md.backup)"
@@ -437,7 +520,7 @@ case "$MODE" in
         if [ -f "$CLAUDE_DIR/CLAUDE.md" ]; then
             cp "$CLAUDE_DIR/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md.backup"
         fi
-        cp "$SCRIPT_DIR/../../templates/CLAUDE.md.template" "$CLAUDE_DIR/CLAUDE.md"
+        copy_template
         install_commands
         install_core_files
         install_venv

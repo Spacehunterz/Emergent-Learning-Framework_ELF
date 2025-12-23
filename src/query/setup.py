@@ -286,6 +286,32 @@ def verify_hooks() -> dict:
     return result
 
 
+def _find_installer(start_path: Path, is_windows: bool) -> Path | None:
+    current = start_path
+    # Go up to 4 levels looking for repo root or install base
+    for _ in range(4):
+        if is_windows:
+            candidates = [
+                current / "install.ps1",
+                current / "tools" / "setup" / "install.ps1"
+            ]
+        else:
+            candidates = [
+                current / "install.sh",
+                current / "setup" / "install.sh",
+                current / "tools" / "setup" / "install.sh"
+            ]
+        
+        for cand in candidates:
+            if cand.exists():
+                return cand.resolve()
+        
+        if current.parent == current:  # Root reached
+            break
+        current = current.parent
+    return None
+
+
 def ensure_full_setup():
     """
     Check setup status and return status code for Claude to handle.
@@ -298,17 +324,14 @@ def ensure_full_setup():
         "install_failed" - Something went wrong
     """
     global_claude_md = Path.home() / ".claude" / "CLAUDE.md"
-    elf_dir = Path(__file__).parent.parent
-
+    
     # Detect OS and find appropriate installer
     is_windows = platform.system() == "Windows"
+    setup_script = _find_installer(Path(__file__).parent, is_windows)
 
-    if is_windows:
-        setup_script = elf_dir / "install.ps1"
-    else:
-        setup_script = elf_dir / "setup" / "install.sh"
-
-    if not setup_script.exists():
+    if not setup_script:
+        # If we can't find the installer, we assume we are in a broken state 
+        # or a minimal install where auto-setup isn't possible.
         return "ok"
 
     # Case 1: No CLAUDE.md - new user, auto-install
