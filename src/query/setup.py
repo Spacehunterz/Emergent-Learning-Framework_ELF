@@ -12,6 +12,63 @@ import subprocess
 from pathlib import Path
 
 
+def _hook_command_path_exists(command: str, filename: str) -> bool:
+    if not command or filename not in command:
+        return False
+    candidates = []
+    for token in command.split():
+        token = token.strip('"').strip("'")
+        if token.endswith(filename):
+            candidates.append(token)
+    if not candidates:
+        import re
+        match = re.search(r'(["\'])([^"\']+' + re.escape(filename) + r')\1', command)
+        if match:
+            candidates.append(match.group(2))
+    for candidate in candidates:
+        try:
+            if Path(candidate).exists():
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def _hooks_need_repair(settings_file: Path) -> bool:
+    if not settings_file.exists():
+        return False
+    try:
+        import json
+        settings = json.loads(settings_file.read_text())
+    except Exception:
+        return True
+
+    hooks = settings.get("hooks", {})
+    pre_entries = hooks.get("PreToolUse", [])
+    post_entries = hooks.get("PostToolUse", [])
+
+    pre_found = False
+    post_found = False
+
+    for entry in pre_entries:
+        for hook in entry.get("hooks", []):
+            cmd = hook.get("command", "")
+            if "pre_tool_learning.py" in cmd:
+                pre_found = True
+                if not _hook_command_path_exists(cmd, "pre_tool_learning.py"):
+                    return True
+
+    for entry in post_entries:
+        for hook in entry.get("hooks", []):
+            cmd = hook.get("command", "")
+            if "post_tool_learning.py" in cmd:
+                post_found = True
+                if not _hook_command_path_exists(cmd, "post_tool_learning.py"):
+                    return True
+
+    return not (pre_found and post_found)
+
+
 def ensure_hooks_installed():
     """
     Auto-install ELF hooks on first use.
@@ -19,11 +76,12 @@ def ensure_hooks_installed():
     Checks for a .hooks-installed marker file. If not present,
     runs the hooks installation script.
     """
-    marker = Path(__file__).parent.parent / ".hooks-installed"
-    if marker.exists():
+    repo_root = Path(__file__).resolve().parents[2]
+    marker = repo_root / ".hooks-installed"
+    settings_file = Path.home() / ".claude" / "settings.json"
+    if marker.exists() and not _hooks_need_repair(settings_file):
         return
 
-    repo_root = Path(__file__).resolve().parents[2]
     install_script = repo_root / "tools" / "scripts" / "install-hooks.py"
     legacy_install = Path(__file__).parent.parent / "scripts" / "install-hooks.py"
     if not install_script.exists() and legacy_install.exists():
