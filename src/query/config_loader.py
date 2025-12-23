@@ -37,11 +37,13 @@ def get_base_path() -> Path:
     # This file is in src/query/config_loader.py -> root is ../../
     current_file = Path(__file__)
     project_root = current_file.parent.parent.parent
-    if (project_root / '.coordination').exists() or (project_root / '.git').exists():
+    if (project_root / '.coordination').exists() or (project_root / '.git').exists() or (project_root / 'pyproject.toml').exists():
         return project_root
 
-    # Default to ~/.claude/emergent-learning
-    return Path.home() / '.claude' / 'emergent-learning'
+    raise RuntimeError(
+        "ELF base path could not be determined. "
+        "Set ELF_BASE_PATH or run from the repo root."
+    )
 
 
 BASE_PATH = get_base_path()

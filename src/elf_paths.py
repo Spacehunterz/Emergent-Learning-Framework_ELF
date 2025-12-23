@@ -4,25 +4,22 @@ Centralized path resolution for the Emergent Learning Framework.
 Resolves the ELF base path with guardrails:
 1) ELF_BASE_PATH environment variable (explicit override)
 2) Repo-root discovery from a start path
-3) ~/.claude/emergent-learning fallback (with warning)
 
-Set ELF_STRICT_PATH=1 to disable fallback and force explicit configuration.
+If a legacy ~/.claude/emergent-learning installation is detected and the
+current base has no user data yet, a one-time migration copies the legacy
+database (and golden rules) into the new base.
 """
 
 from __future__ import annotations
 
 import os
+import shutil
 import warnings
 from pathlib import Path
 from typing import Optional
 
-_FALLBACK_WARNED = False
-
-
-def _is_truthy(value: Optional[str]) -> bool:
-    if not value:
-        return False
-    return value.strip().lower() in {"1", "true", "yes", "on", "y"}
+_MIGRATION_ATTEMPTED = False
+_LEGACY_BASE = Path.home() / ".claude" / "emergent-learning"
 
 
 def _normalize_start(start: Optional[Path]) -> Path:
@@ -44,17 +41,95 @@ def _find_repo_root(start: Path) -> Optional[Path]:
     return None
 
 
-def _warn_fallback(path: Path) -> None:
-    global _FALLBACK_WARNED
-    if _FALLBACK_WARNED:
-        return
-    _FALLBACK_WARNED = True
+def _warn_migration(source: Path, target: Path, items: list[str]) -> None:
     warnings.warn(
-        "ELF_BASE_PATH not set and repo root not found; using fallback "
-        f"{path}. Set ELF_BASE_PATH or enable ELF_STRICT_PATH to prevent fallback.",
+        "Migrated legacy ELF data from "
+        f"{source} to {target}. Files: {', '.join(items)}",
         RuntimeWarning,
         stacklevel=2,
     )
+
+
+def _db_has_user_data(db_path: Path) -> bool:
+    if not db_path.exists():
+        return False
+
+    conn = None
+    try:
+        import sqlite3
+
+        conn = sqlite3.connect(str(db_path))
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT name FROM sqlite_master "
+            "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+        )
+        tables = [row[0] for row in cursor.fetchall()]
+        if not tables:
+            return False
+
+        skip_tables = {"schema_version", "db_operations"}
+        for table in tables:
+            if table in skip_tables:
+                continue
+            cursor.execute(f"SELECT 1 FROM {table} LIMIT 1")
+            if cursor.fetchone():
+                return True
+        return False
+    except Exception:
+        return True
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _copy_if_missing(source: Path, target: Path) -> bool:
+    if not source.exists() or target.exists():
+        return False
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, target)
+    return True
+
+
+def _maybe_migrate_legacy(base: Path) -> None:
+    global _MIGRATION_ATTEMPTED
+    if _MIGRATION_ATTEMPTED:
+        return
+    _MIGRATION_ATTEMPTED = True
+
+    legacy_base = _LEGACY_BASE
+    if not legacy_base.exists():
+        return
+
+    if legacy_base.resolve() == base.resolve():
+        return
+
+    legacy_db = legacy_base / "memory" / "index.db"
+    if not legacy_db.exists():
+        return
+
+    target_db = base / "memory" / "index.db"
+    if target_db.exists() and _db_has_user_data(target_db):
+        return
+
+    target_db.parent.mkdir(parents=True, exist_ok=True)
+    if target_db.exists():
+        backup_path = target_db.with_suffix(".db.pre-legacy-migration")
+        try:
+            shutil.copy2(target_db, backup_path)
+        except Exception:
+            pass
+
+    shutil.copy2(legacy_db, target_db)
+    migrated_items = [str(target_db)]
+    if _copy_if_missing(legacy_base / "memory" / "golden-rules.md",
+                        base / "memory" / "golden-rules.md"):
+        migrated_items.append(str(base / "memory" / "golden-rules.md"))
+
+    _warn_migration(legacy_base, base, migrated_items)
 
 
 def get_base_path(start: Optional[Path] = None) -> Path:
@@ -69,20 +144,19 @@ def get_base_path(start: Optional[Path] = None) -> Path:
     """
     env_path = os.environ.get("ELF_BASE_PATH")
     if env_path:
-        return Path(env_path).expanduser().resolve()
+        base = Path(env_path).expanduser().resolve()
+        _maybe_migrate_legacy(base)
+        return base
 
     repo_root = _find_repo_root(_normalize_start(start))
     if repo_root:
+        _maybe_migrate_legacy(repo_root)
         return repo_root
 
-    fallback = Path.home() / ".claude" / "emergent-learning"
-    if _is_truthy(os.environ.get("ELF_STRICT_PATH")):
-        raise RuntimeError(
-            "ELF_STRICT_PATH is set, but ELF_BASE_PATH was not provided and "
-            "repo root could not be found."
-        )
-    _warn_fallback(fallback)
-    return fallback
+    raise RuntimeError(
+        "ELF_BASE_PATH was not provided and repo root could not be found. "
+        "Run from the repo root or set ELF_BASE_PATH explicitly."
+    )
 
 
 def get_paths(base_path: Optional[Path] = None) -> dict:
