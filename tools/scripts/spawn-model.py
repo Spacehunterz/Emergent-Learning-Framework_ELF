@@ -30,7 +30,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 
 # Add query module to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / 'query'))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src' / 'query'))
 
 try:
     from model_detection import (

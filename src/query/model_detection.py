@@ -110,13 +110,16 @@ def get_cli_version(cli_name: str) -> Optional[str]:
                     text=True,
                     timeout=5
                 )
-                output = result.stdout.strip() or result.stderr.strip()
+                output = result.stdout.strip()
+                if not output:
+                    output = result.stderr.strip()
+                
                 if output:
                     # Extract version number from output
-                    version_match = re.search(r'(\d+\.\d+\.?\d*)', output)
+                    version_match = re.search(r'(\d+\.\d+(\.\d+)?)', output)
                     if version_match:
                         return version_match.group(1)
-                    return output.split('\n')[0][:50]  # First line, truncated
+                    return output.split('\n')[0][:50].strip()  # First line, truncated
             except subprocess.TimeoutExpired:
                 continue
             except Exception:

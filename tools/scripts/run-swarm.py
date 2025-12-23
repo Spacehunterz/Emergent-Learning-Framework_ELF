@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 
 # Add query directory to path for model detection
-sys.path.insert(0, str(Path(__file__).parent.parent / 'query'))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src' / 'query'))
 try:
     from model_detection import detect_installed_models, suggest_model_for_task
     HAS_MODEL_DETECTION = True
