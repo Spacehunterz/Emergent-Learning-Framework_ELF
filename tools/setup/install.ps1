@@ -110,6 +110,110 @@ function Invoke-NativeCommand {
     }
 }
 
+function Test-DbHasUserData {
+    param(
+        [string]$DbPath,
+        [string]$PythonCmd
+    )
+
+    if (-not (Test-Path $DbPath)) {
+        return $false
+    }
+    if (-not $PythonCmd) {
+        return $true
+    }
+
+    $checkScript = @'
+import sqlite3
+import sys
+
+db_path = sys.argv[1]
+try:
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT name FROM sqlite_master "
+        "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+    )
+    tables = [row[0] for row in cursor.fetchall()]
+    if not tables:
+        print("0")
+        sys.exit(0)
+    skip_tables = {"schema_version", "db_operations"}
+    for table in tables:
+        if table in skip_tables:
+            continue
+        cursor.execute(f"SELECT 1 FROM {table} LIMIT 1")
+        if cursor.fetchone():
+            print("1")
+            sys.exit(0)
+    print("0")
+except Exception:
+    print("1")
+finally:
+    try:
+        conn.close()
+    except Exception:
+        pass
+'@
+
+    try {
+        $result = $checkScript | & $PythonCmd - $DbPath 2>$null
+        return $result.Trim() -eq "1"
+    }
+    catch {
+        return $true
+    }
+}
+
+function Invoke-LegacyMigration {
+    param(
+        [string]$LegacyDir,
+        [string]$TargetDir,
+        [string]$PythonCmd
+    )
+
+    if (-not (Test-Path $LegacyDir)) {
+        return
+    }
+
+    $normalizedLegacy = [System.IO.Path]::GetFullPath($LegacyDir).TrimEnd('\', '/').ToLower()
+    $normalizedTarget = [System.IO.Path]::GetFullPath($TargetDir).TrimEnd('\', '/').ToLower()
+    if ($normalizedLegacy -eq $normalizedTarget) {
+        return
+    }
+
+    $legacyDb = Join-Path $LegacyDir "memory\index.db"
+    if (-not (Test-Path $legacyDb)) {
+        return
+    }
+
+    $targetDb = Join-Path $TargetDir "memory\index.db"
+    if (Test-DbHasUserData -DbPath $targetDb -PythonCmd $PythonCmd) {
+        return
+    }
+
+    $targetDbDir = Split-Path $targetDb -Parent
+    if (-not (Test-Path $targetDbDir)) {
+        New-Item -ItemType Directory -Path $targetDbDir -Force | Out-Null
+    }
+
+    if (Test-Path $targetDb) {
+        $backupPath = "$targetDb.pre-legacy-migration"
+        Copy-Item -Path $targetDb -Destination $backupPath -Force
+    }
+
+    Copy-Item -Path $legacyDb -Destination $targetDb -Force
+
+    $legacyGolden = Join-Path $LegacyDir "memory\golden-rules.md"
+    $targetGolden = Join-Path $TargetDir "memory\golden-rules.md"
+    if ((Test-Path $legacyGolden) -and (-not (Test-Path $targetGolden))) {
+        Copy-Item -Path $legacyGolden -Destination $targetGolden -Force
+    }
+
+    Write-Host "  Migrated legacy data to $TargetDir" -ForegroundColor Cyan
+}
+
 
 if ($Help) {
     Write-Host "Usage: install.ps1 [OPTIONS]"
@@ -233,6 +337,11 @@ if ($InstallDashboard) {
 }
 Write-Host "[OK] Prerequisites met" -ForegroundColor Green
 Write-Host ""
+
+# Migrate legacy data if running from a repo-based install
+$migrationBaseDir = if ($env:ELF_BASE_PATH) { (Resolve-Path $env:ELF_BASE_PATH).Path } else { $ScriptDir }
+Invoke-LegacyMigration -LegacyDir $EmergentLearningDir -TargetDir $migrationBaseDir -PythonCmd $pythonCmd
+
 Write-Host "[Step 2/5] Creating directory structure..." -ForegroundColor Yellow
 
 # Create directories
