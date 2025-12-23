@@ -224,7 +224,7 @@ dashboard = """# Dashboard Guide
 
 **Manual Start:**
 ```bash
-cd ~/.claude/emergent-learning/dashboard-app
+cd <elf-repo>/apps/dashboard
 ./run-dashboard.ps1  # Windows
 ./run-dashboard.sh   # Mac/Linux
 ```
@@ -568,7 +568,7 @@ python query.py --import-heuristics team-heuristics.json
 
 **Full uninstall:**
 1. Remove hooks from settings.json
-2. Delete `src/` or `~/.claude/emergent-learning/`
+2. Delete `<elf-repo>/` directory
 3. Restore CLAUDE.md.backup
 
 **Partial disable:**

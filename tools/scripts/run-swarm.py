@@ -310,7 +310,7 @@ Generated: {datetime.now().isoformat()}
 
 ### Step 1: Initialize Coordination
 ```bash
-python ~/.claude/emergent-learning/scripts/run-swarm.py --config swarm.yaml --init-only
+python <elf-repo>/tools/scripts/run-swarm.py --config swarm.yaml --init-only
 ```
 
 ### Step 2: Spawn Agents
@@ -340,7 +340,7 @@ Task tool:
             model = agent.get("model", "gemini")
             instructions += f'''```bash
 # Run {agent['name']} with {model}
-python ~/.claude/emergent-learning/scripts/spawn-model.py \\
+python <elf-repo>/tools/scripts/spawn-model.py \\
   --model {model} \\
   --prompt-file .coordination/swarm-prompts/{agent['name']}-prompt.md \\
   --output .coordination/swarm-results/{agent['name']}-result.md
@@ -363,7 +363,7 @@ cat .coordination/swarm-results/{agent-name}-result.md
 ### Step 4: Summarize Results
 
 ```bash
-python ~/.claude/emergent-learning/scripts/run-swarm.py --summary
+python <elf-repo>/tools/scripts/run-swarm.py --summary
 ```
 
 ## Important Notes

@@ -24,8 +24,9 @@ from typing import Dict, List, Any
 
 # Add query module to path
 SCRIPT_DIR = Path(__file__).resolve().parent
-BASE_DIR = SCRIPT_DIR.parent
-sys.path.insert(0, str(BASE_DIR / 'query'))
+TOOLS_DIR = SCRIPT_DIR.parent
+BASE_DIR = TOOLS_DIR.parent  # Repo root (tools/scripts -> tools -> repo)
+sys.path.insert(0, str(BASE_DIR / 'src' / 'query'))
 
 from frontmatter import (
     read_file_with_frontmatter,

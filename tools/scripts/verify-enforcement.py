@@ -78,7 +78,7 @@ def verify():
         print("   - Tools blocked after 3 uses without query")
     else:
         print("[WARNING] Enforcement NOT fully configured")
-        print("   Run: python ~/.claude/emergent-learning/scripts/register-enforcement-hooks.py")
+        print("   Run: python <elf-repo>/tools/scripts/register-enforcement-hooks.py")
     print("=" * 50)
     
     return all_ok
