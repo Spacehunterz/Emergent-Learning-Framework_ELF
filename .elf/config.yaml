@@ -1,0 +1,12 @@
+name: emergent-learning
+description: Emergent Learning Framework - Agent Intelligence System
+base_path: /c/Users/Evede/.gemini/antigravity/scratch/emergent-learning
+domains:
+  - meta-learning
+  - security
+  - infrastructure
+  - react
+  - workflow
+  - dashboard
+project_type: framework
+learning_enabled: true
