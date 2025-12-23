@@ -21,14 +21,14 @@ Hook configuration in `~/.claude/settings.json`:
       "matcher": "Task",
       "hooks": [{
         "type": "command",
-        "command": "python ~/.claude/hooks/learning-loop/pre_tool_learning.py"
+        "command": "python ~/.claude/emergent-learning/hooks/learning-loop/pre_tool_learning.py"
       }]
     }],
     "PostToolUse": [{
       "matcher": "Task",
       "hooks": [{
         "type": "command",
-        "command": "python ~/.claude/hooks/learning-loop/post_tool_learning.py"
+        "command": "python ~/.claude/emergent-learning/hooks/learning-loop/post_tool_learning.py"
       }]
     }]
   }
