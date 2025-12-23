@@ -54,7 +54,8 @@ class BlackboardV2:
     Reads from original blackboard.json (Phase 1).
     """
 
-    def __init__(self, project_root: str = "."):
+    def __init__(self, project_root: str = ".", validation_interval: int = 10,
+                 log_divergence: bool = True):
         self.project_root = Path(project_root).resolve()
 
         # Original blackboard (source of truth for reads in Phase 1)
@@ -68,7 +69,8 @@ class BlackboardV2:
         
         # C8 FIX: Track operations for periodic validation
         self._operation_count = 0
-        self._validation_interval = 10  # Validate every N operations
+        self._validation_interval = max(0, validation_interval)  # Validate every N operations
+        self._log_divergence = log_divergence
 
     def _write_to_event_log(self, event_type: str, data: Dict) -> Optional[int]:
         """Write to event log, gracefully handling failures."""
@@ -79,7 +81,7 @@ class BlackboardV2:
             
             # C8 FIX: Periodic divergence detection with automatic repair
             self._operation_count += 1
-            if self._operation_count >= self._validation_interval:
+            if self._validation_interval and self._operation_count >= self._validation_interval:
                 self._operation_count = 0
                 # Validation now includes automatic repair
                 self.validate_state_consistency()
@@ -390,14 +392,16 @@ class BlackboardV2:
         repaired = False
         if differences:
             import sys
-            print(f"[WARNING] State divergence detected, attempting repair...", file=sys.stderr)
+            if self._log_divergence:
+                print("[WARNING] State divergence detected, attempting repair...", file=sys.stderr)
 
             # Mark event log as unhealthy to prevent further dual-writes during repair
             self._event_log_healthy = False
 
             # Log all differences for debugging
-            for diff in differences:
-                print(f"  - Divergence: {diff}", file=sys.stderr)
+            if self._log_divergence:
+                for diff in differences:
+                    print(f"  - Divergence: {diff}", file=sys.stderr)
 
             # Blackboard is authoritative (Phase 1 design decision)
             # Event log will re-sync on next write operation
@@ -408,7 +412,8 @@ class BlackboardV2:
             self._event_log_healthy = True
             repaired = True
 
-            print("[INFO] Repair complete - event log marked for re-sync on next write", file=sys.stderr)
+            if self._log_divergence:
+                print("[INFO] Repair complete - event log marked for re-sync on next write", file=sys.stderr)
 
         return {
             "consistent": len(differences) == 0,
