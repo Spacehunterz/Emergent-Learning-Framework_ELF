@@ -22,7 +22,7 @@ import tempfile
 import shutil
 import random
 from pathlib import Path
-from typing import List, Dict, Set, Any
+from typing import List, Dict, Set, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -60,6 +60,7 @@ BlockedError = blackboard_module.BlockedError
 @dataclass
 class TestResult:
     """Container for test results."""
+    __test__ = False
     name: str
     passed: bool
     duration_seconds: float
@@ -78,8 +79,19 @@ class TestResult:
             self.metadata = {}
 
 
+def _running_under_pytest() -> bool:
+    return "PYTEST_CURRENT_TEST" in os.environ
+
+
+def _return_result(result: TestResult) -> Optional[TestResult]:
+    if _running_under_pytest():
+        return None
+    return result
+
+
 class TestRunner:
     """Manages test execution and result collection."""
+    __test__ = False
 
     def __init__(self):
         self.results: List[TestResult] = []
@@ -188,7 +200,7 @@ def test_blackboard_concurrent_access(runner: TestRunner) -> TestResult:
     Run for 5 seconds, verify no data corruption.
     """
     project_root = runner.create_temp_project()
-    bb = BlackboardV2(project_root)
+    bb = BlackboardV2(project_root, validation_interval=0, log_divergence=False)
 
     errors = []
     warnings = []
@@ -313,7 +325,7 @@ def test_blackboard_concurrent_access(runner: TestRunner) -> TestResult:
     assert len(msg_ids) == len(set(msg_ids)), "Duplicate message IDs detected"
     assert total_ops > 0, "Expected at least one operation to complete"
 
-    return TestResult(
+    return _return_result(TestResult(
         name="Blackboard Concurrent Access",
         passed=len(errors) == 0,
         duration_seconds=0,  # Will be set by runner
@@ -326,7 +338,7 @@ def test_blackboard_concurrent_access(runner: TestRunner) -> TestResult:
             "findings": len(state["findings"]),
             "messages": len(state["messages"])
         }
-    )
+    ))
 
 
 # =============================================================================
@@ -462,7 +474,7 @@ def test_event_log_stress(runner: TestRunner) -> TestResult:
     assert read_count > 0, "Expected at least one read operation"
     assert len(seen_sequences) > 0, "Expected at least one unique sequence"
 
-    return TestResult(
+    return _return_result(TestResult(
         name="Event Log Stress",
         passed=len(errors) == 0,
         duration_seconds=0,
@@ -475,7 +487,7 @@ def test_event_log_stress(runner: TestRunner) -> TestResult:
             "unique_sequences": len(seen_sequences),
             "total_events": len(events)
         }
-    )
+    ))
 
 
 # =============================================================================
@@ -583,7 +595,7 @@ def test_claim_chain_contention(runner: TestRunner) -> TestResult:
     assert len(claims_released) == len(claims_succeeded), f"Expected all succeeded claims to be released: {len(claims_released)} released vs {len(claims_succeeded)} succeeded"
     assert total_ops > 0, "Expected at least one claim operation"
 
-    return TestResult(
+    return _return_result(TestResult(
         name="Claim Chain Contention",
         passed=len(errors) == 0,
         duration_seconds=0,
@@ -596,7 +608,7 @@ def test_claim_chain_contention(runner: TestRunner) -> TestResult:
             "claims_released": len(claims_released),
             "final_active_chains": len(active_chains)
         }
-    )
+    ))
 
 
 # =============================================================================
@@ -681,7 +693,7 @@ def test_file_lock_stress(runner: TestRunner) -> TestResult:
     assert lock_count > 0, "Expected at least one lock cycle to complete"
     assert lock_acquired, "Lock file appears orphaned - could not acquire final lock"
 
-    return TestResult(
+    return _return_result(TestResult(
         name="File Lock Stress",
         passed=len(errors) == 0,
         duration_seconds=0,
@@ -691,7 +703,7 @@ def test_file_lock_stress(runner: TestRunner) -> TestResult:
         metadata={
             "lock_cycles": lock_count
         }
-    )
+    ))
 
 
 # =============================================================================
@@ -709,7 +721,7 @@ def test_resource_usage(runner: TestRunner) -> TestResult:
     Report any leaks.
     """
     project_root = runner.create_temp_project()
-    bb = BlackboardV2(project_root)
+    bb = BlackboardV2(project_root, validation_interval=0, log_divergence=False)
 
     errors = []
     warnings = []
@@ -783,7 +795,7 @@ def test_resource_usage(runner: TestRunner) -> TestResult:
     assert fd_growth <= 50, f"File descriptor leak detected: grew by {fd_growth} (threshold: 50)"
     assert mem_growth <= 100, f"Excessive memory growth: {mem_growth:.1f} MB (threshold: 100 MB)"
 
-    return TestResult(
+    return _return_result(TestResult(
         name="Resource Usage Monitor",
         passed=len(errors) == 0,
         duration_seconds=0,
@@ -798,7 +810,7 @@ def test_resource_usage(runner: TestRunner) -> TestResult:
             "final_mem_mb": final_mem,
             "mem_growth_mb": mem_growth
         }
-    )
+    ))
 
 
 # =============================================================================
