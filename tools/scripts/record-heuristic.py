@@ -8,7 +8,7 @@ without requiring the sqlite3 CLI tool.
 Usage (interactive): python record-heuristic.py
 Usage (non-interactive):
     python record-heuristic.py --domain "domain" --rule "rule" --explanation "why"
-    Optional: --source failure|success|observation --confidence 0.8
+    Optional: --source failure|success|observation|debugging --confidence 0.8
 
 Environment variables also supported:
     HEURISTIC_DOMAIN, HEURISTIC_RULE, HEURISTIC_EXPLANATION, HEURISTIC_SOURCE, HEURISTIC_CONFIDENCE
@@ -40,9 +40,10 @@ MAX_DOMAIN_LENGTH = 100
 MAX_EXPLANATION_LENGTH = 5000
 MAX_RETRY_ATTEMPTS = 5
 
-# Resolve paths
+# Resolve paths - script is at tools/scripts/, repo root is two levels up
 SCRIPT_DIR = Path(__file__).resolve().parent
-BASE_DIR = SCRIPT_DIR.parent
+TOOLS_DIR = SCRIPT_DIR.parent
+BASE_DIR = TOOLS_DIR.parent  # Repo root
 MEMORY_DIR = BASE_DIR / "memory"
 DB_PATH = MEMORY_DIR / "index.db"
 HEURISTICS_DIR = MEMORY_DIR / "heuristics"
@@ -308,7 +309,7 @@ def record_heuristic_with_location(
         domain: Domain for the heuristic
         rule: The heuristic rule/statement
         explanation: Why this heuristic works
-        source_type: failure|success|observation
+        source_type: failure|success|observation|debugging
         confidence: 0.0-1.0 confidence level
         project_path: Optional project path for location-specific heuristics.
                      NULL = global (available everywhere)
@@ -338,7 +339,7 @@ def record_heuristic_with_location(
         return None
 
     # Validate source_type
-    valid_sources = {'failure', 'success', 'observation'}
+    valid_sources = {'failure', 'success', 'observation', 'debugging'}
     if source_type not in valid_sources:
         source_type = 'observation'
 
@@ -415,7 +416,7 @@ def record_heuristic_with_location(
     if not domain_file.exists():
         header = f"""# Heuristics: {domain}
 
-Generated from failures, successes, and observations in the **{domain}** domain.
+Generated from failures, successes, observations, and debugging sessions in the **{domain}** domain.
 
 ---
 
@@ -495,7 +496,7 @@ def record_heuristic(
         domain: Domain for the heuristic
         rule: The heuristic rule/statement
         explanation: Why this heuristic works
-        source_type: failure|success|observation
+        source_type: failure|success|observation|debugging
         confidence: 0.0-1.0 confidence level
         skip_validation: Skip quality checks (use with caution)
 
@@ -522,7 +523,7 @@ def record_heuristic(
         return None
 
     # Validate source_type
-    valid_sources = {'failure', 'success', 'observation'}
+    valid_sources = {'failure', 'success', 'observation', 'debugging'}
     if source_type not in valid_sources:
         source_type = 'observation'
 
@@ -598,7 +599,7 @@ def record_heuristic(
     if not domain_file.exists():
         header = f"""# Heuristics: {domain}
 
-Generated from failures, successes, and observations in the **{domain}** domain.
+Generated from failures, successes, observations, and debugging sessions in the **{domain}** domain.
 
 ---
 
@@ -651,7 +652,7 @@ def interactive_mode() -> dict:
 
     explanation = input("Explanation: ").strip()
 
-    source_type = input("Source type (failure/success/observation): ").strip()
+    source_type = input("Source type (failure/success/observation/debugging): ").strip()
     if not source_type:
         source_type = "observation"
 
@@ -695,7 +696,7 @@ Examples:
     parser.add_argument('--rule', type=str, help='The heuristic rule/statement')
     parser.add_argument('--explanation', type=str, default='', help='Explanation of why this heuristic works')
     parser.add_argument('--source', type=str, default='observation',
-                       choices=['failure', 'success', 'observation'],
+                       choices=['failure', 'success', 'observation', 'debugging'],
                        help='Source type (default: observation)')
     parser.add_argument('--confidence', type=str, default='0.7',
                        help='Confidence level 0.0-1.0 or low/medium/high (default: 0.7)')
@@ -745,7 +746,7 @@ Examples:
         log("INFO", "No terminal attached and no arguments provided - showing usage")
         print("Usage (non-interactive):")
         print('  python record-heuristic.py --domain "domain" --rule "the heuristic rule"')
-        print('  Optional: --explanation "why" --source failure|success|observation --confidence 0.8')
+        print('  Optional: --explanation "why" --source failure|success|observation|debugging --confidence 0.8')
         print()
         print("Or set environment variables:")
         print('  HEURISTIC_DOMAIN="domain" HEURISTIC_RULE="rule" python record-heuristic.py')
