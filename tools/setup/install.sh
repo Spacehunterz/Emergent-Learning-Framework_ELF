@@ -11,6 +11,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
 ELF_DIR="$CLAUDE_DIR/emergent-learning"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+BASE_DIR="${ELF_BASE_PATH:-$REPO_ROOT}"
 MODE="${1#--mode=}"
 MODE="${MODE:-interactive}"
 
@@ -34,6 +36,101 @@ detect_python() {
 }
 
 PYTHON_CMD=$(detect_python)
+
+db_has_user_data() {
+    local db_path="$1"
+    if [ -z "$PYTHON_CMD" ] || [ ! -f "$db_path" ]; then
+        return 1
+    fi
+
+    local result
+    set +e
+    result=$("$PYTHON_CMD" - "$db_path" << 'PY'
+import sqlite3
+import sys
+
+db_path = sys.argv[1]
+try:
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT name FROM sqlite_master "
+        "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+    )
+    tables = [row[0] for row in cursor.fetchall()]
+    if not tables:
+        print("0")
+        sys.exit(0)
+    skip_tables = {"schema_version", "db_operations"}
+    for table in tables:
+        if table in skip_tables:
+            continue
+        cursor.execute(f"SELECT 1 FROM {table} LIMIT 1")
+        if cursor.fetchone():
+            print("1")
+            sys.exit(0)
+    print("0")
+except Exception:
+    print("1")
+finally:
+    try:
+        conn.close()
+    except Exception:
+        pass
+PY
+    )
+    local status=$?
+    set -e
+    if [ $status -ne 0 ]; then
+        return 0
+    fi
+
+    [ "$result" = "1" ]
+}
+
+migrate_legacy_data() {
+    local legacy_dir="$ELF_DIR"
+    local target_dir="$BASE_DIR"
+
+    if [ ! -d "$legacy_dir" ]; then
+        return
+    fi
+
+    if [ "$(cd "$legacy_dir" && pwd)" = "$(cd "$target_dir" && pwd)" ]; then
+        return
+    fi
+
+    local legacy_db="$legacy_dir/memory/index.db"
+    if [ ! -f "$legacy_db" ]; then
+        return
+    fi
+
+    local target_db="$target_dir/memory/index.db"
+    if db_has_user_data "$target_db"; then
+        return
+    fi
+
+    mkdir -p "$(dirname "$target_db")"
+    if [ -f "$target_db" ]; then
+        cp "$target_db" "$target_db.pre-legacy-migration"
+    fi
+
+    cp "$legacy_db" "$target_db"
+
+    local legacy_golden="$legacy_dir/memory/golden-rules.md"
+    local target_golden="$target_dir/memory/golden-rules.md"
+    if [ -f "$legacy_golden" ] && [ ! -f "$target_golden" ]; then
+        cp "$legacy_golden" "$target_golden"
+    fi
+
+    echo "[ELF] Migrated legacy data to $target_dir"
+}
+
+if [ -n "$PYTHON_CMD" ]; then
+    migrate_legacy_data
+else
+    echo "[ELF] Warning: Python not found; skipping legacy data migration."
+fi
 
 install_venv() {
     local venv_dir="$ELF_DIR/.venv"
