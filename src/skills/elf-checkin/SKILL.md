@@ -32,7 +32,7 @@ When user invokes `/checkin`:
 
 1. **Query ELF Context**
    ```bash
-   cd /c/Users/Evede/.claude/emergent-learning && python query.py --context
+   python ~/.claude/emergent-learning/query/query.py --context
    ```
 
 2. **Show Golden Rules** (TIER 1 - Always loaded)
@@ -59,7 +59,7 @@ When user invokes `/checkin`:
 
 If user specifies a domain:
 ```bash
-python query.py --domain [architecture|debugging|coordination|communication]
+python ~/.claude/emergent-learning/query/query.py --domain [architecture|debugging|coordination|communication]
 ```
 
 ## What the Building Contains
