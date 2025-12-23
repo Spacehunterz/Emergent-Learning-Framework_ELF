@@ -34,7 +34,71 @@ def _hook_command_path_exists(command: str, filename: str) -> bool:
     return False
 
 
-def _hooks_need_repair(settings_file: Path) -> bool:
+def _normalize_path_for_comparison(path_input):
+    """Normalize path to lowercase with forward slashes, handling MSYS paths.
+
+    Handles both Windows paths (C:\\...) and MSYS paths (/c/...).
+    """
+    import re
+
+    # Convert Path to string
+    path_str = str(path_input)
+    # Replace backslashes with forward slashes
+    path_str = path_str.replace('\\', '/')
+
+    # Handle MSYS paths like /c/Users -> c:/users
+    match = re.match(r'^/([a-z])(/.*)?$', path_str)
+    if match:
+        drive = match.group(1)
+        rest = match.group(2) or ''
+        path_str = drive + ':' + rest
+
+    # Don't call .resolve() on already-normalized Windows paths to avoid
+    # MSYS path doubling (C:\\c\\Users issue)
+    # Just normalize case and slashes
+    return path_str.lower()
+
+
+def _hook_path_is_in_current_repo(command: str, filename: str, current_repo_root: Path) -> bool:
+    """Check if hook command points to a file in the CURRENT repo, not a stale location.
+
+    Works regardless of where the repo was cloned (absolute path check).
+    Handles both Windows paths (C:\\...) and MSYS paths (/c/...).
+    """
+    if not command or filename not in command:
+        return False
+
+    # Extract hook path from command
+    candidates = []
+    for token in command.split():
+        token = token.strip('"').strip("'")
+        if token.endswith(filename):
+            candidates.append(token)
+    if not candidates:
+        import re
+        match = re.search(r'(["\'])([^"\']+' + re.escape(filename) + r')\1', command)
+        if match:
+            candidates.append(match.group(2))
+
+    # Check if any candidate is within the current repo root
+    try:
+        # Don't resolve paths to avoid MSYS double-path issue
+        current_repo_abs = _normalize_path_for_comparison(current_repo_root)
+        for candidate in candidates:
+            try:
+                candidate_abs = _normalize_path_for_comparison(Path(candidate))
+                # Check if candidate is under current repo
+                if candidate_abs.startswith(current_repo_abs + '/') or candidate_abs == current_repo_abs:
+                    return True
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    return False
+
+
+def _hooks_need_repair(settings_file: Path, current_repo_root: Path = None) -> bool:
     if not settings_file.exists():
         return False
     try:
@@ -57,6 +121,9 @@ def _hooks_need_repair(settings_file: Path) -> bool:
                 pre_found = True
                 if not _hook_command_path_exists(cmd, "pre_tool_learning.py"):
                     return True
+                # Also check if hook is in CURRENT repo (not a stale path from old repo)
+                if current_repo_root and not _hook_path_is_in_current_repo(cmd, "pre_tool_learning.py", current_repo_root):
+                    return True
 
     for entry in post_entries:
         for hook in entry.get("hooks", []):
@@ -64,6 +131,9 @@ def _hooks_need_repair(settings_file: Path) -> bool:
             if "post_tool_learning.py" in cmd:
                 post_found = True
                 if not _hook_command_path_exists(cmd, "post_tool_learning.py"):
+                    return True
+                # Also check if hook is in CURRENT repo (not a stale path from old repo)
+                if current_repo_root and not _hook_path_is_in_current_repo(cmd, "post_tool_learning.py", current_repo_root):
                     return True
 
     return not (pre_found and post_found)
@@ -75,11 +145,14 @@ def ensure_hooks_installed():
 
     Checks for a .hooks-installed marker file. If not present,
     runs the hooks installation script.
+
+    Also detects and repairs stale hook paths pointing to old repo locations.
     """
     repo_root = Path(__file__).resolve().parents[2]
     marker = repo_root / ".hooks-installed"
     settings_file = Path.home() / ".claude" / "settings.json"
-    if marker.exists() and not _hooks_need_repair(settings_file):
+    # Pass repo_root so repair check can detect hooks pointing to wrong location
+    if marker.exists() and not _hooks_need_repair(settings_file, repo_root):
         return
 
     install_script = repo_root / "tools" / "scripts" / "install-hooks.py"
