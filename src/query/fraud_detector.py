@@ -820,8 +820,27 @@ class FraudDetector:
 
                 conn.commit()
 
-                # TODO: Future enhancement - create CEO escalation file
-                # For now, just log the alert
+                # Create CEO Escalation
+                try:
+                    from config_loader import get_base_path
+                    base_path = get_base_path()
+                except ImportError:
+                    base_path = Path.home() / ".claude" / "emergent-learning"
+
+                inbox = base_path / "ceo-inbox"
+                inbox.mkdir(parents=True, exist_ok=True)
+                
+                alert_file = inbox / f"fraud_alert_{fraud_report_id}_{int(datetime.now().timestamp())}.json"
+                alert_data = {
+                    "type": "FRAUD_ALERT",
+                    "report_id": fraud_report_id,
+                    "heuristic_id": report.heuristic_id,
+                    "classification": report.classification,
+                    "score": report.fraud_score,
+                    "signals": [s.reason for s in report.signals],
+                    "timestamp": datetime.now().isoformat()
+                }
+                alert_file.write_text(json.dumps(alert_data, indent=2))
         finally:
             conn.close()
 
