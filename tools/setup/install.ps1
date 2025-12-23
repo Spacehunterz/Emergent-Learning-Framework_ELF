@@ -413,6 +413,12 @@ Copy-IfDifferent -Source (Join-Path $srcTemplatesDir "golden-rules.md") -Destina
 Copy-IfDifferent -Source (Join-Path $srcTemplatesDir "init_db.sql") -Destination (Join-Path $MemoryDir "init_db.sql") | Out-Null
 Write-Host "  Copied query system" -ForegroundColor Green
 
+# Copy elf_paths.py for modules that import it directly
+$elfPathsSrc = Join-Path $srcDir "src\elf_paths.py"
+if (Test-Path $elfPathsSrc) {
+    Copy-IfDifferent -Source $elfPathsSrc -Destination (Join-Path $EmergentLearningDir "elf_paths.py") | Out-Null
+}
+
 # Create Python virtual environment for ELF
 $venvDir = Join-Path $EmergentLearningDir ".venv"
 $venvPython = $null
@@ -543,6 +549,20 @@ if (Test-Path $scriptsSource) {
 }
 Write-Host "  Copied recording scripts" -ForegroundColor Green
 
+# Copy all slash commands (/checkin, /search, /swarm, etc.)
+$commandsDir = Join-Path $ClaudeDir "commands"
+New-Item -ItemType Directory -Path $commandsDir -Force | Out-Null
+$srcCommandsDir = Join-Path $ScriptDir "library\commands"
+if (Test-Path $srcCommandsDir) {
+    Get-ChildItem -Path $srcCommandsDir -Filter "*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination $commandsDir -Force
+    }
+    Get-ChildItem -Path $srcCommandsDir -Filter "*.py" -ErrorAction SilentlyContinue | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination $commandsDir -Force
+    }
+}
+Write-Host "  Copied slash commands (/checkin, /search, /swarm)" -ForegroundColor Green
+
 # Initialize database
 $dbPath = Join-Path $MemoryDir "index.db"
 $sqlFile = Join-Path $MemoryDir "init_db.sql"
@@ -597,20 +617,6 @@ if ($InstallSwarm) {
         }
     }
     Write-Host "  Copied agent personas" -ForegroundColor Green
-
-    # Copy all slash commands (/checkin, /search, /swarm, etc.)
-    $commandsDir = Join-Path $ClaudeDir "commands"
-    New-Item -ItemType Directory -Path $commandsDir -Force | Out-Null
-    $srcCommandsDir = Join-Path $ScriptDir "library\commands"
-    if (Test-Path $srcCommandsDir) {
-        Get-ChildItem -Path $srcCommandsDir -Filter "*.md" -ErrorAction SilentlyContinue | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination $commandsDir -Force
-        }
-        Get-ChildItem -Path $srcCommandsDir -Filter "*.py" -ErrorAction SilentlyContinue | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination $commandsDir -Force
-        }
-    }
-    Write-Host "  Copied slash commands (/checkin, /search, /swarm)" -ForegroundColor Green
 
     # Copy agent coordination plugin (goes to different location, always safe)
     $claudePluginsDir = Join-Path $ClaudeDir "plugins"

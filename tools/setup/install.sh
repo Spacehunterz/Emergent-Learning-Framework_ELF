@@ -11,10 +11,11 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
-ELF_DIR="$CLAUDE_DIR/emergent-learning"
+ELF_DIR_DEFAULT="$CLAUDE_DIR/emergent-learning"
+ELF_DIR="${ELF_BASE_PATH:-$ELF_DIR_DEFAULT}"
 # SCRIPT_DIR is tools/setup, so repo root is two levels up
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-BASE_DIR="${ELF_BASE_PATH:-$REPO_ROOT}"
+BASE_DIR="$ELF_DIR"
 
 MODE="interactive"
 CORE_ONLY=false
@@ -133,8 +134,8 @@ PY
 }
 
 migrate_legacy_data() {
-    local legacy_dir="$ELF_DIR"
-    local target_dir="$BASE_DIR"
+    local legacy_dir="$ELF_DIR_DEFAULT"
+    local target_dir="$ELF_DIR"
 
     if [ ! -d "$legacy_dir" ]; then
         return
@@ -465,7 +466,7 @@ copy_template() {
     
     # Replace placeholder or hardcoded path with actual base directory
     # If ELF_BASE_PATH is set, replace default path with it
-    if [ "$ELF_DIR" != "$HOME/.claude/emergent-learning" ]; then
+    if [ "$ELF_DIR" != "$ELF_DIR_DEFAULT" ]; then
          # Need to escape slashes for sed
          ESCAPED_TARGET=$(echo "$ELF_DIR" | sed 's/\//\\\//g')
          ESCAPED_DEFAULT="~\/.claude\/emergent-learning"
