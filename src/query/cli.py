@@ -24,14 +24,14 @@ try:
         QuerySystemError, ValidationError, DatabaseError, TimeoutError
     )
     from query.formatters import format_output, generate_accountability_banner
-    from query.setup import ensure_hooks_installed, ensure_full_setup
+    from query.setup import ensure_hooks_installed, ensure_full_setup, verify_hooks
 except ImportError:
     from core import QuerySystem
     from exceptions import (
         QuerySystemError, ValidationError, DatabaseError, TimeoutError
     )
     from formatters import format_output, generate_accountability_banner
-    from setup import ensure_hooks_installed, ensure_full_setup
+    from setup import ensure_hooks_installed, ensure_full_setup, verify_hooks
 
 # MetaObserver is optional
 META_OBSERVER_AVAILABLE = False
@@ -78,6 +78,39 @@ async def _async_main(args: argparse.Namespace) -> int:
                 print("Database validation: FAILED")
                 exit_code = 1
             print(format_output(result, args.format))
+            return exit_code
+
+        elif args.verify_hooks:
+            # Verify hook configuration
+            print("🔍 Hook Configuration Check")
+            print("━" * 40)
+            hook_status = verify_hooks()
+
+            if hook_status['healthy']:
+                print("✓ Hooks are properly configured")
+            else:
+                print("✗ Hook configuration issues found:")
+                exit_code = 1
+
+            print()
+            print(f"PreToolUse: {'✓ Registered' if hook_status['pre_tool_present'] else '✗ Not registered'}")
+            if hook_status['pre_tool_path']:
+                print(f"  Path: {hook_status['pre_tool_path']}")
+
+            print(f"PostToolUse: {'✓ Registered' if hook_status['post_tool_present'] else '✗ Not registered'}")
+            if hook_status['post_tool_path']:
+                print(f"  Path: {hook_status['post_tool_path']}")
+
+            if hook_status['errors']:
+                print("\n⚠️  Errors:")
+                for error in hook_status['errors']:
+                    print(f"  • {error}")
+
+            if hook_status['warnings']:
+                print("\n⚠️  Warnings:")
+                for warning in hook_status['warnings']:
+                    print(f"  • {warning}")
+
             return exit_code
 
         elif args.health_check:
@@ -407,6 +440,8 @@ Error Codes:
     parser.add_argument('--validate', action='store_true', help='Validate database integrity')
     parser.add_argument('--health-check', action='store_true',
                        help='Run system health check and display alerts (meta-observer)')
+    parser.add_argument('--verify-hooks', action='store_true',
+                       help='Verify hook configuration and accessibility')
 
     # Project-related arguments
     parser.add_argument('--project-status', action='store_true',

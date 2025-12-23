@@ -152,22 +152,138 @@ def ensure_hooks_installed():
     marker = repo_root / ".hooks-installed"
     settings_file = Path.home() / ".claude" / "settings.json"
     # Pass repo_root so repair check can detect hooks pointing to wrong location
-    if marker.exists() and not _hooks_need_repair(settings_file, repo_root):
+    needs_repair = _hooks_need_repair(settings_file, repo_root)
+    if marker.exists() and not needs_repair:
         return
 
     install_script = repo_root / "tools" / "scripts" / "install-hooks.py"
     legacy_install = Path(__file__).parent.parent / "scripts" / "install-hooks.py"
     if not install_script.exists() and legacy_install.exists():
         install_script = legacy_install
+
     if install_script.exists():
         try:
-            subprocess.run(
+            result = subprocess.run(
                 [sys.executable, str(install_script)],
                 capture_output=True,
+                text=True,
                 timeout=10
             )
-        except Exception:
-            pass  # Silent fail - hooks are optional
+            if result.returncode != 0:
+                # Installation failed - log but don't block
+                stderr = result.stderr or "(no error details)"
+                # Only show if in verbose/debug mode would be set
+                return False
+            # Success - show info-level feedback only if hooks were repaired
+            if needs_repair:
+                print("[ELF] Hooks updated for this repository location")
+            return True
+        except subprocess.TimeoutExpired:
+            return False
+        except Exception as e:
+            # Log error but don't block - hooks are optional
+            return False
+    return False
+
+
+def verify_hooks() -> dict:
+    """
+    Verify hook configuration and file accessibility.
+
+    Returns:
+        {
+            'healthy': bool,
+            'pre_tool_present': bool,
+            'post_tool_present': bool,
+            'pre_tool_path': str or None,
+            'post_tool_path': str or None,
+            'errors': [str, ...],
+            'warnings': [str, ...]
+        }
+    """
+    settings_file = Path.home() / ".claude" / "settings.json"
+    repo_root = Path(__file__).resolve().parents[2]
+
+    result = {
+        'healthy': True,
+        'pre_tool_present': False,
+        'post_tool_present': False,
+        'pre_tool_path': None,
+        'post_tool_path': None,
+        'errors': [],
+        'warnings': []
+    }
+
+    # Check settings.json exists
+    if not settings_file.exists():
+        result['errors'].append(f"settings.json not found: {settings_file}")
+        result['healthy'] = False
+        return result
+
+    try:
+        import json
+        settings = json.loads(settings_file.read_text())
+    except Exception as e:
+        result['errors'].append(f"Could not parse settings.json: {e}")
+        result['healthy'] = False
+        return result
+
+    hooks = settings.get("hooks", {})
+    pre_entries = hooks.get("PreToolUse", [])
+    post_entries = hooks.get("PostToolUse", [])
+
+    # Check PreToolUse
+    for entry in pre_entries:
+        if entry.get("matcher") != "Task":
+            continue
+        for hook in entry.get("hooks", []):
+            cmd = hook.get("command", "")
+            if "pre_tool_learning.py" in cmd:
+                result['pre_tool_present'] = True
+                if _hook_command_path_exists(cmd, "pre_tool_learning.py"):
+                    # Extract path for display
+                    for token in cmd.split():
+                        token = token.strip('"').strip("'")
+                        if token.endswith("pre_tool_learning.py"):
+                            result['pre_tool_path'] = token
+                            break
+                    # Check if it's in current repo
+                    if not _hook_path_is_in_current_repo(cmd, "pre_tool_learning.py", repo_root):
+                        result['warnings'].append(f"PreToolUse hook points to different repository location: {result['pre_tool_path']}")
+                else:
+                    result['errors'].append(f"PreToolUse hook file not found")
+                    result['healthy'] = False
+
+    # Check PostToolUse
+    for entry in post_entries:
+        if entry.get("matcher") != "Task":
+            continue
+        for hook in entry.get("hooks", []):
+            cmd = hook.get("command", "")
+            if "post_tool_learning.py" in cmd:
+                result['post_tool_present'] = True
+                if _hook_command_path_exists(cmd, "post_tool_learning.py"):
+                    # Extract path for display
+                    for token in cmd.split():
+                        token = token.strip('"').strip("'")
+                        if token.endswith("post_tool_learning.py"):
+                            result['post_tool_path'] = token
+                            break
+                    # Check if it's in current repo
+                    if not _hook_path_is_in_current_repo(cmd, "post_tool_learning.py", repo_root):
+                        result['warnings'].append(f"PostToolUse hook points to different repository location: {result['post_tool_path']}")
+                else:
+                    result['errors'].append(f"PostToolUse hook file not found")
+                    result['healthy'] = False
+
+    if not result['pre_tool_present']:
+        result['errors'].append("PreToolUse hook not registered")
+        result['healthy'] = False
+    if not result['post_tool_present']:
+        result['errors'].append("PostToolUse hook not registered")
+        result['healthy'] = False
+
+    return result
 
 
 def ensure_full_setup():
