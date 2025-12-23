@@ -193,13 +193,15 @@ class BlackboardV2:
     def send_message(self, from_agent: str, to_agent: str, content: str,
                      msg_type: str = "info") -> Dict:
         """Send message - writes to both systems."""
+        message = self.blackboard.send_message(from_agent, to_agent, content, msg_type)
         self._write_to_event_log("message.sent", {
+            "id": message.get("id"),
             "from_agent": from_agent,
             "to_agent": to_agent,
             "content": content,
             "msg_type": msg_type
         })
-        return self.blackboard.send_message(from_agent, to_agent, content, msg_type)
+        return message
 
     def get_messages(self, agent_id: str, unread_only: bool = False) -> List[Dict]:
         """Get messages - reads from original blackboard."""
@@ -219,13 +221,15 @@ class BlackboardV2:
     def add_task(self, task: str, priority: int = 5, depends_on: List[str] = None,
                  assigned_to: str = None) -> Dict:
         """Add task - writes to both systems."""
+        task_item = self.blackboard.add_task(task, priority, depends_on, assigned_to)
         self._write_to_event_log("task.added", {
-            "task": task,
-            "priority": priority,
-            "depends_on": depends_on or [],
-            "assigned_to": assigned_to
+            "id": task_item.get("id"),
+            "task": task_item.get("task"),
+            "priority": task_item.get("priority"),
+            "depends_on": task_item.get("depends_on", []),
+            "assigned_to": task_item.get("assigned_to")
         })
-        return self.blackboard.add_task(task, priority, depends_on, assigned_to)
+        return task_item
 
     def claim_task(self, task_id: str, agent_id: str) -> bool:
         """Claim task - writes to both systems."""
@@ -254,13 +258,15 @@ class BlackboardV2:
     def ask_question(self, agent_id: str, question: str, options: List[str] = None,
                      blocking: bool = True) -> Dict:
         """Ask question - writes to both systems."""
+        question_item = self.blackboard.ask_question(agent_id, question, options, blocking)
         self._write_to_event_log("question.asked", {
+            "id": question_item.get("id"),
             "agent_id": agent_id,
-            "question": question,
-            "options": options,
-            "blocking": blocking
+            "question": question_item.get("question"),
+            "options": question_item.get("options"),
+            "blocking": question_item.get("blocking", blocking)
         })
-        return self.blackboard.ask_question(agent_id, question, options, blocking)
+        return question_item
 
     def answer_question(self, question_id: str, answer: str, answered_by: str) -> bool:
         """Answer question - writes to both systems."""
@@ -420,4 +426,3 @@ class BlackboardV2:
 # CLI interface for testing
 if __name__ == "__main__":
     import json
-

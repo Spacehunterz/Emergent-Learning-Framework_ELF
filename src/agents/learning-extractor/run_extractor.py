@@ -20,7 +20,13 @@ from pathlib import Path
 from typing import List, Dict, Optional
 
 # Paths
-EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
+try:
+    from elf_paths import get_base_path
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from elf_paths import get_base_path
+
+EMERGENT_LEARNING_PATH = get_base_path(Path(__file__))
 PROMPT_PATH = EMERGENT_LEARNING_PATH / "agents" / "learning-extractor" / "PROMPT.md"
 MEMORY_DB = EMERGENT_LEARNING_PATH / "memory" / "learnings.db"
 PROPOSALS_PENDING = EMERGENT_LEARNING_PATH / "proposals" / "pending"

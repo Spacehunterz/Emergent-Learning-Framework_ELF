@@ -2,6 +2,8 @@
 
 This folder contains the configuration files needed to fully use the Emergent Learning Framework with Claude Code.
 
+**Default install path:** `~/.claude/emergent-learning` (set `ELF_BASE_PATH` to run from a different location).
+
 ## Quick Install
 
 ```bash

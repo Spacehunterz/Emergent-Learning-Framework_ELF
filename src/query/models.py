@@ -8,7 +8,7 @@ Usage:
     from models import manager, initialize_database, Learning, Heuristic, ...
 
     # Initialize with path (async)
-    await initialize_database('~/.claude/emergent-learning/memory/index.db')
+    await initialize_database('$ELF_BASE_PATH/memory/index.db')
 
     # Query examples (async)
     async with manager:
@@ -23,6 +23,17 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 import os
 
+try:
+    from .config_loader import get_base_path as _get_base_path
+except ImportError:
+    try:
+        from config_loader import get_base_path as _get_base_path
+    except ImportError:
+        try:
+            from elf_paths import get_base_path as _get_base_path
+        except ImportError:
+            _get_base_path = None
+
 # -----------------------------------------------------------------------------
 # Database Configuration
 # -----------------------------------------------------------------------------
@@ -36,7 +47,7 @@ async def initialize_database(db_path: Optional[str] = None) -> Manager:
     Initialize the async database connection.
 
     Args:
-        db_path: Path to SQLite database file. Defaults to ~/.claude/emergent-learning/memory/index.db
+        db_path: Path to SQLite database file. Defaults to $ELF_BASE_PATH/memory/index.db
 
     Returns:
         Configured Manager instance
@@ -44,11 +55,9 @@ async def initialize_database(db_path: Optional[str] = None) -> Manager:
     global manager
 
     if db_path is None:
-        try:
-            from .config_loader import get_base_path
-            db_path = get_base_path() / "memory" / "index.db"
-        except ImportError:
-            # Fallback
+        if _get_base_path is not None:
+            db_path = _get_base_path() / "memory" / "index.db"
+        else:
             db_path = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
     else:
         db_path = Path(db_path).expanduser()
@@ -151,11 +160,9 @@ def initialize_database_sync(db_path: Optional[str] = None) -> Manager:
     global manager
 
     if db_path is None:
-        try:
-            from .config_loader import get_base_path
-            db_path = get_base_path() / "memory" / "index.db"
-        except ImportError:
-            # Fallback
+        if _get_base_path is not None:
+            db_path = _get_base_path() / "memory" / "index.db"
+        else:
             db_path = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
     else:
         db_path = Path(db_path).expanduser()

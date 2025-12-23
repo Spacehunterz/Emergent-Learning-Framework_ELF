@@ -27,6 +27,11 @@ from datetime import datetime
 sys.path.insert(0, str(Path.home() / ".claude" / "services"))
 
 try:
+    from query.config_loader import get_base_path
+except ImportError:
+    from config_loader import get_base_path
+
+try:
     from vram_manager import VRAMClient, VRAMManager
     VRAM_AVAILABLE = True
 except ImportError:
@@ -92,7 +97,7 @@ class RAGQuerySystem:
 
     def __init__(self, base_path: Optional[str] = None):
         if base_path is None:
-            self.base_path = Path.home() / ".claude" / "emergent-learning"
+            self.base_path = get_base_path()
         else:
             self.base_path = Path(base_path)
 

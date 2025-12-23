@@ -22,6 +22,23 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional, Tuple
 
+def _resolve_base_path() -> Path:
+    env_path = os.environ.get("ELF_BASE_PATH")
+    if env_path:
+        return Path(env_path)
+
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "src" / "elf_paths.py").exists():
+            sys.path.insert(0, str(parent / "src"))
+            try:
+                from elf_paths import get_base_path
+                return get_base_path(parent)
+            except ImportError:
+                break
+
+    return Path.home() / ".claude" / "emergent-learning"
+
 
 class ProposalIntegrationError(Exception):
     """Raised when proposal integration fails."""
@@ -42,8 +59,7 @@ class ProposalIntegrator:
         self.debug = debug
 
         if base_path is None:
-            home = Path.home()
-            self.base_path = home / ".claude" / "emergent-learning"
+            self.base_path = _resolve_base_path()
         else:
             self.base_path = Path(base_path)
 

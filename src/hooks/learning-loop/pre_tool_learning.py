@@ -20,8 +20,28 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional
 
-# Paths - using Path.home() for portability
-EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
+# Paths - prefer ELF_BASE_PATH, fallback to ~/.claude for compatibility
+def _resolve_base_path() -> Path:
+    env_path = os.environ.get("ELF_BASE_PATH")
+    candidates = []
+    if env_path:
+        candidates.append(Path(env_path))
+    candidates.append(Path.home() / ".claude" / "emergent-learning")
+
+    for base in candidates:
+        elf_paths = base / "src" / "elf_paths.py"
+        if elf_paths.exists():
+            sys.path.insert(0, str(base / "src"))
+            try:
+                from elf_paths import get_base_path
+                return get_base_path(base)
+            except ImportError:
+                break
+
+    return candidates[0]
+
+
+EMERGENT_LEARNING_PATH = _resolve_base_path()
 DB_PATH = EMERGENT_LEARNING_PATH / "memory" / "index.db"
 STATE_FILE = Path.home() / ".claude" / "hooks" / "learning-loop" / "session-state.json"
 

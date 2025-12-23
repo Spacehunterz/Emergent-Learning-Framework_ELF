@@ -10,7 +10,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 echo "To proceed with uninstallation, please manually delete the directory:"
-echo "rm -rf ~/.claude/emergent-learning"
-echo "rm -rf ~/.claude/backups/emergent-learning"
+echo "rm -rf \"${ELF_BASE_PATH:-$HOME/.claude/emergent-learning}\""
+echo "rm -rf \"$HOME/.claude/backups/emergent-learning\""
 echo ""
 echo "Automatic uninstallation is currently disabled for safety."

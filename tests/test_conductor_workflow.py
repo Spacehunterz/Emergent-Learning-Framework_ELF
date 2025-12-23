@@ -24,10 +24,15 @@ if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
 
-# Add conductor to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "conductor"))
+# Add src to path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = REPO_ROOT / "src"
+sys.path.insert(0, str(SRC_ROOT))
 
-from conductor import Conductor, Node, Edge, NodeType, safe_eval_condition
+from conductor.conductor import Conductor, Node, Edge, NodeType, safe_eval_condition
+
+MEMORY_SCHEMA_PATH = SRC_ROOT / "memory" / "init_db.sql"
+CONDUCTOR_SCHEMA_PATH = SRC_ROOT / "conductor" / "schema.sql"
 
 
 class TestHelperMethods:
@@ -53,14 +58,12 @@ class TestHelperMethods:
         conn = sqlite3.connect(str(db_path))
 
         # Read and execute base schema first
-        init_schema_path = Path(__file__).parent.parent / "memory" / "init_db.sql"
-        with open(init_schema_path, encoding='utf-8') as f:
+        with open(MEMORY_SCHEMA_PATH, encoding='utf-8') as f:
             init_schema = f.read()
         conn.executescript(init_schema)
 
         # Read and execute conductor schema
-        conductor_schema_path = Path(__file__).parent.parent / "conductor" / "schema.sql"
-        with open(conductor_schema_path, encoding='utf-8') as f:
+        with open(CONDUCTOR_SCHEMA_PATH, encoding='utf-8') as f:
             conductor_schema = f.read()
         conn.executescript(conductor_schema)
 
@@ -244,14 +247,12 @@ class TestWorkflowExecution:
         conn = sqlite3.connect(str(db_path))
 
         # Read and execute base schema first
-        init_schema_path = Path(__file__).parent.parent / "memory" / "init_db.sql"
-        with open(init_schema_path, encoding='utf-8') as f:
+        with open(MEMORY_SCHEMA_PATH, encoding='utf-8') as f:
             init_schema = f.read()
         conn.executescript(init_schema)
 
         # Read and execute conductor schema
-        conductor_schema_path = Path(__file__).parent.parent / "conductor" / "schema.sql"
-        with open(conductor_schema_path, encoding='utf-8') as f:
+        with open(CONDUCTOR_SCHEMA_PATH, encoding='utf-8') as f:
             conductor_schema = f.read()
         conn.executescript(conductor_schema)
 
@@ -494,14 +495,12 @@ class TestEdgeCases:
         conn = sqlite3.connect(str(db_path))
 
         # Read and execute base schema first
-        init_schema_path = Path(__file__).parent.parent / "memory" / "init_db.sql"
-        with open(init_schema_path, encoding='utf-8') as f:
+        with open(MEMORY_SCHEMA_PATH, encoding='utf-8') as f:
             init_schema = f.read()
         conn.executescript(init_schema)
 
         # Read and execute conductor schema
-        conductor_schema_path = Path(__file__).parent.parent / "conductor" / "schema.sql"
-        with open(conductor_schema_path, encoding='utf-8') as f:
+        with open(CONDUCTOR_SCHEMA_PATH, encoding='utf-8') as f:
             conductor_schema = f.read()
         conn.executescript(conductor_schema)
 
@@ -608,14 +607,12 @@ class TestTrailRecording:
         conn = sqlite3.connect(str(db_path))
 
         # Read and execute base schema first
-        init_schema_path = Path(__file__).parent.parent / "memory" / "init_db.sql"
-        with open(init_schema_path, encoding='utf-8') as f:
+        with open(MEMORY_SCHEMA_PATH, encoding='utf-8') as f:
             init_schema = f.read()
         conn.executescript(init_schema)
 
         # Read and execute conductor schema
-        conductor_schema_path = Path(__file__).parent.parent / "conductor" / "schema.sql"
-        with open(conductor_schema_path, encoding='utf-8') as f:
+        with open(CONDUCTOR_SCHEMA_PATH, encoding='utf-8') as f:
             conductor_schema = f.read()
         conn.executescript(conductor_schema)
 

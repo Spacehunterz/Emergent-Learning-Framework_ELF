@@ -14,9 +14,10 @@ Run: uvicorn main:app --reload --port 8888
 
 import asyncio
 import logging
-import sys 
+import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -57,14 +58,41 @@ from routers.fraud import set_paths as set_fraud_paths
 from routers.workflows import set_paths as set_workflows_paths
 
 # Paths
-# Paths
 import os
-def get_base_path() -> Path:
-    env_path = os.environ.get('ELF_BASE_PATH')
-    if env_path: return Path(env_path)
-    # apps/dashboard/backend/main.py -> root is ../../../
+
+
+def _import_get_base_path() -> Optional[callable]:
+    env_path = os.environ.get("ELF_BASE_PATH")
+    candidates = []
+    if env_path:
+        candidates.append(Path(env_path))
+
     current = Path(__file__).resolve()
-    # Check parents for markers
+    for parent in current.parents:
+        if (parent / "src" / "elf_paths.py").exists():
+            candidates.append(parent)
+            break
+
+    for base in candidates:
+        sys.path.insert(0, str(base / "src"))
+        try:
+            from elf_paths import get_base_path
+            return get_base_path
+        except ImportError:
+            continue
+    return None
+
+
+def get_base_path() -> Path:
+    imported = _import_get_base_path()
+    if imported is not None:
+        return imported(Path(__file__))
+
+    env_path = os.environ.get('ELF_BASE_PATH')
+    if env_path:
+        return Path(env_path)
+
+    current = Path(__file__).resolve()
     for parent in current.parents:
         if (parent / '.coordination').exists() or (parent / '.git').exists():
             return parent

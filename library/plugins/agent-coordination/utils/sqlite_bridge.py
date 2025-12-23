@@ -13,6 +13,8 @@ ARCHITECTURE:
 import json
 import sqlite3
 import hashlib
+import os
+import sys
 from pathlib import Path
 from typing import List, Dict, Optional
 from datetime import datetime
@@ -23,25 +25,30 @@ class SQLiteBridge:
     """Bridge findings to SQLite for historical queries."""
 
     def __init__(self):
-        import os
-        # Dynamic path detection
-        env_path = os.environ.get('ELF_BASE_PATH')
-        if env_path: 
-             base = Path(env_path)
-        else:
-            base = None
-            current = Path(__file__)
-            # library/plugins/agent-coordination/utils/sqlite_bridge.py -> root is ../../../../../
-            # Check 5 levels up for root
-            for parent in current.parents:
-                if (parent / '.coordination').exists() or (parent / '.git').exists():
-                    base = parent
-                    break
-            if base is None:
-                base = Path.home() / ".claude" / "emergent-learning"
-
-        self.db_path = base / "memory" / "index.db"
+        self.db_path = self._resolve_base_path() / "memory" / "index.db"
         self._connection = None
+
+    def _resolve_base_path(self) -> Path:
+        env_path = os.environ.get("ELF_BASE_PATH")
+        if env_path:
+            return Path(env_path)
+
+        current = Path(__file__).resolve()
+        for parent in current.parents:
+            candidate = parent / "src" / "elf_paths.py"
+            if candidate.exists():
+                sys.path.insert(0, str(parent / "src"))
+                try:
+                    from elf_paths import get_base_path
+                    return get_base_path(parent)
+                except ImportError:
+                    break
+
+        for parent in current.parents:
+            if (parent / ".coordination").exists() or (parent / ".git").exists():
+                return parent
+
+        return Path.home() / ".claude" / "emergent-learning"
 
     def _get_connection(self):
         """Get or create a database connection."""

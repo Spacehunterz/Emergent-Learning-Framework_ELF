@@ -15,6 +15,8 @@ Claude Code learns from your failures and successes, building institutional know
 ./install.ps1             # Windows
 ```
 
+**Default path:** `~/.claude/emergent-learning` (override with `ELF_BASE_PATH` to run from a different location).
+
 **New to ELF?** See the [Getting Started Guide](GETTING_STARTED.md) for detailed step-by-step instructions including prerequisites and troubleshooting.
 
 ## First Use: Say "check in"
@@ -142,10 +144,10 @@ Runs automatically - no user interaction required. See [src/watcher/README.md](s
 
 ```bash
 # Check what has been learned
-python ~/.claude/emergent-learning/query/query.py --stats
+python src/query/query.py --stats
 
 # Start dashboard manually (if needed)
-cd ~/.claude/emergent-learning/dashboard-app && ./run-dashboard.sh
+cd apps/dashboard && ./run-dashboard.sh
 
 # Multi-agent swarm (Pro/Max plans)
 /swarm investigate the authentication system
@@ -237,7 +239,7 @@ If you see `Cannot find module @rollup/rollup-win32-x64-msvc` when starting the 
 
 **Fix Option 1:** Use PowerShell or CMD for npm install:
 ```powershell
-cd ~/.claude/emergent-learning/dashboard-app/frontend
+cd apps/dashboard/frontend
 rm -rf node_modules package-lock.json
 npm install
 ```

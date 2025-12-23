@@ -189,6 +189,13 @@ class AgentBeta(threading.Thread):
             )
             self.timeline.log(self.agent_id, "Registered")
 
+            my_task = None
+            pending_tasks = self.bb.get_pending_tasks()
+            my_task = next((t for t in pending_tasks if t["assigned_to"] == self.agent_id), None)
+            if my_task:
+                self.bb.claim_task(my_task["id"], self.agent_id)
+                self.timeline.log(self.agent_id, f"Claimed task: {my_task['id']}")
+
             # Try to claim files (will be blocked initially)
             files = ["user.py", "profile.py"]
             max_retries = 5
@@ -230,6 +237,8 @@ class AgentBeta(threading.Thread):
 
             # Complete
             self.bb.blackboard.complete_chain(self.agent_id, chain.chain_id)
+            if my_task:
+                self.bb.complete_task(my_task["id"], "Profile analysis complete")
             self.bb.update_agent_status(self.agent_id, "completed", "Profile analysis complete")
             self.timeline.log(self.agent_id, "Task complete")
 
@@ -267,6 +276,13 @@ class AgentGamma(threading.Thread):
                 interests=["api", "routes"]
             )
             self.timeline.log(self.agent_id, "Registered")
+
+            my_task = None
+            pending_tasks = self.bb.get_pending_tasks()
+            my_task = next((t for t in pending_tasks if t["assigned_to"] == self.agent_id), None)
+            if my_task:
+                self.bb.claim_task(my_task["id"], self.agent_id)
+                self.timeline.log(self.agent_id, f"Claimed task: {my_task['id']}")
 
             # Claim files
             files = ["api.py", "routes.py"]
@@ -323,6 +339,8 @@ class AgentGamma(threading.Thread):
 
             # Complete
             self.bb.blackboard.complete_chain(self.agent_id, chain.chain_id)
+            if my_task:
+                self.bb.complete_task(my_task["id"], "API analysis complete")
             self.bb.update_agent_status(self.agent_id, "completed", "API analysis complete")
             self.timeline.log(self.agent_id, "Task complete")
 
@@ -359,6 +377,13 @@ class AgentDelta(threading.Thread):
                 interests=["api", "architecture"]
             )
             self.timeline.log(self.agent_id, "Registered as monitor")
+
+            my_task = None
+            pending_tasks = self.bb.get_pending_tasks()
+            my_task = next((t for t in pending_tasks if t["assigned_to"] == self.agent_id), None)
+            if my_task:
+                self.bb.claim_task(my_task["id"], self.agent_id)
+                self.timeline.log(self.agent_id, f"Claimed task: {my_task['id']}")
 
             # Monitor findings via cursor
             cursor = self.bb.get_agent_cursor(self.agent_id)
@@ -403,6 +428,8 @@ class AgentDelta(threading.Thread):
                 self.timeline.log(self.agent_id, "Files still claimed, skipping")
 
             # Complete
+            if my_task:
+                self.bb.complete_task(my_task["id"], "Monitoring complete")
             self.bb.update_agent_status(self.agent_id, "completed", "Monitoring complete")
             self.timeline.log(self.agent_id, "Task complete")
 
@@ -440,6 +467,13 @@ class AgentEpsilon(threading.Thread):
                 interests=["dependencies", "architecture"]
             )
             self.timeline.log(self.agent_id, "Registered")
+
+            my_task = None
+            pending_tasks = self.bb.get_pending_tasks()
+            my_task = next((t for t in pending_tasks if t["assigned_to"] == self.agent_id), None)
+            if my_task:
+                self.bb.claim_task(my_task["id"], self.agent_id)
+                self.timeline.log(self.agent_id, f"Claimed task: {my_task['id']}")
 
             # Create mock Python files for dependency analysis
             self._create_mock_files()
@@ -502,6 +536,8 @@ class AgentEpsilon(threading.Thread):
             # Complete
             if 'chain' in locals():
                 self.bb.blackboard.complete_chain(self.agent_id, chain.chain_id)
+            if my_task:
+                self.bb.complete_task(my_task["id"], "Cluster analysis complete")
             self.bb.update_agent_status(self.agent_id, "completed", "Cluster analysis complete")
             self.timeline.log(self.agent_id, "Task complete")
 

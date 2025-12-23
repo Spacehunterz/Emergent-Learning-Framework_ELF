@@ -17,6 +17,10 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 import json
 
+try:
+    from query.config_loader import get_base_path
+except ImportError:
+    from config_loader import get_base_path
 # Fix Windows console encoding for Unicode characters
 if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -32,11 +36,10 @@ class Dashboard:
 
         Args:
             base_path: Base path to the emergent-learning directory.
-                      Defaults to ~/.claude/emergent-learning
+                      Defaults to ELF base path resolution
         """
         if base_path is None:
-            home = Path.home()
-            self.base_path = home / ".claude" / "emergent-learning"
+            self.base_path = get_base_path()
         else:
             self.base_path = Path(base_path)
 

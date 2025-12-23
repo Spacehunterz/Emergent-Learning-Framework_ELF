@@ -32,6 +32,8 @@ from dataclasses import dataclass
 from enum import Enum
 import re
 
+from elf_paths import get_base_path
+
 
 def safe_eval_condition(condition: str, context: dict) -> bool:
     """Safely evaluate a condition string against a context dictionary."""
@@ -169,12 +171,11 @@ class Conductor:
         Initialize the Conductor.
 
         Args:
-            base_path: Path to emergent-learning directory (default: ~/.claude/emergent-learning)
+            base_path: Path to emergent-learning directory (default: resolved via elf_paths)
             project_root: Project root for blackboard coordination (default: current dir)
         """
         if base_path is None:
-            home = Path.home()
-            self.base_path = home / ".claude" / "emergent-learning"
+            self.base_path = get_base_path(Path(project_root))
         else:
             self.base_path = Path(base_path)
 

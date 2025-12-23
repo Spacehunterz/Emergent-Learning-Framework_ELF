@@ -10,25 +10,65 @@ Tests:
 4. Manual refresh commands
 """
 
+import os
 import sys
 import sqlite3
 from pathlib import Path
 from datetime import datetime
+import pytest
 
-# Add query directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "query"))
+# Add src directory to path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = REPO_ROOT / "src"
+sys.path.insert(0, str(SRC_ROOT))
 
-from fraud_detector import FraudDetector
+from query.fraud_detector import FraudDetector
 
-DB_PATH = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
+MIGRATIONS_DIR = SRC_ROOT / "memory" / "migrations"
 
 
-def test_database_schema():
+@pytest.fixture(scope="module")
+def temp_base(tmp_path_factory):
+    base_path = tmp_path_factory.mktemp("elf_base")
+    memory_dir = base_path / "memory"
+    memory_dir.mkdir(parents=True, exist_ok=True)
+    db_path = memory_dir / "index.db"
+
+    conn = sqlite3.connect(db_path)
+    for migration in [
+        "001_base_schema.sql",
+        "006_fraud_detection.sql",
+        "007_baseline_history.sql",
+    ]:
+        migration_path = MIGRATIONS_DIR / migration
+        if migration_path.exists():
+            with open(migration_path, encoding="utf-8") as f:
+                conn.executescript(f.read())
+    conn.commit()
+    conn.close()
+
+    old_base = os.environ.get("ELF_BASE_PATH")
+    os.environ["ELF_BASE_PATH"] = str(base_path)
+    try:
+        yield base_path
+    finally:
+        if old_base is None:
+            os.environ.pop("ELF_BASE_PATH", None)
+        else:
+            os.environ["ELF_BASE_PATH"] = old_base
+
+
+@pytest.fixture
+def detector(temp_base):
+    return FraudDetector(db_path=temp_base / "memory" / "index.db")
+
+
+def test_database_schema(temp_base):
     """Test that all required tables and views exist."""
     print("Test 1: Database Schema")
     print("-" * 50)
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(temp_base / "memory" / "index.db")
     cursor = conn.execute("""
         SELECT name FROM sqlite_master
         WHERE type IN ('table', 'view')
@@ -63,12 +103,10 @@ def test_database_schema():
     return True
 
 
-def test_refresh_schedule():
+def test_refresh_schedule(detector):
     """Test schedule setup and querying."""
     print("Test 2: Refresh Schedule")
     print("-" * 50)
-
-    detector = FraudDetector()
 
     # Set up schedule
     result = detector.schedule_baseline_refresh(interval_days=7, domain="test-domain")
@@ -82,12 +120,11 @@ def test_refresh_schedule():
     return True
 
 
-def test_baseline_update_with_history():
+def test_baseline_update_with_history(detector):
     """Test baseline update records history and detects drift."""
     print("Test 3: Baseline Update with History")
     print("-" * 50)
 
-    detector = FraudDetector()
     conn = detector._get_connection()
 
     # Check if we have any domains with sufficient data
@@ -145,12 +182,10 @@ def test_baseline_update_with_history():
     return True
 
 
-def test_drift_alerts():
+def test_drift_alerts(detector):
     """Test drift alert creation and acknowledgment."""
     print("Test 4: Drift Alerts")
     print("-" * 50)
-
-    detector = FraudDetector()
 
     # Get unacknowledged alerts
     alerts = detector.get_unacknowledged_drift_alerts()
@@ -175,12 +210,10 @@ def test_drift_alerts():
     return True
 
 
-def test_refresh_all():
+def test_refresh_all(detector):
     """Test refreshing all domain baselines."""
     print("Test 5: Refresh All Baselines")
     print("-" * 50)
-
-    detector = FraudDetector()
 
     result = detector.refresh_all_baselines(triggered_by='test')
 
@@ -198,7 +231,7 @@ def test_refresh_all():
     return True
 
 
-def test_cli_commands():
+def test_cli_commands(temp_base):
     """Test CLI commands are accessible."""
     print("Test 6: CLI Commands")
     print("-" * 50)
@@ -212,12 +245,13 @@ def test_cli_commands():
     ]
 
     for cmd, description in commands:
-        full_cmd = f"python query/fraud_detector.py {cmd}"
+        script_path = REPO_ROOT / "src" / "query" / "fraud_detector.py"
+        full_cmd = f"python \"{script_path}\" {cmd}"
         try:
             result = subprocess.run(
                 full_cmd,
                 shell=True,
-                cwd=Path.home() / ".claude" / "emergent-learning",
+                cwd=temp_base,
                 capture_output=True,
                 text=True,
                 timeout=10

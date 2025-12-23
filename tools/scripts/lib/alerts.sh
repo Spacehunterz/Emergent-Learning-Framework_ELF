@@ -26,10 +26,16 @@ declare -A ALERT_SEVERITIES=(
 # Initialize alert system
 #
 # Args:
-#   $1 - Base directory (optional, defaults to ~/.claude/emergent-learning)
+#   $1 - Base directory (optional, defaults to ELF_BASE_PATH or ~/.claude/emergent-learning)
 #
 alerts_init() {
     local base_dir="${1:-}"
+
+    if [ -z "$base_dir" ]; then
+        if [ -n "${ELF_BASE_PATH:-}" ]; then
+            base_dir="$ELF_BASE_PATH"
+        fi
+    fi
 
     if [ -z "$base_dir" ]; then
         local home_dir="${HOME:-$USERPROFILE}"
@@ -199,7 +205,7 @@ alert_check_disk_space() {
 
     # Get available space for emergent learning directory
     local home_dir="${HOME:-$USERPROFILE}"
-    local target_dir="$home_dir/.claude/emergent-learning"
+    local target_dir="${ELF_BASE_PATH:-$home_dir/.claude/emergent-learning}"
 
     # Platform-specific disk space check
     local avail_mb=0

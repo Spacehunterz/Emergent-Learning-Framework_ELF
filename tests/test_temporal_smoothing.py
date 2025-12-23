@@ -21,10 +21,12 @@ import random
 from pathlib import Path
 from datetime import datetime
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "query"))
+# Add src directory to path for imports
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = REPO_ROOT / "src"
+sys.path.insert(0, str(SRC_ROOT))
 
-from lifecycle_manager import (
+from query.lifecycle_manager import (
     LifecycleManager, LifecycleConfig, UpdateType, HeuristicStatus
 )
 
@@ -39,18 +41,28 @@ class TestTemporalSmoothing(unittest.TestCase):
         self.db_path = Path(self.temp_db.name)
 
         # Apply migrations manually since temp DB isn't in the right location
-        project_root = Path(__file__).parent.parent
-        migrations_dir = project_root / "memory" / "migrations"
+        migrations_dir = SRC_ROOT / "memory" / "migrations"
 
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         try:
-            # Apply base schema (001) - has all tables including EMA columns
-            # Note: 001_base_schema.sql already includes confidence_ema and other
-            # Phase 2 columns, so we don't need to apply migration 003 separately
+            # Apply base schema (001) then temporal smoothing migration (003)
             base_schema_path = migrations_dir / "001_base_schema.sql"
             if base_schema_path.exists():
                 with open(base_schema_path) as f:
+                    conn.executescript(f.read())
+                conn.commit()
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS schema_version (
+                    version INTEGER PRIMARY KEY,
+                    description TEXT,
+                    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            temporal_schema_path = migrations_dir / "003_temporal_smoothing.sql"
+            if temporal_schema_path.exists():
+                with open(temporal_schema_path) as f:
                     conn.executescript(f.read())
                 conn.commit()
         finally:

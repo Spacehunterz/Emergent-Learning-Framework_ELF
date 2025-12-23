@@ -18,6 +18,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
+# Base path resolver
+try:
+    from query.config_loader import get_base_path
+except ImportError:
+    from config_loader import get_base_path
+
 # Import async models and manager
 try:
     from query.models import (
@@ -162,7 +168,7 @@ class QuerySystem(
         self.current_location = current_location or os.getcwd()
 
         if base_path is None:
-            self.base_path = Path.home() / ".claude" / "emergent-learning"
+            self.base_path = get_base_path()
         else:
             self.base_path = Path(base_path)
 
@@ -178,7 +184,7 @@ class QuerySystem(
 
         Args:
             base_path: Base path to the emergent-learning directory.
-                      Defaults to ~/.claude/emergent-learning
+                      Defaults to ELF base path resolution
             debug: Enable debug logging
             session_id: Optional session ID for query logging
             agent_id: Optional agent ID for query logging
@@ -192,7 +198,7 @@ class QuerySystem(
         if base_path:
             base_path = Path(base_path)
         else:
-            base_path = Path.home() / ".claude" / "emergent-learning"
+            base_path = get_base_path()
 
         # Create instance
         instance = cls(base_path, debug, session_id, agent_id)

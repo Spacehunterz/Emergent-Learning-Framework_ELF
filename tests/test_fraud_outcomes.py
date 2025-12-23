@@ -8,27 +8,29 @@ Phase 3: Swarm Agent 1 deliverable test
 import sqlite3
 import sys
 import io
+import pytest
 from pathlib import Path
 from datetime import datetime
 
 # Fix Windows console encoding
-if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+if sys.platform == 'win32' and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding='utf-8')
 
-# Add query directory to path
-sys.path.insert(0, str(Path.home() / ".claude" / "emergent-learning" / "query"))
+# Add src directory to path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = REPO_ROOT / "src"
+sys.path.insert(0, str(SRC_ROOT))
 
-from fraud_outcomes import FraudOutcomeTracker, OutcomeType
-from fraud_detector import FraudDetector
+from query.fraud_outcomes import FraudOutcomeTracker, OutcomeType
+from query.fraud_detector import FraudDetector
 
 
-def setup_test_db():
+def setup_test_db(db_path: Path):
     """Create a test database with sample data."""
-    test_db = Path("/tmp/test_fraud_outcomes.db")
-    if test_db.exists():
-        test_db.unlink()
+    if db_path.exists():
+        db_path.unlink()
 
-    conn = sqlite3.connect(test_db)
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
     # Create minimal schema for testing
@@ -203,7 +205,17 @@ def setup_test_db():
     conn.commit()
     conn.close()
 
-    return test_db
+    return db_path
+
+
+@pytest.fixture
+def test_db(tmp_path):
+    return setup_test_db(tmp_path / "test_fraud_outcomes.db")
+
+
+@pytest.fixture
+def tracker(test_db):
+    return FraudOutcomeTracker(db_path=test_db)
 
 
 def test_record_outcome(tracker, test_db):
@@ -395,7 +407,7 @@ def run_all_tests():
     print("=" * 60)
 
     # Setup
-    test_db = setup_test_db()
+    test_db = setup_test_db(Path("test_fraud_outcomes.db"))
     print(f"\n✓ Test database created: {test_db}")
 
     tracker = FraudOutcomeTracker(db_path=test_db)

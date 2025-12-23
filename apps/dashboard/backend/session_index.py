@@ -57,10 +57,24 @@ class SessionIndex:
     """
 
     def __init__(self, projects_dir: Optional[Path] = None):
-        self.projects_dir = projects_dir or Path.home() / ".claude" / "projects"
+        # Default projects dir: check ELF_BASE_PATH/../../projects or ~/.claude/projects
+        if projects_dir:
+            self.projects_dir = projects_dir
+        else:
+            from config_loader import get_base_path
+            base = get_base_path()
+            # If base path is inside .claude/emergent-learning, projects is likely ../../projects
+            candidate = base.parent / "projects"
+            if candidate.exists():
+                self.projects_dir = candidate
+            else:
+                self.projects_dir = Path.home() / ".claude" / "projects"
+        
         self._index: Dict[str, SessionMetadata] = {}
         self._last_scan: Optional[datetime] = None
-        self._db_path = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
+        
+        from config_loader import get_base_path
+        self._db_path = get_base_path() / "memory" / "index.db"
 
     # Tools that commonly have large inputs (file contents)
     LARGE_INPUT_TOOLS = {"Read", "Write", "Edit", "NotebookEdit"}

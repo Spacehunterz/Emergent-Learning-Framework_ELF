@@ -11,11 +11,13 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
 
+from config_loader import get_base_path
+
 router = APIRouter(prefix="/api", tags=["sessions"])
 logger = logging.getLogger(__name__)
 
 # Path to summarizer script
-SUMMARIZER_SCRIPT = Path.home() / ".claude" / "emergent-learning" / "scripts" / "summarize-session.py"
+SUMMARIZER_SCRIPT = get_base_path() / "scripts" / "summarize-session.py"
 
 # SessionIndex will be injected from main.py
 session_index = None

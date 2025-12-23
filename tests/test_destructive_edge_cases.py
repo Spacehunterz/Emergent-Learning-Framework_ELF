@@ -15,15 +15,19 @@ import json
 import time
 import asyncio
 
-# Add query directory to path
-sys.path.insert(0, str(Path(__file__).parent / "query"))
+# Add src directory to path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = REPO_ROOT / "src"
+sys.path.insert(0, str(SRC_ROOT))
+
+from elf_paths import get_base_path
 from query import QuerySystem, DatabaseError, ValidationError
 
 class DestructiveEdgeTester:
     """Test suite for destructive database edge cases"""
 
     def __init__(self):
-        self.base_path = Path.home() / ".claude" / "emergent-learning"
+        self.base_path = get_base_path(REPO_ROOT)
         self.db_path = self.base_path / "memory" / "index.db"
         self.test_results = []
         self.master_backup = None

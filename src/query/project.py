@@ -25,6 +25,11 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 
+try:
+    from query.config_loader import get_base_path
+except ImportError:
+    from config_loader import get_base_path
+
 # yaml is optional - needed for config.yaml parsing
 try:
     import yaml
@@ -63,8 +68,8 @@ class ProjectContext:
     context_md_path: Optional[Path] = None
 
     # Global paths (always set)
-    global_root: Path = field(default_factory=lambda: Path.home() / ".claude" / "emergent-learning")
-    global_db_path: Path = field(default_factory=lambda: Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db")
+    global_root: Path = field(default_factory=lambda: get_base_path())
+    global_db_path: Path = field(default_factory=lambda: get_base_path() / "memory" / "index.db")
 
     # Loaded configuration
     config: Dict[str, Any] = field(default_factory=dict)

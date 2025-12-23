@@ -9,6 +9,11 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 import os
 
+try:
+    from elf_paths import get_base_path as _get_base_path
+except ImportError:
+    _get_base_path = None
+
 # Try to import yaml
 try:
     import yaml
@@ -20,6 +25,9 @@ except ImportError:
 # Resolve paths
 def get_base_path() -> Path:
     """Get the base path for emergent-learning directory."""
+    if _get_base_path is not None:
+        return _get_base_path(Path(__file__))
+
     # Check environment variable first
     env_path = os.environ.get('ELF_BASE_PATH')
     if env_path:

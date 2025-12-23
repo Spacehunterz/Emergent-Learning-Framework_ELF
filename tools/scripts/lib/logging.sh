@@ -51,7 +51,7 @@ declare -A LOG_TIMERS=()
 #
 # Args:
 #   $1 - Script name (required)
-#   $2 - Log directory (optional, defaults to ~/.claude/emergent-learning/logs)
+#   $2 - Log directory (optional, defaults to ELF_BASE_PATH/logs or ~/.claude/emergent-learning/logs)
 #
 log_init() {
     local script_name="$1"
@@ -67,7 +67,9 @@ log_init() {
     # Set default log directory if not provided
     if [ -z "$log_dir" ]; then
         local home_dir="${HOME:-$USERPROFILE}"
-        if [ -n "$home_dir" ]; then
+        if [ -n "${ELF_BASE_PATH:-}" ]; then
+            LOG_DIR="$ELF_BASE_PATH/logs"
+        elif [ -n "$home_dir" ]; then
             LOG_DIR="$home_dir/.claude/emergent-learning/logs"
         else
             LOG_DIR="/tmp/emergent-learning/logs"

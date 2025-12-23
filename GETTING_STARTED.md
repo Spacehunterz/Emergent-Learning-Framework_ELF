@@ -4,6 +4,8 @@ Complete setup guide - from zero to running.
 
 ---
 
+**Default path:** ELF installs to `~/.claude/emergent-learning`. Set `ELF_BASE_PATH` to run from a different location.
+
 ## Step 0: Prerequisites
 
 ### Required: Claude Code CLI

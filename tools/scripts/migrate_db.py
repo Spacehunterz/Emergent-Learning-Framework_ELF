@@ -11,11 +11,31 @@ Usage:
 
 import sqlite3
 import sys
+import os
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
 MIGRATIONS_DIR = SCRIPT_DIR / "migrations"
-DEFAULT_DB = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
+
+def _resolve_base_path() -> Path:
+    env_path = os.environ.get("ELF_BASE_PATH")
+    if env_path:
+        return Path(env_path)
+
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "src" / "elf_paths.py").exists():
+            sys.path.insert(0, str(parent / "src"))
+            try:
+                from elf_paths import get_base_path
+                return get_base_path(parent)
+            except ImportError:
+                break
+
+    return Path.home() / ".claude" / "emergent-learning"
+
+
+DEFAULT_DB = _resolve_base_path() / "memory" / "index.db"
 
 
 def get_db_version(conn):

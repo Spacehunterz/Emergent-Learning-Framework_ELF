@@ -17,7 +17,15 @@ log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FRAMEWORK_DIR="$HOME/.claude/emergent-learning"
+if [[ -z "${ELF_BASE_PATH:-}" ]]; then
+    BASE_CANDIDATE="$(cd "$SCRIPT_DIR/.." && pwd)"
+    if [[ -d "$BASE_CANDIDATE/memory" || -f "$BASE_CANDIDATE/pyproject.toml" ]]; then
+        ELF_BASE_PATH="$BASE_CANDIDATE"
+    else
+        ELF_BASE_PATH="$(cd "$SCRIPT_DIR/../.." && pwd)"
+    fi
+fi
+FRAMEWORK_DIR="$ELF_BASE_PATH"
 LOG_DIR="$HOME/.claude/backups/logs"
 
 # Create log directory
@@ -40,8 +48,9 @@ if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
 REM Emergent Learning Framework - Windows Backup Wrapper
 REM Run this script with Windows Task Scheduler
 
-set LOGFILE=%USERPROFILE%\.claude\backups\logs\backup-%date:~-4,4%%date:~-10,2%%date:~-7,2%.log
-bash "%USERPROFILE%\.claude\emergent-learning\scripts\backup.sh" >> "%LOGFILE%" 2>&1
+set LOGFILE=%USERPROFILE%\\.claude\\backups\\logs\\backup-%date:~-4,4%%date:~-10,2%%date:~-7,2%.log
+if "%ELF_BASE_PATH%"=="" set ELF_BASE_PATH=%USERPROFILE%\\.claude\\emergent-learning
+bash "%ELF_BASE_PATH%\\scripts\\backup.sh" >> "%LOGFILE%" 2>&1
 EOF
 
     log_success "Created Windows wrapper script: $WRAPPER_SCRIPT"
@@ -59,7 +68,7 @@ EOF
     echo "For weekly verification, create another task:"
     echo ""
     echo "Create: verify-backup-windows.bat"
-    echo "Content: bash ~/.claude/emergent-learning/scripts/verify-backup.sh --alert-on-fail"
+    echo "Content: bash \$ELF_BASE_PATH/scripts/verify-backup.sh --alert-on-fail"
     echo "Schedule: Weekly on Sunday at 3:00 AM"
     echo ""
     exit 0

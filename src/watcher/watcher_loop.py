@@ -30,24 +30,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any
 
-# Paths
-# Paths
-import os
-def get_base_path() -> Path:
-    """Get the base path for emergent-learning directory."""
-    # Check environment variable first
-    env_path = os.environ.get('ELF_BASE_PATH')
-    if env_path:
-        return Path(env_path)
-
-    # Check if we are in the project root (relative to this file)
-    current_file = Path(__file__)
-    project_root = current_file.parent.parent.parent
-    if (project_root / '.coordination').exists() or (project_root / '.git').exists():
-        return project_root
-
-    # Default to ~/.claude/emergent-learning
-    return Path.home() / '.claude' / 'emergent-learning'
+from elf_paths import get_base_path
 
 COORDINATION_DIR = get_base_path() / ".coordination"
 BLACKBOARD_FILE = COORDINATION_DIR / "blackboard.json"

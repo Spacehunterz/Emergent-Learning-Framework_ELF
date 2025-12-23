@@ -7,6 +7,7 @@ Supports both global and project-specific databases.
 
 import sqlite3
 import os
+import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
@@ -14,10 +15,37 @@ from dataclasses import dataclass
 
 
 # Database paths
-# Database paths
+def _import_get_base_path() -> Optional[callable]:
+    env_path = os.environ.get("ELF_BASE_PATH")
+    candidates = []
+    if env_path:
+        candidates.append(Path(env_path))
+
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "src" / "elf_paths.py").exists():
+            candidates.append(parent)
+            break
+
+    for base in candidates:
+        sys.path.insert(0, str(base / "src"))
+        try:
+            from elf_paths import get_base_path
+            return get_base_path
+        except ImportError:
+            continue
+    return None
+
+
 def get_base_path() -> Path:
+    imported = _import_get_base_path()
+    if imported is not None:
+        return imported(Path(__file__))
+
     env_path = os.environ.get('ELF_BASE_PATH')
-    if env_path: return Path(env_path)
+    if env_path:
+        return Path(env_path)
+
     current = Path(__file__).resolve()
     for parent in current.parents:
         if (parent / '.coordination').exists() or (parent / '.git').exists():

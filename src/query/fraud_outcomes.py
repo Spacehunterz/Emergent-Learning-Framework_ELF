@@ -17,8 +17,22 @@ from pathlib import Path
 from typing import Optional, List, Dict, Tuple, Literal
 from dataclasses import dataclass
 
+try:
+    from query.config_loader import get_base_path as _get_base_path
+except ImportError:
+    try:
+        from config_loader import get_base_path as _get_base_path
+    except ImportError:
+        try:
+            from elf_paths import get_base_path as _get_base_path
+        except ImportError:
+            _get_base_path = None
+
 # Configuration
-DB_PATH = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
+if _get_base_path is not None:
+    DB_PATH = _get_base_path() / "memory" / "index.db"
+else:
+    DB_PATH = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
 
 OutcomeType = Literal['true_positive', 'false_positive', 'dismissed', 'pending']
 TimePeriod = Literal['all_time', 'last_30d', 'last_7d', 'last_24h']

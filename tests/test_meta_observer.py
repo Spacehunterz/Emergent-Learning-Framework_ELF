@@ -16,10 +16,12 @@ import json
 import unittest
 import numpy as np
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "query"))
+# Add src directory to path for imports
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = REPO_ROOT / "src"
+sys.path.insert(0, str(SRC_ROOT))
 
-from meta_observer import MetaObserver
+from query.meta_observer import MetaObserver
 
 
 class TestDatabase:
@@ -521,11 +523,10 @@ class TestAlertConditions(unittest.TestCase):
         """Should not fire alerts during bootstrap period (<7 days)."""
         now = datetime.now()
 
-        # Only 3 days of data
-        for day in range(3):
-            for hour in range(24):
-                timestamp = now - timedelta(days=3-day, hours=23-hour)
-                self.db.insert_observation('avg_confidence', 0.5, timestamp)
+        # Fewer than bootstrap threshold samples
+        for i in range(10):
+            timestamp = now - timedelta(hours=10 - i)
+            self.db.insert_observation('avg_confidence', 0.5, timestamp)
 
         alerts = self.observer.check_alerts()
 

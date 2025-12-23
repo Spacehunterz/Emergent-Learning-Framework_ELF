@@ -22,14 +22,14 @@ from typing import Dict, List, Optional
 from contextlib import contextmanager
 import argparse
 
+from elf_paths import get_base_path
 
 class ReplayManager:
     """Manage workflow replay and retry operations."""
 
     def __init__(self, base_path: Optional[str] = None):
         if base_path is None:
-            home = Path.home()
-            self.base_path = home / ".claude" / "emergent-learning"
+            self.base_path = get_base_path(Path.cwd())
         else:
             self.base_path = Path(base_path)
 

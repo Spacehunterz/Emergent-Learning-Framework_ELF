@@ -23,7 +23,25 @@ from typing import Optional, Dict, Any, List
 from collections import Counter
 
 # Paths
-ELF_DIR = Path.home() / ".claude" / "emergent-learning"
+def _resolve_base_path() -> Path:
+    env_path = os.environ.get("ELF_BASE_PATH")
+    if env_path:
+        return Path(env_path)
+
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "src" / "elf_paths.py").exists():
+            sys.path.insert(0, str(parent / "src"))
+            try:
+                from elf_paths import get_base_path
+                return get_base_path(parent)
+            except ImportError:
+                break
+
+    return Path.home() / ".claude" / "emergent-learning"
+
+
+ELF_DIR = _resolve_base_path()
 PROJECTS_DIR = Path.home() / ".claude" / "projects"
 DB_PATH = ELF_DIR / "memory" / "index.db"
 

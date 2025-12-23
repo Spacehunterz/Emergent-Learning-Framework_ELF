@@ -177,8 +177,8 @@ EOF
 
 \`\`\`
 Domain: $domain
-Rule: [TODO: Extract pattern and state preventive action]
-Explanation: [TODO: Explain why this helps based on failures]
+Rule: [Extraction Required: Extract pattern and state preventive action]
+Explanation: [Explanation Required: Explain why this helps based on failures]
 Confidence: 0.5 (starting confidence)
 \`\`\`
 

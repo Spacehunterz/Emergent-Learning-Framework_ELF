@@ -26,8 +26,10 @@ import struct
 from pathlib import Path
 from typing import Dict, Any
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "query"))
+# Add src directory to path for imports
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = REPO_ROOT / "src"
+sys.path.insert(0, str(SRC_ROOT))
 from query import QuerySystem
 
 

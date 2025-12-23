@@ -33,6 +33,10 @@ from datetime import datetime, timezone
 from contextlib import contextmanager
 import json
 
+try:
+    from query.config_loader import get_base_path
+except ImportError:
+    from config_loader import get_base_path
 # Peewee ORM imports - full migration complete
 try:
     from query.models import (
@@ -178,7 +182,7 @@ class QuerySystem:
 
         Args:
             base_path: Base path to the emergent-learning directory.
-                      Defaults to ~/.claude/emergent-learning
+                      Defaults to ELF base path resolution
             debug: Enable debug logging
             session_id: Optional session ID for query logging (fallback to CLAUDE_SESSION_ID env var)
             agent_id: Optional agent ID for query logging (fallback to CLAUDE_AGENT_ID env var)
@@ -198,8 +202,7 @@ class QuerySystem:
         self.current_location = current_location or os.getcwd()
 
         if base_path is None:
-            home = Path.home()
-            self.base_path = home / ".claude" / "emergent-learning"
+            self.base_path = get_base_path()
         else:
             self.base_path = Path(base_path)
 

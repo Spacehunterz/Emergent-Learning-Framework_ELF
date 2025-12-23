@@ -36,7 +36,12 @@ def get_relative_time(dt):
 def load_session_summaries():
     """Load all session summaries from memory/sessions/*.md"""
     summaries = {}
-    sessions_dir = Path.home() / '.claude' / 'emergent-learning' / 'memory' / 'sessions'
+    env_path = os.environ.get("ELF_BASE_PATH")
+    if env_path:
+        base_path = Path(env_path)
+    else:
+        base_path = Path.home() / '.claude' / 'emergent-learning'
+    sessions_dir = base_path / 'memory' / 'sessions'
 
     if not sessions_dir.exists():
         return summaries

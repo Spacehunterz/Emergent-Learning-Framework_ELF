@@ -31,8 +31,28 @@ except ImportError:
     def extract_file_paths(content): return []
     def lay_trails(*args, **kwargs): pass
 
-# Paths - using Path.home() for portability
-EMERGENT_LEARNING_PATH = Path.home() / ".claude" / "emergent-learning"
+# Paths - prefer ELF_BASE_PATH, fallback to ~/.claude for compatibility
+def _resolve_base_path() -> Path:
+    env_path = os.environ.get("ELF_BASE_PATH")
+    candidates = []
+    if env_path:
+        candidates.append(Path(env_path))
+    candidates.append(Path.home() / ".claude" / "emergent-learning")
+
+    for base in candidates:
+        elf_paths = base / "src" / "elf_paths.py"
+        if elf_paths.exists():
+            sys.path.insert(0, str(base / "src"))
+            try:
+                from elf_paths import get_base_path
+                return get_base_path(base)
+            except ImportError:
+                break
+
+    return candidates[0]
+
+
+EMERGENT_LEARNING_PATH = _resolve_base_path()
 DB_PATH = EMERGENT_LEARNING_PATH / "memory" / "index.db"
 STATE_FILE = Path.home() / ".claude" / "hooks" / "learning-loop" / "session-state.json"
 
@@ -598,7 +618,12 @@ def main():
                 # Normalize path
                 file_path = file_path.replace('\\', '/')
                 # Extract relative path from common markers
-                for marker in ['.claude/emergent-learning/', 'emergent-learning/', 'dashboard-app/']:
+                markers = [
+                    EMERGENT_LEARNING_PATH.as_posix().rstrip('/') + '/',
+                    'emergent-learning/',
+                    'dashboard-app/',
+                ]
+                for marker in markers:
                     if marker in file_path:
                         file_path = file_path[file_path.index(marker):]
                         break
@@ -639,12 +664,12 @@ def main():
 
     # Record to conductor for dashboard visibility
     try:
-        sys.path.insert(0, str(Path.home() / '.claude' / 'emergent-learning' / 'conductor'))
+        sys.path.insert(0, str(EMERGENT_LEARNING_PATH / 'conductor'))
         from conductor import Conductor, Node
 
         conductor = Conductor(
-            base_path=str(Path.home() / '.claude' / 'emergent-learning'),
-            project_root=str(Path.home() / '.claude' / 'emergent-learning')
+            base_path=str(EMERGENT_LEARNING_PATH),
+            project_root=str(EMERGENT_LEARNING_PATH)
         )
 
         # Create a workflow run for this task

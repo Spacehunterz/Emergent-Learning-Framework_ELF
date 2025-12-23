@@ -13,6 +13,24 @@ import sys
 import os
 from pathlib import Path
 
+# Base path resolver
+def _resolve_base_path() -> Path:
+    env_path = os.environ.get("ELF_BASE_PATH")
+    if env_path:
+        return Path(env_path)
+
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "src" / "elf_paths.py").exists():
+            sys.path.insert(0, str(parent / "src"))
+            try:
+                from elf_paths import get_base_path
+                return get_base_path(parent)
+            except ImportError:
+                break
+
+    return Path.home() / ".claude" / "emergent-learning"
+
 # Fix Windows encoding issues
 if sys.platform == 'win32':
     os.environ.setdefault('PYTHONIOENCODING', 'utf-8')
@@ -32,7 +50,7 @@ def main():
     if args.project:
         project_path = Path(args.project).expanduser().resolve()
     else:
-        project_path = Path.home() / '.claude' / 'emergent-learning'
+        project_path = _resolve_base_path()
 
     db_path = project_path / 'memory' / 'index.db'
 

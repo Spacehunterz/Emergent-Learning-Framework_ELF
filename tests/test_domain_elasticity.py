@@ -13,10 +13,12 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import sys
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "query"))
+# Add src directory to path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = REPO_ROOT / "src"
+sys.path.insert(0, str(SRC_ROOT))
 
-from lifecycle_manager import LifecycleManager, LifecycleConfig
+from query.lifecycle_manager import LifecycleManager, LifecycleConfig
 
 
 @pytest.fixture
@@ -28,7 +30,7 @@ def temp_db():
     conn = sqlite3.connect(path)
 
     # Apply migrations in order
-    migrations_dir = Path(__file__).parent.parent / "memory" / "migrations"
+    migrations_dir = SRC_ROOT / "memory" / "migrations"
 
     # 001: Base schema (creates heuristics table with all columns)
     migration_001 = migrations_dir / "001_base_schema.sql"

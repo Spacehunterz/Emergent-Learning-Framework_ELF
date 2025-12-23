@@ -31,6 +31,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "query"))
 
 from fraud_detector import FraudDetector
+from config_loader import get_base_path
 
 
 def run_scheduled_refresh():
@@ -76,7 +77,7 @@ def run_scheduled_refresh():
             print(f"  {error}")
 
     # Log results to file
-    log_file = Path.home() / ".claude" / "emergent-learning" / "logs" / "baseline-refresh.log"
+    log_file = get_base_path() / "logs" / "baseline-refresh.log"
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
     with open(log_file, 'a', encoding='utf-8') as f:

@@ -5,7 +5,16 @@
 set -euo pipefail
 
 # Configuration
-FRAMEWORK_DIR="$HOME/.claude/emergent-learning"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "${ELF_BASE_PATH:-}" ]]; then
+    BASE_CANDIDATE="$(cd "$SCRIPT_DIR/.." && pwd)"
+    if [[ -d "$BASE_CANDIDATE/memory" || -f "$BASE_CANDIDATE/pyproject.toml" ]]; then
+        ELF_BASE_PATH="$BASE_CANDIDATE"
+    else
+        ELF_BASE_PATH="$(cd "$SCRIPT_DIR/../.." && pwd)"
+    fi
+fi
+FRAMEWORK_DIR="$ELF_BASE_PATH"
 BACKUP_ROOT="${BACKUP_ROOT:-$HOME/.claude/backups/emergent-learning}"
 
 # Colors for output

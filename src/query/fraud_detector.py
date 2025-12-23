@@ -22,7 +22,12 @@ from statistics import mean, stdev, variance
 from math import prod
 
 # Configuration
-DB_PATH = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
+try:
+    from query.config_loader import get_base_path
+except ImportError:
+    from config_loader import get_base_path
+
+DB_PATH = get_base_path() / "memory" / "index.db"
 
 @dataclass
 class AnomalySignal:
@@ -822,10 +827,10 @@ class FraudDetector:
 
                 # Create CEO Escalation
                 try:
-                    from config_loader import get_base_path
-                    base_path = get_base_path()
+                    from query.config_loader import get_base_path
                 except ImportError:
-                    base_path = Path.home() / ".claude" / "emergent-learning"
+                    from config_loader import get_base_path
+                base_path = get_base_path()
 
                 inbox = base_path / "ceo-inbox"
                 inbox.mkdir(parents=True, exist_ok=True)

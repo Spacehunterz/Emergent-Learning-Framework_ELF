@@ -20,11 +20,13 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import sys
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "query"))
+# Add src directory to path for imports
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = REPO_ROOT / "src"
+sys.path.insert(0, str(SRC_ROOT))
 
-from fraud_detector import FraudDetector, FraudConfig, AnomalySignal
-from lifecycle_manager import LifecycleManager, UpdateType
+from query.fraud_detector import FraudDetector, FraudConfig, AnomalySignal
+from query.lifecycle_manager import LifecycleManager, UpdateType
 
 
 class TestFraudDetection:
@@ -41,11 +43,15 @@ class TestFraudDetection:
         conn = sqlite3.connect(db_path)
 
         # Load schema from migrations
-        migrations_dir = Path(__file__).parent.parent / "memory" / "migrations"
+        migrations_dir = SRC_ROOT / "memory" / "migrations"
 
         # Apply base schema (includes all columns from lifecycle phase 1)
         # Then add fraud detection tables
-        for migration_file in ["001_base_schema.sql", "006_fraud_detection.sql"]:
+        for migration_file in [
+            "001_base_schema.sql",
+            "006_fraud_detection.sql",
+            "007_baseline_history.sql",
+        ]:
             migration_path = migrations_dir / migration_file
             if migration_path.exists():
                 with open(migration_path) as f:

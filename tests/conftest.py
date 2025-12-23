@@ -4,6 +4,7 @@ Pytest configuration for ELF test suite.
 Fixtures and configuration for testing the Emergent Learning Framework.
 """
 from pathlib import Path
+import os
 import sys
 import tempfile
 import shutil
@@ -11,8 +12,11 @@ import shutil
 import pytest
 
 # Add src directory to path for imports
-src_path = Path(__file__).parent.parent / "src" / "emergent-learning"
+repo_root = Path(__file__).parent.parent
+src_path = repo_root / "src"
 sys.path.insert(0, str(src_path))
+
+os.environ.setdefault("ELF_BASE_PATH", str(repo_root))
 
 # Add coordinator directory to path for imports
 coordinator_path = Path(__file__).parent.parent / "coordinator"

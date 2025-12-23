@@ -28,6 +28,8 @@ from pathlib import Path
 from typing import Dict, Tuple, List
 from datetime import datetime
 
+from elf_paths import get_base_path
+
 # Import validation utilities
 from validation import (
     validate_identifier,
@@ -61,7 +63,7 @@ class CLIExecutor:
         self.coordination_dir.mkdir(parents=True, exist_ok=True)
 
         # SQLite for result checking
-        self.db_path = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
+        self.db_path = get_base_path(self.project_root) / "memory" / "index.db"
 
     def execute(self, node, context: Dict) -> Tuple[str, Dict]:
         """
@@ -482,7 +484,7 @@ class HookSignalExecutor:
         self.project_root = Path(project_root).resolve()
         self.coordination_dir = self.project_root / ".coordination"
         self.coordination_dir.mkdir(parents=True, exist_ok=True)
-        self.db_path = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
+        self.db_path = get_base_path(self.project_root) / "memory" / "index.db"
 
     def execute(self, node, context: Dict) -> Tuple[str, Dict]:
         """

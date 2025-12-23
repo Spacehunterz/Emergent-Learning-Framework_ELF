@@ -50,7 +50,7 @@ export const useProgression = create<ProgressionState>()(
                     const newXP = currentXP + amount
                     const newLevel = calculateLevel(newXP)
 
-                    // TODO: Trigger Level Up Effect if newLevel > currentLevel
+
                     if (newLevel > calculateLevel(currentXP)) {
                         console.log(`[LEVEL UP] ${type} Level ${newLevel}!`)
                         // In future: dispatch event or update dedicated UI state

@@ -21,10 +21,12 @@ from datetime import datetime, timedelta
 import json
 import unittest
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "query"))
+# Add src directory to path for imports
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = REPO_ROOT / "src"
+sys.path.insert(0, str(SRC_ROOT))
 
-from lifecycle_manager import (
+from query.lifecycle_manager import (
     LifecycleManager, LifecycleConfig, UpdateType, HeuristicStatus
 )
 

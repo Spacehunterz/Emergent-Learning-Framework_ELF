@@ -13,7 +13,12 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
-DB_PATH = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
+try:
+    from query.config_loader import get_base_path
+except ImportError:
+    from config_loader import get_base_path
+
+DB_PATH = get_base_path() / "memory" / "index.db"
 
 @dataclass
 class ThresholdRecommendation:

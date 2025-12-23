@@ -10,10 +10,15 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
+try:
+    from query.config_loader import get_base_path
+except ImportError:
+    from config_loader import get_base_path
+
 
 def get_db_path() -> Path:
     """Get the ELF database path."""
-    return Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
+    return get_base_path() / "memory" / "index.db"
 
 
 def get_active_plans(domain: Optional[str] = None, limit: int = 5) -> List[Dict[str, Any]]:

@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from contextlib import contextmanager
 
+from elf_paths import get_base_path
 # Fix Windows console encoding
 if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -37,8 +38,7 @@ class ConductorQuery:
 
     def __init__(self, base_path: Optional[str] = None):
         if base_path is None:
-            home = Path.home()
-            self.base_path = home / ".claude" / "emergent-learning"
+            self.base_path = get_base_path(Path.cwd())
         else:
             self.base_path = Path(base_path)
 

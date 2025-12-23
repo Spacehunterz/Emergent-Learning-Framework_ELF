@@ -92,7 +92,7 @@ class WatcherTestHarness:
             print(f"Using temporary test directory: {self.test_coordination_dir}")
         else:
             # Use actual .coordination directory
-            self.test_coordination_dir = Path.home() / ".claude" / "emergent-learning" / ".coordination"
+            self.test_coordination_dir = watcher_loop.get_base_path(Path(__file__)) / ".coordination"
             self.test_coordination_dir.mkdir(parents=True, exist_ok=True)
             print(f"Using actual .coordination directory: {self.test_coordination_dir}")
 
