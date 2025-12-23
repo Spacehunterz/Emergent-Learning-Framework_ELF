@@ -1,54 +1,61 @@
 # Emergent Learning Framework - Setup
 
-This folder contains the configuration files needed to fully use the Emergent Learning Framework with Claude Code.
+This folder contains the configuration files and scripts to install the emergent learning framework.
 
 **Default install path:** `~/.claude/emergent-learning` (set `ELF_BASE_PATH` to run from a different location).
 
 ## Quick Install
 
+From the repository root:
+
 ```bash
-cd ~/.claude/emergent-learning/setup
-chmod +x install.sh
+# Mac/Linux
 ./install.sh
+
+# Windows
+.\install.ps1
 ```
 
 ## What Gets Installed
 
-| File | Destination | Purpose |
-|------|-------------|---------|
-| `CLAUDE.md.template` | `~/.claude/CLAUDE.md` | Main configuration - tells Claude to query the building |
-| `commands/*.md` | `~/.claude/commands/` | Slash commands like `/search`, `/checkin`, `/swarm` |
-| `commands/*.py` | `~/.claude/commands/` | Python scripts powering the commands |
-| `hooks/*.py` | `~/.claude/hooks/` | Enforcement hooks (golden rule enforcer) |
-| `hooks/SessionStart/*.py` | `~/.claude/hooks/SessionStart/` | Startup hooks (auto-query, dashboard) |
+| Component | Destination | Purpose |
+|-----------|-------------|---------|
+| `CLAUDE.md` | `~/.claude/CLAUDE.md` | Main configuration - instructions for Claude |
+| Commands | `~/.claude/commands/` | Slash commands like `/search`, `/checkin`, `/swarm` |
+| Core Files | `~/.claude/emergent-learning/` | Query system, memories, dashboard backend |
+| Hooks | `~/.claude/emergent-learning/hooks/` | Logic for pre/post task hooks |
+| `settings.json` | `~/.claude/settings.json` | Configures Claude to use the ELF hooks |
 
 ## Manual Install
 
-If you prefer to install manually:
+We strongly recommend using the installer script as it handles path configuration and virtual environments correctly.
 
-1. Copy `CLAUDE.md.template` to `~/.claude/CLAUDE.md`
-2. Copy contents of `commands/` to `~/.claude/commands/`
-3. Copy contents of `hooks/` to `~/.claude/hooks/`
+If you must install manually, the high-level steps are:
+
+1. Copy `templates/CLAUDE.md.template` to `~/.claude/CLAUDE.md`.
+2. Copy `library/commands/*` to `~/.claude/commands/`.
+3. Copy the entire repository `src` content to `~/.claude/emergent-learning/`.
+4. Copy `tools/scripts/*` to `~/.claude/emergent-learning/scripts/`.
+5. Create a Python virtual environment in `~/.claude/emergent-learning/.venv` and install `requirements.txt`.
+6. Configure `~/.claude/settings.json` to add `PreToolUse` and `PostToolUse` hooks pointing to `~/.claude/emergent-learning/hooks/learning-loop`.
 
 ## What Each Component Does
 
 ### CLAUDE.md
-The main configuration file that instructs Claude to:
-- Query the building at the start of every conversation
+The constitution. Instructs Claude to:
+- Query the building at conversation start
 - Follow golden rules
 - Use the session memory system
-- Start the dashboard when needed
 
 ### Slash Commands
-- `/search` - Search through session history with natural language
+- `/search` - Search session history
 - `/checkin` - Manual building check-in
-- `/checkpoint` - Save current progress
-- `/swarm` - Launch multi-agent coordination
+- `/swarm` - Multi-agent coordination
 
-### Hooks
-- `golden-rule-enforcer.py` - Blocks Claude if it doesn't query the building
-- `SessionStart/load-building.py` - Auto-queries on startup
-- `SessionStart/start-dashboard.py` - Starts dashboard servers
+### Hooks (settings.json)
+Configured in `settings.json`, these ensure that:
+- **PreToolUse:** `pre_tool_learning.py` runs before tasks to provide context.
+- **PostToolUse:** `post_tool_learning.py` runs after tasks to record outcomes.
 
 ## Customization
 
@@ -56,17 +63,3 @@ Edit `~/.claude/CLAUDE.md` after installation to:
 - Change package manager preference (bun vs npm)
 - Modify dashboard ports
 - Add project-specific instructions
-
-## Troubleshooting
-
-**Claude doesn't query the building:**
-- Check that `~/.claude/CLAUDE.md` exists
-- Verify hooks are in `~/.claude/hooks/`
-
-**Dashboard doesn't start:**
-- Install dependencies: `pip install uvicorn fastapi` and `bun install`
-- Check ports 8888 and 3001 are available
-
-**/search doesn't work:**
-- Ensure `session-search.py` is in `~/.claude/commands/`
-- Check Python 3 is available
