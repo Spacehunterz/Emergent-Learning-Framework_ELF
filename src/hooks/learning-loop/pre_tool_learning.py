@@ -12,7 +12,6 @@ Works with: Grep, Read, Glob, Task, Bash (investigation tools)
 """
 
 import json
-import os
 import re
 import sys
 import sqlite3
@@ -20,25 +19,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional
 
-# Paths - prefer ELF_BASE_PATH, fallback to ~/.claude for compatibility
+# Paths - resolve from repo/root detection or explicit ELF_BASE_PATH
 def _resolve_base_path() -> Path:
-    env_path = os.environ.get("ELF_BASE_PATH")
-    candidates = []
-    if env_path:
-        candidates.append(Path(env_path))
-    candidates.append(Path.home() / ".claude" / "emergent-learning")
-
-    for base in candidates:
-        elf_paths = base / "src" / "elf_paths.py"
-        if elf_paths.exists():
-            sys.path.insert(0, str(base / "src"))
-            try:
-                from elf_paths import get_base_path
-                return get_base_path(base)
-            except ImportError:
-                break
-
-    return candidates[0]
+    try:
+        from elf_paths import get_base_path
+    except ImportError:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+        from elf_paths import get_base_path
+    return get_base_path(Path(__file__))
 
 
 EMERGENT_LEARNING_PATH = _resolve_base_path()

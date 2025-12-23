@@ -16,6 +16,8 @@ BASE_DIR="${ELF_BASE_PATH:-$REPO_ROOT}"
 MODE="${1#--mode=}"
 MODE="${MODE:-interactive}"
 
+mkdir -p "$BASE_DIR/.coordination"
+
 # If called with --mode flag, extract it
 if [ "$1" = "--mode" ]; then
     MODE="$2"
@@ -268,15 +270,22 @@ install_settings() {
     # Generate settings.json with hooks pointing to emergent-learning directory
     # Uses Python for cross-platform path handling
     # Pass VENV_PYTHON as environment variable for the script to use
-    VENV_PYTHON_PATH="$VENV_PYTHON" $PYTHON_CMD << 'PYTHON_SCRIPT'
+    BASE_DIR="$BASE_DIR" VENV_PYTHON_PATH="$VENV_PYTHON" $PYTHON_CMD << 'PYTHON_SCRIPT'
 import json
 import os
 import sys
 from pathlib import Path
 
 claude_dir = Path.home() / ".claude"
-elf_dir = claude_dir / "emergent-learning"
-elf_hooks = elf_dir / "hooks" / "learning-loop"
+base_dir_env = os.environ.get("ELF_BASE_PATH") or os.environ.get("BASE_DIR")
+elf_dir = Path(base_dir_env).expanduser() if base_dir_env else (claude_dir / "emergent-learning")
+
+hook_candidates = [
+    elf_dir / "hooks" / "learning-loop",
+    elf_dir / "src" / "hooks" / "learning-loop",
+    claude_dir / "emergent-learning" / "hooks" / "learning-loop",
+]
+elf_hooks = next((p for p in hook_candidates if p.exists()), hook_candidates[0])
 settings_file = claude_dir / "settings.json"
 
 # Get venv python path from environment, or detect it
@@ -301,20 +310,21 @@ else:
 
 # Detect platform and format paths appropriately
 # Hook paths: learning-loop for pre/post, main hooks dir for checkin reminder
-elf_hooks_main = elf_dir / "hooks"
+elf_hooks_main = elf_hooks.parent
+checkin_hook_path = elf_hooks_main / "checkin_heuristic_reminder.py"
 
 if sys.platform == "win32":
     # Windows: use escaped backslashes in JSON
     pre_hook = str(elf_hooks / "pre_tool_learning.py").replace("\\", "\\\\")
     post_hook = str(elf_hooks / "post_tool_learning.py").replace("\\", "\\\\")
-    checkin_hook = str(elf_hooks_main / "checkin_heuristic_reminder.py").replace("\\", "\\\\")
+    checkin_hook = str(checkin_hook_path).replace("\\", "\\\\")
     if venv_python:
         python_cmd = f'"{venv_python.replace(chr(92), chr(92)+chr(92))}"'
 else:
     # Unix: forward slashes
     pre_hook = str(elf_hooks / "pre_tool_learning.py")
     post_hook = str(elf_hooks / "post_tool_learning.py")
-    checkin_hook = str(elf_hooks_main / "checkin_heuristic_reminder.py")
+    checkin_hook = str(checkin_hook_path)
 
 settings = {
     "hooks": {
@@ -339,20 +349,22 @@ settings = {
                 ],
                 "matcher": "Task"
             }
-        ],
-        "UserPromptSubmit": [
-            {
-                "hooks": [
-                    {
-                        "command": f'{python_cmd} "{checkin_hook}"',
-                        "type": "command"
-                    }
-                ],
-                "matcher": ""
-            }
         ]
     }
 }
+
+if checkin_hook_path.exists():
+    settings["hooks"]["UserPromptSubmit"] = [
+        {
+            "hooks": [
+                {
+                    "command": f'{python_cmd} "{checkin_hook}"',
+                    "type": "command"
+                }
+            ],
+            "matcher": ""
+        }
+    ]
 
 # Merge with existing settings if present
 if settings_file.exists():

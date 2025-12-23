@@ -259,6 +259,7 @@ $ClaudeDir = Join-Path $env:USERPROFILE ".claude"
 $EmergentLearningDir = Join-Path $ClaudeDir "emergent-learning"
 $HooksDir = Join-Path $ClaudeDir "hooks"
 $SettingsFile = Join-Path $ClaudeDir "settings.json"
+$BaseInstallDir = if ($env:ELF_BASE_PATH) { (Resolve-Path $env:ELF_BASE_PATH).Path } else { $ScriptDir }
 
 # Detect in-place installation (cloned directly to target)
 $InPlaceInstall = Test-InPlaceInstall -ScriptDir $ScriptDir -TargetDir $EmergentLearningDir
@@ -339,7 +340,7 @@ Write-Host "[OK] Prerequisites met" -ForegroundColor Green
 Write-Host ""
 
 # Migrate legacy data if running from a repo-based install
-$migrationBaseDir = if ($env:ELF_BASE_PATH) { (Resolve-Path $env:ELF_BASE_PATH).Path } else { $ScriptDir }
+$migrationBaseDir = $BaseInstallDir
 Invoke-LegacyMigration -LegacyDir $EmergentLearningDir -TargetDir $migrationBaseDir -PythonCmd $pythonCmd
 
 Write-Host "[Step 2/5] Creating directory structure..." -ForegroundColor Yellow
@@ -376,6 +377,14 @@ foreach ($dir in $directories) {
     }
 }
 Write-Host "  Created directory structure (7 directories for core)" -ForegroundColor Green
+
+$coordinationBases = @($BaseInstallDir, $EmergentLearningDir) | Select-Object -Unique
+foreach ($base in $coordinationBases) {
+    $coordinationDir = Join-Path $base ".coordination"
+    if (-not (Test-Path $coordinationDir)) {
+        New-Item -ItemType Directory -Path $coordinationDir -Force | Out-Null
+    }
+}
 
 # === CORE INSTALLATION ===
 Write-Host ""
@@ -703,11 +712,20 @@ Write-Host "  - Preserving your existing hooks (if any)"
 Write-Host "  - Creating backup at settings.json.backup"
 Write-Host ""
 
-$hookLearningLoop = Join-Path $EmergentLearningDir "hooks" "learning-loop"
-$hookMainDir = Join-Path $EmergentLearningDir "hooks"
+$hookLearningLoopCandidates = @(
+    (Join-Path $BaseInstallDir "hooks" "learning-loop"),
+    (Join-Path $BaseInstallDir "src" "hooks" "learning-loop"),
+    (Join-Path $EmergentLearningDir "hooks" "learning-loop")
+)
+$hookLearningLoop = ($hookLearningLoopCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1)
+if (-not $hookLearningLoop) {
+    $hookLearningLoop = Join-Path $BaseInstallDir "hooks" "learning-loop"
+}
+$hookMainDir = Split-Path $hookLearningLoop -Parent
 $preToolHook = Join-Path $hookLearningLoop "pre_tool_learning.py"
 $postToolHook = Join-Path $hookLearningLoop "post_tool_learning.py"
 $checkinHook = Join-Path $hookMainDir "checkin_heuristic_reminder.py"
+$checkinHookExists = Test-Path $checkinHook
 
 # Backup existing settings if present
 if (Test-Path $SettingsFile) {
@@ -765,14 +783,17 @@ $elfFileOpsHook = @{
 }
 
 # Hook for checkin commands (proactive heuristic recording reminder)
-$elfCheckinHook = @{
-    "matcher" = ""
-    "hooks"   = @(
-        @{
-            "type"    = "command"
-            "command" = "$hookPythonCmd `"$checkinHook`""
-        }
-    )
+$elfCheckinHook = $null
+if ($checkinHookExists) {
+    $elfCheckinHook = @{
+        "matcher" = ""
+        "hooks"   = @(
+            @{
+                "type"    = "command"
+                "command" = "$hookPythonCmd `"$checkinHook`""
+            }
+        )
+    }
 }
 
 # Merge with existing hooks (don't overwrite user's other hooks)
@@ -809,7 +830,9 @@ $postHooks.Add($elfFileOpsHook) | Out-Null
 $settings["hooks"]["PostToolUse"] = $postHooks
 
 [System.Collections.ArrayList]$userPromptHooks = @($settings["hooks"]["UserPromptSubmit"])
-$userPromptHooks.Add($elfCheckinHook) | Out-Null
+if ($elfCheckinHook) {
+    $userPromptHooks.Add($elfCheckinHook) | Out-Null
+}
 $settings["hooks"]["UserPromptSubmit"] = $userPromptHooks
 
 # Write without BOM (UTF8 BOM can break JSON parsers)

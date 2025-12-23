@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Install ELF hooks into Claude Code's hooks directory.
+Install ELF hooks into Claude Code settings.
 
 This script:
-1. Copies hook files from the repo to ~/.claude/hooks/learning-loop/
+1. Locates hook sources in the current ELF base
 2. Updates Claude Code settings.json to register the hooks
 3. Only runs once (creates a marker file)
 
@@ -12,45 +12,50 @@ Or auto-runs on first query to the building.
 """
 
 import json
-import shutil
+import os
 import sys
 from pathlib import Path
 
 # Paths
 HOME = Path.home()
 CLAUDE_DIR = HOME / ".claude"
-ELF_DIR = CLAUDE_DIR / "emergent-learning"
-SOURCE_HOOKS = ELF_DIR / "hooks" / "learning-loop"
-TARGET_HOOKS = CLAUDE_DIR / "hooks" / "learning-loop"
 SETTINGS_FILE = CLAUDE_DIR / "settings.json"
+
+
+def _resolve_base_dir() -> Path:
+    env_path = os.environ.get("ELF_BASE_PATH")
+    if env_path:
+        return Path(env_path).expanduser().resolve()
+
+    repo_root = Path(__file__).resolve().parents[2]
+    src_dir = repo_root / "src"
+    if src_dir.exists():
+        sys.path.insert(0, str(src_dir))
+        try:
+            from elf_paths import get_base_path
+            return get_base_path(repo_root)
+        except ImportError:
+            pass
+
+    return repo_root
+
+
+ELF_DIR = _resolve_base_dir()
+SOURCE_HOOKS = ELF_DIR / "hooks" / "learning-loop"
+if not SOURCE_HOOKS.exists():
+    SOURCE_HOOKS = ELF_DIR / "src" / "hooks" / "learning-loop"
+TARGET_HOOKS = SOURCE_HOOKS
 MARKER_FILE = ELF_DIR / ".hooks-installed"
 
 
 def install_hooks():
-    """Copy hook files to Claude hooks directory (only if not already present)."""
+    """Verify hook sources are available for settings registration."""
     if not SOURCE_HOOKS.exists():
         print(f"Source hooks not found: {SOURCE_HOOKS}")
         return False
 
-    # Create target directory
-    TARGET_HOOKS.mkdir(parents=True, exist_ok=True)
-
-    # Copy hook files - BUT don't overwrite existing files
-    files_copied = []
-    files_skipped = []
-    for src_file in SOURCE_HOOKS.glob("*.py"):
-        dst_file = TARGET_HOOKS / src_file.name
-        if dst_file.exists():
-            # Don't overwrite - user may have customized
-            files_skipped.append(src_file.name)
-        else:
-            shutil.copy2(src_file, dst_file)
-            files_copied.append(src_file.name)
-
-    if files_copied:
-        print(f"Copied {len(files_copied)} hook files: {', '.join(files_copied)}")
-    if files_skipped:
-        print(f"Skipped {len(files_skipped)} existing files: {', '.join(files_skipped)}")
+    if not TARGET_HOOKS.exists():
+        TARGET_HOOKS.mkdir(parents=True, exist_ok=True)
     return True
 
 
@@ -67,13 +72,14 @@ def update_settings():
         return False
     
     # Define the hooks we want to register
+    python_cmd = f'"{sys.executable}"' if sys.executable else "python"
     pre_hook = {
         "type": "command",
-        "command": f'python3 "{TARGET_HOOKS / "pre_tool_learning.py"}"'
+        "command": f'{python_cmd} "{TARGET_HOOKS / "pre_tool_learning.py"}"'
     }
     post_hook = {
-        "type": "command", 
-        "command": f'python3 "{TARGET_HOOKS / "post_tool_learning.py"}"'
+        "type": "command",
+        "command": f'{python_cmd} "{TARGET_HOOKS / "post_tool_learning.py"}"'
     }
     
     # Ensure hooks structure exists
@@ -108,15 +114,26 @@ def update_settings():
         print("Hooks already registered in settings.json")
         return True
     
-    # We'd need to add hooks, but modifying settings.json programmatically
-    # risks breaking other hooks. Just report what's needed.
     if not pre_registered or not post_registered:
-        print("\nHooks need to be registered in ~/.claude/settings.json")
-        print("Add these to your hooks configuration:")
-        if not pre_registered:
-            print(f'\nPreToolUse -> Task: python3 "{TARGET_HOOKS / "pre_tool_learning.py"}"')
-        if not post_registered:
-            print(f'\nPostToolUse -> Task: python3 "{TARGET_HOOKS / "post_tool_learning.py"}"')
+        if "PreToolUse" not in hooks:
+            hooks["PreToolUse"] = []
+        if "PostToolUse" not in hooks:
+            hooks["PostToolUse"] = []
+
+        hooks["PreToolUse"] = [
+            entry for entry in hooks["PreToolUse"]
+            if "pre_tool_learning.py" not in str(entry)
+        ]
+        hooks["PostToolUse"] = [
+            entry for entry in hooks["PostToolUse"]
+            if "post_tool_learning.py" not in str(entry)
+        ]
+
+        hooks["PreToolUse"].append({"matcher": "Task", "hooks": [pre_hook]})
+        hooks["PostToolUse"].append({"matcher": "Task", "hooks": [post_hook]})
+
+        SETTINGS_FILE.write_text(json.dumps(settings, indent=2))
+        print("Hooks registered in settings.json")
     
     return True
 

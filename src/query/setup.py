@@ -23,7 +23,11 @@ def ensure_hooks_installed():
     if marker.exists():
         return
 
-    install_script = Path(__file__).parent.parent / "scripts" / "install-hooks.py"
+    repo_root = Path(__file__).resolve().parents[2]
+    install_script = repo_root / "tools" / "scripts" / "install-hooks.py"
+    legacy_install = Path(__file__).parent.parent / "scripts" / "install-hooks.py"
+    if not install_script.exists() and legacy_install.exists():
+        install_script = legacy_install
     if install_script.exists():
         try:
             subprocess.run(

@@ -2,29 +2,17 @@
 
 import re
 import sqlite3
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
 
 def _resolve_base_path() -> Path:
-    env_path = os.environ.get("ELF_BASE_PATH")
-    candidates = []
-    if env_path:
-        candidates.append(Path(env_path))
-    candidates.append(Path.home() / ".claude" / "emergent-learning")
-
-    for base in candidates:
-        elf_paths = base / "src" / "elf_paths.py"
-        if elf_paths.exists():
-            sys.path.insert(0, str(base / "src"))
-            try:
-                from elf_paths import get_base_path
-                return get_base_path(base)
-            except ImportError:
-                break
-
-    return candidates[0]
+    try:
+        from elf_paths import get_base_path
+    except ImportError:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+        from elf_paths import get_base_path
+    return get_base_path(Path(__file__))
 
 
 DB_PATH = _resolve_base_path() / "memory" / "index.db"
