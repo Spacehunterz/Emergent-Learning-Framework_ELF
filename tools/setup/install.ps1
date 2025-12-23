@@ -76,29 +76,32 @@ function Test-InPlaceInstall {
 function Invoke-NativeCommand {
     param(
         [string]$Command,
-        [string]$Arguments,
+        [string[]]$Arguments,
         [string]$SuccessMessage,
         [switch]$ContinueOnError
     )
-    
+
     $oldPreference = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
-    
+
     try {
+        $argList = @()
+        if ($Arguments) {
+            $argList = $Arguments
+        }
+
         # Run command and capture all output
-        $output = cmd /c "$Command $Arguments 2>&1"
+        $output = & $Command @argList 2>&1
         $exitCode = $LASTEXITCODE
-        
+
         if ($exitCode -eq 0) {
             if ($SuccessMessage) {
                 Write-Host "  $SuccessMessage" -ForegroundColor Green
             }
-            return $true
         }
         else {
             if ($ContinueOnError) {
                 Write-Host "  Warning: $Command had issues (exit code $exitCode)" -ForegroundColor Yellow
-                return $false
             }
             else {
                 throw "Command failed with exit code $exitCode"
@@ -484,18 +487,18 @@ $pipCmd = if ($pythonCmd -eq "python3") { "pip3" } else { "pip" }
 if (Test-Path $venvPythonPath) {
     # Use venv pip
     if (Test-Path $requirementsFile) {
-        Invoke-NativeCommand -Command "`"$venvPipCmd`"" -Arguments "install -q --upgrade pip" -SuccessMessage "Upgraded pip in venv" -ContinueOnError
-        Invoke-NativeCommand -Command "`"$venvPipCmd`"" -Arguments "install -q -r `"$requirementsFile`"" -SuccessMessage "Installed Python dependencies in venv (from requirements.txt)" -ContinueOnError
+        Invoke-NativeCommand -Command $venvPython -Arguments @("-m", "pip", "install", "-q", "--upgrade", "pip") -SuccessMessage "Upgraded pip in venv" -ContinueOnError
+        Invoke-NativeCommand -Command $venvPipCmd -Arguments @("install", "-q", "-r", $requirementsFile) -SuccessMessage "Installed Python dependencies in venv (from requirements.txt)" -ContinueOnError
     }
     else {
-        Invoke-NativeCommand -Command "`"$venvPipCmd`"" -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed Python dependencies in venv (peewee-aio)" -ContinueOnError
+        Invoke-NativeCommand -Command $venvPipCmd -Arguments @("install", "-q", "peewee-aio[aiosqlite]", "aiofiles") -SuccessMessage "Installed Python dependencies in venv (peewee-aio)" -ContinueOnError
     }
 
     # Verify peewee-aio is available in venv
     $verifyResult = & $venvPython -c "import peewee_aio; print('ok')" 2>&1
     if ($verifyResult -ne "ok") {
         Write-Host "  Installing peewee-aio in venv (required dependency)..." -ForegroundColor Yellow
-        Invoke-NativeCommand -Command "`"$venvPipCmd`"" -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed peewee-aio in venv" -ContinueOnError
+        Invoke-NativeCommand -Command $venvPipCmd -Arguments @("install", "-q", "peewee-aio[aiosqlite]", "aiofiles") -SuccessMessage "Installed peewee-aio in venv" -ContinueOnError
 
         # Final check
         $finalCheck = & $venvPython -c "import peewee_aio; print('ok')" 2>&1
@@ -510,17 +513,17 @@ else {
     # Fallback to system pip
     $pipCmd = if ($pythonCmd -eq "python3") { "pip3" } else { "pip" }
     if (Test-Path $requirementsFile) {
-        Invoke-NativeCommand -Command $pipCmd -Arguments "install -q -r $requirementsFile" -SuccessMessage "Installed Python dependencies (from requirements.txt)" -ContinueOnError
+        Invoke-NativeCommand -Command $pipCmd -Arguments @("install", "-q", "-r", $requirementsFile) -SuccessMessage "Installed Python dependencies (from requirements.txt)" -ContinueOnError
     }
     else {
-        Invoke-NativeCommand -Command $pipCmd -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed Python dependencies (peewee-aio)" -ContinueOnError
+        Invoke-NativeCommand -Command $pipCmd -Arguments @("install", "-q", "peewee-aio[aiosqlite]", "aiofiles") -SuccessMessage "Installed Python dependencies (peewee-aio)" -ContinueOnError
     }
 
     # Verify peewee-aio is available (critical for query system)
     $verifyResult = & $pythonCmd -c "import peewee_aio; print('ok')" 2>&1
     if ($verifyResult -ne "ok") {
         Write-Host "  Installing peewee-aio (required dependency)..." -ForegroundColor Yellow
-        Invoke-NativeCommand -Command $pipCmd -Arguments "install -q peewee-aio[aiosqlite] aiofiles" -SuccessMessage "Installed peewee-aio" -ContinueOnError
+        Invoke-NativeCommand -Command $pipCmd -Arguments @("install", "-q", "peewee-aio[aiosqlite]", "aiofiles") -SuccessMessage "Installed peewee-aio" -ContinueOnError
     }
 }
 
@@ -672,10 +675,10 @@ if ($InstallDashboard) {
             Write-Host "  [Installing] Frontend dependencies (node_modules not found)..." -ForegroundColor Yellow
             Set-Location $frontendDir
             if ($hasBun) {
-                Invoke-NativeCommand -Command "bun" -Arguments "install" -SuccessMessage "Installed frontend dependencies (bun)" -ContinueOnError
+                Invoke-NativeCommand -Command "bun" -Arguments @("install") -SuccessMessage "Installed frontend dependencies (bun)" -ContinueOnError
             }
             else {
-                Invoke-NativeCommand -Command "npm" -Arguments "install" -SuccessMessage "Installed frontend dependencies (npm)" -ContinueOnError
+                Invoke-NativeCommand -Command "npm" -Arguments @("install") -SuccessMessage "Installed frontend dependencies (npm)" -ContinueOnError
             }
         }
         elseif ((Test-Path $frontendDir) -and (Test-Path $nodeModulesPath)) {
@@ -685,8 +688,8 @@ if ($InstallDashboard) {
         # Install backend dependencies (use venv pip if available)
         $backendDir = Join-Path $dashboardDst "backend"
         if (Test-Path $backendDir) {
-            $backendPipCmd = if ($venvPython) { "`"$venvPipCmd`"" } else { $pipCmd }
-            Invoke-NativeCommand -Command $backendPipCmd -Arguments "install -q fastapi uvicorn aiofiles websockets peewee" -SuccessMessage "Installed backend dependencies" -ContinueOnError
+            $backendPipCmd = if ($venvPython) { $venvPipCmd } else { $pipCmd }
+            Invoke-NativeCommand -Command $backendPipCmd -Arguments @("install", "-q", "fastapi", "uvicorn", "aiofiles", "websockets", "peewee") -SuccessMessage "Installed backend dependencies" -ContinueOnError
         }
 
         Set-Location $ScriptDir
