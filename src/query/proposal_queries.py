@@ -213,7 +213,7 @@ def format_proposals_for_context(proposals: List[Dict[str, Any]]) -> str:
         lines.append(f"\n*File: {p['filename']}*\n")
 
     lines.append("\n---\n")
-    lines.append("*Review proposals with: `./scripts/review-proposal.sh pending/<file> approve|reject`*\n")
+    lines.append("*Review proposals with: `./tools/scripts/review-proposal.sh pending/<file> approve|reject`*\n")
 
     return '\n'.join(lines)
 

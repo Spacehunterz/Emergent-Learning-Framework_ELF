@@ -1,52 +1,38 @@
 #!/bin/bash
-# ELF Checkin - Load building context and run checkin workflow
+# ELF Checkin - Wrapper for Python checkin orchestrator
+#
+# This script delegates to the Python-based checkin orchestrator which handles:
+# - 8-step workflow with proper state tracking
+# - Banner display
+# - Context loading
+# - Dashboard prompting (first checkin only)
+# - Model selection with persistence
+# - CEO decision checking
 
 set -e
 
-# Show banner
-echo ""
-echo "┌────────────────────────────────────┐"
-echo "│    Emergent Learning Framework     │"
-echo "├────────────────────────────────────┤"
-echo "│                                    │"
-echo "│      █████▒  █▒     █████▒         │"
-echo "│      █▒      █▒     █▒             │"
-echo "│      ████▒   █▒     ████▒          │"
-echo "│      █▒      █▒     █▒             │"
-echo "│      █████▒  █████▒ █▒             │"
-echo "│                                    │"
-echo "└────────────────────────────────────┘"
-echo ""
+# Find the Python script
+ELF_HOME="${HOME}/.claude/emergent-learning"
+CHECKIN_PY="${ELF_HOME}/src/query/checkin.py"
 
-# Step 1: Run query system to load context
-echo "🏢 Loading Building Context..."
-python ~/.claude/emergent-learning/query/query.py --context
-
-# Step 2: Ask about dashboard
-echo ""
-read -p "🚀 Start ELF Dashboard? [Y/n]: " -n 1 -r dashboard_choice
-echo ""
-if [[ "$dashboard_choice" =~ ^[Yy]?$ ]]; then
-    echo "Launching dashboard..."
-    bash ~/.claude/emergent-learning/dashboard-app/run-dashboard.sh &
+# Fallback location if standard location doesn't exist
+if [ ! -f "$CHECKIN_PY" ]; then
+    # Try project-relative location
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+    CHECKIN_PY="${PROJECT_ROOT}/src/query/checkin.py"
 fi
 
-# Step 3: Ask about multi-model support
-echo ""
-echo "🤖 Multi-Model Support Available"
-echo "Available models:"
-echo "  - gemini (1000K context, frontend/React optimized)"
-echo "  - codex (128K context, precision/debugging optimized)"  
-echo "  - claude (active, orchestrator)"
-echo ""
-read -p "Show multi-model setup? [Y/n]: " -n 1 -r model_choice
-echo ""
-if [[ "$model_choice" =~ ^[Yy]?$ ]]; then
-    echo ""
-    echo "To switch models, set ELF_MODEL environment variable:"
-    echo "  export ELF_MODEL=gemini"
-    echo ""
+# Ensure we can find Python
+if ! command -v python3 &> /dev/null && ! command -v python &> /dev/null; then
+    echo "❌ Python not found. Please install Python 3."
+    exit 1
 fi
 
-echo "✅ Checkin complete. Ready to work!"
-echo ""
+# Run the orchestrator
+if [ -f "$CHECKIN_PY" ]; then
+    python3 "$CHECKIN_PY"
+else
+    echo "❌ Checkin script not found at $CHECKIN_PY"
+    exit 1
+fi

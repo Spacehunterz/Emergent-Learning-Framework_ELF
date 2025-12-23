@@ -11,7 +11,7 @@ description: Trigger a check-in to summarize the most recent session
 
 2. Run the summarizer on it.
    ```bash
-    python scripts/summarize-session.py --limit 1 --older-than 0m --batch
+    python tools/scripts/summarize-session.py --limit 1 --older-than 0m --batch
    ```
 
 3. Report the result to the user.
