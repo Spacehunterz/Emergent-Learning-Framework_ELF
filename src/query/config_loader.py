@@ -8,6 +8,12 @@ Custom configs override defaults (deep merge for dicts, replace for other types)
 from pathlib import Path
 from typing import Any, Dict, Optional
 import os
+import sys
+
+# Add parent directory to sys.path so we can import elf_paths
+_parent_dir = str(Path(__file__).parent.parent)
+if _parent_dir not in sys.path:
+    sys.path.insert(0, _parent_dir)
 
 try:
     from elf_paths import get_base_path as _get_base_path
