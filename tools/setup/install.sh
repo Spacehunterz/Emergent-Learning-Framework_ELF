@@ -289,6 +289,19 @@ install_commands() {
     done
 }
 
+install_cli() {
+    # Install elf.py CLI wrapper for easy command access
+    # This allows users to run: python elf.py checkin, etc.
+    local elf_cli_src="$SCRIPT_DIR/../../tools/scripts/elf.py"
+    local elf_cli_dest="$ELF_DIR/elf.py"
+
+    if [ -f "$elf_cli_src" ]; then
+        mkdir -p "$ELF_DIR"
+        cp "$elf_cli_src" "$elf_cli_dest"
+        chmod +x "$elf_cli_dest"
+    fi
+}
+
 install_core_files() {
     echo "[ELF] Installing core files to $ELF_DIR..."
     mkdir -p "$ELF_DIR"
@@ -367,9 +380,9 @@ else:
     python_cmd = "python3"
 
 # Detect platform and format paths appropriately
-# Hook paths: learning-loop for pre/post, main hooks dir for checkin reminder
+# Hook paths: learning-loop for pre/post, UserPromptSubmit for checkin detection
 elf_hooks_main = elf_hooks.parent
-checkin_hook_path = elf_hooks_main / "checkin_heuristic_reminder.py"
+checkin_hook_path = elf_hooks_main / "UserPromptSubmit" / "detect_checkin.py"
 
 if sys.platform == "win32":
     # Windows: use escaped backslashes in JSON
