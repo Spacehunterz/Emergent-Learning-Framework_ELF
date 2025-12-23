@@ -330,13 +330,18 @@ source_type_escaped=$(escape_sql "$source_type")
 
 # Insert into database with retry logic for concurrent access
 if ! heuristic_id=$(sqlite_with_retry "$DB_PATH" <<SQL
-INSERT INTO heuristics (domain, rule, explanation, source_type, confidence)
+INSERT INTO heuristics (domain, rule, explanation, source_type, confidence, times_validated, times_violated, is_golden, created_at, updated_at)
 VALUES (
     '$domain_escaped',
     '$rule_escaped',
     '$explanation_escaped',
     '$source_type_escaped',
-    CAST($confidence AS REAL)
+    CAST($confidence AS REAL),
+    0,
+    0,
+    0,
+    datetime('now'),
+    datetime('now')
 );
 SELECT last_insert_rowid();
 SQL
