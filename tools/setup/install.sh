@@ -351,11 +351,13 @@ claude_dir = Path.home() / ".claude"
 base_dir_env = os.environ.get("ELF_BASE_PATH") or os.environ.get("BASE_DIR")
 elf_dir = Path(base_dir_env).expanduser() if base_dir_env else (claude_dir / "emergent-learning")
 
+# Hook paths: After install_core_files copies src/, hooks will be in candidate[0]
+# During development/pre-copy, they're in candidate[1]
 hook_candidates = [
     elf_dir / "hooks" / "learning-loop",
     elf_dir / "src" / "hooks" / "learning-loop",
-    claude_dir / "emergent-learning" / "hooks" / "learning-loop",
 ]
+# Use the first existing path, defaulting to the post-installation location
 elf_hooks = next((p for p in hook_candidates if p.exists()), hook_candidates[0])
 settings_file = claude_dir / "settings.json"
 
