@@ -54,7 +54,7 @@ export function LearningVelocity({ days = 30 }: LearningVelocityProps) {
       <VelocityCharts data={data} />
 
       {/* Weekly Summary */}
-      {data.heuristics_by_week.length > 0 && (
+      {data.heuristics_by_week && data.heuristics_by_week.length > 0 && (
         <div className="bg-slate-800 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-indigo-400 mb-4">Weekly Activity</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
