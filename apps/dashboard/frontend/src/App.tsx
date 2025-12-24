@@ -199,6 +199,9 @@ function AppContent() {
         if (selectedDomain) {
           e.preventDefault()
           setSelectedDomain(null)
+        } else if (activeTab === 'graph' || activeTab === 'analytics') {
+          e.preventDefault()
+          setActiveTab('overview')
         } else if (activeTab !== 'overview') {
           // Optional: Esc from other tabs could go back to overview?
           // user only mentioned "drill down into a card... cant esc key out"

@@ -28,7 +28,8 @@ export const Stage18Asteroid = ({ data }: { data: Enemy }) => {
     useFrame((state) => {
         const delta = state.clock.getDelta();
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -100,9 +101,10 @@ export const Stage18Drone = ({ data }: { data: Enemy }) => {
         trailPositions.current = Array.from({ length: 5 }, () => new THREE.Vector3());
     }, []);
 
-    useFrame(() => {
+    useFrame((state) => {
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -125,7 +127,7 @@ export const Stage18Drone = ({ data }: { data: Enemy }) => {
         }
         trailPositions.current[0].copy(data.position);
 
-        trailRefs.current.forEach((trail) => {
+        trailRefs.current.forEach((trail, i) => {
             if (!trail) return;
             trail.position.copy(trailPositions.current[i]);
             if (trail.material instanceof THREE.MeshBasicMaterial) {
@@ -164,9 +166,10 @@ export const Stage18Fighter = ({ data }: { data: Enemy }) => {
     const partsRef = useRef<THREE.Group>(null);
     const partMatRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
 
-    useFrame(() => {
+    useFrame((state) => {
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -238,7 +241,8 @@ export const Stage18Elite = ({ data }: { data: Enemy }) => {
     useFrame((state) => {
         const delta = state.clock.getDelta();
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -252,7 +256,7 @@ export const Stage18Elite = ({ data }: { data: Enemy }) => {
         }
 
         // Some fragments frozen, some moving
-        fragmentRefs.current.forEach((frag) => {
+        fragmentRefs.current.forEach((frag, i) => {
             if (!frag) return;
             if (!fragments[i].frozen) {
                 frag.rotation.x += delta * 2;
@@ -272,7 +276,7 @@ export const Stage18Elite = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={knotMatRef} color="#00FFFF" wireframe transparent opacity={0} />
             </mesh>
             {/* Frozen time fragments */}
-            {fragments.map((f) => (
+            {fragments.map((f, i) => (
                 <mesh
                     key={i}
                     ref={el => fragmentRefs.current[i] = el}
@@ -309,9 +313,10 @@ export const Stage18Boss = ({ data }: { data: Enemy }) => {
             color: ['#00FFFF', '#FF00FF'][Math.floor(Math.random() * 2)]
         })), []);
 
-    useFrame(() => {
+    useFrame((state) => {
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -336,7 +341,7 @@ export const Stage18Boss = ({ data }: { data: Enemy }) => {
         });
 
         // Digital artifacts flicker
-        artifactRefs.current.forEach((art) => {
+        artifactRefs.current.forEach((art, i) => {
             if (!art) return;
             art.visible = Math.random() > 0.3;
             art.position.copy(artifacts[i].basePos);
@@ -379,7 +384,7 @@ export const Stage18Boss = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#FF00FF" transparent opacity={0.7} />
             </mesh>
             {/* Digital artifacts */}
-            {artifacts.map((a) => (
+            {artifacts.map((a, i) => (
                 <mesh
                     key={i}
                     ref={el => artifactRefs.current[i] = el}

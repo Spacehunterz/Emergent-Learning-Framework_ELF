@@ -61,7 +61,7 @@ export const Stage2Asteroid = ({ data }: { data: Enemy }) => {
             mainMatRef.current.opacity = ease * (0.85 + Math.sin(t * 8) * 0.1);
         }
 
-        fragmentRefs.current.forEach((frag) => {
+        fragmentRefs.current.forEach((frag, i) => {
             if (!frag) return;
             frag.rotation.y += delta * fragments[i].rotSpeed;
             frag.rotation.z += delta * fragments[i].rotSpeed * 0.7;
@@ -90,7 +90,7 @@ export const Stage2Asteroid = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#ffffff" wireframe transparent opacity={0.4} />
             </mesh>
             {/* Orbiting crystal fragments */}
-            {fragments.map((frag) => (
+            {fragments.map((frag, i) => (
                 <mesh key={i} position={frag.position} scale={frag.scale} ref={el => fragmentRefs.current[i] = el}>
                     <cylinderGeometry args={[0.8, 0.8, 2, 6]} />
                     <meshBasicMaterial color="#8a2be2" wireframe transparent opacity={0.7} />
@@ -143,7 +143,7 @@ export const Stage2Drone = ({ data }: { data: Enemy }) => {
             if (rotor) rotor.rotation.y += delta * 15;
         });
 
-        beamMatRefs.current.forEach((mat) => {
+        beamMatRefs.current.forEach((mat, i) => {
             if (mat) {
                 const pulse = 0.4 + Math.sin(t * 8 + i * Math.PI / 2) * 0.4;
                 mat.opacity = pulse * ease;
@@ -156,7 +156,7 @@ export const Stage2Drone = ({ data }: { data: Enemy }) => {
         }
         trailPositions.current[0].copy(data.position);
 
-        trailRefs.current.forEach((trail) => {
+        trailRefs.current.forEach((trail, i) => {
             if (!trail) return;
             trail.position.copy(trailPositions.current[i]);
             if (trail.material instanceof THREE.MeshBasicMaterial) {
@@ -173,7 +173,7 @@ export const Stage2Drone = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={bodyMatRef} wireframe transparent opacity={0} />
             </mesh>
             {/* Rotors */}
-            {rotorPositions.map((pos) => (
+            {rotorPositions.map((pos, i) => (
                 <group key={i} position={pos}>
                     <mesh ref={el => rotorRefs.current[i] = el} rotation-x={Math.PI / 2}>
                         <torusGeometry args={[0.6, 0.08, 4, 8]} />
@@ -187,7 +187,7 @@ export const Stage2Drone = ({ data }: { data: Enemy }) => {
                 </group>
             ))}
             {/* Energy beams between rotors */}
-            {rotorPositions.map((pos) => {
+            {rotorPositions.map((pos, i) => {
                 const next = rotorPositions[(i + 1) % 4];
                 return (
                     <mesh key={`beam-${i}`}
@@ -243,7 +243,7 @@ export const Stage2Fighter = ({ data }: { data: Enemy }) => {
         }
 
         // Animate ribbon waves
-        ribbonRefs.current.forEach((ribbon) => {
+        ribbonRefs.current.forEach((ribbon, i) => {
             if (!ribbon) return;
             ribbon.rotation.x = Math.sin(t * 4 + phase + i) * 0.3;
             ribbon.scale.y = 0.8 + Math.sin(t * 3 + i * 2) * 0.2;
@@ -263,7 +263,7 @@ export const Stage2Fighter = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#ffffff" wireframe transparent opacity={0.6} />
             </mesh>
             {/* Energy ribbons */}
-            {[-0.5, 0.5].map((x) => (
+            {[-0.5, 0.5].map((x, i) => (
                 <mesh key={i} ref={el => ribbonRefs.current[i] = el}
                     position={[x, 0, -1.5]} scale={[0.1, 2, 0.02]}>
                     <boxGeometry args={[1, 1, 1]} />
@@ -304,7 +304,7 @@ export const Stage2Elite = ({ data }: { data: Enemy }) => {
             shieldMatRef.current.opacity = shieldPulse * ease;
         }
 
-        generatorRefs.current.forEach((gen) => {
+        generatorRefs.current.forEach((gen, i) => {
             if (!gen) return;
             const angle = t * 0.5 + (i * Math.PI / 2);
             gen.position.set(Math.cos(angle) * 2.5, Math.sin(t + i) * 0.5, Math.sin(angle) * 2.5);
@@ -359,7 +359,7 @@ export const Stage2Boss = ({ data }: { data: Enemy }) => {
         }
 
         // Animate legs
-        legRefs.current.forEach((leg) => {
+        legRefs.current.forEach((leg, i) => {
             if (!leg) return;
             const phase = i * 0.4 + (i < 4 ? 0 : Math.PI);
             const wave = Math.sin(t * 2 + phase);
@@ -381,7 +381,7 @@ export const Stage2Boss = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#ff00ff" wireframe transparent opacity={0.9} />
             </mesh>
             {/* 8 Legs */}
-            {Array.from({ length: 8 }).map((_) => {
+            {Array.from({ length: 8 }).map((_, i) => {
                 const angle = (i / 8) * Math.PI * 2;
                 return (
                     <group key={i} ref={el => legRefs.current[i] = el}

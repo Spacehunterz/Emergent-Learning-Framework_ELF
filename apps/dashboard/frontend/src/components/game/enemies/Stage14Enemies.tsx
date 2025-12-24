@@ -40,7 +40,8 @@ export const Stage14Asteroid = ({ data }: { data: Enemy }) => {
     useFrame((state) => {
         const delta = state.clock.getDelta();
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -68,7 +69,7 @@ export const Stage14Asteroid = ({ data }: { data: Enemy }) => {
 
         // Crystals cycle through colors with jitter
         colorPhase.current += delta * 2;
-        crystalRefs.current.forEach((crystal) => {
+        crystalRefs.current.forEach((crystal, i) => {
             if (!crystal || !(crystal.material instanceof THREE.MeshBasicMaterial)) return;
             const phase = (colorPhase.current + crystals[i].colorOffset) % (Math.PI * 2);
             if (phase < Math.PI * 0.66) crystal.material.color.set('#FF00FF');
@@ -93,7 +94,7 @@ export const Stage14Asteroid = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={shellMatRef} color="#666666" wireframe transparent opacity={0} />
             </mesh>
             {/* Interior crystals */}
-            {crystals.map((c) => (
+            {crystals.map((c, i) => (
                 <mesh
                     key={i}
                     ref={el => crystalRefs.current[i] = el}
@@ -125,7 +126,7 @@ export const Stage14Drone = ({ data }: { data: Enemy }) => {
     useFrame((state) => {
         const delta = state.clock.getDelta();
         if (!ref.current) return;
-        
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -163,7 +164,7 @@ export const Stage14Drone = ({ data }: { data: Enemy }) => {
         }
         trailPositions.current[0].copy(data.position);
 
-        trailRefs.current.forEach((trail) => {
+        trailRefs.current.forEach((trail, i) => {
             if (!trail) return;
             trail.position.copy(trailPositions.current[i]);
             if (trail.material instanceof THREE.MeshBasicMaterial) {
@@ -180,7 +181,7 @@ export const Stage14Drone = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={bodyMatRef} color="#00FFFF" transparent opacity={0} />
             </mesh>
             {/* Ghost trail */}
-            {[0, 1, 2, 3, 4].map(i => (
+            {[0, 1, 2, 3, 4].map((i) => (
                 <mesh
                     key={i}
                     ref={el => trailRefs.current[i] = el}
@@ -220,9 +221,10 @@ export const Stage14Fighter = ({ data }: { data: Enemy }) => {
         { pos: [0, -0.2, -0.4], rot: [-0.3, 0, 0], scale: [0.15, 0.8, 0.15], color: '#FFFF00' }
     ], []);
 
-    useFrame(() => {
+    useFrame((state) => {
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -234,7 +236,7 @@ export const Stage14Fighter = ({ data }: { data: Enemy }) => {
         ref.current.visible = visible;
 
         // Crystals pulse with internal light and random opacity flashes
-        crystalMatRefs.current.forEach((mat) => {
+        crystalMatRefs.current.forEach((mat, i) => {
             if (!mat) return;
             mat.opacity = ease * (0.6 + Math.sin(t * 4 + i * 0.5) * 0.3) * (Math.random() > 0.1 ? 1 : 0.3);
         });
@@ -242,7 +244,7 @@ export const Stage14Fighter = ({ data }: { data: Enemy }) => {
 
     return (
         <group ref={ref} scale={0}>
-            {crystals.map((c) => (
+            {crystals.map((c, i) => (
                 <mesh
                     key={i}
                     position={c.pos as [number, number, number]}
@@ -280,7 +282,8 @@ export const Stage14Elite = ({ data }: { data: Enemy }) => {
     useFrame((state) => {
         const delta = state.clock.getDelta();
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -299,7 +302,7 @@ export const Stage14Elite = ({ data }: { data: Enemy }) => {
         }
 
         // Facets shimmer and jitter
-        facetRefs.current.forEach((facet) => {
+        facetRefs.current.forEach((facet, i) => {
             if (!facet || !(facet.material instanceof THREE.MeshBasicMaterial)) return;
             facet.material.opacity = 0.5 + Math.sin(t * 5 + i) * 0.4;
 
@@ -320,7 +323,7 @@ export const Stage14Elite = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={torusMatRef} color="#FF00FF" wireframe transparent opacity={0.7} />
             </mesh>
             {/* Crystalline facets */}
-            {facets.map((f) => (
+            {facets.map((f, i) => (
                 <mesh
                     key={i}
                     ref={el => facetRefs.current[i] = el}
@@ -364,7 +367,8 @@ export const Stage14Boss = ({ data }: { data: Enemy }) => {
     useFrame((state) => {
         const delta = state.clock.getDelta();
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -392,7 +396,7 @@ export const Stage14Boss = ({ data }: { data: Enemy }) => {
         }
 
         // Interior crystals sparkle with random opacity
-        crystalRefs.current.forEach((crystal) => {
+        crystalRefs.current.forEach((crystal, i) => {
             if (!crystal || !(crystal.material instanceof THREE.MeshBasicMaterial)) return;
             crystal.material.opacity = (0.5 + Math.sin(t * 4 + crystals[i].phase) * 0.4) * (Math.random() > 0.1 ? 1 : 0.4);
         });
@@ -411,7 +415,7 @@ export const Stage14Boss = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={centerMatRef} color="#FFFF00" transparent opacity={0.9} />
             </mesh>
             {/* Interior crystal formations */}
-            {crystals.map((c) => (
+            {crystals.map((c, i) => (
                 <mesh
                     key={i}
                     ref={el => crystalRefs.current[i] = el}

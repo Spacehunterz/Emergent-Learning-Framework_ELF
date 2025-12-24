@@ -38,7 +38,8 @@ export const Stage12Asteroid = ({ data }: { data: Enemy }) => {
     useFrame((state) => {
         const delta = state.clock.getDelta();
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -66,7 +67,7 @@ export const Stage12Asteroid = ({ data }: { data: Enemy }) => {
         }
 
         // Energy nodes pulse with random crackling and jitter
-        nodeRefs.current.forEach((node) => {
+        nodeRefs.current.forEach((node, i) => {
             if (!node || !(node.material instanceof THREE.MeshBasicMaterial)) return;
             const crackle = Math.random() > 0.85 ? 1.5 : 1;
             node.material.opacity = (0.5 + Math.sin(t * 8 + nodes[i].phase) * 0.5) * crackle;
@@ -94,7 +95,7 @@ export const Stage12Asteroid = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#4169E1" wireframe transparent opacity={0.5} />
             </mesh>
             {/* Energy nodes */}
-            {nodes.map((n) => (
+            {nodes.map((n, i) => (
                 <mesh
                     key={i}
                     ref={el => nodeRefs.current[i] = el}
@@ -126,7 +127,8 @@ export const Stage12Drone = ({ data }: { data: Enemy }) => {
     useFrame((state) => {
         const delta = state.clock.getDelta();
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -145,7 +147,7 @@ export const Stage12Drone = ({ data }: { data: Enemy }) => {
         }
 
         // Rings rotate on different axes with electric arcs
-        ringRefs.current.forEach((ring) => {
+        ringRefs.current.forEach((ring, i) => {
             if (!ring) return;
             ring.rotation.z += delta * (2 + i);
             if (ring.material instanceof THREE.MeshBasicMaterial) {
@@ -160,7 +162,7 @@ export const Stage12Drone = ({ data }: { data: Enemy }) => {
         }
         trailPositions.current[0].copy(data.position);
 
-        trailRefs.current.forEach((trail) => {
+        trailRefs.current.forEach((trail, i) => {
             if (!trail) return;
             trail.position.copy(trailPositions.current[i]);
             if (trail.material instanceof THREE.MeshBasicMaterial) {
@@ -216,7 +218,8 @@ export const Stage12Fighter = ({ data }: { data: Enemy }) => {
     useFrame((state) => {
         const delta = state.clock.getDelta();
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -234,7 +237,7 @@ export const Stage12Fighter = ({ data }: { data: Enemy }) => {
 
         // Conductors arc with electricity
         arcPhase.current += delta * 15;
-        conductorMatRefs.current.forEach((mat) => {
+        conductorMatRefs.current.forEach((mat, i) => {
             if (!mat) return;
             const arc = Math.sin(arcPhase.current + i * Math.PI) > 0.7 ? 1 : 0.6;
             mat.opacity = arc;
@@ -278,7 +281,8 @@ export const Stage12Elite = ({ data }: { data: Enemy }) => {
     useFrame((state) => {
         const delta = state.clock.getDelta();
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -297,7 +301,7 @@ export const Stage12Elite = ({ data }: { data: Enemy }) => {
         }
 
         // Pulsing beam connections
-        nodeRefs.current.forEach((node) => {
+        nodeRefs.current.forEach((node, i) => {
             if (!node || !(node.material instanceof THREE.MeshBasicMaterial)) return;
             node.material.opacity = 0.6 + Math.sin(t * 4 + i) * 0.4;
         });
@@ -350,7 +354,8 @@ export const Stage12Boss = ({ data }: { data: Enemy }) => {
     useFrame((state) => {
         const delta = state.clock.getDelta();
         if (!ref.current) return;
-        
+        const t = state.clock.getElapsedTime();
+
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -384,7 +389,7 @@ export const Stage12Boss = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={ringMatRef} color="#4169E1" transparent opacity={0.8} />
             </mesh>
             {/* White spikes on ring */}
-            {spikes.map((s) => (
+            {spikes.map((s, i) => (
                 <mesh
                     key={i}
                     ref={el => spikeRefs.current[i] = el}

@@ -36,7 +36,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     setCommandPaletteOpen,
     commands,
     onDomainSelect,
-    selectedDomain
+    selectedDomain,
+    onTabChange
 }) => {
     const notifications = useNotificationContext()
     const { viewMode } = useCosmicSettings()
@@ -119,7 +120,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                         {/* Cosmic Views */}
                         {/* Cosmic Graph View */}
                         {activeTab === 'graph' && (
-                            <div className="fixed inset-0 z-10 pt-[120px] bg-black/40 backdrop-blur-sm animate-fade-in">
+                            <div
+                                className="fixed inset-0 z-10 pt-[120px] bg-black/40 backdrop-blur-sm animate-fade-in cursor-default"
+                                onClick={(e) => {
+                                    if (e.target === e.currentTarget && onTabChange) {
+                                        onTabChange('overview');
+                                    }
+                                }}
+                            >
                                 <CosmicGraphView
                                     onNodeClick={(node) => {
                                         if (onDomainSelect && node.domain) onDomainSelect(node.domain);
@@ -130,7 +138,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
                         {/* Cosmic Analytics View */}
                         {activeTab === 'analytics' && (
-                            <div className="fixed inset-0 z-10 pt-[120px] bg-black/80 backdrop-blur-md animate-fade-in">
+                            <div
+                                className="fixed inset-0 z-10 pt-[120px] bg-black/80 backdrop-blur-md animate-fade-in cursor-default"
+                                onClick={(e) => {
+                                    if (e.target === e.currentTarget && onTabChange) {
+                                        onTabChange('overview');
+                                    }
+                                }}
+                            >
                                 <CosmicAnalyticsView />
                             </div>
                         )}
