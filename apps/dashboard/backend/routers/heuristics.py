@@ -36,26 +36,18 @@ async def get_heuristics(
     with get_db(scope) as conn:
         cursor = conn.cursor()
 
-        # Different schemas for global vs project
-        if scope == "project":
-            # Project schema: uses validation_count, source (not source_type), no is_golden
-            query = """
-                SELECT id, domain, rule, explanation, confidence,
-                       validation_count as times_validated, 0 as times_violated,
-                       0 as is_golden, source as source_type, created_at,
-                       created_at as updated_at
-                FROM heuristics
-                WHERE 1=1
-            """
-        else:
-            # Global schema
-            query = """
-                SELECT id, domain, rule, explanation, confidence,
-                       times_validated, times_violated, is_golden,
-                       source_type, created_at, updated_at
-                FROM heuristics
-                WHERE 1=1
-            """
+        # UNIFY SCHEMA: Use the same schema for both global and project
+        # The underlying table structure 'heuristics' is now consistent across both.
+        # Project-specific logic (if any) should handle the same column names.
+        query = """
+            SELECT id, domain, rule, explanation, confidence,
+                   times_validated, times_violated,
+                   is_golden, source_type, created_at, updated_at
+            FROM heuristics
+            WHERE 1=1
+        """
+        
+        # (Legacy code removed - unifying query for consistency)
         params = []
 
         if domain:
@@ -65,10 +57,10 @@ async def get_heuristics(
         if golden_only and scope == "global":
             query += " AND is_golden = 1"
 
-        # Use correct column name based on scope
+        # Use correct column name based on unified schema
         sort_map = {
             "confidence": "confidence DESC",
-            "validated": "validation_count DESC" if scope == "project" else "times_validated DESC",
+            "validated": "times_validated DESC",
             "violated": "times_violated DESC",
             "recent": "created_at DESC"
         }
