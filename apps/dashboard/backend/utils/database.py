@@ -17,43 +17,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# Database paths
-def _import_get_base_path() -> Optional[callable]:
-    env_path = os.environ.get("ELF_BASE_PATH")
-    candidates = []
-    if env_path:
-        candidates.append(Path(env_path))
-
-    current = Path(__file__).resolve()
-    for parent in current.parents:
-        if (parent / "src" / "elf_paths.py").exists():
-            candidates.append(parent)
-            break
-
-    for base in candidates:
-        sys.path.insert(0, str(base / "src"))
-        try:
-            from elf_paths import get_base_path
-            return get_base_path
-        except ImportError:
-            continue
-    return None
-
-
 def get_base_path() -> Path:
-    imported = _import_get_base_path()
-    if imported is not None:
-        return imported(Path(__file__))
+    """
+    Get the base path of the repository.
+    Fixed resolution relative to this file to ensure we use the current workspace.
+    """
+    # .../apps/dashboard/backend/utils/database.py -> .../emergent-learning
+    return Path(__file__).resolve().parent.parent.parent.parent.parent
 
-    env_path = os.environ.get('ELF_BASE_PATH')
-    if env_path:
-        return Path(env_path)
 
-    current = Path(__file__).resolve()
-    for parent in current.parents:
-        if (parent / '.coordination').exists() or (parent / '.git').exists():
-            return parent
-    return Path.home() / ".claude" / "emergent-learning"
 
 EMERGENT_LEARNING_PATH = get_base_path()
 GLOBAL_DB_PATH = EMERGENT_LEARNING_PATH / "memory" / "index.db"
@@ -184,6 +156,8 @@ def get_db(scope: str = "global"):
     conn = sqlite3.connect(str(db_path), timeout=10.0)
     conn.row_factory = sqlite3.Row
     
+
+
     # Initialize game tables on connection (lightweight check)
     init_game_tables(conn)
 
