@@ -236,7 +236,6 @@ if ($Help) {
 }
 
 # Default: install all
-$InstallCore = $true
 $InstallDashboard = -not $NoDashboard -and -not $CoreOnly
 $InstallSwarm = -not $NoSwarm -and -not $CoreOnly
 
@@ -306,7 +305,6 @@ if ($InstallDashboard) {
     elseif (Get-Command node -ErrorAction SilentlyContinue) {
         $nodeVersion = node --version 2>&1
         Write-Host "  Node: $nodeVersion" -ForegroundColor Green
-        $hasNode = $true
     }
     else {
         # Auto-install Bun without prompting
@@ -315,7 +313,7 @@ if ($InstallDashboard) {
             # Download and run Bun installer (suppress noisy output)
             $ProgressPreference = 'SilentlyContinue'
             $ErrorActionPreference = 'SilentlyContinue'
-            irm bun.sh/install.ps1 | iex 2>&1 | Out-Null
+            Invoke-RestMethod bun.sh/install.ps1 | Invoke-Expression 2>&1 | Out-Null
             $ErrorActionPreference = 'Stop'
             
             # Refresh PATH for current session
@@ -439,7 +437,7 @@ elseif (-not (Test-Path $venvPythonPath)) {
 }
 else {
     # Test if venv python actually works
-    $testResult = & $venvPythonPath -c "import sys; sys.exit(0)" 2>&1
+    & $venvPythonPath -c "import sys; sys.exit(0)" 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  Existing venv Python not working, recreating..." -ForegroundColor Yellow
         Remove-Item -Path $venvDir -Recurse -Force -ErrorAction SilentlyContinue
@@ -530,7 +528,7 @@ else {
 # Copy hooks to emergent-learning directory (skip if in-place install)
 if (-not $InPlaceInstall) {
     $srcHooksDir = Join-Path $ScriptDir "src\hooks"
-    $dstHooksDir = Join-Path $EmergentLearningDir "hooks"
+    $srcHooksDir = Join-Path $ScriptDir "src\hooks"
     if (Test-Path $srcHooksDir) {
         Copy-Item -Path $srcHooksDir -Destination $EmergentLearningDir -Recurse -Force
     }
@@ -567,14 +565,14 @@ if (Test-Path $srcCommandsDir) {
 Write-Host "  Copied slash commands (/checkin, /search, /swarm)" -ForegroundColor Green
 
 # Initialize database
+# Initialize database
 $dbPath = Join-Path $MemoryDir "index.db"
-$sqlFile = Join-Path $MemoryDir "init_db.sql"
 
 if (-not (Test-Path $dbPath)) {
     # Initialize database using Python (most reliable cross-platform)
     $queryScript = Join-Path $dstQueryDir "query.py"
     if (Test-Path $queryScript) {
-        $initResult = & $pythonCmd $queryScript --validate 2>&1
+        & $pythonCmd $queryScript --validate 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) {
             Write-Host "  Initialized database" -ForegroundColor Green
         }
@@ -931,6 +929,36 @@ $elfContent
         }
     }
 }
+
+function Install-GitHooks {
+    # Install git pre-commit hook enforcement
+    # Priority: REPO_ROOT (dev env) -> ELF_DIR (if it happens to be a git repo)
+    $repoRootGit = Join-Path $BaseInstallDir ".git\hooks"
+    $elfDirGit = Join-Path $EmergentLearningDir ".git\hooks"
+    
+    $gitHooksDir = $null
+    if (Test-Path $repoRootGit) {
+        $gitHooksDir = $repoRootGit
+    }
+    elseif (Test-Path $elfDirGit) {
+        $gitHooksDir = $elfDirGit
+    }
+
+    $preCommitSrc = Join-Path $ScriptDir "tools\setup\git-hooks\pre-commit"
+    # Fallback to older location if moved
+    if (-not (Test-Path $preCommitSrc)) {
+        $preCommitSrc = Join-Path $ScriptDir "src\hooks\git-hooks\pre-commit"
+    }
+
+    if ($gitHooksDir -and (Test-Path $preCommitSrc)) {
+        $dest = Join-Path $gitHooksDir "pre-commit"
+        Copy-Item -Path $preCommitSrc -Destination $dest -Force
+        # No chmod needed on Windows
+        Write-Host "  [ELF] Git pre-commit hook installed to $gitHooksDir" -ForegroundColor Green
+    }
+}
+
+Install-GitHooks
 
 # === DONE ===
 Write-Host ""

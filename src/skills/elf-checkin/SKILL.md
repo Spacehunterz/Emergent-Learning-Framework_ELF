@@ -32,6 +32,8 @@ The checkin command is simple - just type `/checkin` to load framework context a
 This skill runs the new Python-based orchestrator:
 
 ```bash
+python ~/.claude/emergent-learning/elf.py checkin
+# OR directly:
 python ~/.claude/emergent-learning/src/query/checkin.py
 ```
 

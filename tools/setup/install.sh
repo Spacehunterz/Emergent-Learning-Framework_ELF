@@ -459,12 +459,19 @@ PYTHON_SCRIPT
 
 install_git_hooks() {
     # Install git pre-commit hook enforcement
-    local git_hooks_dir="$ELF_DIR/.git/hooks"
+    # Priority: REPO_ROOT (dev env) -> ELF_DIR (if it happens to be a git repo)
+    local git_hooks_dir=""
+    
+    if [ -d "$REPO_ROOT/.git/hooks" ]; then
+        git_hooks_dir="$REPO_ROOT/.git/hooks"
+    elif [ -d "$ELF_DIR/.git/hooks" ]; then
+        git_hooks_dir="$ELF_DIR/.git/hooks"
+    fi
 
-    if [ -d "$git_hooks_dir" ] && [ -f "$SCRIPT_DIR/git-hooks/pre-commit" ]; then
+    if [ -n "$git_hooks_dir" ] && [ -d "$git_hooks_dir" ] && [ -f "$SCRIPT_DIR/git-hooks/pre-commit" ]; then
         cp "$SCRIPT_DIR/git-hooks/pre-commit" "$git_hooks_dir/pre-commit"
         chmod +x "$git_hooks_dir/pre-commit"
-        echo "[ELF] Git pre-commit hook installed"
+        echo "[ELF] Git pre-commit hook installed to $git_hooks_dir"
     fi
 }
 
