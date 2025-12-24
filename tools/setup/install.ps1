@@ -91,8 +91,15 @@ function Invoke-NativeCommand {
         }
 
         # Run command and capture all output
-        $output = & $Command @argList 2>&1
-        $exitCode = $LASTEXITCODE
+        $exitCode = 0
+        try {
+            # Execute and pipe to null to avoid return value, but capture exit code
+            & $Command @argList 2>&1 | Out-Null
+            $exitCode = $LASTEXITCODE
+        }
+        catch {
+            $exitCode = 1
+        }
 
         if ($exitCode -eq 0) {
             if ($SuccessMessage) {
@@ -295,7 +302,6 @@ else {
 
 # Check Bun/Node (only if installing dashboard)
 $hasBun = $false
-$hasNode = $false
 if ($InstallDashboard) {
     if (Get-Command bun -ErrorAction SilentlyContinue) {
         $bunVersion = bun --version 2>&1
