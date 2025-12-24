@@ -1,0 +1,26 @@
+{
+  "id": "female",
+  "name": "Female",
+  "agent_type": null,
+  "description": "Female character (migrated from mouth_frames_female)",
+
+  "voice": {
+    "preset": "high",
+    "pitch_shift": 3,
+    "speed": 1.0,
+    "reference": "voice/reference.wav"
+  },
+
+  "appearance": {
+    "face": "face.png",
+    "frames_dir": "frames",
+    "size": [512, 512],
+    "position": "bottom-right"
+  },
+
+  "personality": {
+    "idle_phrases": ["..."],
+    "working_phrases": ["..."],
+    "complete_phrases": ["..."]
+  }
+}
