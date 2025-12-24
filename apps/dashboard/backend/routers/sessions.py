@@ -11,7 +11,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
 
-from config_loader import get_base_path
+from utils.database import get_base_path
 
 router = APIRouter(prefix="/api", tags=["sessions"])
 logger = logging.getLogger(__name__)

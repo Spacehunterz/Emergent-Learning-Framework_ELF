@@ -61,10 +61,15 @@ class SessionIndex:
         if projects_dir:
             self.projects_dir = projects_dir
         else:
-            from config_loader import get_base_path
-            base = get_base_path()
+            try:
+                from utils.database import get_base_path
+                self.base_path = get_base_path()
+            except ImportError:
+                # Fallback if utils.database is not available
+                self.base_path = Path.home() / ".claude" / "emergent-learning"
+
             # If base path is inside .claude/emergent-learning, projects is likely ../../projects
-            candidate = base.parent / "projects"
+            candidate = self.base_path.parent / "projects"
             if candidate.exists():
                 self.projects_dir = candidate
             else:
@@ -73,8 +78,11 @@ class SessionIndex:
         self._index: Dict[str, SessionMetadata] = {}
         self._last_scan: Optional[datetime] = None
         
-        from config_loader import get_base_path
-        self._db_path = get_base_path() / "memory" / "index.db"
+        try:
+            from utils.database import get_base_path
+            self._db_path = get_base_path() / "memory" / "index.db"
+        except ImportError:
+            self._db_path = Path.home() / ".claude" / "emergent-learning" / "memory" / "index.db"
 
     # Tools that commonly have large inputs (file contents)
     LARGE_INPUT_TOOLS = {"Read", "Write", "Edit", "NotebookEdit"}

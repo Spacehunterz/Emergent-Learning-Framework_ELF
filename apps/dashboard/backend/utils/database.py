@@ -12,6 +12,9 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
 from dataclasses import dataclass
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # Database paths
@@ -221,3 +224,262 @@ def get_project_db():
 def dict_from_row(row) -> dict:
     """Convert sqlite3.Row to dict."""
     return dict(row) if row else None
+
+
+async def initialize_database():
+    """Ensure database directory exists."""
+    GLOBAL_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    return True
+
+
+async def create_tables():
+    """Create all necessary database tables."""
+    with get_global_db() as conn:
+        cursor = conn.cursor()
+
+        # ==============================================================================
+        # Metrics
+        # ==============================================================================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                metric_type TEXT NOT NULL,
+                metric_name TEXT,
+                metric_value REAL,
+                context TEXT,
+                tags TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # ==============================================================================
+        # Heuristics
+        # ==============================================================================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS heuristics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                domain TEXT NOT NULL,
+                rule TEXT NOT NULL,
+                explanation TEXT,
+                source_type TEXT CHECK(source_type IN ('failure', 'success', 'observation', NULL)),
+                source_id INTEGER,
+                confidence REAL DEFAULT 0.5 CHECK(confidence >= 0.0 AND confidence <= 1.0),
+                times_validated INTEGER DEFAULT 0 CHECK(times_validated >= 0),
+                times_violated INTEGER DEFAULT 0 CHECK(times_violated >= 0),
+                is_golden BOOLEAN DEFAULT FALSE,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(domain, rule)
+            )
+        """)
+
+        # ==============================================================================
+        # Learnings
+        # ==============================================================================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS learnings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                type TEXT NOT NULL CHECK(type IN ('failure', 'success', 'observation', 'experiment')),
+                filepath TEXT NOT NULL UNIQUE,
+                title TEXT NOT NULL,
+                summary TEXT,
+                tags TEXT,
+                domain TEXT,
+                severity INTEGER DEFAULT 3 CHECK(severity >= 1 AND severity <= 5),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # ==============================================================================
+        # Decisions (Architecture)
+        # ==============================================================================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS decisions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                context TEXT,
+                options_considered TEXT,
+                decision TEXT,
+                rationale TEXT,
+                domain TEXT,
+                files_touched TEXT,
+                tests_added TEXT,
+                status TEXT DEFAULT 'accepted',
+                superseded_by INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # ==============================================================================
+        # Invariants
+        # ==============================================================================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS invariants (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                statement TEXT NOT NULL,
+                rationale TEXT,
+                domain TEXT,
+                scope TEXT DEFAULT 'codebase',
+                validation_type TEXT,
+                validation_code TEXT,
+                severity TEXT DEFAULT 'error',
+                status TEXT DEFAULT 'active',
+                violation_count INTEGER DEFAULT 0,
+                last_validated_at DATETIME,
+                last_violated_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # ==============================================================================
+        # Assumptions
+        # ==============================================================================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS assumptions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                assumption TEXT NOT NULL,
+                context TEXT,
+                source TEXT,
+                confidence REAL DEFAULT 0.5,
+                status TEXT DEFAULT 'active', -- active, verified, challenged, invalidated
+                domain TEXT,
+                verified_count INTEGER DEFAULT 0,
+                challenged_count INTEGER DEFAULT 0,
+                last_verified_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # ==============================================================================
+        # Workflows
+        # ==============================================================================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS workflows (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                nodes_json TEXT NOT NULL DEFAULT '[]',
+                config_json TEXT DEFAULT '{}',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS workflow_edges (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workflow_id INTEGER NOT NULL,
+                from_node TEXT NOT NULL,
+                to_node TEXT NOT NULL,
+                condition TEXT DEFAULT '',
+                priority INTEGER DEFAULT 100,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS workflow_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workflow_id INTEGER,
+                workflow_name TEXT,
+                status TEXT NOT NULL DEFAULT 'pending',
+                phase TEXT DEFAULT 'init',
+                input_json TEXT DEFAULT '{}',
+                output_json TEXT DEFAULT '{}',
+                context_json TEXT DEFAULT '{}',
+                total_nodes INTEGER DEFAULT 0,
+                completed_nodes INTEGER DEFAULT 0,
+                failed_nodes INTEGER DEFAULT 0,
+                started_at DATETIME,
+                completed_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                error_message TEXT,
+                FOREIGN KEY (workflow_id) REFERENCES workflows(id)
+            )
+        """)
+
+        # ==============================================================================
+        # Node Executions & Trails
+        # ==============================================================================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS node_executions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id INTEGER NOT NULL,
+                node_id TEXT NOT NULL,
+                node_name TEXT,
+                node_type TEXT NOT NULL DEFAULT 'single',
+                agent_id TEXT,
+                session_id TEXT,
+                prompt TEXT,
+                prompt_hash TEXT,
+                status TEXT NOT NULL DEFAULT 'pending',
+                result_json TEXT DEFAULT '{}',
+                result_text TEXT,
+                findings_json TEXT DEFAULT '[]',
+                files_modified TEXT DEFAULT '[]',
+                duration_ms INTEGER,
+                token_count INTEGER,
+                retry_count INTEGER DEFAULT 0,
+                started_at DATETIME,
+                completed_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                error_message TEXT,
+                error_type TEXT,
+                FOREIGN KEY (run_id) REFERENCES workflow_runs(id) ON DELETE CASCADE
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS trails (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id INTEGER,
+                location TEXT NOT NULL,
+                location_type TEXT DEFAULT 'file',
+                scent TEXT NOT NULL,
+                strength REAL DEFAULT 1.0,
+                agent_id TEXT,
+                node_id TEXT,
+                message TEXT,
+                tags TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                expires_at DATETIME,
+                FOREIGN KEY (run_id) REFERENCES workflow_runs(id)
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS conductor_decisions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id INTEGER NOT NULL,
+                decision_type TEXT NOT NULL,
+                decision_data TEXT DEFAULT '{}',
+                reason TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (run_id) REFERENCES workflow_runs(id) ON DELETE CASCADE
+            )
+        """)
+        
+        # ==============================================================================
+        # Session Summaries
+        # ==============================================================================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS session_summaries (
+                session_id TEXT PRIMARY KEY,
+                tool_summary TEXT,
+                content_summary TEXT,
+                conversation_summary TEXT,
+                files_touched TEXT,  -- JSON list
+                tool_counts TEXT,    -- JSON list
+                message_count INTEGER,
+                summarized_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                summarizer_model TEXT,
+                is_stale BOOLEAN DEFAULT 0
+            )
+        """)
+
+        conn.commit()

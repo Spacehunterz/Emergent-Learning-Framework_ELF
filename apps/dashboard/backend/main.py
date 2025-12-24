@@ -15,52 +15,22 @@ Run: uvicorn main:app --reload --port 8888
 import asyncio
 import logging
 import sys
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
 
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+
 # Load environment variables from .env file
 load_dotenv()
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from starlette.middleware.base import BaseHTTPMiddleware
-
-# Import utilities
-from utils import get_db, dict_from_row, ConnectionManager, auto_capture, init_project_context
-
-# Import routers
-from routers import (
-    analytics_router,
-    heuristics_router,
-    runs_router,
-    knowledge_router,
-    queries_router,
-    sessions_router,
-    admin_router,
-    fraud_router,
-    workflows_router,
-    context_router,
-    auth_router,
-    game_router,
-    setup_router
-)
-
-# Import router setup functions
-from routers.heuristics import set_manager as set_heuristics_manager
-from routers.knowledge import set_manager as set_knowledge_manager
-from routers.sessions import set_session_index
-from routers.admin import set_paths as set_admin_paths
-from routers.fraud import set_paths as set_fraud_paths
-from routers.workflows import set_paths as set_workflows_paths
-
-# Paths
-import os
-
-
+# Path import helpers
 def _import_get_base_path() -> Optional[callable]:
     env_path = os.environ.get("ELF_BASE_PATH")
     candidates = []
@@ -82,7 +52,6 @@ def _import_get_base_path() -> Optional[callable]:
             continue
     return None
 
-
 def get_base_path() -> Path:
     imported = _import_get_base_path()
     if imported is not None:
@@ -98,26 +67,40 @@ def get_base_path() -> Path:
             return parent
     return Path.home() / ".claude" / "emergent-learning"
 
+# Ensure src is in python path for models and utils
+current_dir = Path(__file__).resolve().parent
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
 EMERGENT_LEARNING_PATH = get_base_path()
-FRONTEND_PATH = Path(__file__).parent.parent / "frontend" / "dist"
+FRONTEND_PATH = current_dir.parent / "frontend" / "dist"
 
-# Import database initialization (must come after EMERGENT_LEARNING_PATH is defined)
-# Import from the query system
-import sys
-# Add src to path to allow importing query package
-if (EMERGENT_LEARNING_PATH / "src").exists():
-    sys.path.insert(0, str(EMERGENT_LEARNING_PATH / "src"))
-else:
-    sys.path.insert(0, str(EMERGENT_LEARNING_PATH))
-
-try:
-    from query.models import initialize_database, create_tables
-except ImportError:
-    # Try fully qualified if src not in path or other issue
-    from src.query.models import initialize_database, create_tables
-
-# Import session indexing
+# Internal imports
+from utils import (
+    get_db, dict_from_row,
+    ConnectionManager,
+    ProjectContext, init_project_context,
+    AutoCapture, auto_capture
+)
+from utils.database import initialize_database, create_tables
 from session_index import SessionIndex
+
+# Routers
+from routers import (
+    analytics_router,
+    heuristics_router,
+    runs_router,
+    knowledge_router,
+    queries_router,
+    sessions_router,
+    admin_router,
+    fraud_router,
+    workflows_router,
+    context_router,
+    auth_router,
+    game_router,
+    setup_router,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -244,6 +227,13 @@ manager = ConnectionManager()
 session_index = SessionIndex()
 
 # Inject dependencies into routers
+from routers.heuristics import set_manager as set_heuristics_manager
+from routers.knowledge import set_manager as set_knowledge_manager
+from routers.sessions import set_session_index
+from routers.admin import set_paths as set_admin_paths
+from routers.fraud import set_paths as set_fraud_paths
+from routers.workflows import set_paths as set_workflows_paths
+
 set_heuristics_manager(manager)
 set_knowledge_manager(manager)
 set_session_index(session_index)
