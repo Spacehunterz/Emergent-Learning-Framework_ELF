@@ -1,0 +1,23 @@
+# ShellCheck configuration for Emergent Learning Framework
+# Used by bash-language-server for linting shell scripts
+
+# Report all errors
+SC1090=warning
+SC1091=warning
+
+# Coding conventions
+SC2015=warning
+SC2086=warning
+SC2181=warning
+SC2162=warning
+
+# Performance
+SC2207=warning
+SC2016=warning
+
+# Readability
+SC2001=warning
+SC2003=warning
+
+# Optional features
+SC1008=info

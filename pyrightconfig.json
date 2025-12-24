@@ -1,0 +1,55 @@
+{
+  "typeCheckingMode": "basic",
+  "pythonVersion": "3.8",
+  "pythonPlatform": "Windows",
+
+  "include": ["src", "scripts", "query", "tools"],
+  "exclude": [".venv", "venv", ".git", "__pycache__", ".pytest_cache", "*.egg-info"],
+
+  "extraPaths": ["src"],
+
+  "stubPath": "stubs",
+  "typeshedPath": "",
+
+  "reportUnusedImport": "warning",
+  "reportUnusedVariable": "warning",
+  "reportUnusedClass": "warning",
+  "reportUnusedFunction": "warning",
+  "reportDuplicateImport": "error",
+  "reportPrivateImportUsage": "warning",
+  "reportConstantRedefinition": "error",
+
+  "reportIncompatibleMethodOverride": "warning",
+  "reportIncompatibleVariableOverride": "warning",
+  "reportAssignmentType": "warning",
+  "reportAttributeAccessIssue": "warning",
+  "reportCallIssue": "warning",
+  "reportArgumentType": "warning",
+  "reportReturnType": "warning",
+
+  "reportOptionalSubscript": "information",
+  "reportOptionalMemberAccess": "information",
+  "reportOptionalOperand": "information",
+  "reportOptionalIterable": "information",
+  "reportOptionalContextManager": "information",
+
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "warning",
+  "reportMissingTypeStubs": "information",
+
+  "reportUnknownParameterType": "information",
+  "reportUnknownVariableType": "information",
+  "reportUnknownMemberType": "information",
+  "reportUnknownArgumentType": "information",
+  "reportUnknownLambdaType": "information",
+
+  "reportGeneralTypeIssues": "warning",
+  "reportUnnecessaryIsInstance": "warning",
+  "reportUnnecessaryCast": "warning",
+  "reportUnnecessaryComparison": "warning",
+
+  "reportPrivateUsage": "warning",
+
+  "venvPath": ".",
+  "venv": ".venv"
+}

@@ -1,0 +1,27 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": false,
+
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.python",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  "pylance.analysis.typeCheckingMode": "basic",
+  "pylance.analysis.diagnosticMode": "workspace",
+
+  "python.analysis.extraPaths": ["src"],
+  "python.analysis.include": ["src", "scripts", "query", "tools"],
+  "python.analysis.exclude": [".venv", "venv", ".git", "__pycache__", ".pytest_cache"],
+
+  "python.linting.mypyEnabled": true,
+  "python.linting.mypyArgs": [
+    "--python-version=3.8",
+    "--strict",
+    "--no-implicit-reexport"
+  ]
+}
