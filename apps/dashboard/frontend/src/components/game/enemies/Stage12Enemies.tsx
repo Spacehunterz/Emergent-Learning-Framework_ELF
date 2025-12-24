@@ -127,7 +127,7 @@ export const Stage12Drone = ({ data }: { data: Enemy }) => {
     useFrame((state) => {
         const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+
 
         const ease = getSpawnEase(data.createdAt);
 

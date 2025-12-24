@@ -28,7 +28,7 @@ export const Stage18Asteroid = ({ data }: { data: Enemy }) => {
     useFrame((state) => {
         const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+
 
         const ease = getSpawnEase(data.createdAt);
 
@@ -101,9 +101,9 @@ export const Stage18Drone = ({ data }: { data: Enemy }) => {
         trailPositions.current = Array.from({ length: 5 }, () => new THREE.Vector3());
     }, []);
 
-    useFrame((state) => {
+    useFrame(() => {
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+
 
         const ease = getSpawnEase(data.createdAt);
 
@@ -313,9 +313,9 @@ export const Stage18Boss = ({ data }: { data: Enemy }) => {
             color: ['#00FFFF', '#FF00FF'][Math.floor(Math.random() * 2)]
         })), []);
 
-    useFrame((state) => {
+    useFrame(() => {
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+
 
         const ease = getSpawnEase(data.createdAt);
 
