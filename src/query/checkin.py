@@ -45,20 +45,39 @@ class CheckinOrchestrator:
 
     def __init__(self):
         """Initialize the checkin orchestrator."""
-        # Find ELF home - try multiple locations
-        self.elf_home = self._find_elf_home()
+        # Find ELF home using elf_paths if available
+        self.elf_home = self._resolve_elf_home()
         self.state_file = Path.home() / '.claude' / '.elf_checkin_state'
         self.selected_model = os.environ.get('ELF_MODEL', 'claude')
         self.is_first_checkin = self._check_first_checkin()
 
-    def _find_elf_home(self) -> Path:
-        """Find the ELF home directory by checking multiple locations."""
-        # Try 1: ~/.claude/emergent-learning (global install)
+    def _resolve_elf_home(self) -> Path:
+        """Resolve ELF home using centralized elf_paths or fallback."""
+        # Add parent directory (src) to sys.path to find elf_paths
+        try:
+            current_dir = Path(__file__).resolve().parent
+            src_dir = current_dir.parent
+            if str(src_dir) not in sys.path:
+                sys.path.insert(0, str(src_dir))
+            
+            from elf_paths import get_base_path
+            return get_base_path()
+        except ImportError:
+            # Fallback path discovery
+            return self._find_elf_home_fallback()
+
+    def _find_elf_home_fallback(self) -> Path:
+        """Find the ELF home directory by checking multiple locations (Legacy)."""
+        # Try 1: ELF_BASE_PATH env var
+        if os.environ.get('ELF_BASE_PATH'):
+            return Path(os.environ['ELF_BASE_PATH']).expanduser().resolve()
+
+        # Try 2: ~/.claude/emergent-learning (global install)
         global_elf = Path.home() / '.claude' / 'emergent-learning'
         if global_elf.exists():
             return global_elf
 
-        # Try 2: Parent directories from current script location
+        # Try 3: Parent directories from current script location
         current_file = Path(__file__).resolve()
         for parent in [current_file.parent.parent, current_file.parent.parent.parent]:
             if (parent / 'query' / 'query.py').exists():
