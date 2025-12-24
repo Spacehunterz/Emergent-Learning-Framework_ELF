@@ -269,7 +269,7 @@ async def get_learning_velocity(days: int = 30):
         cursor.execute("""
             SELECT COUNT(*) as heuristics_from_failures
             FROM heuristics
-            WHERE source = 'failure'
+            WHERE source_type = 'failure'
               AND created_at > datetime('now', ?)
         """, (f'-{days} days',))
         heuristics_from_failures = cursor.fetchone()[0] or 0

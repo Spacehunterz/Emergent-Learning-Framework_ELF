@@ -482,4 +482,29 @@ async def create_tables():
             )
         """)
 
+        # ==============================================================================
+        # Building Queries (Analytics)
+        # ==============================================================================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS building_queries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                query_text TEXT,
+                duration_ms INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # ==============================================================================
+        # Spike Reports (Analytics)
+        # ==============================================================================
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS spike_reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT,
+                usefulness_score INTEGER,
+                time_invested_minutes INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         conn.commit()
