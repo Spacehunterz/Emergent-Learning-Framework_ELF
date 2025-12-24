@@ -16,8 +16,6 @@ USAGE:
     python test_integration.py TestWorkflow # Run specific test class
 """
 
-import json
-import os
 import sys
 import sqlite3
 import tempfile

@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import { useRef, useMemo } from "react";
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Enemy, getSpawnEase } from '../systems/EnemySystem';
@@ -32,9 +32,10 @@ export const Stage19Asteroid = ({ data }: { data: Enemy }) => {
             scale: 0.8 + Math.random() * 0.3
         })), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -67,7 +68,7 @@ export const Stage19Asteroid = ({ data }: { data: Enemy }) => {
         }
 
         // Gold veins shimmer with jitter
-        veinRefs.current.forEach((vein, i) => {
+        veinRefs.current.forEach((vein) => {
             if (!vein || !(vein.material instanceof THREE.MeshBasicMaterial)) return;
             vein.material.opacity = 0.5 + Math.sin(t * 3 + i) * 0.3;
             // Angelic shimmer - veins jitter
@@ -92,7 +93,7 @@ export const Stage19Asteroid = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={glowMatRef} color="#FFFFFF" transparent opacity={0.2} />
             </mesh>
             {/* Gold veins */}
-            {veins.map((v, i) => (
+            {veins.map((v) => (
                 <mesh
                     key={i}
                     ref={el => veinRefs.current[i] = el}
@@ -115,9 +116,10 @@ export const Stage19Drone = ({ data }: { data: Enemy }) => {
     const bodyMatRef = useRef<THREE.MeshBasicMaterial>(null);
     const haloRef = useRef<THREE.Mesh>(null);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -188,9 +190,9 @@ export const Stage19Fighter = ({ data }: { data: Enemy }) => {
     const wingLeftRef = useRef<THREE.Mesh>(null);
     const wingRightRef = useRef<THREE.Mesh>(null);
 
-    useFrame((state, delta) => {
+    useFrame(() => {
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const phase = data.seed * Math.PI * 2;
         const ease = getSpawnEase(data.createdAt);
 
@@ -291,9 +293,10 @@ export const Stage19Elite = ({ data }: { data: Enemy }) => {
         { tiltX: 0, tiltY: Math.PI / 4, speed: 0.5, scale: 2.1 }
     ], []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -313,7 +316,7 @@ export const Stage19Elite = ({ data }: { data: Enemy }) => {
         }
 
         // Orrery rings rotate in opposite directions with shimmer
-        ringRefs.current.forEach((ring, i) => {
+        ringRefs.current.forEach((ring) => {
             if (!ring) return;
             ring.rotation.z += delta * rings[i].speed;
             // Angelic shimmer - rings pulse scale
@@ -341,7 +344,7 @@ export const Stage19Elite = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#ADD8E6" transparent opacity={0.5} />
             </mesh>
             {/* Golden orrery rings */}
-            {rings.map((r, i) => (
+            {rings.map((r) => (
                 <mesh
                     key={i}
                     ref={el => ringRefs.current[i] = el}
@@ -371,9 +374,9 @@ export const Stage19Boss = ({ data }: { data: Enemy }) => {
         { y: -0.5, scale: 1.0, phase: 1.0 }
     ], []);
 
-    useFrame((state, delta) => {
+    useFrame(() => {
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -402,7 +405,7 @@ export const Stage19Boss = ({ data }: { data: Enemy }) => {
         }
 
         // Wing pairs beat slowly with angelic shimmer
-        wingPairRefs.current.forEach((pair, i) => {
+        wingPairRefs.current.forEach((pair) => {
             if (!pair) return;
             const beat = Math.sin(t * 1.2 + wingPairs[i].phase) * 0.3;
 
@@ -448,7 +451,7 @@ export const Stage19Boss = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#FFD700" transparent opacity={0.9} />
             </mesh>
             {/* Three pairs of golden wings */}
-            {wingPairs.map((wp, i) => (
+            {wingPairs.map((wp) => (
                 <group key={i} ref={el => wingPairRefs.current[i] = el} position={[0, wp.y, -0.3]}>
                     {/* Left wing */}
                     <mesh position={[-1, 0, 0]} rotation={[0, 0, 0.3]} scale={[wp.scale, 0.4, 0.05]}>

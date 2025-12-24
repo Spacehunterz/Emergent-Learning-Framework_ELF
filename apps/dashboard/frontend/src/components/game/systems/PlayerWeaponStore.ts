@@ -103,7 +103,6 @@ export const usePlayerWeaponStore = create<PlayerWeaponState>((set, get) => ({
 
         // Calculate current level based on multiplier
         let currentLevel = 0
-        let currentValue = 1
         let newValue = 1
 
         switch (upgradeType) {

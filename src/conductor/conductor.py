@@ -19,7 +19,6 @@ Integration Points:
 """
 
 import json
-import os
 import sys
 import sqlite3
 import hashlib
@@ -77,8 +76,8 @@ def safe_eval_condition(condition: str, context: dict) -> bool:
     return False
 
 
-# Add parent utils to path for blackboard access
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "plugins" / "agent-coordination" / "utils"))
+# Add coordinator to path for blackboard access
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "coordinator"))
 
 try:
     from blackboard import Blackboard

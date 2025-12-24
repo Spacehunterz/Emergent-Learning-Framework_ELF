@@ -160,7 +160,7 @@ backup_age_days() {
     local backup_date=$1
     local current_date=$(date +%s)
     local backup_timestamp=$(date -d "${backup_date:0:8}" +%s 2>/dev/null || date -j -f "%Y%m%d" "${backup_date:0:8}" +%s 2>/dev/null)
-    echo $(( (current_date - backup_timestamp) / 86400 ))
+    echo "$(( (current_date - backup_timestamp) / 86400 ))"
 }
 
 # Keep daily backups for last 7 days

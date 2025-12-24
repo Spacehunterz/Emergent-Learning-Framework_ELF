@@ -2,7 +2,6 @@
 Violation query mixin - golden rule violations and summaries (async).
 """
 
-import re
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional
 

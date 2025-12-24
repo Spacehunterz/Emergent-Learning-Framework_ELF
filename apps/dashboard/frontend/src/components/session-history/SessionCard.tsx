@@ -5,9 +5,7 @@ import { SessionCardProps } from './types'
 export default function SessionCard({
   session,
   isExpanded,
-  isLoading,
-  onToggle,
-  formatTimestamp
+  onToggle
 }: SessionCardProps) {
   return (
     <div

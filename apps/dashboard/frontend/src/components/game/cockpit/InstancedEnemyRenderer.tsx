@@ -173,8 +173,6 @@ export const InstancedEnemyRenderer = () => {
         let titanCount = 0
 
         // We must update the attribute array directly
-        const droneDeathArray = droneDeathAttr.current?.array as Float32Array
-        const coreDeathArray = coreDeathAttr.current?.array as Float32Array
         const scoutDeathArray = scoutDeathAttr.current?.array as Float32Array
 
         const heavyDeathArray = heavyDeathAttr.current?.array as Float32Array
@@ -226,7 +224,6 @@ export const InstancedEnemyRenderer = () => {
             if (!e.position) continue // Safety
 
             // Death Progress (0 to 1)
-            let deathProgress = 0
             if (e.isDead || e.hp <= 0) {
                 // For now, if Dead, it's removed immediately by store.
                 // So we won't see death animation if they are removed instantly.
@@ -238,9 +235,6 @@ export const InstancedEnemyRenderer = () => {
 
             // Hack for death animation: use 'hp <= 0' check if we kept them in store
             // (Store implementation currently removes them instantly, so no anim for now. Functional first.)
-
-            // Color Logic
-            let colorHex = "#00ff00"
             // Use time prop from state if available, or just Date.now
             // e.lastHitTime is in seconds (from new EnemySystem)
             // time is also in seconds from state.clock

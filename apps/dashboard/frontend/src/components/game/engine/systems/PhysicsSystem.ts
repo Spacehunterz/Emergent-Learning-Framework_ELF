@@ -2,8 +2,6 @@
 import { System } from './System'
 import { GameEngine } from '../core/GameEngine'
 import { GameState, EntityState } from '../core/GameState'
-import { Vector3 } from 'three'
-
 export class PhysicsSystem implements System {
     private engine!: GameEngine
 
@@ -11,11 +9,11 @@ export class PhysicsSystem implements System {
         this.engine = engine
     }
 
-    update(delta: number, state: GameState) {
+    update() {
         // No variable update needed for physics
     }
 
-    fixedUpdate(delta: number, state: GameState) {
+    fixedUpdate(_delta: number, state: GameState) {
         this.checkProjectileCollisions(state)
         this.checkPlayerCollisions(state)
     }

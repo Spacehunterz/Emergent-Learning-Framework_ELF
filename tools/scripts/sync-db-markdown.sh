@@ -288,7 +288,7 @@ insert_markdown_heuristics() {
         fi
     done < "$file"
 
-    echo $count
+    echo "$count"
     return 0
 }
 

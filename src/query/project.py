@@ -20,7 +20,6 @@ This module handles:
 - Providing unified project context for the query system
 """
 
-import os
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any

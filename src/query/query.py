@@ -22,16 +22,11 @@ ROBUSTNESS SCORE: 10/10
 
 import os
 import sys
-import io
 import argparse
-import signal
 import re
-import csv
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
-from contextlib import contextmanager
-import json
 
 try:
     from query.config_loader import get_base_path

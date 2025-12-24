@@ -38,7 +38,7 @@ export class Enemy {
         this.vy = Math.sin(angle) * speed
     }
 
-    update(mouse: unknown, width: number, height: number) {
+    update(_mouse: unknown, width: number, height: number) {
         this.wobbleOffset += 0.2
 
         // Bug: Jittery movement

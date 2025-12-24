@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import { useRef, useMemo } from "react";
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Enemy, getSpawnEase } from '../systems/EnemySystem';
@@ -25,7 +25,8 @@ export const Stage13Asteroid = ({ data }: { data: Enemy }) => {
         z: 0.02 + Math.random() * 0.03
     }), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -100,7 +101,8 @@ export const Stage13Drone = ({ data }: { data: Enemy }) => {
         trailPositions.current = Array.from({ length: 5 }, () => new THREE.Vector3());
     }, []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -124,7 +126,7 @@ export const Stage13Drone = ({ data }: { data: Enemy }) => {
             particleGroupRef.current.rotation.y += delta * 0.5;
         }
 
-        particleRefs.current.forEach((p, i) => {
+        particleRefs.current.forEach((p) => {
             if (!p) return;
             const angle = t * particles[i].speed + particles[i].offset;
             p.position.x = Math.cos(angle) * particles[i].dist;
@@ -141,7 +143,7 @@ export const Stage13Drone = ({ data }: { data: Enemy }) => {
         }
         trailPositions.current[0].copy(data.position);
 
-        trailRefs.current.forEach((trail, i) => {
+        trailRefs.current.forEach((trail) => {
             if (!trail) return;
             trail.position.copy(trailPositions.current[i]);
             if (trail.material instanceof THREE.MeshBasicMaterial) {
@@ -159,7 +161,7 @@ export const Stage13Drone = ({ data }: { data: Enemy }) => {
             </mesh>
             {/* Swirling violet particles */}
             <group ref={particleGroupRef}>
-                {particles.map((_, i) => (
+                {particles.map((_) => (
                     <mesh
                         key={i}
                         ref={el => particleRefs.current[i] = el}
@@ -198,10 +200,10 @@ export const Stage13Fighter = ({ data }: { data: Enemy }) => {
         { rot: [0, -Math.PI / 3, 0], shift: 1 }
     ], []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
-        const phase = data.seed * Math.PI * 2;
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -213,7 +215,7 @@ export const Stage13Fighter = ({ data }: { data: Enemy }) => {
         ref.current.visible = visible;
 
         // Planes slowly shift and rearrange
-        planeRefs.current.forEach((plane, i) => {
+        planeRefs.current.forEach((plane) => {
             if (!plane) return;
             plane.rotation.y = planes[i].rot[1] + Math.sin(t * 0.5 + planes[i].shift) * 0.2;
             if (plane.material instanceof THREE.MeshBasicMaterial) {
@@ -225,7 +227,7 @@ export const Stage13Fighter = ({ data }: { data: Enemy }) => {
     return (
         <group ref={ref} scale={0}>
             {/* Intersecting shadow planes */}
-            {planes.map((p, i) => (
+            {planes.map((p) => (
                 <mesh
                     key={i}
                     ref={el => planeRefs.current[i] = el}
@@ -253,7 +255,8 @@ export const Stage13Elite = ({ data }: { data: Enemy }) => {
     const diskRef = useRef<THREE.Mesh>(null);
     const diskMatRef = useRef<THREE.MeshBasicMaterial>(null);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -313,7 +316,7 @@ export const Stage13Boss = ({ data }: { data: Enemy }) => {
             segments: 4
         })), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -332,7 +335,7 @@ export const Stage13Boss = ({ data }: { data: Enemy }) => {
         }
 
         // Tendrils lash out
-        tendrilRefs.current.forEach((tendril, i) => {
+        tendrilRefs.current.forEach((tendril) => {
             if (!tendril) return;
             tendril.rotation.x = Math.sin(t * 2 + i) * 0.3;
             tendril.rotation.z = Math.cos(t * 1.5 + i) * 0.2;
@@ -360,7 +363,7 @@ export const Stage13Boss = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#000000" transparent opacity={0.95} />
             </mesh>
             {/* Shadow tendrils */}
-            {tendrils.map((t, i) => (
+            {tendrils.map((t) => (
                 <group
                     key={i}
                     ref={el => tendrilRefs.current[i] = el}

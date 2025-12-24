@@ -1,15 +1,13 @@
 
-import React, { useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { GameEngine } from '../core/GameEngine'
 
 const TEMP_OBJ = new THREE.Object3D()
-const TEMP_COLOR = new THREE.Color()
 
 export const InstancedProjectileRenderer = ({ engine }: { engine: GameEngine }) => {
     const meshRef = useRef<THREE.InstancedMesh>(null)
-    const lightRef = useRef<THREE.InstancedMesh>(null) // Optional: Glow effect mesh
 
     useLayoutEffect(() => {
         if (meshRef.current) {

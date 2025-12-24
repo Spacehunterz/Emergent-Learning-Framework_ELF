@@ -22,7 +22,7 @@ interface ScopeState {
 
 export const useScopeStore = create<ScopeState>()(
     persist(
-        (set, get) => ({
+        (set) => ({
             scope: 'global',
             projectContext: null,
             isLoading: true,

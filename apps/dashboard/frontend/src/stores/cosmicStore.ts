@@ -74,7 +74,7 @@ const initialState: CosmicState = {
 
 export const useCosmicStore = create<CosmicState & CosmicActions>()(
   persist(
-    subscribeWithSelector((set, get) => ({
+    subscribeWithSelector((set) => ({
       ...initialState,
 
       // View actions

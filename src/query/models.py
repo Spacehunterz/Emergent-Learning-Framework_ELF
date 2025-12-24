@@ -21,7 +21,6 @@ from peewee import Check
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any
-import os
 
 try:
     from .config_loader import get_base_path as _get_base_path

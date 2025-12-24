@@ -17,7 +17,7 @@ interface PowerupState {
     expireOldPowerups: (maxAge?: number) => void
 }
 
-export const usePowerupStore = create<PowerupState>((set, get) => ({
+export const usePowerupStore = create<PowerupState>((set) => ({
     powerups: [],
 
     spawnPowerup: (position: Vector3, type) => {

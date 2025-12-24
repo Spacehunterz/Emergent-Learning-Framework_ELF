@@ -42,7 +42,7 @@ export class ProjectileSystem implements System {
         this.engine = engine
     }
 
-    update(delta: number, state: GameState) {
+    update(_delta: number, state: GameState) {
         // Input handling for firing
         if (state.input.fire && state.time.elapsed - this.lastFireTime > this.FIRE_RATE) {
             this.firePlayerProjectile(state)

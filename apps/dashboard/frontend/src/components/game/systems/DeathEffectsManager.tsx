@@ -125,7 +125,7 @@ const DisintegrateEffect = ({ data }: { data: DeathEffect }) => {
 
     return (
         <group ref={groupRef} position={data.position}>
-            {particles.map((p, i) => (
+            {particles.map((_p, i) => (
                 <mesh key={i}>
                     <tetrahedronGeometry args={[1, 0]} />
                     <meshBasicMaterial

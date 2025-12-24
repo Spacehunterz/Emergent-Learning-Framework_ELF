@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Command as CommandIcon, Navigation, Settings, Zap, BookOpen, Crown, ChevronRight } from 'lucide-react'
+import { Navigation, Settings, Zap, BookOpen } from 'lucide-react'
 import { useDataContext } from '../context/DataContext'
-import { fuzzyMatch, highlightMatches } from '../store/commandPaletteStore'
+import { fuzzyMatch } from '../store/commandPaletteStore'
 
 interface Command {
   id: string
@@ -19,21 +19,6 @@ interface CommandPaletteProps {
   onHeuristicSelect?: (heuristicId: number) => void
 }
 
-const categoryIcons: Record<string, React.ReactNode> = {
-  Navigation: <Navigation className="w-4 h-4" />,
-  Actions: <Zap className="w-4 h-4" />,
-  Settings: <Settings className="w-4 h-4" />,
-  System: <CommandIcon className="w-4 h-4" />,
-  Heuristics: <BookOpen className="w-4 h-4" />,
-}
-
-const categoryColors: Record<string, string> = {
-  Navigation: 'text-blue-400',
-  Actions: 'text-emerald-400',
-  Settings: 'text-purple-400',
-  System: 'text-amber-400',
-  Heuristics: 'text-cyan-400',
-}
 
 interface SearchResult {
   type: 'command' | 'heuristic'
@@ -45,28 +30,12 @@ interface SearchResult {
   data: Command | { id: number; rule: string; domain: string; confidence: number; is_golden: boolean }
 }
 
-function HighlightedText({ parts }: { parts: { text: string; highlighted: boolean }[] }) {
-  return (
-    <>
-      {parts.map((part, i) =>
-        part.highlighted ? (
-          <span key={i} className="text-purple-300 font-semibold bg-purple-500/20 rounded px-0.5">
-            {part.text}
-          </span>
-        ) : (
-          <span key={i}>{part.text}</span>
-        )
-      )}
-    </>
-  )
-}
 
-export function CommandPalette({ isOpen, onClose, commands, onHeuristicSelect }: CommandPaletteProps) {
+export function CommandPalette({ isOpen, onClose, commands }: CommandPaletteProps) {
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const [mode, setMode] = useState<'all' | 'commands' | 'heuristics'>('all')
+  const [mode] = useState<'all' | 'commands' | 'heuristics'>('all')
   const inputRef = useRef<HTMLInputElement>(null)
-  const listRef = useRef<HTMLDivElement>(null)
 
   const { heuristics } = useDataContext()
 

@@ -11,7 +11,6 @@ Usage:
     # Or copy the function directly into the QuerySystem class
 """
 
-import os
 import re
 from pathlib import Path
 from typing import List, Dict, Any, Optional

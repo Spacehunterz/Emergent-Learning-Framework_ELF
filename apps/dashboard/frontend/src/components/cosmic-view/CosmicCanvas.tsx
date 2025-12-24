@@ -2,7 +2,6 @@ import { Canvas } from '@react-three/fiber'
 import { Preload } from '@react-three/drei'
 import { CosmicLighting } from './CosmicLighting'
 import { CameraController } from './CameraController'
-import { CosmicBackground } from './CosmicBackground'
 import { SolarSystemGroup } from './SolarSystemGroup'
 import { UfoTrails } from './UfoTrails'
 import { useCosmicStore } from '../../stores'
@@ -31,14 +30,6 @@ export function CosmicCanvas({ cosmicData, onSelectBody }: CosmicCanvasProps) {
     return null
   }, [selectedBody, cosmicData])
 
-  const hoveredBodyData = useMemo(() => {
-    if (!hoveredBody || selectedBody) return null // Don't show hover if selected
-    for (const system of cosmicData.systems) {
-      const body = system.allBodies.find((b) => b.id === hoveredBody)
-      if (body) return { body, system }
-    }
-    return null
-  }, [hoveredBody, selectedBody, cosmicData])
 
   // Move camera to selected body
   useEffect(() => {
@@ -76,26 +67,6 @@ export function CosmicCanvas({ cosmicData, onSelectBody }: CosmicCanvasProps) {
     }
   }
 
-  // Calculate overlay position based on body
-  const getOverlayPosition = (
-    body: CelestialBody,
-    system: (typeof cosmicData.systems)[0]
-  ): [number, number, number] => {
-    // For sun, position above center
-    if (body.type === 'sun') {
-      return [
-        system.position[0],
-        system.position[1] + body.radius + 5,
-        system.position[2],
-      ]
-    }
-    // For planets/moons, estimate position (actual position updates via animation)
-    return [
-      system.position[0] + body.orbitRadius,
-      system.position[1] + body.radius + 3,
-      system.position[2],
-    ]
-  }
 
   return (
     <Canvas

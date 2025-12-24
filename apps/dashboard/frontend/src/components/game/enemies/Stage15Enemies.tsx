@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import { useRef, useMemo } from "react";
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Enemy, getSpawnEase } from '../systems/EnemySystem';
@@ -36,7 +36,8 @@ export const Stage15Asteroid = ({ data }: { data: Enemy }) => {
             phase: Math.random() * Math.PI * 2
         })), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -124,7 +125,7 @@ export const Stage15Drone = ({ data }: { data: Enemy }) => {
         trailPositions.current = Array.from({ length: 5 }, () => new THREE.Vector3());
     }, []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -224,7 +225,7 @@ export const Stage15Fighter = ({ data }: { data: Enemy }) => {
         { pos: [0.3, 0.15, 0.3], phase: 1.5 }
     ], []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -288,7 +289,8 @@ export const Stage15Elite = ({ data }: { data: Enemy }) => {
             length: 1.5 + Math.random() * 0.5
         })), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -367,7 +369,7 @@ export const Stage15Boss = ({ data }: { data: Enemy }) => {
             phase: Math.random() * Math.PI * 2
         })), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);

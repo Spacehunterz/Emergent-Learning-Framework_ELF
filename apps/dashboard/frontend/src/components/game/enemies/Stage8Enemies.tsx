@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import { useRef, useMemo } from "react";
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Enemy, getSpawnEase } from '../systems/EnemySystem';
@@ -25,7 +25,8 @@ export const Stage8Asteroid = ({ data }: { data: Enemy }) => {
         z: 0.08 + Math.random() * 0.1
     }), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -105,7 +106,8 @@ export const Stage8Drone = ({ data }: { data: Enemy }) => {
         trailPositions.current = Array.from({ length: 4 }, () => new THREE.Vector3());
     }, []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -194,7 +196,7 @@ export const Stage8Fighter = ({ data }: { data: Enemy }) => {
     const wingRightRef = useRef<THREE.Mesh>(null);
     const stingerMatRef = useRef<THREE.MeshBasicMaterial>(null);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const phase = data.seed * Math.PI * 2;
@@ -275,7 +277,8 @@ export const Stage8Elite = ({ data }: { data: Enemy }) => {
     const bodyMatRef = useRef<THREE.MeshBasicMaterial>(null);
     const larvaRefs = useRef<(THREE.Mesh | null)[]>([]);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -343,7 +346,7 @@ export const Stage8Boss = ({ data }: { data: Enemy }) => {
     const ribRefs = useRef<(THREE.Mesh | null)[]>([]);
     const mandibleRefs = useRef<(THREE.Mesh | null)[]>([]);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);

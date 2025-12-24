@@ -9,8 +9,6 @@ export class EnemySystem implements System {
     private pool: ObjectPool<EntityState>
     private lastSpawnTime: number = 0
     private spawnInterval: number = 1.5 // 1.5s
-    private projectiles: any // Reference to projectile system? Ideally decoupling via engine
-    private engine!: GameEngine // Injected in init
 
     // Stage Management
     private currentStage: number = 1
@@ -51,11 +49,10 @@ export class EnemySystem implements System {
 
 
 
-    initialize(engine: GameEngine) {
-        this.engine = engine
+    initialize(_engine: GameEngine) {
     }
 
-    update(delta: number, state: GameState) {
+    update() {
         // No variable update for now
     }
 
@@ -212,19 +209,12 @@ export class EnemySystem implements System {
         e.position.set(0, 20, -400) // Closer
     }
 
-    // Removed unused logic
-    private setupFighter(e: EntityState) { }
-    private setupAsteroid(e: EntityState) { }
-
-
 
     private updateAI(e: EntityState, delta: number, state: GameState) {
         const time = state.time.elapsed
 
         if (e.type === 'drone') {
             const z = e.position.z
-            const x = e.position.x
-            const y = e.position.y
 
             // SWARM LOGIC
             const STOP_DISTANCE = -50
@@ -287,7 +277,6 @@ export class EnemySystem implements System {
             e.position.x += Math.sin(time * 5 + e.seed) * 40 * delta // Swoop
             e.rotation.multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), 5 * delta))
         } else if (e.type === 'charger') {
-            const speed = e.position.z > -100 ? 150 : 30 // Rush when close? Or simple fast approach
             e.position.z += 60 * delta
             // Face player logic could go here
         } else if (e.type === 'sniper') {

@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import { useRef, useMemo } from "react";
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Enemy, getSpawnEase } from '../systems/EnemySystem';
@@ -29,7 +29,8 @@ export const Stage4Asteroid = ({ data }: { data: Enemy }) => {
         ).normalize()
     })), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -62,7 +63,7 @@ export const Stage4Asteroid = ({ data }: { data: Enemy }) => {
         }
 
         // Inner cubes rotate on different axes
-        innerCubeRefs.current.forEach((cube, i) => {
+        innerCubeRefs.current.forEach((cube) => {
             if (!cube) return;
             const c = innerCubes[i];
             cube.rotateOnAxis(c.axis, delta * c.rotSpeed);
@@ -87,7 +88,7 @@ export const Stage4Asteroid = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={mainMatRef} wireframe transparent opacity={0} />
             </mesh>
             {/* Nested rotating cubes */}
-            {innerCubes.map((c, i) => (
+            {innerCubes.map((c) => (
                 <mesh key={i} ref={el => innerCubeRefs.current[i] = el} scale={c.scale}>
                     <boxGeometry args={[1, 1, 1]} />
                     <meshBasicMaterial color={i % 2 === 0 ? "#9370db" : "#ffffff"} wireframe transparent opacity={0.6} />
@@ -129,7 +130,7 @@ export const Stage4Drone = ({ data }: { data: Enemy }) => {
         trailPositions.current = Array.from({ length: 4 }, () => new THREE.Vector3());
     }, []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const phase = data.seed * Math.PI * 2;
@@ -152,7 +153,7 @@ export const Stage4Drone = ({ data }: { data: Enemy }) => {
         }
 
         // Afterimages trail behind
-        afterimageRefs.current.forEach((img, i) => {
+        afterimageRefs.current.forEach((img) => {
             if (!img) return;
             const a = afterimages[i];
             img.position.z = -a.offset;
@@ -166,7 +167,7 @@ export const Stage4Drone = ({ data }: { data: Enemy }) => {
         }
         trailPositions.current[0].copy(data.position);
 
-        trailRefs.current.forEach((trail, i) => {
+        trailRefs.current.forEach((trail) => {
             if (!trail) return;
             trail.position.copy(trailPositions.current[i]);
             if (trail.material instanceof THREE.MeshBasicMaterial) {
@@ -188,7 +189,7 @@ export const Stage4Drone = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#ffffff" wireframe transparent opacity={0.7} />
             </mesh>
             {/* Afterimages */}
-            {afterimages.map((a, i) => (
+            {afterimages.map(() => (
                 <mesh key={i} ref={el => afterimageRefs.current[i] = el} scale={1}>
                     <tetrahedronGeometry args={[1, 0]} />
                     <meshBasicMaterial color="#9370db" wireframe transparent opacity={0} />
@@ -217,7 +218,7 @@ export const Stage4Fighter = ({ data }: { data: Enemy }) => {
     const riftMatRef = useRef<THREE.MeshBasicMaterial>(null);
     const clawRefs = useRef<(THREE.Group | null)[]>([]);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const phase = data.seed * Math.PI * 2;
@@ -241,7 +242,7 @@ export const Stage4Fighter = ({ data }: { data: Enemy }) => {
         }
 
         // Claws reaching out
-        clawRefs.current.forEach((claw, i) => {
+        clawRefs.current.forEach((claw) => {
             if (!claw) return;
             const reachCycle = (Math.sin(t * 2 + i * Math.PI / 2 + phase) + 1) / 2;
             claw.scale.y = 0.5 + reachCycle * 0.8;
@@ -290,7 +291,8 @@ export const Stage4Elite = ({ data }: { data: Enemy }) => {
 
     const auraLayers = useMemo(() => [1.5, 2, 2.5], []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -317,7 +319,7 @@ export const Stage4Elite = ({ data }: { data: Enemy }) => {
         }
 
         // Aura layers pulse outward
-        auraRefs.current.forEach((aura, i) => {
+        auraRefs.current.forEach((aura) => {
             if (!aura) return;
             const pulseCycle = (Math.sin(t * 1.5 + i * Math.PI / 2) + 1) / 2;
             const scale = auraLayers[i] + pulseCycle * 0.3;
@@ -326,7 +328,7 @@ export const Stage4Elite = ({ data }: { data: Enemy }) => {
         });
 
         // Orbiting void orbs
-        orbRefs.current.forEach((orb, i) => {
+        orbRefs.current.forEach((orb) => {
             if (!orb) return;
             const angle = t * 0.8 + (i * Math.PI / 2);
             const radius = 2;
@@ -358,7 +360,7 @@ export const Stage4Elite = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#ffffff" wireframe transparent opacity={0.9} />
             </mesh>
             {/* Reality-bending aura layers */}
-            {auraLayers.map((scale, i) => (
+            {auraLayers.map((scale) => (
                 <mesh key={i} ref={el => auraRefs.current[i] = el} scale={scale}>
                     <icosahedronGeometry args={[1, 1]} />
                     <meshBasicMaterial color="#9370db" wireframe transparent opacity={0} />
@@ -397,7 +399,8 @@ export const Stage4Boss = ({ data }: { data: Enemy }) => {
         phase: Math.random() * Math.PI * 2,
     })), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -426,7 +429,7 @@ export const Stage4Boss = ({ data }: { data: Enemy }) => {
         }
 
         // Eyes look around and blink
-        eyeRefs.current.forEach((eye, i) => {
+        eyeRefs.current.forEach((eye) => {
             if (!eye) return;
             const e = eyes[i];
             const blink = Math.sin(t * 2 + e.blinkPhase) > 0.7 ? 0 : 1;
@@ -435,7 +438,7 @@ export const Stage4Boss = ({ data }: { data: Enemy }) => {
         });
 
         // Tentacles writhe
-        tentacleRefs.current.forEach((tent, i) => {
+        tentacleRefs.current.forEach((tent) => {
             if (!tent) return;
             const te = tentacles[i];
             const wave = Math.sin(t * 2 + te.phase) * 0.5;
@@ -444,7 +447,7 @@ export const Stage4Boss = ({ data }: { data: Enemy }) => {
         });
 
         // Rings rotate
-        ringRefs.current.forEach((ring, i) => {
+        ringRefs.current.forEach((ring) => {
             if (!ring) return;
             ring.rotation.x += delta * (0.3 + i * 0.2);
             ring.rotation.y += delta * (0.2 + i * 0.15);
@@ -464,14 +467,14 @@ export const Stage4Boss = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#4b0082" wireframe transparent opacity={0.6} />
             </mesh>
             {/* Orbiting rings of impossible geometry */}
-            {[2, 2.5, 3].map((size, i) => (
+            {[2, 2.5, 3].map((size) => (
                 <mesh key={`ring-${i}`} ref={el => ringRefs.current[i] = el}>
                     <torusGeometry args={[size, 0.08, 6, 16]} />
                     <meshBasicMaterial color={i % 2 === 0 ? "#9370db" : "#ffffff"} wireframe transparent opacity={0.5} />
                 </mesh>
             ))}
             {/* Many eyes */}
-            {eyes.map((e, i) => (
+            {eyes.map((e) => (
                 <group key={i} ref={el => eyeRefs.current[i] = el} position={e.pos}>
                     <mesh scale={e.size}>
                         <sphereGeometry args={[1, 8, 6]} />
@@ -484,7 +487,7 @@ export const Stage4Boss = ({ data }: { data: Enemy }) => {
                 </group>
             ))}
             {/* Void tentacles */}
-            {tentacles.map((te, i) => (
+            {tentacles.map((te) => (
                 <mesh key={`tent-${i}`} ref={el => tentacleRefs.current[i] = el}
                     position={[Math.cos(te.angle) * 1.5, -0.5, Math.sin(te.angle) * 1.5]}
                     rotation-z={te.angle}

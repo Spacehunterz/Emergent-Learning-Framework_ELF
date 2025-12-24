@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Lock, Check, Zap, Target, Battery, ChevronUp, ShoppingCart, Shield, Heart } from 'lucide-react'
-import { WEAPON_TYPES, WeaponType, getAllWeapons } from '../systems/WeaponTypes'
+import { WEAPON_TYPES, getAllWeapons } from '../systems/WeaponTypes'
 import { usePlayerWeaponStore } from '../systems/PlayerWeaponStore'
 import { useSound } from '../systems/SoundManager'
 

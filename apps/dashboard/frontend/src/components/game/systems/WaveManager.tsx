@@ -291,7 +291,6 @@ export const WaveManager = () => {
         const phaseElapsed = now - phaseStartMs.current
 
         // Track kills by detecting enemy count decreases (excluding despawns which also reduce count)
-        const currentEnemyCount = enemies.length
 
         // Helper: Get FRESH enemy count - MUST call this before phase transitions
         // to avoid race conditions where spawning within the same frame makes

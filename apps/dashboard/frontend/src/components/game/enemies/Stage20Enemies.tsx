@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import { useRef, useMemo } from "react";
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Enemy, getSpawnEase } from '../systems/EnemySystem';
@@ -37,7 +37,8 @@ export const Stage20Asteroid = ({ data }: { data: Enemy }) => {
             phase: Math.random() * Math.PI * 2
         })), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -138,7 +139,7 @@ export const Stage20Drone = ({ data }: { data: Enemy }) => {
     const eyeMatRef = useRef<THREE.MeshBasicMaterial>(null);
     const hornRefs = useRef<(THREE.Mesh | null)[]>([]);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -227,7 +228,7 @@ export const Stage20Fighter = ({ data }: { data: Enemy }) => {
     const emberRefs = useRef<(THREE.Mesh | null)[]>([]);
     const veinRefs = useRef<(THREE.Mesh | null)[]>([]);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const phase = data.seed * Math.PI * 2;
@@ -343,7 +344,7 @@ export const Stage20Elite = ({ data }: { data: Enemy }) => {
     const eyeFireRefs = useRef<(THREE.Mesh | null)[]>([]);
     const hornMatRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -472,7 +473,7 @@ export const Stage20Boss = ({ data }: { data: Enemy }) => {
             phase: Math.random() * Math.PI * 2
         })), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);

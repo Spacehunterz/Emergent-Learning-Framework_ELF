@@ -38,8 +38,10 @@ export function Planet({
   }, [color])
 
   // Orbital animation - using refs to avoid React state updates
-  useFrame((state, delta) => {
+  useFrame((state) => {
     if (!groupRef.current) return
+
+    const delta = state.clock.getDelta()
 
     // Update orbital angle - Kepler speed already applied
     angleRef.current += body.orbitSpeed * delta

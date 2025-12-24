@@ -64,7 +64,7 @@ export class GameEngine {
     }
 
     // Render Interpolation Stub (optional for Systems to hook into if needed, though React usually handles this via Refs)
-    render(alpha: number) {
+    render() {
         // This is where we might interpolate positions for the Renderer to read
         // For now, React components read directly from state in useFrame
         // But for InstancedMesh, we might want to push data here.

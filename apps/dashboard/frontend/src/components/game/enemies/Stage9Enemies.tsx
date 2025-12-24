@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import { useRef, useMemo } from "react";
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Enemy, getSpawnEase } from '../systems/EnemySystem';
@@ -25,7 +25,8 @@ export const Stage9Asteroid = ({ data }: { data: Enemy }) => {
         z: 0.06 + Math.random() * 0.08
     }), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -98,7 +99,8 @@ export const Stage9Drone = ({ data }: { data: Enemy }) => {
         trailPositions.current = Array.from({ length: 4 }, () => new THREE.Vector3());
     }, []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -198,7 +200,8 @@ export const Stage9Fighter = ({ data }: { data: Enemy }) => {
     const wingRightRef = useRef<THREE.Mesh>(null);
     const axleRef = useRef<THREE.Mesh>(null);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const phase = data.seed * Math.PI * 2;
@@ -290,7 +293,8 @@ export const Stage9Elite = ({ data }: { data: Enemy }) => {
     const cog2Ref = useRef<THREE.Mesh>(null);
     const pistonRefs = useRef<(THREE.Mesh | null)[]>([]);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -369,7 +373,8 @@ export const Stage9Boss = ({ data }: { data: Enemy }) => {
     const gearRefs = useRef<(THREE.Mesh | null)[]>([]);
     const boilerMatRef = useRef<THREE.MeshBasicMaterial>(null);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);

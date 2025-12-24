@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import { useRef, useMemo } from "react";
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Enemy, getSpawnEase } from '../systems/EnemySystem';
@@ -25,7 +25,8 @@ export const Stage5Asteroid = ({ data }: { data: Enemy }) => {
         z: 0.1 + Math.random() * 0.15
     }), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -103,7 +104,8 @@ export const Stage5Drone = ({ data }: { data: Enemy }) => {
         trailPositions.current = Array.from({ length: 4 }, () => new THREE.Vector3());
     }, []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -190,7 +192,7 @@ export const Stage5Fighter = ({ data }: { data: Enemy }) => {
     const wingRightRef = useRef<THREE.Mesh>(null);
     const noseMatRef = useRef<THREE.MeshBasicMaterial>(null);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const phase = data.seed * Math.PI * 2;
@@ -260,7 +262,8 @@ export const Stage5Elite = ({ data }: { data: Enemy }) => {
     const ring2Ref = useRef<THREE.Mesh>(null);
     const spikesRef = useRef<THREE.Group>(null);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -349,7 +352,8 @@ export const Stage5Boss = ({ data }: { data: Enemy }) => {
     const crownRef = useRef<THREE.Group>(null);
     const spokesRef = useRef<THREE.Group>(null);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);

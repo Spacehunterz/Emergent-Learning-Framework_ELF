@@ -1,6 +1,6 @@
 
-import { useRef, useMemo } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useRef } from 'react'
+import { useThree } from '@react-three/fiber'
 import { useEnemyStore } from '../systems/EnemySystem'
 import * as THREE from 'three'
 
@@ -66,7 +66,7 @@ export const Radar = () => {
                 // Clamp to edge if out of range (optional, keeps them on screen)
                 const dist = Math.sqrt(x * x + y * y)
                 // Fade out at edge
-                const opacity = Math.max(0.2, 1 - (dist * 2))
+                Math.max(0.2, 1 - (dist * 2))
 
                 // Height indication? (Simple: Color shift if above/below?)
                 const isAbove = relativePos.y > 5

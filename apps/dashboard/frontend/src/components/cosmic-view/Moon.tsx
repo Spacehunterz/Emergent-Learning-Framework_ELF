@@ -30,8 +30,10 @@ export function Moon({
   }, [body.severity])
 
   // Orbital animation - orbitSpeed already calibrated for moons
-  useFrame((state, delta) => {
+  useFrame((state) => {
     if (!groupRef.current) return
+
+    const delta = state.clock.getDelta()
 
     // Moon orbits - Kepler speed already applied
     angleRef.current += body.orbitSpeed * delta

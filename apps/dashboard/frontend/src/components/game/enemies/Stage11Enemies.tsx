@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import { useRef, useMemo } from "react";
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Enemy, getSpawnEase } from '../systems/EnemySystem';
@@ -36,7 +36,8 @@ export const Stage11Asteroid = ({ data }: { data: Enemy }) => {
             scale: 0.15 + Math.random() * 0.15
         })), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -67,7 +68,7 @@ export const Stage11Asteroid = ({ data }: { data: Enemy }) => {
         }
 
         // Crystals glow independently and jitter
-        crystalRefs.current.forEach((crystal, i) => {
+        crystalRefs.current.forEach((crystal) => {
             if (!crystal || !(crystal.material instanceof THREE.MeshBasicMaterial)) return;
             crystal.material.opacity = 0.7 + Math.sin(t * 3 + i) * 0.3;
             // Random jitter
@@ -89,7 +90,7 @@ export const Stage11Asteroid = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={mainMatRef} color="#7CFC00" wireframe transparent opacity={0} />
             </mesh>
             {/* Yellow crystal protrusions */}
-            {crystals.map((c, i) => (
+            {crystals.map((c) => (
                 <mesh
                     key={i}
                     ref={el => crystalRefs.current[i] = el}
@@ -120,7 +121,8 @@ export const Stage11Drone = ({ data }: { data: Enemy }) => {
         trailPositions.current = Array.from({ length: 5 }, () => new THREE.Vector3());
     }, []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const ease = getSpawnEase(data.createdAt);
 
@@ -149,7 +151,7 @@ export const Stage11Drone = ({ data }: { data: Enemy }) => {
         }
         trailPositions.current[0].copy(data.position);
 
-        trailRefs.current.forEach((trail, i) => {
+        trailRefs.current.forEach((trail) => {
             if (!trail) return;
             trail.position.copy(trailPositions.current[i]);
             if (trail.material instanceof THREE.MeshBasicMaterial) {
@@ -199,7 +201,7 @@ export const Stage11Fighter = ({ data }: { data: Enemy }) => {
     const wingRightRef = useRef<THREE.Mesh>(null);
     const cockpitMatRef = useRef<THREE.MeshBasicMaterial>(null);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const phase = data.seed * Math.PI * 2;
@@ -271,18 +273,17 @@ export const Stage11Elite = ({ data }: { data: Enemy }) => {
             phase: Math.random() * Math.PI * 2
         })), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
-        ref.current.rotation.y += delta * 0.5;
         ref.current.scale.setScalar(ease * 36);
 
         if (bodyMatRef.current) {
             // Cycle between green and yellow
-            const cycle = Math.sin(t * 2) > 0 ? '#7CFC00' : '#FFFF00';
+            
             bodyMatRef.current.color.set(getHealthColor(data.hp, data.maxHp));
             bodyMatRef.current.opacity = ease * 0.8;
         }
@@ -293,7 +294,7 @@ export const Stage11Elite = ({ data }: { data: Enemy }) => {
             shardGroupRef.current.rotation.x += delta * 1.5;
         }
 
-        shardRefs.current.forEach((shard, i) => {
+        shardRefs.current.forEach((shard) => {
             if (!shard) return;
             shard.rotation.x += delta * 3;
             shard.rotation.z += delta * 2;
@@ -313,7 +314,7 @@ export const Stage11Elite = ({ data }: { data: Enemy }) => {
             </mesh>
             {/* Spinning shard shield */}
             <group ref={shardGroupRef}>
-                {shards.map((s, i) => (
+                {shards.map((s) => (
                     <mesh
                         key={i}
                         ref={el => shardRefs.current[i] = el}
@@ -349,7 +350,8 @@ export const Stage11Boss = ({ data }: { data: Enemy }) => {
         { pos: [-1.3, 0, 0.8], rot: [0, 0, -Math.PI / 4] }
     ], []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
         const t = state.clock.getElapsedTime();
         const ease = getSpawnEase(data.createdAt);
@@ -364,7 +366,7 @@ export const Stage11Boss = ({ data }: { data: Enemy }) => {
         }
 
         // Vents rotate
-        ventRefs.current.forEach((vent, i) => {
+        ventRefs.current.forEach((vent) => {
             if (!vent) return;
             vent.rotation.y += delta * (2 + i * 0.5);
         });
@@ -387,7 +389,7 @@ export const Stage11Boss = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#FFFF00" wireframe transparent opacity={0.4} />
             </mesh>
             {/* Rotating vents */}
-            {vents.map((v, i) => (
+            {vents.map((v) => (
                 <mesh
                     key={i}
                     ref={el => ventRefs.current[i] = el}

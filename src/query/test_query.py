@@ -21,7 +21,6 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-import query
 from query import (
     QuerySystem, ValidationError, DatabaseError, TimeoutError,
     ConfigurationError, format_output

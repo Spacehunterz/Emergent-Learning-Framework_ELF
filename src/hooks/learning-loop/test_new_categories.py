@@ -14,7 +14,6 @@ Total: 12 patterns, 36+ test cases
 
 import unittest
 import sys
-import re
 from pathlib import Path
 
 # Add the hook directory to path

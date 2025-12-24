@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Test the enhanced secret detection patterns."""
 
-import re
 import sys
 from pathlib import Path
 

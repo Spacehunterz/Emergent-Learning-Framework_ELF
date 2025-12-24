@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import { useRef, useMemo } from "react";
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Enemy, getSpawnEase } from '../systems/EnemySystem';
@@ -25,9 +25,10 @@ export const Stage7Asteroid = ({ data }: { data: Enemy }) => {
         z: 0.05 + Math.random() * 0.08
     }), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -55,7 +56,7 @@ export const Stage7Asteroid = ({ data }: { data: Enemy }) => {
         }
 
         // Glyphs glow in traveling band
-        glyphRefs.current.forEach((glyph, i) => {
+        glyphRefs.current.forEach((glyph) => {
             if (!glyph || !(glyph.material instanceof THREE.MeshBasicMaterial)) return;
             const wave = Math.sin(t * 2 - i * 0.5 + data.seed) * 0.5 + 0.5;
             glyph.material.opacity = 0.3 + wave * 0.5;
@@ -104,9 +105,10 @@ export const Stage7Drone = ({ data }: { data: Enemy }) => {
         trailPositions.current = Array.from({ length: 4 }, () => new THREE.Vector3());
     }, []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -131,7 +133,7 @@ export const Stage7Drone = ({ data }: { data: Enemy }) => {
         }
         trailPositions.current[0].copy(data.position);
 
-        trailRefs.current.forEach((trail, i) => {
+        trailRefs.current.forEach((trail) => {
             if (!trail) return;
             trail.position.copy(trailPositions.current[i]);
             if (trail.material instanceof THREE.MeshBasicMaterial) {
@@ -140,7 +142,7 @@ export const Stage7Drone = ({ data }: { data: Enemy }) => {
         });
 
         // Ridge highlights blink in sequence
-        ridgeRefs.current.forEach((ridge, i) => {
+        ridgeRefs.current.forEach((ridge) => {
             if (!ridge || !(ridge.material instanceof THREE.MeshBasicMaterial)) return;
             const blink = Math.sin(t * 6 + i * 1.5) > 0.5 ? 0.8 : 0.4;
             ridge.material.opacity = blink;
@@ -155,7 +157,7 @@ export const Stage7Drone = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={bodyMatRef} color="#D4A373" wireframe transparent opacity={0} />
             </mesh>
             {/* Stepped ziggurat ridges */}
-            {[0.3, 0.6, 0.9].map((y, i) => (
+            {[0.3, 0.6, 0.9].map((y) => (
                 <mesh key={i} ref={el => ridgeRefs.current[i] = el} position={[0, y - 0.5, 0]} scale={[1.1 - i * 0.2, 0.1, 1.1 - i * 0.2]}>
                     <boxGeometry args={[1, 1, 1]} />
                     <meshBasicMaterial color="#F4E1A6" transparent opacity={0.4} />
@@ -187,9 +189,9 @@ export const Stage7Fighter = ({ data }: { data: Enemy }) => {
     const wingRightRef = useRef<THREE.Mesh>(null);
     const spineMatRef = useRef<THREE.MeshBasicMaterial>(null);
 
-    useFrame((state, delta) => {
+    useFrame(() => {
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const phase = data.seed * Math.PI * 2;
         const ease = getSpawnEase(data.createdAt);
 
@@ -269,9 +271,10 @@ export const Stage7Elite = ({ data }: { data: Enemy }) => {
     const tabletRefs = useRef<(THREE.Mesh | null)[]>([]);
     const capRef = useRef<THREE.Mesh>(null);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -284,7 +287,7 @@ export const Stage7Elite = ({ data }: { data: Enemy }) => {
         }
 
         // Tablets orbit with jittering
-        tabletRefs.current.forEach((tablet, i) => {
+        tabletRefs.current.forEach((tablet) => {
             if (!tablet) return;
             const angle = t * 0.8 + (i * Math.PI);
             tablet.position.set(Math.cos(angle) * 2, 0, Math.sin(angle) * 2);
@@ -340,9 +343,10 @@ export const Stage7Boss = ({ data }: { data: Enemy }) => {
     const archRefs = useRef<(THREE.Mesh | null)[]>([]);
     const glyphRingRef = useRef<THREE.Mesh>(null);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -354,7 +358,7 @@ export const Stage7Boss = ({ data }: { data: Enemy }) => {
         }
 
         // Arches rotate slowly
-        archRefs.current.forEach((arch, i) => {
+        archRefs.current.forEach((arch) => {
             if (!arch) return;
             arch.rotation.z += delta * (0.1 + i * 0.05);
         });
@@ -395,7 +399,7 @@ export const Stage7Boss = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#F4E1A6" transparent opacity={0.7} />
             </mesh>
             {/* Corner pillars */}
-            {[[-1.8, -2], [1.8, -2], [-1.8, 2], [1.8, 2]].map((pos, i) => (
+            {[[-1.8, -2], [1.8, -2], [-1.8, 2], [1.8, 2]].map((pos) => (
                 <mesh key={i} position={[pos[0], pos[1], 0]} scale={[0.3, 0.8, 0.3]}>
                     <boxGeometry args={[1, 1, 1]} />
                     <meshBasicMaterial color="#8C5A3C" wireframe transparent opacity={0.7} />

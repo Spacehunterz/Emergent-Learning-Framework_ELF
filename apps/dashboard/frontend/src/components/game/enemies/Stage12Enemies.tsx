@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import { useRef, useMemo } from "react";
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Enemy, getSpawnEase } from '../systems/EnemySystem';
@@ -35,9 +35,10 @@ export const Stage12Asteroid = ({ data }: { data: Enemy }) => {
             phase: Math.random() * Math.PI * 2
         })), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -65,7 +66,7 @@ export const Stage12Asteroid = ({ data }: { data: Enemy }) => {
         }
 
         // Energy nodes pulse with random crackling and jitter
-        nodeRefs.current.forEach((node, i) => {
+        nodeRefs.current.forEach((node) => {
             if (!node || !(node.material instanceof THREE.MeshBasicMaterial)) return;
             const crackle = Math.random() > 0.85 ? 1.5 : 1;
             node.material.opacity = (0.5 + Math.sin(t * 8 + nodes[i].phase) * 0.5) * crackle;
@@ -93,7 +94,7 @@ export const Stage12Asteroid = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#4169E1" wireframe transparent opacity={0.5} />
             </mesh>
             {/* Energy nodes */}
-            {nodes.map((n, i) => (
+            {nodes.map((n) => (
                 <mesh
                     key={i}
                     ref={el => nodeRefs.current[i] = el}
@@ -122,9 +123,10 @@ export const Stage12Drone = ({ data }: { data: Enemy }) => {
         trailPositions.current = Array.from({ length: 5 }, () => new THREE.Vector3());
     }, []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -143,7 +145,7 @@ export const Stage12Drone = ({ data }: { data: Enemy }) => {
         }
 
         // Rings rotate on different axes with electric arcs
-        ringRefs.current.forEach((ring, i) => {
+        ringRefs.current.forEach((ring) => {
             if (!ring) return;
             ring.rotation.z += delta * (2 + i);
             if (ring.material instanceof THREE.MeshBasicMaterial) {
@@ -158,7 +160,7 @@ export const Stage12Drone = ({ data }: { data: Enemy }) => {
         }
         trailPositions.current[0].copy(data.position);
 
-        trailRefs.current.forEach((trail, i) => {
+        trailRefs.current.forEach((trail) => {
             if (!trail) return;
             trail.position.copy(trailPositions.current[i]);
             if (trail.material instanceof THREE.MeshBasicMaterial) {
@@ -211,9 +213,10 @@ export const Stage12Fighter = ({ data }: { data: Enemy }) => {
     const conductorMatRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
     const arcPhase = useRef(0);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -231,7 +234,7 @@ export const Stage12Fighter = ({ data }: { data: Enemy }) => {
 
         // Conductors arc with electricity
         arcPhase.current += delta * 15;
-        conductorMatRefs.current.forEach((mat, i) => {
+        conductorMatRefs.current.forEach((mat) => {
             if (!mat) return;
             const arc = Math.sin(arcPhase.current + i * Math.PI) > 0.7 ? 1 : 0.6;
             mat.opacity = arc;
@@ -272,9 +275,10 @@ export const Stage12Elite = ({ data }: { data: Enemy }) => {
     const nodeGroupRef = useRef<THREE.Group>(null);
     const nodeRefs = useRef<(THREE.Mesh | null)[]>([]);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -293,7 +297,7 @@ export const Stage12Elite = ({ data }: { data: Enemy }) => {
         }
 
         // Pulsing beam connections
-        nodeRefs.current.forEach((node, i) => {
+        nodeRefs.current.forEach((node) => {
             if (!node || !(node.material instanceof THREE.MeshBasicMaterial)) return;
             node.material.opacity = 0.6 + Math.sin(t * 4 + i) * 0.4;
         });
@@ -343,9 +347,10 @@ export const Stage12Boss = ({ data }: { data: Enemy }) => {
             phase: Math.random() * Math.PI * 2
         })), []);
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
+        const delta = state.clock.getDelta();
         if (!ref.current) return;
-        const t = state.clock.getElapsedTime();
+        
         const ease = getSpawnEase(data.createdAt);
 
         ref.current.position.copy(data.position);
@@ -363,7 +368,7 @@ export const Stage12Boss = ({ data }: { data: Enemy }) => {
         }
 
         // Spikes crackle with lightning
-        spikeRefs.current.forEach((spike, i) => {
+        spikeRefs.current.forEach((spike) => {
             if (!spike || !(spike.material instanceof THREE.MeshBasicMaterial)) return;
             const crackle = Math.random() > 0.92 ? 1.2 : 1;
             spike.material.opacity = 0.7 * crackle;
@@ -379,7 +384,7 @@ export const Stage12Boss = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={ringMatRef} color="#4169E1" transparent opacity={0.8} />
             </mesh>
             {/* White spikes on ring */}
-            {spikes.map((s, i) => (
+            {spikes.map((s) => (
                 <mesh
                     key={i}
                     ref={el => spikeRefs.current[i] = el}

@@ -984,11 +984,11 @@ Write-Host ""
 Write-Host "Next steps (copy-paste ready):"
 Write-Host ""
 Write-Host "  # 1. Review your configuration:"
-Write-Host "  cat ~/.claude/CLAUDE.md"
+Write-Host "  Get-Content ~/.claude/CLAUDE.md"
 Write-Host ""
 if ($InstallDashboard) {
     Write-Host "  # 2. Start the dashboard:"
-    Write-Host "  cd ~/.claude/emergent-learning/dashboard-app; ./run-dashboard.ps1"
+    Write-Host "  Set-Location ~/.claude/emergent-learning/dashboard-app; ./run-dashboard.ps1"
     Write-Host ""
 }
 Write-Host "  # 3. Test the query system:"
