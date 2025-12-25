@@ -231,14 +231,14 @@ if ($Help) {
     Write-Host "Options:"
     Write-Host "  -CoreOnly      Install only core (query system, hooks, golden rules)"
     Write-Host "  -NoDashboard   Skip dashboard installation (skips visual UI at localhost:3001)"
-    Write-Host "  -NoSwarm       Skip swarm/conductor installation"
+    Write-Host "  -NoSwarm       Skip swarm/conductor/watcher installation"
     Write-Host "  -All           Install everything (default)"
     Write-Host "  -Help          Show this help"
     Write-Host ""
     Write-Host "Components:"
     Write-Host "  Core:      Query system, learning hooks, golden rules, CLAUDE.md"
     Write-Host "  Dashboard: React UI for monitoring (localhost:3001)"
-    Write-Host "  Swarm:     Multi-agent conductor, agent personas"
+    Write-Host "  Swarm:     Multi-agent conductor, watcher, agent personas"
     exit 0
 }
 
@@ -374,7 +374,8 @@ if ($InstallSwarm) {
         (Join-Path $AgentsDir "architect"),
         (Join-Path $AgentsDir "skeptic"),
         (Join-Path $AgentsDir "creative"),
-        (Join-Path $EmergentLearningDir "conductor")
+        (Join-Path $EmergentLearningDir "conductor"),
+        (Join-Path $EmergentLearningDir "watcher")
     )
 }
 
@@ -616,6 +617,17 @@ if ($InstallSwarm) {
         Copy-IfDifferent -Source $_.FullName -Destination $conductorDst | Out-Null
     }
     Write-Host "  Copied conductor module" -ForegroundColor Green
+
+    # Copy watcher module (using safe copy)
+    $watcherSrc = Join-Path $srcDir "src\watcher"
+    $watcherDst = Join-Path $EmergentLearningDir "watcher"
+    Get-ChildItem -Path $watcherSrc -Filter "*.py" | ForEach-Object {
+        Copy-IfDifferent -Source $_.FullName -Destination $watcherDst | Out-Null
+    }
+    Get-ChildItem -Path $watcherSrc -Filter "*.md" -ErrorAction SilentlyContinue | ForEach-Object {
+        Copy-IfDifferent -Source $_.FullName -Destination $watcherDst | Out-Null
+    }
+    Write-Host "  Copied watcher module" -ForegroundColor Green
 
     # Copy agent personas (using safe copy)
     $srcAgentsDir = Join-Path $srcDir "src\agents"
@@ -985,7 +997,7 @@ if ($InstallDashboard) {
     Write-Host "  [+] Dashboard (localhost:3001)" -ForegroundColor Green
 }
 if ($InstallSwarm) {
-    Write-Host "  [+] Swarm (conductor, agent personas)" -ForegroundColor Green
+    Write-Host "  [+] Swarm (conductor, watcher, agent personas)" -ForegroundColor Green
 }
 Write-Host ""
 Write-Host "Next steps (copy-paste ready):"

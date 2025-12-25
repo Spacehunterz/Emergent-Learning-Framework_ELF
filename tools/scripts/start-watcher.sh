@@ -10,8 +10,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
-WATCHER_DIR="$PROJECT_DIR/src/watcher"
+ELF_DIR="$(dirname "$SCRIPT_DIR")"
+WATCHER_DIR="$ELF_DIR/watcher"
 LAUNCHER_SCRIPT="$WATCHER_DIR/launcher.py"
 
 # Detect Python command
@@ -37,8 +37,8 @@ if [ -z "$ANTHROPIC_API_KEY" ]; then
     exit 1
 fi
 
-# Change to project directory
-cd "$PROJECT_DIR"
+# Change to ELF directory
+cd "$ELF_DIR"
 
 # Parse arguments
 DAEMON=false
@@ -52,7 +52,7 @@ if [ "$DAEMON" = true ]; then
     nohup $PYTHON_CMD "$LAUNCHER_SCRIPT" > /dev/null 2>&1 &
     PID=$!
     echo "Watcher started with PID: $PID"
-    echo "Monitor logs at: $PROJECT_DIR/.coordination/launcher.log"
+    echo "Monitor logs at: $ELF_DIR/.coordination/launcher.log"
     echo "Stop with: kill $PID"
 else
     echo "Starting watcher (Ctrl+C to stop)..."
