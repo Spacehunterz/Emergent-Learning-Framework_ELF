@@ -5,6 +5,21 @@ All notable changes to the Emergent Learning Framework will be documented in thi
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-12-25
+
+### Fixed
+- **Windows Installer** - Fixed PowerShell Join-Path syntax errors for new users
+  - Join-Path now correctly uses 2 parameters instead of 3
+  - Fixed venv Python path, pip path, and hook path resolution
+  - Database validation now uses venv Python with all dependencies
+- **Python Script Installation** - Installer now copies all 21 Python scripts from tools/scripts/
+  - Fixes pre-commit hook failures (check-invariants.py missing)
+  - Ensures recording scripts (record-heuristic.py, etc.) are available
+- **Watcher Module Installation** - Tiered watcher system now properly installed
+  - src/watcher/ copied to ~/.claude/emergent-learning/watcher/
+  - start-watcher.sh updated to use correct installed paths
+  - Fixes "launcher.py not found" error when starting watcher
+
 ## [0.2.0] - 2025-12-16
 
 ### Added
