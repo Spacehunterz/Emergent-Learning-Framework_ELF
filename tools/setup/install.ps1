@@ -550,11 +550,16 @@ $scriptsDst = Join-Path $EmergentLearningDir "scripts"
 New-Item -ItemType Directory -Path $scriptsDst -Force | Out-Null
 $scriptsSource = Join-Path $ScriptDir "tools\scripts"
 if (Test-Path $scriptsSource) {
+    # Copy shell scripts
     Get-ChildItem -Path $scriptsSource -Filter "*.sh" -ErrorAction SilentlyContinue | ForEach-Object {
         Copy-IfDifferent -Source $_.FullName -Destination $scriptsDst | Out-Null
     }
+    # Copy Python scripts (includes check-invariants.py and others)
+    Get-ChildItem -Path $scriptsSource -Filter "*.py" -ErrorAction SilentlyContinue | ForEach-Object {
+        Copy-IfDifferent -Source $_.FullName -Destination $scriptsDst | Out-Null
+    }
 }
-Write-Host "  Copied recording scripts" -ForegroundColor Green
+Write-Host "  Copied recording scripts (shell and Python)" -ForegroundColor Green
 
 # Copy all slash commands (/checkin, /search, /swarm, etc.)
 $commandsDir = Join-Path $ClaudeDir "commands"
