@@ -429,7 +429,7 @@ if (Test-Path $elfPathsSrc) {
 # Create Python virtual environment for ELF
 $venvDir = Join-Path $EmergentLearningDir ".venv"
 $venvPython = $null
-$venvPythonPath = Join-Path $venvDir "Scripts" "python.exe"
+$venvPythonPath = Join-Path $venvDir "Scripts\python.exe"
 $needCreate = $false
 
 # Check if existing venv is valid
@@ -475,7 +475,7 @@ if ($needCreate) {
 # Determine venv python path and verify it works
 if (Test-Path $venvPythonPath) {
     $venvPython = $venvPythonPath
-    $venvPipCmd = Join-Path $venvDir "Scripts" "pip.exe"
+    $venvPipCmd = Join-Path $venvDir "Scripts\pip.exe"
     Write-Host "  Using venv Python: $venvPython" -ForegroundColor Green
 }
 else {
@@ -578,7 +578,9 @@ if (-not (Test-Path $dbPath)) {
     # Initialize database using Python (most reliable cross-platform)
     $queryScript = Join-Path $dstQueryDir "query.py"
     if (Test-Path $queryScript) {
-        & $pythonCmd $queryScript --validate 2>&1 | Out-Null
+        # Use venv Python if available, otherwise system Python
+        $pythonToUse = if ($venvPython) { $venvPython } else { $pythonCmd }
+        & $pythonToUse $queryScript --validate 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) {
             Write-Host "  Initialized database" -ForegroundColor Green
         }
@@ -726,13 +728,13 @@ Write-Host "  - Creating backup at settings.json.backup"
 Write-Host ""
 
 $hookLearningLoopCandidates = @(
-    (Join-Path $BaseInstallDir "hooks" "learning-loop"),
-    (Join-Path $BaseInstallDir "src" "hooks" "learning-loop"),
-    (Join-Path $EmergentLearningDir "hooks" "learning-loop")
+    (Join-Path $BaseInstallDir "hooks\learning-loop"),
+    (Join-Path $BaseInstallDir "src\hooks\learning-loop"),
+    (Join-Path $EmergentLearningDir "hooks\learning-loop")
 )
 $hookLearningLoop = ($hookLearningLoopCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1)
 if (-not $hookLearningLoop) {
-    $hookLearningLoop = Join-Path $BaseInstallDir "hooks" "learning-loop"
+    $hookLearningLoop = Join-Path $BaseInstallDir "hooks\learning-loop"
 }
 $hookMainDir = Split-Path $hookLearningLoop -Parent
 $preToolHook = Join-Path $hookLearningLoop "pre_tool_learning.py"
