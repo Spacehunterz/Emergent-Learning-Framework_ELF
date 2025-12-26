@@ -19,11 +19,10 @@ logger = logging.getLogger(__name__)
 
 def get_base_path() -> Path:
     """
-    Get the base path of the repository.
-    Fixed resolution relative to this file to ensure we use the current workspace.
+    Get the base path for ELF data.
+    Always use ~/.claude/emergent-learning as the single source of truth.
     """
-    # .../apps/dashboard/backend/utils/database.py -> .../emergent-learning
-    return Path(__file__).resolve().parent.parent.parent.parent.parent
+    return Path.home() / ".claude" / "emergent-learning"
 
 
 
