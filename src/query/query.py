@@ -27,6 +27,7 @@ import re
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
+import asyncio
 
 try:
     from query.config_loader import get_base_path
@@ -35,8 +36,8 @@ except ImportError:
 # Peewee ORM imports - full migration complete
 try:
     from query.models import (
-        db as peewee_db,
         initialize_database as init_peewee_db,
+        create_tables as async_create_tables,
         Heuristic,
         Learning,
         Experiment,
@@ -60,8 +61,8 @@ except ImportError:
     # Try alternate import path when running as script
     try:
         from models import (
-            db as peewee_db,
             initialize_database as init_peewee_db,
+            create_tables as async_create_tables,
             Heuristic,
             Learning,
             Experiment,
@@ -430,22 +431,16 @@ class QuerySystem:
         # SECURITY: Check if database file was just created, set secure permissions
         db_just_created = not self.db_path.exists()
 
-        # Create core tables using Peewee models (includes indexes defined in Meta)
-        core_models = [
-            Learning,
-            Heuristic,
-            Experiment,
-            CeoReview,
-            Decision,
-            Violation,
-            Invariant,
-        ]
-        peewee_db.create_tables(core_models, safe=True)
+        # Create tables using async peewee-aio via asyncio.run()
+        async def _ensure_tables():
+            await init_peewee_db(str(self.db_path))
+            await async_create_tables()
 
-        # Run ANALYZE for query planner
-        peewee_db.execute_sql("ANALYZE")
-
-        self._log_debug("Database tables created/verified via Peewee")
+        try:
+            asyncio.run(_ensure_tables())
+            self._log_debug("Database tables created/verified via async Peewee")
+        except Exception as e:
+            self._log_debug(f"Table creation warning: {e}")
 
         # SECURITY: Set secure file permissions on database file (owner read/write only)
         # This prevents other users from reading sensitive learning data
