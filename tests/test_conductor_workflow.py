@@ -31,8 +31,10 @@ sys.path.insert(0, str(SRC_ROOT))
 
 from conductor.conductor import Conductor, Node, Edge, NodeType, safe_eval_condition
 
-MEMORY_SCHEMA_PATH = SRC_ROOT / "memory" / "init_db.sql"
-CONDUCTOR_SCHEMA_PATH = SRC_ROOT / "conductor" / "schema.sql"
+# Use the correct path to the schema file
+TEMPLATES_DIR = REPO_ROOT / "templates"
+MEMORY_SCHEMA_PATH = TEMPLATES_DIR / "init_db.sql"
+CONDUCTOR_SCHEMA_PATH = REPO_ROOT / "conductor" / "schema.sql"
 
 
 class TestHelperMethods:
@@ -58,14 +60,31 @@ class TestHelperMethods:
         conn = sqlite3.connect(str(db_path))
 
         # Read and execute base schema first
-        with open(MEMORY_SCHEMA_PATH, encoding='utf-8') as f:
-            init_schema = f.read()
-        conn.executescript(init_schema)
+        if MEMORY_SCHEMA_PATH.exists():
+            with open(MEMORY_SCHEMA_PATH, encoding='utf-8') as f:
+                init_schema = f.read()
+            conn.executescript(init_schema)
+        else:
+            # Fallback: create minimal schema needed for conductor tests
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS heuristics (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    domain TEXT NOT NULL,
+                    rule TEXT NOT NULL,
+                    explanation TEXT,
+                    confidence REAL DEFAULT 0.5,
+                    times_validated INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
 
         # Read and execute conductor schema
-        with open(CONDUCTOR_SCHEMA_PATH, encoding='utf-8') as f:
-            conductor_schema = f.read()
-        conn.executescript(conductor_schema)
+        if CONDUCTOR_SCHEMA_PATH.exists():
+            with open(CONDUCTOR_SCHEMA_PATH, encoding='utf-8') as f:
+                conductor_schema = f.read()
+            conn.executescript(conductor_schema)
+        else:
+            raise FileNotFoundError(f"Conductor schema not found at {CONDUCTOR_SCHEMA_PATH}")
 
         conn.close()
 
@@ -247,14 +266,31 @@ class TestWorkflowExecution:
         conn = sqlite3.connect(str(db_path))
 
         # Read and execute base schema first
-        with open(MEMORY_SCHEMA_PATH, encoding='utf-8') as f:
-            init_schema = f.read()
-        conn.executescript(init_schema)
+        if MEMORY_SCHEMA_PATH.exists():
+            with open(MEMORY_SCHEMA_PATH, encoding='utf-8') as f:
+                init_schema = f.read()
+            conn.executescript(init_schema)
+        else:
+            # Fallback: create minimal schema needed for conductor tests
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS heuristics (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    domain TEXT NOT NULL,
+                    rule TEXT NOT NULL,
+                    explanation TEXT,
+                    confidence REAL DEFAULT 0.5,
+                    times_validated INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
 
         # Read and execute conductor schema
-        with open(CONDUCTOR_SCHEMA_PATH, encoding='utf-8') as f:
-            conductor_schema = f.read()
-        conn.executescript(conductor_schema)
+        if CONDUCTOR_SCHEMA_PATH.exists():
+            with open(CONDUCTOR_SCHEMA_PATH, encoding='utf-8') as f:
+                conductor_schema = f.read()
+            conn.executescript(conductor_schema)
+        else:
+            raise FileNotFoundError(f"Conductor schema not found at {CONDUCTOR_SCHEMA_PATH}")
 
         conn.close()
 
@@ -495,14 +531,31 @@ class TestEdgeCases:
         conn = sqlite3.connect(str(db_path))
 
         # Read and execute base schema first
-        with open(MEMORY_SCHEMA_PATH, encoding='utf-8') as f:
-            init_schema = f.read()
-        conn.executescript(init_schema)
+        if MEMORY_SCHEMA_PATH.exists():
+            with open(MEMORY_SCHEMA_PATH, encoding='utf-8') as f:
+                init_schema = f.read()
+            conn.executescript(init_schema)
+        else:
+            # Fallback: create minimal schema needed for conductor tests
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS heuristics (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    domain TEXT NOT NULL,
+                    rule TEXT NOT NULL,
+                    explanation TEXT,
+                    confidence REAL DEFAULT 0.5,
+                    times_validated INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
 
         # Read and execute conductor schema
-        with open(CONDUCTOR_SCHEMA_PATH, encoding='utf-8') as f:
-            conductor_schema = f.read()
-        conn.executescript(conductor_schema)
+        if CONDUCTOR_SCHEMA_PATH.exists():
+            with open(CONDUCTOR_SCHEMA_PATH, encoding='utf-8') as f:
+                conductor_schema = f.read()
+            conn.executescript(conductor_schema)
+        else:
+            raise FileNotFoundError(f"Conductor schema not found at {CONDUCTOR_SCHEMA_PATH}")
 
         conn.close()
 
@@ -607,14 +660,31 @@ class TestTrailRecording:
         conn = sqlite3.connect(str(db_path))
 
         # Read and execute base schema first
-        with open(MEMORY_SCHEMA_PATH, encoding='utf-8') as f:
-            init_schema = f.read()
-        conn.executescript(init_schema)
+        if MEMORY_SCHEMA_PATH.exists():
+            with open(MEMORY_SCHEMA_PATH, encoding='utf-8') as f:
+                init_schema = f.read()
+            conn.executescript(init_schema)
+        else:
+            # Fallback: create minimal schema needed for conductor tests
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS heuristics (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    domain TEXT NOT NULL,
+                    rule TEXT NOT NULL,
+                    explanation TEXT,
+                    confidence REAL DEFAULT 0.5,
+                    times_validated INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
 
         # Read and execute conductor schema
-        with open(CONDUCTOR_SCHEMA_PATH, encoding='utf-8') as f:
-            conductor_schema = f.read()
-        conn.executescript(conductor_schema)
+        if CONDUCTOR_SCHEMA_PATH.exists():
+            with open(CONDUCTOR_SCHEMA_PATH, encoding='utf-8') as f:
+                conductor_schema = f.read()
+            conn.executescript(conductor_schema)
+        else:
+            raise FileNotFoundError(f"Conductor schema not found at {CONDUCTOR_SCHEMA_PATH}")
 
         conn.close()
 

@@ -3,9 +3,16 @@ Tests for BlackboardV2 - Dual-write adapter for blackboard and event log.
 
 Extracted from embedded tests in coordinator/blackboard_v2.py.
 """
+import sys
+import os
 import tempfile
+from pathlib import Path
 import pytest
-from coordinator.blackboard_v2 import BlackboardV2
+
+# Add coordinator to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "coordinator"))
+
+from blackboard_v2 import BlackboardV2
 
 
 def test_dual_write_consistency():

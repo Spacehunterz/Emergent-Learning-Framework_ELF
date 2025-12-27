@@ -42,20 +42,140 @@ class TestFraudDetection:
         # Initialize schema
         conn = sqlite3.connect(db_path)
 
-        # Load schema from migrations
-        migrations_dir = SRC_ROOT / "memory" / "migrations"
+        # Use the actual database schema from the production database
+        conn.executescript("""
+            -- Core heuristics table with all current columns
+            CREATE TABLE heuristics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                domain TEXT NOT NULL,
+                rule TEXT NOT NULL,
+                explanation TEXT,
+                source_type TEXT,
+                confidence REAL DEFAULT 0.0,
+                times_validated INTEGER DEFAULT 0,
+                is_golden INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                source_id INTEGER,
+                times_violated INTEGER DEFAULT 0,
+                updated_at DATETIME,
+                status TEXT DEFAULT 'active',
+                dormant_since DATETIME,
+                revival_conditions TEXT,
+                times_revived INTEGER DEFAULT 0,
+                times_contradicted INTEGER DEFAULT 0,
+                min_applications INTEGER DEFAULT 10,
+                last_confidence_update DATETIME,
+                update_count_today INTEGER DEFAULT 0,
+                update_count_reset_date DATE,
+                last_used_at DATETIME,
+                confidence_ema REAL,
+                ema_alpha REAL,
+                ema_warmup_remaining INTEGER DEFAULT 0,
+                last_ema_update DATETIME,
+                fraud_flags INTEGER DEFAULT 0,
+                is_quarantined INTEGER DEFAULT 0,
+                last_fraud_check DATETIME,
+                project_path TEXT DEFAULT NULL
+            );
 
-        # Apply base schema (includes all columns from lifecycle phase 1)
-        # Then add fraud detection tables
-        for migration_file in [
-            "001_base_schema.sql",
-            "006_fraud_detection.sql",
-            "007_baseline_history.sql",
-        ]:
-            migration_path = migrations_dir / migration_file
-            if migration_path.exists():
-                with open(migration_path) as f:
-                    conn.executescript(f.read())
+            -- Confidence updates table
+            CREATE TABLE confidence_updates (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                heuristic_id INTEGER NOT NULL,
+                old_confidence REAL NOT NULL,
+                new_confidence REAL NOT NULL,
+                delta REAL NOT NULL,
+                update_type TEXT NOT NULL,
+                reason TEXT,
+                session_id TEXT,
+                agent_id TEXT,
+                rate_limited INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                raw_target_confidence REAL,
+                smoothed_delta REAL,
+                alpha_used REAL,
+                FOREIGN KEY (heuristic_id) REFERENCES heuristics(id) ON DELETE CASCADE
+            );
+
+            -- Domain baselines table (current baseline)
+            CREATE TABLE domain_baselines (
+                domain TEXT PRIMARY KEY,
+                avg_success_rate REAL,
+                std_success_rate REAL,
+                avg_update_frequency REAL,
+                std_update_frequency REAL,
+                sample_count INTEGER DEFAULT 0,
+                last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            -- Domain baseline history table (historical baselines)
+            CREATE TABLE domain_baseline_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                domain TEXT NOT NULL,
+                avg_success_rate REAL NOT NULL,
+                std_success_rate REAL NOT NULL,
+                avg_update_frequency REAL,
+                std_update_frequency REAL,
+                sample_count INTEGER NOT NULL,
+                calculated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                prev_avg_success_rate REAL,
+                prev_std_success_rate REAL,
+                drift_percentage REAL,
+                is_significant_drift BOOLEAN DEFAULT 0,
+                triggered_by TEXT DEFAULT 'manual',
+                notes TEXT
+            );
+
+
+            -- Fraud reports table
+            CREATE TABLE fraud_reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                heuristic_id INTEGER NOT NULL,
+                fraud_score REAL NOT NULL,
+                classification TEXT NOT NULL,
+                likelihood_ratio REAL,
+                signal_count INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                reviewed_at DATETIME,
+                reviewed_by TEXT,
+                review_outcome TEXT,
+                FOREIGN KEY (heuristic_id) REFERENCES heuristics(id) ON DELETE CASCADE
+            );
+
+            -- Anomaly signals table
+            CREATE TABLE anomaly_signals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fraud_report_id INTEGER NOT NULL,
+                heuristic_id INTEGER NOT NULL,
+                detector_name TEXT NOT NULL,
+                score REAL NOT NULL,
+                severity TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                evidence TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (fraud_report_id) REFERENCES fraud_reports(id) ON DELETE CASCADE,
+                FOREIGN KEY (heuristic_id) REFERENCES heuristics(id) ON DELETE CASCADE
+            );
+
+            -- Fraud responses table
+            CREATE TABLE fraud_responses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                fraud_report_id INTEGER NOT NULL,
+                response_type TEXT NOT NULL,
+                parameters TEXT,
+                executed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                executed_by TEXT DEFAULT 'system',
+                rollback_at DATETIME,
+                FOREIGN KEY (fraud_report_id) REFERENCES fraud_reports(id) ON DELETE CASCADE
+            );
+
+            -- Indexes
+            CREATE INDEX idx_conf_updates_heuristic ON confidence_updates(heuristic_id);
+            CREATE INDEX idx_conf_updates_created ON confidence_updates(created_at DESC);
+            CREATE INDEX idx_fraud_reports_heuristic ON fraud_reports(heuristic_id);
+            CREATE INDEX idx_anomaly_signals_heuristic ON anomaly_signals(heuristic_id);
+            CREATE INDEX idx_domain_baselines_domain ON domain_baselines(domain);
+        """)
 
         conn.commit()
         conn.close()

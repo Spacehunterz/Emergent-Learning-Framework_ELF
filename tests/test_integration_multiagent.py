@@ -64,6 +64,9 @@ class BlackboardV2WithClaimChains(BlackboardV2):
         self._operation_count = 0
         self._validation_interval = 10
 
+        # Initialize _log_divergence attribute (needed by BlackboardV2 methods)
+        self._log_divergence = True
+
 
 class TimelineLogger:
     """Thread-safe timeline event logger."""

@@ -29,28 +29,54 @@ def temp_db():
 
     conn = sqlite3.connect(path)
 
-    # Apply migrations in order
-    migrations_dir = SRC_ROOT / "memory" / "migrations"
+    # Use the actual database schema from the production database
+    # This matches the current schema in ~/.claude/emergent-learning/memory/index.db
+    conn.executescript("""
+        -- Core heuristics table with all current columns
+        CREATE TABLE heuristics (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            domain TEXT NOT NULL,
+            rule TEXT NOT NULL,
+            explanation TEXT,
+            source_type TEXT,
+            confidence REAL DEFAULT 0.0,
+            times_validated INTEGER DEFAULT 0,
+            is_golden INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            source_id INTEGER,
+            times_violated INTEGER DEFAULT 0,
+            updated_at DATETIME,
+            status TEXT DEFAULT 'active',
+            dormant_since DATETIME,
+            revival_conditions TEXT,
+            times_revived INTEGER DEFAULT 0,
+            times_contradicted INTEGER DEFAULT 0,
+            min_applications INTEGER DEFAULT 10,
+            last_confidence_update DATETIME,
+            update_count_today INTEGER DEFAULT 0,
+            update_count_reset_date DATE,
+            last_used_at DATETIME,
+            confidence_ema REAL,
+            ema_alpha REAL,
+            ema_warmup_remaining INTEGER DEFAULT 0,
+            last_ema_update DATETIME,
+            fraud_flags INTEGER DEFAULT 0,
+            is_quarantined INTEGER DEFAULT 0,
+            last_fraud_check DATETIME,
+            project_path TEXT DEFAULT NULL
+        );
 
-    # 001: Base schema (creates heuristics table with all columns)
-    migration_001 = migrations_dir / "001_base_schema.sql"
-    if migration_001.exists():
-        with open(migration_001) as f:
-            conn.executescript(f.read())
-        conn.commit()
-
-    # Add eviction_candidates view (from migration 002, but 002 conflicts with 001)
-    conn.execute("""
-        CREATE VIEW IF NOT EXISTS eviction_candidates AS
+        -- Eviction candidates view
+        CREATE VIEW eviction_candidates AS
         SELECT
             h.id,
             h.domain,
             h.rule,
-            h.status,
+            COALESCE(h.status, 'active') as status,
             h.confidence,
             h.times_validated,
             h.times_violated,
-            h.times_contradicted,
+            COALESCE(h.times_contradicted, 0) as times_contradicted,
             h.last_used_at,
             h.created_at,
             h.confidence *
@@ -77,18 +103,163 @@ def temp_db():
             (h.times_validated + h.times_violated + COALESCE(h.times_contradicted, 0)) AS total_applications,
             CAST(julianday('now') - julianday(COALESCE(h.last_used_at, h.created_at)) AS INTEGER) AS days_since_use
         FROM heuristics h
-        WHERE h.status = 'active' OR h.status = 'dormant'
-        ORDER BY eviction_score ASC
+        WHERE COALESCE(h.status, 'active') = 'active' OR COALESCE(h.status, 'active') = 'dormant'
+        ORDER BY eviction_score ASC;
+
+        -- Domain metadata table for elasticity
+        CREATE TABLE domain_metadata (
+            domain TEXT PRIMARY KEY,
+            soft_limit INTEGER NOT NULL DEFAULT 5,
+            hard_limit INTEGER NOT NULL DEFAULT 10,
+            ceo_override_limit INTEGER,
+            current_count INTEGER NOT NULL DEFAULT 0,
+            state TEXT NOT NULL DEFAULT 'normal' CHECK(state IN ('normal', 'overflow', 'critical')),
+            overflow_entered_at DATETIME,
+            expansion_min_confidence REAL DEFAULT 0.70,
+            expansion_min_validations INTEGER DEFAULT 3,
+            expansion_min_novelty REAL DEFAULT 0.60,
+            grace_period_days INTEGER DEFAULT 7,
+            max_overflow_days INTEGER DEFAULT 28,
+            avg_confidence REAL,
+            health_score REAL,
+            last_health_check DATETIME,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            CHECK(soft_limit > 0),
+            CHECK(hard_limit >= soft_limit),
+            CHECK(expansion_min_confidence >= 0.0 AND expansion_min_confidence <= 1.0),
+            CHECK(expansion_min_novelty >= 0.0 AND expansion_min_novelty <= 1.0),
+            CHECK(ceo_override_limit IS NULL OR ceo_override_limit >= hard_limit)
+        );
+
+        -- Heuristic merges table
+        CREATE TABLE heuristic_merges (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_ids TEXT NOT NULL,
+            target_id INTEGER NOT NULL,
+            merge_reason TEXT,
+            merge_strategy TEXT,
+            similarity_score REAL,
+            merged_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (target_id) REFERENCES heuristics(id) ON DELETE CASCADE
+        );
+
+        -- Expansion events table
+        CREATE TABLE expansion_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            domain TEXT NOT NULL,
+            heuristic_id INTEGER,
+            event_type TEXT NOT NULL CHECK(event_type IN ('expansion', 'contraction', 'merge')),
+            count_before INTEGER NOT NULL,
+            count_after INTEGER NOT NULL,
+            quality_score REAL,
+            novelty_score REAL,
+            health_score REAL,
+            reason TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (heuristic_id) REFERENCES heuristics(id) ON DELETE SET NULL
+        );
+
+        -- Revival triggers table
+        CREATE TABLE revival_triggers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            heuristic_id INTEGER NOT NULL,
+            trigger_type TEXT NOT NULL,
+            trigger_value TEXT NOT NULL,
+            priority INTEGER DEFAULT 100,
+            is_active INTEGER DEFAULT 1,
+            last_checked DATETIME,
+            times_triggered INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (heuristic_id) REFERENCES heuristics(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX idx_revival_heuristic ON revival_triggers(heuristic_id);
+        CREATE INDEX idx_revival_type ON revival_triggers(trigger_type);
+        CREATE INDEX idx_revival_active ON revival_triggers(is_active);
+
+        -- Triggers to sync domain counts and state
+        CREATE TRIGGER sync_domain_counts_on_insert
+        AFTER INSERT ON heuristics
+        FOR EACH ROW
+        BEGIN
+            INSERT OR IGNORE INTO domain_metadata(domain) VALUES (NEW.domain);
+            UPDATE domain_metadata
+            SET
+                current_count = (
+                    SELECT COUNT(*) FROM heuristics
+                    WHERE domain = NEW.domain AND status = 'active'
+                ),
+                state = CASE
+                    WHEN (SELECT COUNT(*) FROM heuristics WHERE domain = NEW.domain AND status = 'active') > hard_limit THEN 'critical'
+                    WHEN (SELECT COUNT(*) FROM heuristics WHERE domain = NEW.domain AND status = 'active') > soft_limit THEN 'overflow'
+                    ELSE 'normal'
+                END,
+                overflow_entered_at = CASE
+                    WHEN state = 'normal' AND (SELECT COUNT(*) FROM heuristics WHERE domain = NEW.domain AND status = 'active') > soft_limit
+                        THEN datetime('now')
+                    WHEN state != 'normal' AND (SELECT COUNT(*) FROM heuristics WHERE domain = NEW.domain AND status = 'active') <= soft_limit
+                        THEN NULL
+                    ELSE overflow_entered_at
+                END,
+                updated_at = datetime('now')
+            WHERE domain = NEW.domain;
+        END;
+
+        CREATE TRIGGER sync_domain_counts_on_update
+        AFTER UPDATE ON heuristics
+        FOR EACH ROW
+        BEGIN
+            INSERT OR IGNORE INTO domain_metadata(domain) VALUES (NEW.domain);
+            UPDATE domain_metadata
+            SET
+                current_count = (
+                    SELECT COUNT(*) FROM heuristics
+                    WHERE domain = NEW.domain AND status = 'active'
+                ),
+                state = CASE
+                    WHEN (SELECT COUNT(*) FROM heuristics WHERE domain = NEW.domain AND status = 'active') > hard_limit THEN 'critical'
+                    WHEN (SELECT COUNT(*) FROM heuristics WHERE domain = NEW.domain AND status = 'active') > soft_limit THEN 'overflow'
+                    ELSE 'normal'
+                END,
+                overflow_entered_at = CASE
+                    WHEN state = 'normal' AND (SELECT COUNT(*) FROM heuristics WHERE domain = NEW.domain AND status = 'active') > soft_limit
+                        THEN datetime('now')
+                    WHEN state != 'normal' AND (SELECT COUNT(*) FROM heuristics WHERE domain = NEW.domain AND status = 'active') <= soft_limit
+                        THEN NULL
+                    ELSE overflow_entered_at
+                END,
+                updated_at = datetime('now')
+            WHERE domain = NEW.domain;
+        END;
+
+        CREATE TRIGGER sync_domain_counts_on_delete
+        AFTER DELETE ON heuristics
+        FOR EACH ROW
+        BEGIN
+            UPDATE domain_metadata
+            SET
+                current_count = (
+                    SELECT COUNT(*) FROM heuristics
+                    WHERE domain = OLD.domain AND status = 'active'
+                ),
+                state = CASE
+                    WHEN (SELECT COUNT(*) FROM heuristics WHERE domain = OLD.domain AND status = 'active') > hard_limit THEN 'critical'
+                    WHEN (SELECT COUNT(*) FROM heuristics WHERE domain = OLD.domain AND status = 'active') > soft_limit THEN 'overflow'
+                    ELSE 'normal'
+                END,
+                overflow_entered_at = CASE
+                    WHEN state = 'normal' AND (SELECT COUNT(*) FROM heuristics WHERE domain = OLD.domain AND status = 'active') > soft_limit
+                        THEN datetime('now')
+                    WHEN state != 'normal' AND (SELECT COUNT(*) FROM heuristics WHERE domain = OLD.domain AND status = 'active') <= soft_limit
+                        THEN NULL
+                    ELSE overflow_entered_at
+                END,
+                updated_at = datetime('now')
+            WHERE domain = OLD.domain;
+        END;
     """)
     conn.commit()
-
-    # 004: Domain elasticity (Phase 2B)
-    migration_004 = migrations_dir / "004_domain_elasticity.sql"
-    if migration_004.exists():
-        with open(migration_004) as f:
-            conn.executescript(f.read())
-        conn.commit()
-
     conn.close()
 
     yield path

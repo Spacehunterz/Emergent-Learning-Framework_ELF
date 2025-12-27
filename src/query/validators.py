@@ -126,12 +126,12 @@ def validate_tags(tags: List[str]) -> List[str]:
                 f"Tag '{tag[:20]}...' exceeds maximum length of {MAX_TAG_LENGTH}. [QS001]"
             )
 
-        if not re.match(r'^[a-zA-Z0-9\-_.]+$', tag):
+        # Allow Unicode alphanumeric characters, hyphen, underscore, and dot
+        if not re.match(r'^[\w\-\.]+$', tag, re.UNICODE):
             raise ValidationError(
                 f"Tag '{tag}' contains invalid characters. "
-                f"Use only alphanumeric, hyphen, underscore, and dot. [QS001]"
+                f"Use only alphanumeric (including Unicode), hyphen, underscore, and dot. [QS001]"
             )
-
         validated_tags.append(tag)
 
     if not validated_tags:
