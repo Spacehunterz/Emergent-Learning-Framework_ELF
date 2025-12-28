@@ -6,7 +6,7 @@ Query the Emergent Learning Framework for institutional knowledge.
 
 1. Run the query system to load context:
    ```bash
-   python ~/.claude/emergent-learning/query/query.py --context
+   python ~/.claude/emergent-learning/src/query/query.py --context
    ```
 
 2. Summarize for the user:
