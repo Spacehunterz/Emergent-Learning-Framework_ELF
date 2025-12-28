@@ -9,40 +9,22 @@ Query the Emergent Learning Framework for institutional knowledge and summarize 
    python ~/.claude/emergent-learning/query/query.py --context
    ```
 
-2. **IMMEDIATELY spawn an async haiku agent to summarize the previous session:**
+2. **Summarize the previous session to database (background):**
 
-   First, find the previous session file (second most recent non-agent JSONL):
+   Find the previous session ID and run summarizer:
    ```bash
-   ls -t ~/.claude/projects/*/*.jsonl 2>/dev/null | grep -v "agent-" | head -2 | tail -1
+   # Get previous session ID (second most recent non-agent JSONL)
+   prev_session=$(ls -t ~/.claude/projects/*/*.jsonl 2>/dev/null | grep -v "agent-" | head -2 | tail -1 | xargs -I{} basename {} .jsonl)
+   if [ -n "$prev_session" ]; then
+       # Run summarizer in background - writes to database
+       python ~/.claude/emergent-learning/scripts/summarize-session.py "$prev_session" &
+       echo "Summarizing session $prev_session in background..."
+   fi
    ```
 
-   Then spawn a background haiku Task agent with this prompt:
-   ```
-   Task tool parameters:
-   - subagent_type: "general-purpose"
-   - model: "haiku"
-   - run_in_background: true
-   - prompt: "Summarize the Claude Code session at [SESSION_FILE_PATH].
+   This calls the proper summarize-session.py script which writes to the database.
 
-     Instructions:
-     1. Read the JSONL file
-     2. Extract user and assistant messages (skip sidechains)
-     3. CRITICAL: Capture the LAST 3 user prompts and Claude responses verbatim
-     4. Generate a 300-500 token summary with:
-        - Title (what was this session about)
-        - Topics covered
-        - What Claude did (key actions)
-        - Files modified
-        - Key learnings
-        - ## Last Exchange section with final 3 user/assistant exchanges
-     5. Save to ~/.claude/emergent-learning/memory/sessions/YYYY-MM-DD-HH-MM-topic-slug.md
-
-     This is critical for session continuity - the Last Exchange section helps the next Claude instance understand where work left off."
-   ```
-
-   **DO NOT WAIT for this agent to complete.** Continue with the checkin immediately.
-
-3. Show the latest session summary from the database (if available):
+3. Show the latest session summary from database:
    ```bash
    python -c "
 import sqlite3
@@ -93,6 +75,52 @@ conn.close()
 7. If there are pending CEO decisions, list them and ask if the user wants to address them.
 
 8. If there are active experiments, briefly note their status.
+
+9. **Database Health Check** (optional, on first checkin):
+
+   Run quick health check:
+   ```bash
+   python -c "
+import sqlite3
+from pathlib import Path
+db = Path.home() / '.claude/emergent-learning/memory/index.db'
+conn = sqlite3.connect(str(db))
+cur = conn.cursor()
+
+# Check key tables
+issues = []
+cur.execute('SELECT COUNT(*) FROM heuristics WHERE status=\"active\" AND last_fraud_check IS NULL AND (times_validated + times_violated) >= 10')
+unchecked = cur.fetchone()[0]
+if unchecked > 10:
+    issues.append(f'{unchecked} heuristics need fraud check')
+
+cur.execute('SELECT COUNT(*) FROM fraud_reports WHERE review_outcome IS NULL AND classification IN (\"fraud_likely\", \"fraud_confirmed\")')
+pending_fraud = cur.fetchone()[0]
+if pending_fraud > 0:
+    issues.append(f'{pending_fraud} fraud reports pending review')
+
+cur.execute('SELECT COUNT(*) FROM ceo_reviews WHERE status=\"pending\"')
+pending_ceo = cur.fetchone()[0]
+if pending_ceo > 0:
+    issues.append(f'{pending_ceo} CEO reviews pending')
+
+cur.execute('SELECT COUNT(*) FROM invariants WHERE violation_count > 0 AND status=\"active\"')
+violations = cur.fetchone()[0]
+if violations > 0:
+    issues.append(f'{violations} invariant violations')
+
+if issues:
+    print('Database Issues:')
+    for i in issues:
+        print(f'  - {i}')
+    print('Run /maintenance to address these.')
+else:
+    print('Database health: OK')
+conn.close()
+"
+   ```
+
+   If issues found, suggest: "Run `/maintenance` to fix database issues?"
 
 ## Domain-Specific Queries
 
