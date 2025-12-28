@@ -8,4 +8,4 @@ This package implements a two-tier watching system:
 The launcher orchestrates both tiers and manages escalation.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.3.2"

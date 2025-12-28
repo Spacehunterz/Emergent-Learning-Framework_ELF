@@ -5,6 +5,14 @@ All notable changes to the Emergent Learning Framework will be documented in thi
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2025-12-28
+
+### Fixed
+- **Checkin Skill** - Use Python for session summarization to avoid MSYS bash escaping issues
+  - Added database health check display
+  - Added last session summary display
+  - ELF banner and dashboard prompt on first checkin
+
 ## [0.3.1] - 2025-12-25
 
 ### Fixed
