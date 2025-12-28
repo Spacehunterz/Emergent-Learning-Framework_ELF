@@ -6,7 +6,7 @@ Query the Emergent Learning Framework for institutional knowledge and summarize 
 
 1. Run the query system to load context:
    ```bash
-   python ~/.claude/emergent-learning/query/query.py --context
+   python ~/.claude/emergent-learning/src/query/query.py --context
    ```
 
 2. **Summarize the previous session to database (background):**
@@ -152,7 +152,7 @@ conn.close()
 
 If the user includes a domain (e.g., "/checkin architecture"), also run:
 ```bash
-python ~/.claude/emergent-learning/query/query.py --domain [domain]
+python ~/.claude/emergent-learning/src/query/query.py --domain [domain]
 ```
 
 ## Available Domains
