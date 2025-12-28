@@ -276,6 +276,9 @@ class TestTrendDetection(unittest.TestCase):
         """Should detect stable (flat) trend."""
         now = datetime.now()
 
+        # Fix random seed for reproducibility
+        np.random.seed(42)
+
         # Create stable trend with minor variance
         for i in range(50):
             timestamp = now - timedelta(hours=50-i)

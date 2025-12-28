@@ -15,6 +15,29 @@ CREATE TABLE IF NOT EXISTS learnings (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Confidence update audit trail
+CREATE TABLE IF NOT EXISTS confidence_updates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    heuristic_id INTEGER NOT NULL,
+    old_confidence REAL NOT NULL,
+    new_confidence REAL NOT NULL,
+    delta REAL NOT NULL,
+    update_type TEXT NOT NULL,
+    reason TEXT,
+    rate_limited INTEGER DEFAULT 0,
+    session_id TEXT,
+    agent_id TEXT,
+    raw_target_confidence REAL,
+    smoothed_delta REAL,
+    alpha_used REAL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (heuristic_id) REFERENCES heuristics(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_confidence_updates_heuristic ON confidence_updates(heuristic_id);
+CREATE INDEX IF NOT EXISTS idx_confidence_updates_created ON confidence_updates(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_confidence_updates_type ON confidence_updates(update_type);
+
 -- Extracted heuristics (learned patterns)
 CREATE TABLE IF NOT EXISTS heuristics (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,8 +47,18 @@ CREATE TABLE IF NOT EXISTS heuristics (
     source_type TEXT,
     source_id INTEGER,
     confidence REAL DEFAULT 0.5 CHECK(confidence >= 0.0 AND confidence <= 1.0),
+    confidence_ema REAL DEFAULT 0.5,
+    ema_alpha REAL DEFAULT 0.15,
+    ema_warmup_remaining INTEGER DEFAULT 5,
+    status TEXT DEFAULT 'active' CHECK(status IN ('active', 'deprecated', 'archived')),
     times_validated INTEGER DEFAULT 0 CHECK(times_validated >= 0),
     times_violated INTEGER DEFAULT 0 CHECK(times_violated >= 0),
+    times_contradicted INTEGER DEFAULT 0 CHECK(times_contradicted >= 0),
+    update_count_today INTEGER DEFAULT 0,
+    update_count_reset_date TEXT,
+    last_confidence_update DATETIME,
+    last_ema_update DATETIME,
+    last_used_at DATETIME,
     is_golden INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -375,6 +408,123 @@ CREATE INDEX IF NOT EXISTS idx_session_summaries_session ON session_summaries(se
 CREATE INDEX IF NOT EXISTS idx_session_summaries_project ON session_summaries(project);
 CREATE INDEX IF NOT EXISTS idx_session_summaries_summarized ON session_summaries(summarized_at DESC);
 CREATE INDEX IF NOT EXISTS idx_session_summaries_stale ON session_summaries(is_stale);
+
+-- Domain baselines for fraud detection
+CREATE TABLE IF NOT EXISTS domain_baselines (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    domain TEXT NOT NULL UNIQUE,
+    avg_success_rate REAL NOT NULL DEFAULT 0.5,
+    std_success_rate REAL NOT NULL DEFAULT 0.1,
+    avg_update_frequency REAL,
+    std_update_frequency REAL,
+    sample_count INTEGER DEFAULT 0,
+    calculated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Domain baseline history for drift tracking
+CREATE TABLE IF NOT EXISTS domain_baseline_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    domain TEXT NOT NULL,
+    avg_success_rate REAL NOT NULL,
+    std_success_rate REAL NOT NULL,
+    avg_update_frequency REAL,
+    std_update_frequency REAL,
+    sample_count INTEGER NOT NULL,
+    calculated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    prev_avg_success_rate REAL,
+    prev_std_success_rate REAL,
+    drift_percentage REAL,
+    is_significant_drift INTEGER DEFAULT 0,
+    triggered_by TEXT DEFAULT 'manual',
+    notes TEXT
+);
+
+-- Baseline drift alerts
+CREATE TABLE IF NOT EXISTS baseline_drift_alerts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    domain TEXT NOT NULL,
+    baseline_history_id INTEGER NOT NULL,
+    drift_percentage REAL NOT NULL,
+    previous_baseline REAL NOT NULL,
+    new_baseline REAL NOT NULL,
+    severity TEXT CHECK(severity IN ('low', 'medium', 'high', 'critical')),
+    alerted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    acknowledged_at DATETIME,
+    acknowledged_by TEXT,
+    resolution_notes TEXT,
+    FOREIGN KEY (baseline_history_id) REFERENCES domain_baseline_history(id)
+);
+
+-- Baseline refresh schedule
+CREATE TABLE IF NOT EXISTS baseline_refresh_schedule (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    domain TEXT UNIQUE,
+    interval_days INTEGER NOT NULL DEFAULT 30,
+    last_refresh DATETIME,
+    next_refresh DATETIME,
+    enabled INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_domain_baselines_domain ON domain_baselines(domain);
+CREATE INDEX IF NOT EXISTS idx_baseline_history_domain ON domain_baseline_history(domain);
+CREATE INDEX IF NOT EXISTS idx_baseline_history_calculated ON domain_baseline_history(calculated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_drift_alerts_domain ON baseline_drift_alerts(domain);
+CREATE INDEX IF NOT EXISTS idx_drift_alerts_severity ON baseline_drift_alerts(severity);
+CREATE INDEX IF NOT EXISTS idx_refresh_schedule_domain ON baseline_refresh_schedule(domain);
+CREATE INDEX IF NOT EXISTS idx_refresh_schedule_next ON baseline_refresh_schedule(next_refresh);
+
+-- Views for baseline monitoring
+CREATE VIEW IF NOT EXISTS domains_needing_refresh AS
+SELECT
+    brs.domain,
+    brs.last_refresh,
+    brs.next_refresh,
+    brs.interval_days,
+    JULIANDAY('now') - JULIANDAY(brs.last_refresh) AS days_since_refresh,
+    CASE
+        WHEN brs.next_refresh IS NULL THEN 1
+        WHEN JULIANDAY('now') >= JULIANDAY(brs.next_refresh) THEN 1
+        ELSE 0
+    END AS needs_refresh
+FROM baseline_refresh_schedule brs
+WHERE brs.enabled = 1;
+
+CREATE VIEW IF NOT EXISTS domains_with_drift AS
+SELECT
+    dbh.domain,
+    dbh.drift_percentage,
+    dbh.is_significant_drift,
+    dbh.calculated_at,
+    dbh.prev_avg_success_rate,
+    dbh.avg_success_rate
+FROM domain_baseline_history dbh
+WHERE dbh.is_significant_drift = 1
+  AND dbh.calculated_at >= datetime('now', '-30 days');
+
+CREATE VIEW IF NOT EXISTS recent_baseline_changes AS
+SELECT
+    dbh.domain,
+    dbh.avg_success_rate,
+    dbh.std_success_rate,
+    dbh.sample_count,
+    dbh.calculated_at,
+    dbh.drift_percentage,
+    dbh.triggered_by
+FROM domain_baseline_history dbh
+WHERE dbh.calculated_at = (
+    SELECT MAX(dbh2.calculated_at)
+    FROM domain_baseline_history dbh2
+    WHERE dbh2.domain = dbh.domain
+);
+
+CREATE VIEW IF NOT EXISTS unacknowledged_drift_alerts AS
+SELECT
+    bda.*
+FROM baseline_drift_alerts bda
+WHERE bda.acknowledged_at IS NULL;
+
 -- Validation triggers
 CREATE TRIGGER IF NOT EXISTS learnings_validate_insert
 BEFORE INSERT ON learnings

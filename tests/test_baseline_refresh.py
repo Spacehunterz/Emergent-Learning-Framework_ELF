@@ -24,7 +24,7 @@ sys.path.insert(0, str(SRC_ROOT))
 
 from query.fraud_detector import FraudDetector
 
-MIGRATIONS_DIR = SRC_ROOT / "memory" / "migrations"
+SCHEMA_PATH = REPO_ROOT / "templates" / "init_db.sql"
 
 
 @pytest.fixture(scope="module")
@@ -35,15 +35,11 @@ def temp_base(tmp_path_factory):
     db_path = memory_dir / "index.db"
 
     conn = sqlite3.connect(db_path)
-    for migration in [
-        "001_base_schema.sql",
-        "006_fraud_detection.sql",
-        "007_baseline_history.sql",
-    ]:
-        migration_path = MIGRATIONS_DIR / migration
-        if migration_path.exists():
-            with open(migration_path, encoding="utf-8") as f:
-                conn.executescript(f.read())
+    if SCHEMA_PATH.exists():
+        with open(SCHEMA_PATH, encoding="utf-8") as f:
+            conn.executescript(f.read())
+    else:
+        raise FileNotFoundError(f"Schema not found at {SCHEMA_PATH}")
     conn.commit()
     conn.close()
 

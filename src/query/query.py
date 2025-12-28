@@ -553,22 +553,51 @@ class QuerySystem:
 
     def get_golden_rules(self) -> str:
         """
-        Read and return golden rules from memory/golden-rules.md.
+        Read and return golden rules from database (heuristics where is_golden=1).
 
         Returns:
-            Content of golden rules file, or empty string if file does not exist.
+            Formatted markdown string containing all golden rules, or message if none exist.
         """
-        if not self.golden_rules_path.exists():
-            return "# Golden Rules\n\nNo golden rules have been established yet."
-
         try:
-            with open(self.golden_rules_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            self._log_debug(f"Loaded golden rules ({len(content)} chars)")
+            # Query database for golden rules
+            golden_rules_query = (Heuristic
+                .select()
+                .where(Heuristic.is_golden == True)
+                .order_by(Heuristic.domain, Heuristic.confidence.desc()))
+
+            golden_rules = list(golden_rules_query)
+
+            if not golden_rules:
+                return "# Golden Rules\n\nNo golden rules have been established yet."
+
+            # Format as markdown grouped by domain
+            output = ["# Golden Rules\n"]
+            current_domain = None
+
+            for rule in golden_rules:
+                # Add domain header if changed
+                if rule.domain != current_domain:
+                    current_domain = rule.domain
+                    output.append(f"\n## {current_domain.title()}\n")
+
+                # Add rule
+                output.append(f"**Rule:** {rule.rule}\n")
+                output.append(f"**Explanation:** {rule.explanation}\n")
+                output.append(f"**Confidence:** {rule.confidence:.2f}\n")
+
+                # Add validation stats if any
+                if rule.times_validated > 0 or rule.times_violated > 0:
+                    output.append(f"**Stats:** ✓ {rule.times_validated} validated, ✗ {rule.times_violated} violated\n")
+
+                output.append("\n")
+
+            content = "".join(output)
+            self._log_debug(f"Loaded {len(golden_rules)} golden rules from database ({len(content)} chars)")
             return content
+
         except Exception as e:
             error_msg = f"# Error Reading Golden Rules\n\nError: {str(e)}"
-            self._log_debug(f"Failed to read golden rules: {e}")
+            self._log_debug(f"Failed to read golden rules from database: {e}")
             return error_msg
 
     def query_by_domain(self, domain: str, limit: int = 10, timeout: int = None) -> Dict[str, Any]:

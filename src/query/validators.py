@@ -132,6 +132,7 @@ def validate_tags(tags: List[str]) -> List[str]:
                 f"Tag '{tag}' contains invalid characters. "
                 f"Use only alphanumeric (including Unicode), hyphen, underscore, and dot. [QS001]"
             )
+
         validated_tags.append(tag)
 
     if not validated_tags:

@@ -34,7 +34,7 @@ from conductor.conductor import Conductor, Node, Edge, NodeType, safe_eval_condi
 # Use the correct path to the schema file
 TEMPLATES_DIR = REPO_ROOT / "templates"
 MEMORY_SCHEMA_PATH = TEMPLATES_DIR / "init_db.sql"
-CONDUCTOR_SCHEMA_PATH = REPO_ROOT / "conductor" / "schema.sql"
+CONDUCTOR_SCHEMA_PATH = REPO_ROOT / "src" / "conductor" / "schema.sql"
 
 
 class TestHelperMethods:
@@ -788,10 +788,17 @@ class TestTrailRecording:
 
     def test_trail_expiration(self):
         """Test trail expiration filtering."""
+        import time
         run_id = self.conductor.start_run(workflow_name="test_workflow")
 
-        # Lay trail with short TTL
-        self.conductor.lay_trail(run_id, "expiring.py", "discovery", 0.8, ttl_hours=0)
+        # Lay trail with very short TTL (will expire in ~1 second)
+        self.conductor.lay_trail(run_id, "expiring.py", "discovery", 0.8, ttl_hours=0.0003)  # ~1 second
+
+        # Lay a non-expiring trail for comparison
+        self.conductor.lay_trail(run_id, "permanent.py", "discovery", 0.8, ttl_hours=24)
+
+        # Wait for expiration
+        time.sleep(1.5)
 
         # Get trails without expired ones
         trails_active = self.conductor.get_trails(run_id=run_id, include_expired=False)
@@ -800,7 +807,9 @@ class TestTrailRecording:
         trails_all = self.conductor.get_trails(run_id=run_id, include_expired=True)
 
         # Expired trail should not appear in active list
-        assert len(trails_all) > len(trails_active)
+        assert len(trails_all) == 2, f"Expected 2 trails, got {len(trails_all)}"
+        assert len(trails_active) == 1, f"Expected 1 active trail, got {len(trails_active)}"
+        assert trails_active[0]["location"] == "permanent.py"
 
         print("✓ Trail expiration: Expired trails filtered correctly")
 

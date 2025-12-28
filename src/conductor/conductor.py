@@ -24,7 +24,7 @@ import sqlite3
 import hashlib
 import time
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, List, Any, Callable, Tuple, Union
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -586,7 +586,8 @@ class Conductor:
             tags: Optional tags
             ttl_hours: Hours until trail expires
         """
-        expires_at = (datetime.now() + timedelta(hours=ttl_hours)).isoformat()
+        # Use UTC time with SQLite-compatible format for consistent comparison
+        expires_at = (datetime.now(timezone.utc) + timedelta(hours=ttl_hours)).strftime('%Y-%m-%d %H:%M:%S')
         tags_str = ",".join(tags) if tags else ""
 
         with self._get_connection() as conn:

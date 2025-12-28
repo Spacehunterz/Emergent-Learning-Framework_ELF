@@ -40,31 +40,19 @@ class TestTemporalSmoothing(unittest.TestCase):
         self.temp_db.close()
         self.db_path = Path(self.temp_db.name)
 
-        # Apply migrations manually since temp DB isn't in the right location
-        migrations_dir = SRC_ROOT / "memory" / "migrations"
+        # Apply schema from templates/init_db.sql
+        schema_path = REPO_ROOT / "templates" / "init_db.sql"
 
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         try:
-            # Apply base schema (001) then temporal smoothing migration (003)
-            base_schema_path = migrations_dir / "001_base_schema.sql"
-            if base_schema_path.exists():
-                with open(base_schema_path) as f:
+            # Apply the full schema
+            if schema_path.exists():
+                with open(schema_path) as f:
                     conn.executescript(f.read())
                 conn.commit()
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS schema_version (
-                    version INTEGER PRIMARY KEY,
-                    description TEXT,
-                    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            conn.commit()
-            temporal_schema_path = migrations_dir / "003_temporal_smoothing.sql"
-            if temporal_schema_path.exists():
-                with open(temporal_schema_path) as f:
-                    conn.executescript(f.read())
-                conn.commit()
+            else:
+                raise FileNotFoundError(f"Schema not found at {schema_path}")
         finally:
             conn.close()
 

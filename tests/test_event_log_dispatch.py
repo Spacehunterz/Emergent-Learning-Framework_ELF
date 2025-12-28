@@ -595,21 +595,21 @@ class TestConcurrentAccess:
         with tempfile.TemporaryDirectory() as tmpdir:
             el = EventLog(tmpdir)
 
-            expected_count = 0
+            num_threads = 4
+            events_per_thread = 15
+            expected_count = num_threads * events_per_thread  # 60 total
 
             def add_findings(thread_id, count):
-                nonlocal expected_count
                 for i in range(count):
                     el.append_event("finding.added", {
                         "agent_id": f"thread-{thread_id}",
                         "finding_type": "fact",
                         "content": f"Thread {thread_id} finding {i}"
                     })
-                expected_count += count
 
             threads = []
-            for t in range(4):
-                thread = threading.Thread(target=add_findings, args=(t, 15))
+            for t in range(num_threads):
+                thread = threading.Thread(target=add_findings, args=(t, events_per_thread))
                 threads.append(thread)
 
             for thread in threads:
