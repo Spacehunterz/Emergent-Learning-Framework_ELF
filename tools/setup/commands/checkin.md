@@ -23,7 +23,7 @@ Query the Emergent Learning Framework for institutional knowledge.
 
 If the user includes a domain (e.g., "/building architecture"), also run:
 ```bash
-python ~/.claude/emergent-learning/query/query.py --domain [domain]
+python ~/.claude/emergent-learning/src/query/query.py --domain [domain]
 ```
 
 ## Available Domains
