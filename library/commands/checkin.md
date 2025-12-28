@@ -11,15 +11,41 @@ Query the Emergent Learning Framework for institutional knowledge and summarize 
 
 2. **Summarize the previous session to database (background):**
 
-   Find the previous session ID and run summarizer:
+   Find the previous session ID and run summarizer using cross-platform Python:
    ```bash
-   # Get previous session ID (second most recent non-agent JSONL)
-   prev_session=$(ls -t ~/.claude/projects/*/*.jsonl 2>/dev/null | grep -v "agent-" | head -2 | tail -1 | xargs -I{} basename {} .jsonl)
-   if [ -n "$prev_session" ]; then
-       # Run summarizer in background - writes to database
-       python ~/.claude/emergent-learning/scripts/summarize-session.py "$prev_session" &
-       echo "Summarizing session $prev_session in background..."
-   fi
+   # Cross-platform: Get previous session and summarize it
+   python -c "
+import os
+import sys
+import subprocess
+from pathlib import Path
+
+projects_dir = Path.home() / '.claude' / 'projects'
+elf_dir = Path.home() / '.claude' / 'emergent-learning'
+summarizer = elf_dir / 'scripts' / 'summarize-session.py'
+
+if not projects_dir.exists():
+    sys.exit(0)
+
+# Get all non-agent JSONL files sorted by modification time (newest first)
+jsonl_files = [
+    f for f in projects_dir.glob('*/*.jsonl')
+    if not f.name.startswith('agent-')
+]
+jsonl_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+
+# Get second most recent (index 1) - the previous session
+if len(jsonl_files) >= 2:
+    prev_session = jsonl_files[1].stem
+    print(f'Summarizing session {prev_session} in background...')
+    # Launch summarizer as background process (cross-platform)
+    kwargs = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
+    if os.name == 'nt':
+        kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+    else:
+        kwargs['start_new_session'] = True
+    subprocess.Popen([sys.executable, str(summarizer), prev_session], **kwargs)
+"
    ```
 
    This calls the proper summarize-session.py script which writes to the database.
