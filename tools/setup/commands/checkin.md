@@ -65,23 +65,43 @@ conn.close()
    └────────────────────────────────────┘
    ```
 
-5. Summarize for the user:
-   - Active golden rules count
-   - Relevant heuristics for current work
-   - Any pending CEO decisions
-   - Active experiments
+5. Get ELF stats (IMPORTANT: golden rules are stored in heuristics table with is_golden=1, NOT a separate golden_rules table):
+   ```bash
+   python -c "
+import sqlite3
+from pathlib import Path
+db = Path.home() / '.claude/emergent-learning/memory/index.db'
+conn = sqlite3.connect(str(db))
+cur = conn.cursor()
+cur.execute('SELECT COUNT(*) FROM heuristics WHERE status=\"active\"')
+heuristics = cur.fetchone()[0]
+cur.execute('SELECT COUNT(*) FROM heuristics WHERE is_golden=1 AND status=\"active\"')
+golden = cur.fetchone()[0]
+cur.execute('SELECT COUNT(*) FROM experiments WHERE status=\"active\"')
+experiments = cur.fetchone()[0]
+print(f'Active heuristics: {heuristics}')
+print(f'Golden rules: {golden}')
+print(f'Active experiments: {experiments}')
+conn.close()
+"
+   ```
+
+6. Summarize for the user:
+   - Stats from step 5 (heuristics, golden rules, experiments)
+   - Relevant heuristics for current work (from step 1 context)
+   - Any pending CEO decisions (from step 10 health check)
    - **Last session summary** (from step 3)
 
-6. Ask: "Start ELF Dashboard? [Y/n]"
+7. Ask: "Start ELF Dashboard? [Y/n]"
    - Only ask on FIRST checkin of conversation
    - If Yes: `bash ~/.claude/emergent-learning/dashboard-app/run-dashboard.sh`
    - If No: Skip
 
-7. If there are pending CEO decisions, list them and ask if the user wants to address them.
+8. If there are pending CEO decisions, list them and ask if the user wants to address them.
 
-8. If there are active experiments, briefly note their status.
+9. If there are active experiments, briefly note their status.
 
-9. **Database Health Check** (optional, on first checkin):
+10. **Database Health Check** (optional, on first checkin):
 
    Run quick health check:
    ```bash

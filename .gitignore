@@ -36,3 +36,4 @@ workflows/*/output/
 
 # Reference material (do not commit)
 reference/
+*.egg-info/
