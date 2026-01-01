@@ -15,6 +15,7 @@ written to ~/.claude/ivy_events.json by Claude Code hooks.
 import os
 import sys
 import signal
+import atexit
 from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction
@@ -26,6 +27,42 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from ivy_overlay import IvyOverlay
 from event_watcher import EventWatcher
+
+
+# Lockfile for single-instance enforcement
+LOCKFILE = Path.home() / ".elf-talkinhead.lock"
+
+
+def check_single_instance() -> bool:
+    """Check if another instance is running."""
+    if LOCKFILE.exists():
+        try:
+            pid = int(LOCKFILE.read_text().strip())
+            if sys.platform == "win32":
+                import ctypes
+                kernel32 = ctypes.windll.kernel32
+                handle = kernel32.OpenProcess(0x00100000, False, pid)
+                if handle:
+                    kernel32.CloseHandle(handle)
+                    print(f"TalkinHead already running (PID {pid}). Exiting.")
+                    return False
+            else:
+                os.kill(pid, 0)
+                print(f"TalkinHead already running (PID {pid}). Exiting.")
+                return False
+        except (ValueError, OSError, ProcessLookupError):
+            pass
+    LOCKFILE.write_text(str(os.getpid()))
+    return True
+
+
+def cleanup_lockfile():
+    """Remove lockfile on exit."""
+    try:
+        if LOCKFILE.exists():
+            LOCKFILE.unlink()
+    except Exception:
+        pass
 
 
 class TalkinHeadApp:
@@ -52,10 +89,12 @@ class TalkinHeadApp:
         self.watcher.event_triggered.connect(self.overlay.play_phrase)
         self.overlay.quit_requested.connect(self._quit)
 
-        # Setup parent process monitor
-        self.parent_monitor = QTimer()
-        self.parent_monitor.timeout.connect(self._check_parent)
-        self.parent_monitor.start(1000)  # Check every second
+        # Parent process monitor disabled - causes false positives on Windows
+        # due to OpenProcess permission issues across security contexts
+        self.parent_monitor = None
+        # self.parent_monitor = QTimer()
+        # self.parent_monitor.timeout.connect(self._check_parent)
+        # self.parent_monitor.start(1000)  # Check every second
 
         # Setup system tray (optional)
         self.tray = self._setup_tray()
@@ -189,7 +228,8 @@ class TalkinHeadApp:
 
             # Stop accepting new events
             self.watcher.stop()
-            self.parent_monitor.stop()
+            if self.parent_monitor:
+                self.parent_monitor.stop()
 
             # Connect phrase_finished to final quit (one-shot)
             self.overlay.phrase_finished.connect(self._final_quit)
@@ -208,7 +248,8 @@ class TalkinHeadApp:
         self.watcher.stop()
 
         # Stop parent monitor (if not already stopped)
-        self.parent_monitor.stop()
+        if self.parent_monitor:
+            self.parent_monitor.stop()
 
         # Hide tray
         if self.tray:
@@ -245,6 +286,13 @@ def main():
         QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
         QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
+    # Single-instance check
+    if not check_single_instance():
+        sys.exit(0)
+
+    # Register cleanup on exit
+    atexit.register(cleanup_lockfile)
 
     # Create and run app
     talkinhead = TalkinHeadApp()
