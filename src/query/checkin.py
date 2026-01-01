@@ -233,26 +233,34 @@ class CheckinOrchestrator:
             return self.selected_model
 
     def start_dashboard(self):
-        """Start the dashboard if requested."""
+        """Start the dashboard in a visible terminal window that user can close."""
         try:
-            # Check for both .sh and .ps1 versions
-            dashboard_sh = self.elf_home / 'apps' / 'dashboard' / 'run-dashboard.sh'
+            # Check for both .bat and .ps1 versions
+            dashboard_bat = self.elf_home / 'apps' / 'dashboard' / 'run-dashboard.bat'
             dashboard_ps1 = self.elf_home / 'apps' / 'dashboard' / 'run-dashboard.ps1'
+            dashboard_sh = self.elf_home / 'apps' / 'dashboard' / 'run-dashboard.sh'
 
-            if dashboard_ps1.exists() and sys.platform == 'win32':
-                subprocess.Popen(
-                    ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(dashboard_ps1)],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
-                print("   [OK] Dashboard launching in background")
+            if sys.platform == 'win32':
+                # Launch in a NEW visible terminal window so user can close it
+                if dashboard_bat.exists():
+                    # Use 'start' to open in new window with title
+                    subprocess.Popen(
+                        ['cmd', '/c', 'start', 'ELF Dashboard', str(dashboard_bat)],
+                        shell=False
+                    )
+                elif dashboard_ps1.exists():
+                    subprocess.Popen(
+                        ['cmd', '/c', 'start', 'ELF Dashboard', 'powershell', '-ExecutionPolicy', 'Bypass', '-File', str(dashboard_ps1)],
+                        shell=False
+                    )
+                else:
+                    print(f"   [!] Dashboard script not found")
+                    return
+                print("   [OK] Dashboard launching (close the terminal window to stop)")
             elif dashboard_sh.exists():
-                subprocess.Popen(
-                    ['bash', str(dashboard_sh)],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
-                print("   [OK] Dashboard launching in background")
+                # Unix: launch in new terminal if possible
+                subprocess.Popen(['bash', str(dashboard_sh)])
+                print("   [OK] Dashboard launching")
             else:
                 print(f"   [!] Dashboard script not found")
         except Exception as e:
