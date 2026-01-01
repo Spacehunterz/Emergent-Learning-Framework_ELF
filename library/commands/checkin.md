@@ -9,46 +9,60 @@ Query the Emergent Learning Framework for institutional knowledge and summarize 
    python ~/.claude/emergent-learning/src/query/query.py --context
    ```
 
-2. **Summarize the previous session to database (background):**
+2. **Summarize the previous session (using Task tool with haiku):**
 
-   Find the previous session ID and run summarizer using cross-platform Python:
+   First, extract session data using Python:
    ```bash
-   # Cross-platform: Get previous session and summarize it
-   python -c "
-import os
-import sys
-import subprocess
-from pathlib import Path
-
-projects_dir = Path.home() / '.claude' / 'projects'
-elf_dir = Path.home() / '.claude' / 'emergent-learning'
-summarizer = elf_dir / 'scripts' / 'summarize-session.py'
-
-if not projects_dir.exists():
-    sys.exit(0)
-
-# Get all non-agent JSONL files sorted by modification time (newest first)
-jsonl_files = [
-    f for f in projects_dir.glob('*/*.jsonl')
-    if not f.name.startswith('agent-')
-]
-jsonl_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
-
-# Get second most recent (index 1) - the previous session
-if len(jsonl_files) >= 2:
-    prev_session = jsonl_files[1].stem
-    print(f'Summarizing session {prev_session} in background...')
-    # Launch summarizer as background process (cross-platform)
-    kwargs = {'stdout': subprocess.DEVNULL, 'stderr': subprocess.DEVNULL}
-    if os.name == 'nt':
-        kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
-    else:
-        kwargs['start_new_session'] = True
-    subprocess.Popen([sys.executable, str(summarizer), prev_session], **kwargs)
-"
+   python ~/.claude/emergent-learning/scripts/extract-session-data.py --previous --json
    ```
 
-   This calls the proper summarize-session.py script which writes to the database.
+   This outputs JSON with: session_id, project, message_count, tool_counts, files_touched, user_prompts.
+
+   Then use the **Task tool** with `model="haiku"` and `run_in_background=true`:
+   ```
+   Task tool parameters:
+   - subagent_type: "general-purpose"
+   - model: "haiku"
+   - run_in_background: true
+   - prompt: "Summarize this Claude Code session data. Return ONLY a JSON object with these three fields:
+     - tool_summary: one line describing what tools were used
+     - content_summary: one line about what files/code was worked on
+     - conversation_summary: one line about what the user asked for and what was done
+
+     Session data: [paste the JSON from extract-session-data.py]"
+   ```
+
+   After getting the haiku response, store it in database:
+   ```bash
+   python -c "
+import json
+import sqlite3
+from pathlib import Path
+from datetime import datetime
+
+# Replace these with actual values from haiku response
+session_id = 'SESSION_ID_HERE'
+project = 'PROJECT_HERE'
+summary = {
+    'tool_summary': 'TOOL_SUMMARY_HERE',
+    'content_summary': 'CONTENT_SUMMARY_HERE',
+    'conversation_summary': 'CONVERSATION_SUMMARY_HERE'
+}
+
+db = Path.home() / '.claude/emergent-learning/memory/index.db'
+conn = sqlite3.connect(str(db))
+cur = conn.cursor()
+cur.execute('''
+    INSERT OR REPLACE INTO session_summaries (
+        session_id, project, tool_summary, content_summary, conversation_summary,
+        summarized_at, summarizer_model, is_stale
+    ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 'haiku', 0)
+''', (session_id, project, summary['tool_summary'], summary['content_summary'], summary['conversation_summary']))
+conn.commit()
+conn.close()
+print(f'Stored summary for {session_id[:8]}...')
+"
+   ```
 
 3. Show the latest session summary from database:
    ```bash
