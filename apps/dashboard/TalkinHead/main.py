@@ -1,0 +1,234 @@
+#!/usr/bin/env python3
+"""
+TalkinHead - Ivy Overlay Entry Point
+
+This is the main entry point for the TalkinHead animated overlay system.
+It creates the overlay, sets up event watching, and manages the application lifecycle.
+
+Usage:
+    python main.py
+
+The overlay will appear in the bottom-right corner and respond to events
+written to ~/.claude/ivy_events.json by Claude Code hooks.
+"""
+
+import os
+import sys
+import signal
+from pathlib import Path
+
+from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QTimer, Qt
+
+# Add parent directory for imports
+sys.path.insert(0, str(Path(__file__).parent))
+
+from ivy_overlay import IvyOverlay
+from event_watcher import EventWatcher
+
+
+class TalkinHeadApp:
+    """Main application controller for TalkinHead."""
+
+    def __init__(self):
+        self.app = QApplication(sys.argv)
+        self.app.setQuitOnLastWindowClosed(False)
+        self.app.setApplicationName("TalkinHead")
+
+        # Store parent PID for orphan detection
+        self.parent_pid = os.getppid()
+
+        # Goodbye/self-destruct state
+        self._goodbye_pending = False
+
+        # Create components
+        self.overlay = IvyOverlay()
+        self.watcher = EventWatcher()
+
+        # Connect signals
+        self.watcher.event_triggered.connect(self.overlay.play_phrase)
+        self.overlay.quit_requested.connect(self._quit)
+
+        # Setup parent process monitor
+        self.parent_monitor = QTimer()
+        self.parent_monitor.timeout.connect(self._check_parent)
+        self.parent_monitor.start(1000)  # Check every second
+
+        # Setup system tray (optional)
+        self.tray = self._setup_tray()
+
+        # Setup global shortcuts
+        self._setup_shortcuts()
+
+        # Handle SIGINT/SIGTERM gracefully
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
+
+    def _setup_tray(self) -> QSystemTrayIcon:
+        """Setup system tray icon with menu."""
+        tray = QSystemTrayIcon(self.app)
+
+        # Try to load icon, fall back to default
+        icon_path = Path(__file__).parent / "icon.png"
+        if icon_path.exists():
+            tray.setIcon(QIcon(str(icon_path)))
+        else:
+            # Use a default system icon
+            tray.setIcon(self.app.style().standardIcon(
+                self.app.style().SP_ComputerIcon
+            ))
+
+        # Create menu
+        menu = QMenu()
+
+        # Show/Hide action
+        toggle_action = QAction("Toggle Overlay", menu)
+        toggle_action.triggered.connect(self._toggle_overlay)
+        menu.addAction(toggle_action)
+
+        # Test phrase action
+        test_action = QAction("Test Animation", menu)
+        test_action.triggered.connect(lambda: self.overlay.play_phrase("completed"))
+        menu.addAction(test_action)
+
+        menu.addSeparator()
+
+        # Quit action
+        quit_action = QAction("Quit (Ctrl+Q)", menu)
+        quit_action.triggered.connect(self._quit)
+        menu.addAction(quit_action)
+
+        tray.setContextMenu(menu)
+        tray.setToolTip("TalkinHead - Ivy Overlay")
+        tray.show()
+
+        return tray
+
+    def _setup_shortcuts(self):
+        """Setup global keyboard shortcuts."""
+        # Shortcuts handled via tray menu - use right-click on tray icon
+        pass
+
+    def _toggle_overlay(self):
+        """Toggle overlay visibility."""
+        if self.overlay.isVisible():
+            self.overlay.hide()
+        else:
+            self.overlay.show()
+
+    def _check_parent(self):
+        """Check if parent process is still alive."""
+        try:
+            # On Windows, os.kill with signal 0 doesn't work the same way
+            if sys.platform == "win32":
+                import ctypes
+                kernel32 = ctypes.windll.kernel32
+                SYNCHRONIZE = 0x00100000
+                handle = kernel32.OpenProcess(SYNCHRONIZE, False, self.parent_pid)
+                if handle:
+                    kernel32.CloseHandle(handle)
+                    # Process exists
+                    return
+                else:
+                    # Process doesn't exist
+                    self._parent_died()
+            else:
+                # Unix-like: signal 0 checks process existence
+                os.kill(self.parent_pid, 0)
+        except (OSError, ProcessLookupError):
+            self._parent_died()
+
+    def _parent_died(self):
+        """Handle parent process death - clean exit."""
+        print("Parent process died, shutting down TalkinHead...")
+        self._quit()
+
+    def _signal_handler(self, signum, frame):
+        """Handle termination signals gracefully."""
+        print(f"Received signal {signum}, shutting down...")
+        self._quit()
+
+    def _quit(self):
+        """
+        Initiate shutdown with goodbye phrase.
+
+        If a goodbye phrase exists, plays it first then self-destructs.
+        Otherwise, shuts down immediately.
+        """
+        # Prevent multiple quit attempts
+        if self._goodbye_pending:
+            return
+
+        # Check if goodbye folder exists with videos
+        goodbye_dir = Path(__file__).parent / "Phrases" / "goodbye"
+        has_goodbye = (goodbye_dir.is_dir() and
+                       any(goodbye_dir.glob("*.mp4")))
+
+        if has_goodbye:
+            print("Playing goodbye phrase before shutdown...")
+            self._goodbye_pending = True
+
+            # Stop accepting new events
+            self.watcher.stop()
+            self.parent_monitor.stop()
+
+            # Connect phrase_finished to final quit (one-shot)
+            self.overlay.phrase_finished.connect(self._final_quit)
+
+            # Play goodbye phrase
+            self.overlay.play_phrase("goodbye")
+        else:
+            # No goodbye phrase, quit immediately
+            self._final_quit()
+
+    def _final_quit(self):
+        """Final cleanup and exit after goodbye phrase finishes."""
+        print("Goodbye complete. Shutting down...")
+
+        # Stop the watcher (if not already stopped)
+        self.watcher.stop()
+
+        # Stop parent monitor (if not already stopped)
+        self.parent_monitor.stop()
+
+        # Hide tray
+        if self.tray:
+            self.tray.hide()
+
+        # Close overlay
+        self.overlay.close()
+
+        # Quit app
+        self.app.quit()
+
+    def run(self) -> int:
+        """Run the application."""
+        # Show overlay
+        self.overlay.show()
+
+        # Start event watcher
+        self.watcher.start()
+
+        print(f"TalkinHead started (parent PID: {self.parent_pid})")
+        print("Press Ctrl+Q or use tray menu to quit")
+
+        # Run event loop
+        return self.app.exec_()
+
+
+def main():
+    """Main entry point."""
+    # Ensure high DPI scaling on Windows
+    if hasattr(Qt, 'AA_EnableHighDpiScaling'):
+        QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
+        QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
+    # Create and run app
+    talkinhead = TalkinHeadApp()
+    sys.exit(talkinhead.run())
+
+
+if __name__ == "__main__":
+    main()
