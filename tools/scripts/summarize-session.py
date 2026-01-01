@@ -161,44 +161,17 @@ Return this exact JSON structure (no markdown, just raw JSON):
 
 
 def call_haiku(prompt: str) -> Optional[Dict[str, Any]]:
-    """Call Claude haiku via claude CLI to generate summary."""
-    try:
-        # Use claude CLI in print mode with haiku model
-        result = subprocess.run(
-            ["claude", "-p", prompt, "--model", "haiku"],
-            capture_output=True,
-            text=True,
-            timeout=60
-        )
+    """
+    DEPRECATED: Disabled per Golden Rule #11 (No External APIs - Subscription Only).
 
-        if result.returncode != 0:
-            print(f"Claude CLI error: {result.stderr}", file=sys.stderr)
-            return None
+    Calling 'claude' CLI with '--model haiku' uses the Anthropic API directly,
+    violating the subscription-only policy. Use generate_fallback_summary() instead.
 
-        # Parse JSON from response
-        response = result.stdout.strip()
-        # Try to extract JSON from response
-        try:
-            # Handle case where response has extra text
-            start = response.find("{")
-            end = response.rfind("}") + 1
-            if start >= 0 and end > start:
-                json_str = response[start:end]
-                return json.loads(json_str)
-        except json.JSONDecodeError:
-            pass
-
-        return None
-
-    except subprocess.TimeoutExpired:
-        print("Haiku call timed out", file=sys.stderr)
-        return None
-    except FileNotFoundError:
-        print("Claude CLI not found", file=sys.stderr)
-        return None
-    except Exception as e:
-        print(f"Error calling haiku: {e}", file=sys.stderr)
-        return None
+    If LLM-powered summarization is needed, it should be done within a Claude Code
+    session using the Task tool with model="haiku", not via subprocess.
+    """
+    # Always return None to trigger fallback summary
+    return None
 
 
 def generate_fallback_summary(session_data: Dict[str, Any]) -> Dict[str, Any]:
