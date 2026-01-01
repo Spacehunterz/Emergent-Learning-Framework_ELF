@@ -7,10 +7,12 @@ skip the learning framework.
 
 The hook:
 1. Runs query.py --context to get relevant heuristics/golden rules
-2. Injects the context as a system-reminder in the response
-3. Claude sees this context BEFORE responding
+2. Prints context to stdout (plain text injection)
+3. Exits with code 0 - Claude sees this as system context
 
-This replaces the stub that was doing nothing.
+FIX (2025-12-31): Changed from JSON "message" field to plain text stdout.
+The "message" field was being shown as "Success" feedback, not injected.
+Plain text to stdout with exit 0 is the correct injection mechanism.
 """
 import json
 import sys
@@ -19,8 +21,13 @@ import os
 from pathlib import Path
 
 
-def get_elf_context(prompt_text: str = "") -> str:
-    """Query the ELF building for relevant context."""
+def get_elf_context(prompt_text: str = "", session_cwd: str = "") -> str:
+    """Query the ELF building for relevant context.
+
+    Args:
+        prompt_text: The user's prompt (for future semantic matching)
+        session_cwd: Claude Code's actual working directory (for project detection)
+    """
     # Get paths
     elf_base = Path(__file__).parent.parent.parent.parent  # emergent-learning/
     venv_python = elf_base / ".venv" / "Scripts" / "python.exe"
@@ -39,8 +46,14 @@ def get_elf_context(prompt_text: str = "") -> str:
         env = os.environ.copy()
         env["PYTHONIOENCODING"] = "utf-8"
 
+        # Build command with location argument if we have the session CWD
+        cmd = [str(venv_python), str(query_script), "--context", "--depth", "standard"]
+        if session_cwd:
+            cmd.extend(["--location", session_cwd])
+
+        # Use standard depth to include golden rules (minimal filters too aggressively)
         result = subprocess.run(
-            [str(venv_python), str(query_script), "--context", "--depth", "minimal"],
+            cmd,
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -70,7 +83,11 @@ def get_elf_context(prompt_text: str = "") -> str:
 def main():
     """Inject ELF context into every user prompt."""
     try:
-        # Read input from stdin
+        # CRITICAL: Capture CWD BEFORE any operations
+        # This is Claude Code's actual working directory, not ELF's location
+        session_cwd = os.getcwd()
+
+        # Read input from stdin (required by hook protocol)
         input_data = json.loads(sys.stdin.read())
 
         # Get the user's prompt text if available
@@ -78,32 +95,23 @@ def main():
         if "prompt" in input_data:
             prompt_text = input_data.get("prompt", "")
 
-        # Query ELF for context
-        elf_context = get_elf_context(prompt_text)
+        # Query ELF for context, passing the session's actual CWD
+        elf_context = get_elf_context(prompt_text, session_cwd)
 
-        # Build the injection message
-        # This appears as a system-reminder that Claude will see
-        injection = f"""<elf-context>
+        # Print context directly to stdout - this IS the injection
+        # Claude Code adds stdout text as context when exit code is 0
+        print(f"""<elf-context>
 {elf_context}
 </elf-context>
 
-Remember: Query the building BEFORE taking action. The above context contains relevant heuristics and golden rules."""
+Remember: Apply golden rules. Query building for domain-specific heuristics if needed.""")
 
-        # Return with injected context
-        result = {
-            "continue": True,
-            "message": injection
-        }
-
-        print(json.dumps(result))
+        # Exit 0 = success, stdout becomes context
+        sys.exit(0)
 
     except Exception as e:
-        # On error, still continue but note the failure
-        error_msg = f"[ELF hook error: {str(e)[:50]}]"
-        print(json.dumps({
-            "continue": True,
-            "message": error_msg
-        }))
+        # On error, still inject minimal context
+        print(f"[ELF] Hook error: {str(e)[:100]}")
         sys.exit(0)
 
 
