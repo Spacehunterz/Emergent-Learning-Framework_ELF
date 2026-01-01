@@ -135,7 +135,7 @@ class CheckinOrchestrator:
         try:
             # Call query.py --context to get the data
             result = subprocess.run(
-                [sys.executable, str(self.elf_home / 'query' / 'query.py'), '--context'],
+                [sys.executable, str(self.elf_home / 'src' / 'query' / 'query.py'), '--context'],
                 capture_output=True,
                 text=True,
                 timeout=30,
@@ -235,10 +235,20 @@ class CheckinOrchestrator:
     def start_dashboard(self):
         """Start the dashboard if requested."""
         try:
-            dashboard_script = self.elf_home / 'dashboard-app' / 'run-dashboard.sh'
-            if dashboard_script.exists():
+            # Check for both .sh and .ps1 versions
+            dashboard_sh = self.elf_home / 'apps' / 'dashboard' / 'run-dashboard.sh'
+            dashboard_ps1 = self.elf_home / 'apps' / 'dashboard' / 'run-dashboard.ps1'
+
+            if dashboard_ps1.exists() and sys.platform == 'win32':
                 subprocess.Popen(
-                    ['bash', str(dashboard_script)],
+                    ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(dashboard_ps1)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                print("   [OK] Dashboard launching in background")
+            elif dashboard_sh.exists():
+                subprocess.Popen(
+                    ['bash', str(dashboard_sh)],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
                 )
