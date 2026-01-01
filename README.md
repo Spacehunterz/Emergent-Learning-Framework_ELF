@@ -49,6 +49,19 @@ Claude: [Queries building, starts dashboard, returns golden rules + heuristics]
 | When you hit a problem | See if building knows about this issue |
 | Before closing session | Ensure learnings are captured |
 
+## Dashboard Views
+
+### Domain Cards
+![Domain Cards](docs/assets/dashboard-cards.png)
+Browse knowledge by domain - see heuristic counts, golden rules, and confidence at a glance. Click any card to inspect.
+
+### Galaxy View
+![Galaxy View](docs/assets/dashboard-galaxy.png)
+3D visualization of your knowledge domains as orbiting planets. Eve watches from the corner, ready to celebrate your wins.
+
+### Eve - TalkinHead
+Animated avatar overlay that appears on your desktop. Celebrates task completions with voice and animation. Hover for controls (Ctrl+Q close, Ctrl+Click move, Alt+Click resize).
+
 ## Core Features
 
 | Feature | What It Does |
