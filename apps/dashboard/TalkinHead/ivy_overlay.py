@@ -37,7 +37,7 @@ VK_Q = 0x51  # Q key
 # Script directory for relative paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(SCRIPT_DIR, "config.json")
-IDLE_VIDEO = os.path.join(SCRIPT_DIR, "Ivy.mp4")
+IDLE_VIDEO = os.path.join(SCRIPT_DIR, "idle_pingpong.mp4")
 PHRASES_DIR = os.path.join(SCRIPT_DIR, "Phrases")
 
 
@@ -100,6 +100,11 @@ class IvyOverlay(QWidget):
 
         # Setup window
         self._setup_window(config)
+        # Render first frame immediately (before timers/event loop)
+        # This ensures the window is visible when show() is called
+        if self.idle_frames:
+            self._display_frame(self.idle_frames[0])
+
 
         # Key check timer (for Ctrl and Alt detection)
         self.key_timer = QTimer()
@@ -154,15 +159,9 @@ class IvyOverlay(QWidget):
         if not frames:
             return []
 
-        # Create ping-pong loop (forward + reversed without duplicating endpoints)
-        # Original: [0, 1, 2, 3, 4]
-        # Reversed: [3, 2, 1] (exclude endpoints)
-        # Result: [0, 1, 2, 3, 4, 3, 2, 1] -> loops seamlessly
-        if len(frames) > 2:
-            reversed_frames = frames[-2:0:-1]  # From second-to-last to second (exclusive of endpoints)
-            frames = frames + reversed_frames
-
-        print(f"Loaded {path}: {frame_count} frames -> {len(frames)} frames (ping-pong)")
+        # Note: Ping-pong is now baked into idle_pingpong.mp4
+        # No need to create it in code anymore
+        print(f"Loaded {path}: {frame_count} frames")
         return frames
 
     def add_alpha(self, frame, threshold=15):
@@ -465,6 +464,9 @@ class IvyOverlay(QWidget):
             )
             self.setAttribute(Qt.WA_TranslucentBackground)
             self.show()
+            # Activate window to receive wheel events
+            self.activateWindow()
+            self.setFocus()
             if ctrl_held:
                 self.setCursor(Qt.OpenHandCursor)
             else:

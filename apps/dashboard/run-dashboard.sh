@@ -112,6 +112,23 @@ else
     sleep 2
 fi
 
+# Start TalkinHead overlay (Windows only)
+TALKINHEAD_PATH="$SCRIPT_DIR/TalkinHead"
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ -n "$MSYSTEM" ]]; then
+    # Check if TalkinHead already running
+    if ! tasklist 2>/dev/null | grep -q "pythonw.exe"; then
+        if [ -f "$TALKINHEAD_PATH/main.py" ]; then
+            echo "[Starting] TalkinHead overlay..."
+            # Write PID file for orphan detection
+            echo $$ > ~/.elf-dashboard.pid
+            cd "$TALKINHEAD_PATH" && pythonw main.py &
+            STARTED_SERVERS=true
+        fi
+    else
+        echo "[OK] TalkinHead already running"
+    fi
+fi
+
 # Open browser
 echo "[Opening] Browser..."
 if command -v xdg-open >/dev/null 2>&1; then
