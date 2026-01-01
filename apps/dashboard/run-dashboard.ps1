@@ -7,6 +7,10 @@ $DashboardPath = $PSScriptRoot
 $BackendPath = Join-Path $DashboardPath "backend"
 $FrontendPath = Join-Path $DashboardPath "frontend"
 
+# Write PID file so TalkinHead knows to close when this terminal closes
+$PidFile = Join-Path $env:USERPROFILE ".elf-dashboard.pid"
+$PID | Out-File $PidFile -Force -NoNewline
+
 Clear-Host
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host "        EMERGENT LEARNING DASHBOARD                     " -ForegroundColor Cyan
@@ -115,6 +119,11 @@ function Stop-Servers {
         } | Stop-Process -Force -ErrorAction SilentlyContinue
         Write-Host "  TalkinHead stopped" -ForegroundColor Green
     } catch { }
+
+    # Clean up PID file
+    if (Test-Path $PidFile) {
+        Remove-Item $PidFile -Force -ErrorAction SilentlyContinue
+    }
 
     Write-Host "Goodbye!" -ForegroundColor Cyan
 }

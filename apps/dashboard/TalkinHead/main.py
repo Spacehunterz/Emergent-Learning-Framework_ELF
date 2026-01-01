@@ -36,8 +36,10 @@ class TalkinHeadApp:
         self.app.setQuitOnLastWindowClosed(False)
         self.app.setApplicationName("TalkinHead")
 
-        # Store parent PID for orphan detection
-        self.parent_pid = os.getppid()
+        # Store dashboard PID for orphan detection (from PID file)
+        self.dashboard_pid = self._read_dashboard_pid()
+        # Fallback to parent PID if no PID file
+        self.parent_pid = self.dashboard_pid or os.getppid()
 
         # Goodbye/self-destruct state
         self._goodbye_pending = False
@@ -64,6 +66,18 @@ class TalkinHeadApp:
         # Handle SIGINT/SIGTERM gracefully
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
+
+    def _read_dashboard_pid(self) -> int | None:
+        """Read dashboard PID from file written by run-dashboard.ps1."""
+        pid_file = Path.home() / ".elf-dashboard.pid"
+        try:
+            if pid_file.exists():
+                pid = int(pid_file.read_text().strip())
+                print(f"Found dashboard PID file: {pid}")
+                return pid
+        except (ValueError, IOError) as e:
+            print(f"Could not read PID file: {e}")
+        return None
 
     def _setup_tray(self) -> QSystemTrayIcon:
         """Setup system tray icon with menu."""
@@ -118,9 +132,16 @@ class TalkinHeadApp:
             self.overlay.show()
 
     def _check_parent(self):
-        """Check if parent process is still alive."""
+        """Check if dashboard process is still alive."""
+        # First check: PID file deleted means dashboard exited cleanly
+        pid_file = Path.home() / ".elf-dashboard.pid"
+        if self.dashboard_pid and not pid_file.exists():
+            print("Dashboard PID file removed - dashboard exited cleanly")
+            self._parent_died()
+            return
+
+        # Second check: Process still running
         try:
-            # On Windows, os.kill with signal 0 doesn't work the same way
             if sys.platform == "win32":
                 import ctypes
                 kernel32 = ctypes.windll.kernel32
@@ -128,13 +149,10 @@ class TalkinHeadApp:
                 handle = kernel32.OpenProcess(SYNCHRONIZE, False, self.parent_pid)
                 if handle:
                     kernel32.CloseHandle(handle)
-                    # Process exists
-                    return
+                    return  # Process exists
                 else:
-                    # Process doesn't exist
                     self._parent_died()
             else:
-                # Unix-like: signal 0 checks process existence
                 os.kill(self.parent_pid, 0)
         except (OSError, ProcessLookupError):
             self._parent_died()
@@ -210,7 +228,10 @@ class TalkinHeadApp:
         # Start event watcher
         self.watcher.start()
 
-        print(f"TalkinHead started (parent PID: {self.parent_pid})")
+        if self.dashboard_pid:
+            print(f"TalkinHead started (monitoring dashboard PID: {self.dashboard_pid})")
+        else:
+            print(f"TalkinHead started (monitoring parent PID: {self.parent_pid})")
         print("Press Ctrl+Q or use tray menu to quit")
 
         # Run event loop
