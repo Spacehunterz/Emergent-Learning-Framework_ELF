@@ -4,11 +4,11 @@ Ivy Overlay - TalkinHead Video Overlay System
 PyQt5 frameless transparent overlay for playing Ivy avatar videos.
 
 Features:
-- Black background removal with threshold-based alpha
+- True alpha transparency via PNG sequences (rembg processed)
 - Ping-pong idle loop for seamless animation
 - Phrase video playback with signal on completion
-- Ctrl+click drag to reposition
-- Alt+mouse wheel to resize
+- Ctrl+drag to reposition
+- Alt+mouse up/down to resize
 - Position/size persistence to config.json
 - 30fps display timer
 """
@@ -21,7 +21,7 @@ import numpy as np
 
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 from PyQt5.QtCore import Qt, QTimer, QPoint, pyqtSignal
-from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtGui import QImage, QPixmap, QCursor, QFont
 
 # Pygame for reliable audio playback
 import pygame
@@ -37,7 +37,7 @@ VK_Q = 0x51  # Q key
 # Script directory for relative paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(SCRIPT_DIR, "config.json")
-IDLE_VIDEO = os.path.join(SCRIPT_DIR, "idle_pingpong.mp4")
+IDLE_FRAMES_DIR = os.path.join(SCRIPT_DIR, "idle_frames")
 PHRASES_DIR = os.path.join(SCRIPT_DIR, "Phrases")
 
 
@@ -62,11 +62,15 @@ class IvyOverlay(QWidget):
         self.phrase_frame_idx = 0
         self.is_playing_phrase = False
 
-        # Drag state
-        self.drag_enabled = False
+        # Interaction states
+        self.drag_enabled = False  # Ctrl held - drag mode
+        self.resize_enabled = False  # Alt held - resize mode
         self.drag_position = QPoint()
+        self.mouse_hovering = False  # Mouse over overlay
 
-        # Resize state
+        # Resize state (Alt + mouse up/down)
+        self.resize_start_y = 0  # Mouse Y when resize started
+        self.resize_start_scale = 0.3  # Scale when resize started
         self.display_scale = 0.3  # Default to 30% size
         self.base_width = 0
         self.base_height = 0
@@ -83,11 +87,22 @@ class IvyOverlay(QWidget):
         # Load config first
         config = self.load_config()
 
-        # Load idle video frames
-        self.idle_frames = self.load_video_frames(IDLE_VIDEO)
-        if not self.idle_frames:
-            print(f"ERROR: Could not load idle video: {IDLE_VIDEO}")
+        # Load idle frames (PNG sequence with blinks embedded)
+        idle_frames_raw = []
+        if os.path.isdir(IDLE_FRAMES_DIR):
+            idle_frames_raw = self.load_png_sequence(IDLE_FRAMES_DIR)
+        else:
+            # Fallback to video file
+            idle_video = os.path.join(SCRIPT_DIR, "idle_pingpong.mp4")
+            idle_frames_raw = self.load_video_frames(idle_video)
+        if not idle_frames_raw:
+            print(f"ERROR: Could not load idle frames from: {IDLE_FRAMES_DIR}")
             sys.exit(1)
+
+        # Build ping-pong loop: forward → reverse (skip endpoints to avoid stutter)
+        idle_reversed = list(reversed(idle_frames_raw[1:-1]))
+        self.idle_frames = idle_frames_raw + idle_reversed
+        print(f"Idle loop: {len(idle_frames_raw)} forward + {len(idle_reversed)} reverse = {len(self.idle_frames)} total")
 
         # Set base dimensions from first frame
         h, w = self.idle_frames[0].shape[:2]
@@ -105,11 +120,14 @@ class IvyOverlay(QWidget):
         if self.idle_frames:
             self._display_frame(self.idle_frames[0])
 
+        # Create hover tooltip (separate window)
+        self._setup_tooltip()
 
-        # Key check timer (for Ctrl and Alt detection)
+
+        # Key check timer (for Ctrl and Alt detection) - 16ms for responsiveness
         self.key_timer = QTimer()
         self.key_timer.timeout.connect(self._check_modifier_keys)
-        self.key_timer.start(50)  # 50ms
+        self.key_timer.start(16)  # 16ms (~60fps) for responsive mode switching
 
         # Frame update timer (30fps)
         self.frame_timer = QTimer()
@@ -120,22 +138,68 @@ class IvyOverlay(QWidget):
         print(f"  Idle frames: {len(self.idle_frames)}")
         print(f"  Base size: {self.base_width}x{self.base_height}")
         print(f"  Display scale: {self.display_scale}")
-        print(f"  Ctrl+click to drag, Alt+wheel to resize")
+        print(f"  Ctrl+drag to move, Alt+mouse up/down to resize")
 
-    def load_video_frames(self, path):
+    def load_png_sequence(self, directory):
         """
-        Load video frames from file with black background removal.
-        Creates ping-pong loop for seamless idle animation.
+        Load PNG sequence with true alpha transparency.
+
+        Args:
+            directory: Path to directory containing PNG frames
+
+        Returns:
+            List of BGRA frames with alpha channel
+        """
+        if not os.path.isdir(directory):
+            print(f"PNG directory not found: {directory}")
+            return []
+
+        # Get all PNG files sorted
+        png_files = sorted([f for f in os.listdir(directory) if f.endswith('.png')])
+        if not png_files:
+            print(f"No PNG files in: {directory}")
+            return []
+
+        frames = []
+        for png_file in png_files:
+            path = os.path.join(directory, png_file)
+            # Load with alpha channel (cv2.IMREAD_UNCHANGED preserves alpha)
+            frame = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+            if frame is None:
+                continue
+
+            # Ensure BGRA format
+            if frame.shape[2] == 3:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
+            elif frame.shape[2] == 4:
+                # PNG is RGBA, OpenCV loads as BGRA - already correct
+                pass
+
+            frames.append(frame)
+
+        print(f"Loaded {directory}: {len(frames)} PNG frames (true-alpha)")
+        return frames
+
+    def load_video_frames(self, path, use_alpha_keying=None):
+        """
+        Load video frames from file.
+        For videos with true alpha (WebM), preserves the alpha channel.
+        For regular videos (MP4), applies black background removal.
 
         Args:
             path: Path to video file
+            use_alpha_keying: Force alpha keying on/off. None = auto-detect.
 
         Returns:
-            List of BGRA frames with alpha channel (black keyed out)
+            List of BGRA frames with alpha channel
         """
         if not os.path.exists(path):
             print(f"Video not found: {path}")
             return []
+
+        # Auto-detect: WebM files have true alpha, skip keying
+        if use_alpha_keying is None:
+            use_alpha_keying = not path.lower().endswith('.webm')
 
         cap = cv2.VideoCapture(path)
         if not cap.isOpened():
@@ -150,8 +214,17 @@ class IvyOverlay(QWidget):
             if not ret:
                 break
 
-            # Add alpha channel with black keyed out
-            frame_bgra = self.add_alpha(frame, threshold=15)
+            if use_alpha_keying:
+                # Add alpha channel with black keyed out (for MP4)
+                frame_bgra = self.add_alpha(frame, threshold=15)
+            else:
+                # Video has true alpha - convert to BGRA preserving alpha
+                if frame.shape[2] == 4:
+                    frame_bgra = frame  # Already BGRA
+                else:
+                    frame_bgra = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
+                    frame_bgra[:, :, 3] = 255  # Full opacity if no alpha
+
             frames.append(frame_bgra)
 
         cap.release()
@@ -159,9 +232,8 @@ class IvyOverlay(QWidget):
         if not frames:
             return []
 
-        # Note: Ping-pong is now baked into idle_pingpong.mp4
-        # No need to create it in code anymore
-        print(f"Loaded {path}: {frame_count} frames")
+        mode = "alpha-keying" if use_alpha_keying else "true-alpha"
+        print(f"Loaded {path}: {frame_count} frames ({mode})")
         return frames
 
     def add_alpha(self, frame, threshold=15):
@@ -245,12 +317,16 @@ class IvyOverlay(QWidget):
         Play a phrase video once, then return to idle loop.
         Supports phrase pools: if Phrases/{phrase_name}/ folder exists,
         cycles through videos in that folder sequentially.
+        Prefers PNG sequences (true alpha) over video files.
 
         Args:
             phrase_name: Name of phrase (without .mp4 extension) or pool folder name
         """
         # Check for phrase pool folder first
         pool_dir = os.path.join(PHRASES_DIR, phrase_name)
+        phrase_path = None
+        frames_dir = None
+
         if os.path.isdir(pool_dir):
             # Get all mp4 files in pool, sorted for consistent order
             pool_files = sorted([f for f in os.listdir(pool_dir) if f.endswith('.mp4')])
@@ -267,6 +343,9 @@ class IvyOverlay(QWidget):
             phrase_file = pool_files[current_idx % len(pool_files)]
             phrase_path = os.path.join(pool_dir, phrase_file)
 
+            # Check for PNG sequence folder
+            frames_dir = os.path.join(pool_dir, f"{os.path.splitext(phrase_file)[0]}_frames")
+
             # Update index for next time (cycle through)
             pool_indices[phrase_name] = (current_idx + 1) % len(pool_files)
             config['pool_indices'] = pool_indices
@@ -276,29 +355,38 @@ class IvyOverlay(QWidget):
         else:
             # Single phrase file
             phrase_path = os.path.join(PHRASES_DIR, f"{phrase_name}.mp4")
+            frames_dir = os.path.join(PHRASES_DIR, f"{phrase_name}_frames")
 
-        if not os.path.exists(phrase_path):
-            print(f"Phrase video not found: {phrase_path}")
-            return False
+        # Try PNG sequence first (true alpha), fall back to video
+        if frames_dir and os.path.isdir(frames_dir):
+            self.phrase_frames = self.load_png_sequence(frames_dir)
+            if self.phrase_frames:
+                print(f"  Using PNG sequence: {frames_dir}")
+        else:
+            # Fall back to video file
+            if not os.path.exists(phrase_path):
+                print(f"Phrase not found: {phrase_path}")
+                return False
 
-        # Load phrase video frames (not ping-pong - play once)
-        cap = cv2.VideoCapture(phrase_path)
-        if not cap.isOpened():
-            print(f"Cannot open phrase video: {phrase_path}")
-            return False
+            # Load phrase video frames
+            cap = cv2.VideoCapture(phrase_path)
+            if not cap.isOpened():
+                print(f"Cannot open phrase video: {phrase_path}")
+                return False
 
-        self.phrase_frames = []
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            frame_bgra = self.add_alpha(frame, threshold=15)
-            self.phrase_frames.append(frame_bgra)
+            self.phrase_frames = []
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                frame_bgra = self.add_alpha(frame, threshold=15)
+                self.phrase_frames.append(frame_bgra)
 
-        cap.release()
+            cap.release()
+            print(f"  Using video with alpha-keying: {phrase_path}")
 
         if not self.phrase_frames:
-            print(f"No frames in phrase video: {phrase_path}")
+            print(f"No frames loaded for phrase: {phrase_name}")
             return False
 
         # Debug: check phrase dimensions vs base dimensions
@@ -439,11 +527,69 @@ class IvyOverlay(QWidget):
             y = screen.height() - display_h - margin - 40  # Extra for taskbar
             self.move(x, y)
 
+    def _setup_tooltip(self):
+        """Create hover tooltip as separate window."""
+        self.tooltip = QLabel()
+        self.tooltip.setWindowFlags(
+            Qt.FramelessWindowHint |
+            Qt.WindowStaysOnTopHint |
+            Qt.Tool |
+            Qt.WindowTransparentForInput
+        )
+        self.tooltip.setAttribute(Qt.WA_TranslucentBackground)
+        self.tooltip.setAttribute(Qt.WA_ShowWithoutActivating)
+
+        # Tooltip content
+        self.tooltip.setText("Ctrl+Q  Close\nCtrl+Click  Move\nAlt+Click  Resize")
+
+        # Style: semi-transparent dark background, white text
+        self.tooltip.setStyleSheet("""
+            QLabel {
+                background-color: rgba(30, 30, 30, 200);
+                color: rgba(255, 255, 255, 220);
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 13px;
+                font-family: Consolas, monospace;
+            }
+        """)
+        self.tooltip.adjustSize()
+
+    def _update_tooltip_position(self):
+        """Position tooltip above the overlay."""
+        if not self.tooltip.isVisible():
+            return
+        # Position above overlay, centered
+        overlay_geo = self.geometry()
+        tooltip_w = self.tooltip.width()
+        tooltip_h = self.tooltip.height()
+        x = overlay_geo.x() + (overlay_geo.width() - tooltip_w) // 2
+        y = overlay_geo.y() - tooltip_h - 8  # 8px gap above
+        self.tooltip.move(x, y)
+
     def _check_modifier_keys(self):
-        """Check for Ctrl (drag), Alt (resize), and Ctrl+Q (quit) key states."""
+        """Check for Ctrl (drag), Alt (resize), Ctrl+Q (quit), and mouse hover."""
         ctrl_held = (user32.GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0
         alt_held = (user32.GetAsyncKeyState(VK_MENU) & 0x8000) != 0
         q_held = (user32.GetAsyncKeyState(VK_Q) & 0x8000) != 0
+
+        # Check mouse hover for tooltip
+        mouse_pos = QCursor.pos()
+        overlay_geo = self.geometry()
+        is_hovering = overlay_geo.contains(mouse_pos)
+
+        if is_hovering and not self.mouse_hovering:
+            # Mouse entered - show tooltip
+            self.mouse_hovering = True
+            self._update_tooltip_position()
+            self.tooltip.show()
+        elif not is_hovering and self.mouse_hovering:
+            # Mouse left - hide tooltip
+            self.mouse_hovering = False
+            self.tooltip.hide()
+        elif is_hovering and self.mouse_hovering:
+            # Still hovering - update position (in case overlay moved)
+            self._update_tooltip_position()
 
         # Ctrl+Q to quit (emit signal for goodbye sequence)
         if ctrl_held and q_held:
@@ -451,12 +597,19 @@ class IvyOverlay(QWidget):
             self.quit_requested.emit()
             return
 
-        # Track if we need interaction mode (either Ctrl for drag or Alt for resize)
+        # Track current interaction states
+        was_interactive = self.drag_enabled or self.resize_enabled
         need_interaction = ctrl_held or alt_held
 
-        if need_interaction and not self.drag_enabled:
-            self.drag_enabled = True
-            # Remove click-through to allow interaction
+        # Update mode states
+        self.drag_enabled = ctrl_held and not alt_held  # Ctrl only = drag
+        self.resize_enabled = alt_held and not ctrl_held  # Alt only = resize
+
+        if need_interaction and not was_interactive:
+            # Entering interaction mode - hide tooltip
+            self.tooltip.hide()
+            self.mouse_hovering = False
+
             self.setWindowFlags(
                 Qt.FramelessWindowHint |
                 Qt.WindowStaysOnTopHint |
@@ -464,16 +617,21 @@ class IvyOverlay(QWidget):
             )
             self.setAttribute(Qt.WA_TranslucentBackground)
             self.show()
-            # Activate window to receive wheel events
+            self.raise_()
             self.activateWindow()
             self.setFocus()
-            if ctrl_held:
-                self.setCursor(Qt.OpenHandCursor)
+            self.grabMouse()  # Always grab mouse in interaction mode
+
+            # Capture starting position for resize mode
+            if self.resize_enabled:
+                self.resize_start_y = QCursor.pos().y()
+                self.resize_start_scale = self.display_scale
+                self.setCursor(Qt.SizeVerCursor)
             else:
-                self.setCursor(Qt.SizeAllCursor)
-        elif not need_interaction and self.drag_enabled:
-            self.drag_enabled = False
-            # Restore click-through
+                self.setCursor(Qt.OpenHandCursor)
+        elif not need_interaction and was_interactive:
+            # Exiting interaction mode - always release mouse
+            self.releaseMouse()
             self.setWindowFlags(
                 Qt.FramelessWindowHint |
                 Qt.WindowStaysOnTopHint |
@@ -485,6 +643,12 @@ class IvyOverlay(QWidget):
             self.show()
             self.setCursor(Qt.ArrowCursor)
             self.save_config()
+        elif need_interaction:
+            # Update cursor based on current mode
+            if self.resize_enabled:
+                self.setCursor(Qt.SizeVerCursor)
+            elif self.drag_enabled:
+                self.setCursor(Qt.OpenHandCursor)
 
     def mousePressEvent(self, event):
         """Handle mouse press for drag."""
@@ -494,30 +658,18 @@ class IvyOverlay(QWidget):
             event.accept()
 
     def mouseMoveEvent(self, event):
-        """Handle mouse move for drag."""
-        if event.buttons() == Qt.LeftButton and self.drag_enabled:
-            self.move(event.globalPos() - self.drag_position)
-            event.accept()
+        """Handle mouse move for drag and resize."""
+        if self.resize_enabled:
+            # Alt + mouse up/down = resize
+            # Moving up = bigger, moving down = smaller
+            current_y = QCursor.pos().y()
+            delta_y = self.resize_start_y - current_y  # Invert: up is positive
 
-    def mouseReleaseEvent(self, event):
-        """Handle mouse release."""
-        if self.drag_enabled:
-            self.setCursor(Qt.OpenHandCursor)
-            self.save_config()
+            # Scale factor: 200 pixels of movement = 1.0 scale change
+            scale_change = delta_y / 200.0
+            new_scale = max(0.1, min(2.0, self.resize_start_scale + scale_change))
 
-    def wheelEvent(self, event):
-        """Handle mouse wheel for resize (Alt+wheel)."""
-        alt_held = (user32.GetAsyncKeyState(VK_MENU) & 0x8000) != 0
-
-        if alt_held:
-            # Get scroll delta
-            delta = event.angleDelta().y()
-
-            # Adjust scale (scroll up = bigger, scroll down = smaller)
-            scale_change = 0.05 if delta > 0 else -0.05
-            new_scale = max(0.2, min(3.0, self.display_scale + scale_change))
-
-            if new_scale != self.display_scale:
+            if abs(new_scale - self.display_scale) > 0.01:  # Only update if changed
                 self.display_scale = new_scale
 
                 # Update window and label size
@@ -527,12 +679,17 @@ class IvyOverlay(QWidget):
                 self.setFixedSize(new_w, new_h)
                 self.label.setGeometry(0, 0, new_w, new_h)
 
-                self.save_config()
-                print(f"Scale: {self.display_scale:.2f} ({new_w}x{new_h})")
-
             event.accept()
-        else:
-            event.ignore()
+        elif event.buttons() == Qt.LeftButton and self.drag_enabled:
+            # Ctrl + drag = move
+            self.move(event.globalPos() - self.drag_position)
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        """Handle mouse release."""
+        if self.drag_enabled:
+            self.setCursor(Qt.OpenHandCursor)
+            self.save_config()
 
     def save_config(self):
         """Save position and size to config.json."""
@@ -572,6 +729,8 @@ class IvyOverlay(QWidget):
     def closeEvent(self, event):
         """Handle window close."""
         self.running = False
+        self.tooltip.hide()
+        self.tooltip.close()
         self.save_config()
         print("Ivy Overlay closed")
         event.accept()
