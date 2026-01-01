@@ -241,16 +241,12 @@ class CheckinOrchestrator:
             dashboard_sh = self.elf_home / 'apps' / 'dashboard' / 'run-dashboard.sh'
 
             if sys.platform == 'win32':
-                # Launch in a NEW visible terminal window so user can close it
-                if dashboard_bat.exists():
-                    # CREATE_NEW_CONSOLE opens a new visible terminal window
+                # Launch PowerShell with -Command to avoid file association issues
+                if dashboard_ps1.exists():
+                    # Use & operator to invoke script as command, not "open" it
+                    cmd = f'& "{dashboard_ps1}"'
                     subprocess.Popen(
-                        [str(dashboard_bat)],
-                        creationflags=subprocess.CREATE_NEW_CONSOLE
-                    )
-                elif dashboard_ps1.exists():
-                    subprocess.Popen(
-                        ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(dashboard_ps1)],
+                        ['powershell', '-ExecutionPolicy', 'Bypass', '-NoExit', '-Command', cmd],
                         creationflags=subprocess.CREATE_NEW_CONSOLE
                     )
                 else:
