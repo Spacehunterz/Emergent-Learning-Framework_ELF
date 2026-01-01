@@ -209,16 +209,15 @@ class IvyOverlay(QWidget):
         # Apply slight feathering for smoother edges
         alpha = cv2.GaussianBlur(alpha, (3, 3), 0)
 
-        # Create face mask - ellipse covering face region (upper-center area)
-        # This prevents accidental transparency on dark face features (eyes, mouth shadows)
+        # Create face mask - ellipse covering head area
+        # This prevents accidental transparency on face features
         face_mask = np.zeros((h, w), dtype=np.uint8)
 
-        # Face ellipse centered horizontally, in upper portion of frame
-        # Typical Heygen avatar has face in upper 60% of frame
+        # Head ellipse centered horizontally, positioned for robot head
         center_x = w // 2
-        center_y = int(h * 0.30)  # Face center roughly 30% from top
-        axis_x = int(w * 0.25)    # Face width ~50% of frame width
-        axis_y = int(h * 0.22)    # Face height ~44% of frame height
+        center_y = int(h * 0.38)  # Head center at 38% from top
+        axis_x = int(w * 0.22)    # Head width reduced 20%
+        axis_y = int(h * 0.26)    # Head height reduced 20%
 
         cv2.ellipse(face_mask, (center_x, center_y), (axis_x, axis_y),
                     0, 0, 360, 255, -1)
@@ -303,7 +302,12 @@ class IvyOverlay(QWidget):
             print(f"No frames in phrase video: {phrase_path}")
             return False
 
+        # Debug: check phrase dimensions vs base dimensions
+        ph, pw = self.phrase_frames[0].shape[:2]
         print(f"Playing phrase: {phrase_name} ({len(self.phrase_frames)} frames)")
+        print(f"  Phrase dims: {pw}x{ph}, Base dims: {self.base_width}x{self.base_height}")
+        if pw != self.base_width or ph != self.base_height:
+            print(f"  WARNING: Dimension mismatch!")
 
         # Preload audio FIRST (before starting video)
         audio_path = phrase_path.replace('.mp4', '.mp3')
@@ -354,11 +358,13 @@ class IvyOverlay(QWidget):
 
     def _update_display(self):
         """30fps timer callback - advance frame and update display."""
+        is_phrase = False
         if self.is_playing_phrase:
             # Playing phrase video
             if self.phrase_frame_idx < len(self.phrase_frames):
                 frame = self.phrase_frames[self.phrase_frame_idx]
                 self.phrase_frame_idx += 1
+                is_phrase = True
             else:
                 # Phrase finished
                 self._on_phrase_complete()
@@ -376,9 +382,9 @@ class IvyOverlay(QWidget):
                 return
 
         # Display the frame
-        self._display_frame(frame)
+        self._display_frame(frame, is_phrase=is_phrase)
 
-    def _display_frame(self, frame):
+    def _display_frame(self, frame, is_phrase=False):
         """Display a BGRA frame on the QLabel."""
         if frame is None:
             return
@@ -388,22 +394,15 @@ class IvyOverlay(QWidget):
         # Convert BGRA to RGBA for Qt
         frame_rgba = cv2.cvtColor(frame, cv2.COLOR_BGRA2RGBA)
 
-        # Create QImage
+        # Create QImage - need to copy data to avoid memory issues
         q_img = QImage(
-            frame_rgba.data,
+            frame_rgba.tobytes(),
             w, h,
-            4 * w,  # bytes per line
+            4 * w,
             QImage.Format_RGBA8888
         )
 
         pixmap = QPixmap.fromImage(q_img)
-
-        # Scale if display_scale != 1.0
-        if self.display_scale != 1.0:
-            new_w = int(w * self.display_scale)
-            new_h = int(h * self.display_scale)
-            pixmap = pixmap.scaled(new_w, new_h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-
         self.label.setPixmap(pixmap)
 
     def _setup_window(self, config):
@@ -418,14 +417,16 @@ class IvyOverlay(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_ShowWithoutActivating)
 
-        # Create label for displaying frames
-        self.label = QLabel(self)
-
         # Calculate display size
         display_w = int(self.base_width * self.display_scale)
         display_h = int(self.base_height * self.display_scale)
 
-        self.label.setFixedSize(display_w, display_h)
+        # Create label filling window
+        self.label = QLabel(self)
+        self.label.setGeometry(0, 0, display_w, display_h)
+        self.label.setScaledContents(True)
+
+        # Set window size
         self.setFixedSize(display_w, display_h)
 
         # Position - use saved or default to lower-right corner
@@ -522,7 +523,7 @@ class IvyOverlay(QWidget):
                 new_h = int(self.base_height * self.display_scale)
 
                 self.setFixedSize(new_w, new_h)
-                self.label.setFixedSize(new_w, new_h)
+                self.label.setGeometry(0, 0, new_w, new_h)
 
                 self.save_config()
                 print(f"Scale: {self.display_scale:.2f} ({new_w}x{new_h})")

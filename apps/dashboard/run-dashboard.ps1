@@ -38,14 +38,17 @@ function Start-Backend {
         -WindowStyle Hidden
 }
 
-# Detect package manager
+# Detect package manager (prefer bun, fallback to npm)
 $PkgMgr = $null
-if (Get-Command "bun" -ErrorAction SilentlyContinue) {
+$bunPath = "$env:USERPROFILE\.bun\bin\bun.exe"
+if (Test-Path $bunPath) {
+    $PkgMgr = $bunPath
+} elseif (Get-Command "bun" -ErrorAction SilentlyContinue) {
     $PkgMgr = "bun"
 } elseif (Get-Command "npm" -ErrorAction SilentlyContinue) {
     $PkgMgr = "npm"
 } else {
-    Write-Host "Error: Neither bun nor npm found. Install from https://bun.sh or https://nodejs.org" -ForegroundColor Red
+    Write-Host "Error: Neither bun nor npm found" -ForegroundColor Red
     exit 1
 }
 
@@ -72,7 +75,7 @@ function Start-TalkinHead {
 
 # Start servers
 Start-Backend
-Start-Sleep -Seconds 3
+Start-Sleep -Seconds 6  # Backend needs time to scan sessions
 Start-Frontend
 Start-Sleep -Seconds 2
 Start-TalkinHead
