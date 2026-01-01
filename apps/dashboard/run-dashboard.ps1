@@ -54,11 +54,25 @@ function Start-Frontend {
         -WindowStyle Hidden
 }
 
+# Function to start TalkinHead (Ivy overlay)
+$TalkinHeadPath = Join-Path $DashboardPath "TalkinHead"
+function Start-TalkinHead {
+    if (Test-Path (Join-Path $TalkinHeadPath "main.py")) {
+        Write-Host "[Starting] TalkinHead (Ivy overlay)..." -ForegroundColor Yellow
+        Start-Process -FilePath "python" `
+            -ArgumentList "main.py" `
+            -WorkingDirectory $TalkinHeadPath `
+            -WindowStyle Hidden
+    }
+}
+
 # Start servers
 Start-Backend
 Start-Sleep -Seconds 3
 Start-Frontend
-Start-Sleep -Seconds 4
+Start-Sleep -Seconds 2
+Start-TalkinHead
+Start-Sleep -Seconds 2
 
 # Open browser
 Write-Host "[Opening] Browser..." -ForegroundColor Yellow
@@ -93,6 +107,14 @@ function Stop-Servers {
     } catch {
         Write-Host "  Cleanup complete" -ForegroundColor Green
     }
+
+    # Kill TalkinHead overlay (find python running main.py in TalkinHead folder)
+    try {
+        Get-Process python -ErrorAction SilentlyContinue | Where-Object {
+            $_.MainWindowTitle -match "TalkinHead" -or $_.Path -match "TalkinHead"
+        } | Stop-Process -Force -ErrorAction SilentlyContinue
+        Write-Host "  TalkinHead stopped" -ForegroundColor Green
+    } catch { }
 
     Write-Host "Goodbye!" -ForegroundColor Cyan
 }
