@@ -9,7 +9,7 @@ $FrontendPath = Join-Path $DashboardPath "frontend"
 
 # Write PID file so TalkinHead knows to close when this terminal closes
 $PidFile = Join-Path $env:USERPROFILE ".elf-dashboard.pid"
-$PID | Out-File $PidFile -Force -NoNewline
+[System.IO.File]::WriteAllText($PidFile, $PID.ToString())
 
 Clear-Host
 Write-Host "========================================================" -ForegroundColor Cyan
