@@ -243,15 +243,15 @@ class CheckinOrchestrator:
             if sys.platform == 'win32':
                 # Launch in a NEW visible terminal window so user can close it
                 if dashboard_bat.exists():
-                    # Use 'start' to open in new window with title
+                    # CREATE_NEW_CONSOLE opens a new visible terminal window
                     subprocess.Popen(
-                        ['cmd', '/c', 'start', 'ELF Dashboard', str(dashboard_bat)],
-                        shell=False
+                        [str(dashboard_bat)],
+                        creationflags=subprocess.CREATE_NEW_CONSOLE
                     )
                 elif dashboard_ps1.exists():
                     subprocess.Popen(
-                        ['cmd', '/c', 'start', 'ELF Dashboard', 'powershell', '-ExecutionPolicy', 'Bypass', '-File', str(dashboard_ps1)],
-                        shell=False
+                        ['powershell', '-ExecutionPolicy', 'Bypass', '-File', str(dashboard_ps1)],
+                        creationflags=subprocess.CREATE_NEW_CONSOLE
                     )
                 else:
                     print(f"   [!] Dashboard script not found")
