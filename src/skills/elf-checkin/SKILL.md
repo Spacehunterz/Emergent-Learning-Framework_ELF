@@ -29,13 +29,26 @@ The checkin command is simple - just type `/checkin` to load framework context a
 
 ## Execution
 
-This skill runs the new Python-based orchestrator:
+This skill runs the Python-based orchestrator in non-interactive mode:
 
 ```bash
-python ~/.claude/emergent-learning/elf.py checkin
-# OR directly:
-python ~/.claude/emergent-learning/src/query/checkin.py
+python ~/.claude/emergent-learning/src/query/checkin.py --non-interactive
 ```
+
+### Handling Non-Interactive Mode
+
+The `--non-interactive` flag tells the script to output `[PROMPT_NEEDED]` JSON hints
+instead of blocking on `input()`. When you see these in the output:
+
+1. **Dashboard prompt**: `[PROMPT_NEEDED] {"type": "dashboard", ...}`
+   - Use `AskUserQuestion` tool to ask: "Start ELF Dashboard?"
+   - Options: "Yes (Recommended)" / "No"
+   - If yes, run: `bash ~/.claude/emergent-learning/dashboard-app/run-dashboard.sh`
+
+2. **Model selection**: `[PROMPT_NEEDED] {"type": "model", ...}`
+   - Use `AskUserQuestion` tool to ask: "Which AI model for this session?"
+   - Options: "Claude (Recommended)" / "Gemini" / "Codex" / "Skip"
+   - Store selection for subagent routing
 
 The orchestrator is a complete 8-step workflow:
 - Step 1: Display banner
