@@ -2326,12 +2326,18 @@ Error Codes:
                        help='Show current project context and status')
     parser.add_argument('--project-only', action='store_true',
                        help='Only show project-specific context (no global)')
+    parser.add_argument('--location', type=str,
+                       help='Override working directory for project detection and location-aware queries')
 
     args = parser.parse_args()
 
     # Initialize query system with error handling
     try:
-        query_system = QuerySystem(base_path=args.base_path, debug=args.debug)
+        query_system = QuerySystem(
+            base_path=args.base_path,
+            debug=args.debug,
+            current_location=args.location  # Pass location for project detection
+        )
     except QuerySystemError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 1
@@ -2419,7 +2425,9 @@ Error Codes:
             # Show project context and status
             try:
                 from project import detect_project_context, format_project_status
-                ctx = detect_project_context()
+                # Use --location if provided, otherwise detect_project_context uses CWD
+                start_path = Path(args.location) if args.location else None
+                ctx = detect_project_context(start_path)
                 print(format_project_status(ctx))
                 return 0
             except ImportError:
@@ -2432,7 +2440,9 @@ Error Codes:
                 from project import detect_project_context
                 import sqlite3
 
-                ctx = detect_project_context()
+                # Use --location if provided
+                start_path = Path(args.location) if args.location else None
+                ctx = detect_project_context(start_path)
                 if not ctx.has_project_context():
                     print("ERROR: No .elf/ found. Run elf init first.", file=sys.stderr)
                     return 1

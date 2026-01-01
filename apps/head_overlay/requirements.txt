@@ -1,5 +1,0 @@
-PyQt5
-opencv-python
-numpy
-sounddevice
-soundfile

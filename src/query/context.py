@@ -188,7 +188,10 @@ class ContextBuilderMixin:
                 project_ctx = None
                 if PROJECT_CONTEXT_AVAILABLE:
                     try:
-                        project_ctx = detect_project_context()
+                        # Use current_location from QueryEngine for project detection
+                        from pathlib import Path
+                        start_path = Path(self.current_location) if hasattr(self, 'current_location') and self.current_location else None
+                        project_ctx = detect_project_context(start_path)
                         if project_ctx.has_project_context():
                             self._log_debug(f"Detected project: {project_ctx.project_name} at {project_ctx.elf_root}")
 

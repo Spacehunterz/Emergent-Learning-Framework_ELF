@@ -178,7 +178,8 @@ class QuerySystem(
 
     @classmethod
     async def create(cls, base_path: Optional[str] = None, debug: bool = False,
-                     session_id: Optional[str] = None, agent_id: Optional[str] = None) -> 'QuerySystem':
+                     session_id: Optional[str] = None, agent_id: Optional[str] = None,
+                     current_location: Optional[str] = None) -> 'QuerySystem':
         """
         Async factory method to create a QuerySystem instance.
 
@@ -188,6 +189,7 @@ class QuerySystem(
             debug: Enable debug logging
             session_id: Optional session ID for query logging
             agent_id: Optional agent ID for query logging
+            current_location: Override working directory for project detection
 
         Returns:
             Configured QuerySystem instance
@@ -200,8 +202,8 @@ class QuerySystem(
         else:
             base_path = get_base_path()
 
-        # Create instance
-        instance = cls(base_path, debug, session_id, agent_id)
+        # Create instance with location awareness
+        instance = cls(base_path, debug, session_id, agent_id, current_location)
 
         # Ensure directories exist
         try:
