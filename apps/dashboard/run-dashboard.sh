@@ -114,18 +114,27 @@ fi
 
 # Start TalkinHead overlay (Windows only)
 TALKINHEAD_PATH="$SCRIPT_DIR/TalkinHead"
+TALKINHEAD_LOCK="$HOME/.elf-talkinhead.lock"
 if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ -n "$MSYSTEM" ]]; then
-    # Check if TalkinHead already running
-    if ! tasklist 2>/dev/null | grep -q "pythonw.exe"; then
+    # Check if TalkinHead already running via lockfile
+    TALKINHEAD_RUNNING=false
+    if [ -f "$TALKINHEAD_LOCK" ]; then
+        TALKINHEAD_PID=$(cat "$TALKINHEAD_LOCK" 2>/dev/null)
+        if [ -n "$TALKINHEAD_PID" ] && tasklist //FI "PID eq $TALKINHEAD_PID" 2>/dev/null | grep -q "$TALKINHEAD_PID"; then
+            TALKINHEAD_RUNNING=true
+        fi
+    fi
+
+    if [ "$TALKINHEAD_RUNNING" = false ]; then
         if [ -f "$TALKINHEAD_PATH/main.py" ]; then
             echo "[Starting] TalkinHead overlay..."
-            # Write PID file for orphan detection
+            # Write dashboard PID file for orphan detection
             echo $$ > ~/.elf-dashboard.pid
             cd "$TALKINHEAD_PATH" && pythonw main.py &
             STARTED_SERVERS=true
         fi
     else
-        echo "[OK] TalkinHead already running"
+        echo "[OK] TalkinHead already running (PID $TALKINHEAD_PID)"
     fi
 fi
 
