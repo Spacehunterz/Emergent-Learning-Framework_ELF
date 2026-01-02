@@ -591,15 +591,15 @@ class IvyOverlay(QWidget):
             # Still hovering - update position (in case overlay moved)
             self._update_tooltip_position()
 
-        # Ctrl+Q to quit (emit signal for goodbye sequence)
-        if ctrl_held and q_held:
+        # Ctrl+Q to quit (only when hovering over overlay)
+        if ctrl_held and q_held and is_hovering:
             print("Ctrl+Q pressed - requesting quit...")
             self.quit_requested.emit()
             return
 
         # Track current interaction states
         was_interactive = self.drag_enabled or self.resize_enabled
-        need_interaction = ctrl_held or alt_held
+        need_interaction = (ctrl_held or alt_held) and is_hovering
 
         # Update mode states
         self.drag_enabled = ctrl_held and not alt_held  # Ctrl only = drag
