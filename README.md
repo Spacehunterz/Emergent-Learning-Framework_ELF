@@ -211,18 +211,9 @@ python -m query --validate
 
 See [query/MIGRATION.md](query/MIGRATION.md) for migration guide from sync API.
 
-## Swarm Agents
+## Swarm Agents (100 Specialists)
 
-| Agent | Role |
-|-------|------|
-| **Researcher** | Deep investigation, gather evidence |
-| **Architect** | System design, big picture |
-| **Skeptic** | Break things, find edge cases |
-| **Creative** | Novel solutions, lateral thinking |
-
-### Agent Pool (100 Specialists)
-
-Beyond the core personas, ELF integrates **100 specialized agents** from the [wshobson/agents](https://github.com/wshobson/agents) collection:
+ELF integrates **100 specialized agents** from [wshobson/agents](https://github.com/wshobson/agents):
 
 | Category | Agents | Use Case |
 |----------|--------|----------|
