@@ -9,60 +9,67 @@ Query the Emergent Learning Framework for institutional knowledge and summarize 
    python ~/.claude/emergent-learning/src/query/query.py --context
    ```
 
-2. **Summarize the previous session (using Task tool with haiku):**
+2. **Summarize the previous session using Task(model="haiku"):**
 
-   First, extract session data using Python:
-   ```bash
-   python ~/.claude/emergent-learning/scripts/extract-session-data.py --previous --json
-   ```
-
-   This outputs JSON with: session_id, project, message_count, tool_counts, files_touched, user_prompts.
-
-   Then use the **Task tool** with `model="haiku"` and `run_in_background=true`:
-   ```
-   Task tool parameters:
-   - subagent_type: "general-purpose"
-   - model: "haiku"
-   - run_in_background: true
-   - prompt: "Summarize this Claude Code session data. Return ONLY a JSON object with these three fields:
-     - tool_summary: one line describing what tools were used
-     - content_summary: one line about what files/code was worked on
-     - conversation_summary: one line about what the user asked for and what was done
-
-     Session data: [paste the JSON from extract-session-data.py]"
-   ```
-
-   After getting the haiku response, store it in database:
+   First, extract session data:
    ```bash
    python -c "
+from pathlib import Path
 import json
 import sqlite3
-from pathlib import Path
-from datetime import datetime
 
-# Replace these with actual values from haiku response
-session_id = 'SESSION_ID_HERE'
-project = 'PROJECT_HERE'
-summary = {
-    'tool_summary': 'TOOL_SUMMARY_HERE',
-    'content_summary': 'CONTENT_SUMMARY_HERE',
-    'conversation_summary': 'CONVERSATION_SUMMARY_HERE'
-}
+sessions = sorted(Path.home().glob('.claude/projects/*/*.jsonl'), key=lambda p: p.stat().st_mtime, reverse=True)
+non_agent = [s for s in sessions if 'agent-' not in s.name]
 
-db = Path.home() / '.claude/emergent-learning/memory/index.db'
-conn = sqlite3.connect(str(db))
-cur = conn.cursor()
-cur.execute('''
-    INSERT OR REPLACE INTO session_summaries (
-        session_id, project, tool_summary, content_summary, conversation_summary,
-        summarized_at, summarizer_model, is_stale
-    ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 'haiku', 0)
-''', (session_id, project, summary['tool_summary'], summary['content_summary'], summary['conversation_summary']))
-conn.commit()
-conn.close()
-print(f'Stored summary for {session_id[:8]}...')
+if len(non_agent) >= 2:
+    prev = non_agent[1]
+    session_id = prev.stem
+    project = prev.parent.name
+
+    # Check if already summarized with haiku
+    db = Path.home() / '.claude/emergent-learning/memory/index.db'
+    conn = sqlite3.connect(str(db))
+    cur = conn.cursor()
+    cur.execute('SELECT summarizer_model FROM session_summaries WHERE session_id = ?', (session_id,))
+    row = cur.fetchone()
+    conn.close()
+
+    if row and row[0] == 'haiku':
+        print(f'ALREADY_SUMMARIZED:{session_id[:8]}')
+    else:
+        # Extract data for haiku
+        tool_counts = {}
+        msg_count = 0
+        with open(prev, 'r', encoding='utf-8') as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    data = json.loads(line)
+                    if data.get('isSidechain'):
+                        continue
+                    if data.get('type') == 'user':
+                        msg_count += 1
+                    elif data.get('type') == 'assistant':
+                        for item in data.get('message', {}).get('content', []):
+                            if isinstance(item, dict) and item.get('type') == 'tool_use':
+                                name = item.get('name', 'unknown')
+                                tool_counts[name] = tool_counts.get(name, 0) + 1
+                except:
+                    pass
+        tools_str = ', '.join(f'{v}x {k}' for k, v in sorted(tool_counts.items(), key=lambda x: -x[1])[:5])
+        print(f'NEEDS_SUMMARY:{session_id}|{project}|{msg_count}|{tools_str}')
+else:
+    print('NO_PREVIOUS_SESSION')
 "
    ```
+
+   If output shows `NEEDS_SUMMARY:session_id|project|msg_count|tools`:
+   - Use `Task(model="haiku", subagent_type="general-purpose")` to summarize
+   - Prompt: "Summarize this session. Return JSON only: {tool_summary, content_summary, conversation_summary}"
+   - Save result to database with `summarizer_model = 'haiku'`
+
+   **IMPORTANT:** Per Golden Rule #11, use Task tool (Max subscription) NOT subprocess API calls.
 
 3. Show the latest session summary from database:
    ```bash
@@ -100,23 +107,45 @@ conn.close()
    └────────────────────────────────────┘
    ```
 
-5. Summarize for the user:
-   - Active golden rules count
-   - Relevant heuristics for current work
-   - Any pending CEO decisions
-   - Active experiments
+5. Get ELF stats (IMPORTANT: golden rules are stored in heuristics table with is_golden=1, NOT a separate golden_rules table):
+   ```bash
+   python -c "
+import sqlite3
+from pathlib import Path
+db = Path.home() / '.claude/emergent-learning/memory/index.db'
+conn = sqlite3.connect(str(db))
+cur = conn.cursor()
+cur.execute('SELECT COUNT(*) FROM heuristics WHERE status=\"active\"')
+heuristics = cur.fetchone()[0]
+cur.execute('SELECT COUNT(*) FROM heuristics WHERE is_golden=1 AND status=\"active\"')
+golden = cur.fetchone()[0]
+cur.execute('SELECT COUNT(*) FROM experiments WHERE status=\"active\"')
+experiments = cur.fetchone()[0]
+print(f'Active heuristics: {heuristics}')
+print(f'Golden rules: {golden}')
+print(f'Active experiments: {experiments}')
+conn.close()
+"
+   ```
+
+6. Summarize for the user:
+   - Stats from step 5 (heuristics, golden rules, experiments)
+   - Relevant heuristics for current work (from step 1 context)
+   - Any pending CEO decisions (from step 10 health check)
    - **Last session summary** (from step 3)
 
-6. Ask: "Start ELF Dashboard? [Y/n]"
+7. Ask: "Start ELF Dashboard? [Y/n]"
    - Only ask on FIRST checkin of conversation
-   - If Yes: `bash ~/.claude/emergent-learning/dashboard-app/run-dashboard.sh`
+   - If Yes (run both in background):
+     - Dashboard: `cd ~/.claude/emergent-learning/apps/dashboard && bash run-dashboard.sh`
+     - TalkinHead: `cd ~/.claude/emergent-learning/apps/dashboard/TalkinHead && python main.py`
    - If No: Skip
 
-7. If there are pending CEO decisions, list them and ask if the user wants to address them.
+8. If there are pending CEO decisions, list them and ask if the user wants to address them.
 
-8. If there are active experiments, briefly note their status.
+9. If there are active experiments, briefly note their status.
 
-9. **Database Health Check** (optional, on first checkin):
+10. **Database Health Check** (optional, on first checkin):
 
    Run quick health check:
    ```bash
