@@ -1,11 +1,11 @@
 # /swarm - Coordinated Multi-Agent Execution
 
-Spawn and manage coordinated agents using the blackboard pattern.
+Spawn and manage coordinated agents using the blackboard pattern with access to 99 specialized agents.
 
 ## Usage
 
 ```
-/swarm [task]    # Execute task with monitoring
+/swarm [task]    # Execute task with agent picker
 /swarm show      # View full state
 /swarm reset     # Clear blackboard
 /swarm stop      # Stop monitoring
@@ -22,22 +22,31 @@ Spawn and manage coordinated agents using the blackboard pattern.
 
 ---
 
-## How Monitoring Works
+## Agent Pool (99 Specialists)
 
-**Single-Pass Watcher Model:**
-1. You spawn work agents with `[SWARM]` tag
-2. Hook reminds main Claude if watcher needed
-3. Main Claude spawns haiku watcher (single pass)
-4. Watcher analyzes state, fixes problems, logs, exits
-5. Next user message triggers next monitoring cycle
+Agents are loaded from `~/.claude/agents/plugins/` with catalog at `~/.claude/agents/agent-catalog.json`.
 
-Watchers do NOT self-perpetuate (cost control). The cycle is driven by user interaction.
+### Categories
+
+| Category | Agents | Use Case |
+|----------|--------|----------|
+| **backend** | backend-architect, graphql-architect, fastapi-pro, django-pro, event-sourcing-architect | API design, microservices |
+| **frontend** | frontend-developer, mobile-developer, flutter-expert, ios-developer, ui-ux-designer | UI/UX, mobile apps |
+| **infrastructure** | cloud-architect, kubernetes-architect, terraform-specialist, deployment-engineer, devops-troubleshooter | DevOps, cloud |
+| **security** | security-auditor, threat-modeling-expert, backend-security-coder, frontend-security-coder | Security hardening |
+| **database** | database-architect, database-optimizer, sql-pro, data-engineer | Schema, queries |
+| **quality** | code-reviewer, test-automator, architect-review, tdd-orchestrator | Reviews, testing |
+| **ai_ml** | ai-engineer, prompt-engineer, ml-engineer, data-scientist | AI/ML development |
+| **debugging** | debugger, error-detective, incident-responder, dx-optimizer | Error analysis |
+| **documentation** | docs-architect, api-documenter, mermaid-expert, tutorial-engineer | Docs, diagrams |
+| **languages** | python-pro, typescript-pro, rust-pro, golang-pro, java-pro + 12 more | Language specialists |
+| **observability** | observability-engineer, performance-engineer | Monitoring, metrics |
 
 ---
 
 ## Instructions
 
-### `/swarm <task>` (Execute)
+### `/swarm <task>` (Execute with Agent Picker)
 
 **With task:** Start fresh coordinated execution
 
@@ -47,38 +56,79 @@ Watchers do NOT self-perpetuate (cost control). The cycle is driven by user inte
    python ~/.claude/emergent-learning/watcher/watcher_loop.py clear
    ```
 
-2. **Analyze & decompose** the task into parallel subtasks
+2. **Analyze task** and recommend agents from pool:
 
-3. **Show plan**:
+   Based on task keywords, suggest relevant specialists:
+   - Authentication → security-auditor, backend-architect
+   - API design → backend-architect, graphql-architect
+   - Performance → performance-engineer, debugger
+   - Frontend → frontend-developer, ui-ux-designer
+   - Database → database-architect, sql-pro
+
+3. **Show agent picker**:
    ```
    ## Swarm Plan
 
    **Task:** [task]
-   **Agents:** [count]
 
-   | # | Subtask | Scope |
-   |---|---------|-------|
-   | 1 | ... | src/... |
-   | 2 | ... | tests/... |
+   ### Recommended Agents:
 
-   Proceed? [Y/n]
+   CORE (recommended):
+   [x] backend-architect (opus) - API design, microservices
+   [x] security-auditor (opus) - Security review
+
+   SUPPORT (optional):
+   [ ] test-automator (sonnet) - Test coverage
+   [ ] code-reviewer (opus) - Code review
+   [ ] debugger (sonnet) - Error analysis
+
+   ### Custom Selection:
+   Categories: backend, frontend, security, database, quality, ai_ml, debugging, docs, languages
+
+   [Start] [Auto-select all] [Cancel]
    ```
 
-4. **Spawn work agents** using Task tool with `[SWARM]` marker:
+4. **Load agent persona** from pool:
+
+   For each selected agent, read its persona:
+   ```bash
+   cat ~/.claude/agents/plugins/*/agents/[agent-name].md | head -50
+   ```
+
+   The persona file contains:
+   - YAML frontmatter (name, description, model tier)
+   - Full persona instructions
+
+5. **Spawn work agents** using Task tool with agent persona:
 
    **IMPORTANT:**
-   - Always include `[SWARM]` in description (triggers hooks)
-   - Always use `run_in_background: true` (Golden Rule #12)
+   - Include `[SWARM]` in description (triggers hooks)
+   - Use `run_in_background: true` (Golden Rule #12)
+   - Include agent persona in prompt
 
    ```
    Task tool call:
-   - description: "[SWARM] Investigate auth service"
-   - prompt: "Your task: ..."
+   - description: "[SWARM] backend-architect: Design API"
+   - prompt: |
+       ## Agent Persona
+       [Insert persona from ~/.claude/agents/plugins/.../backend-architect.md]
+
+       ## Task
+       Your task: ...
+
+       ## Output Format
+       Report findings in ## FINDINGS section
    - subagent_type: "general-purpose"
+   - model: "opus" | "sonnet" | "haiku" (per agent tier)
    - run_in_background: true
    ```
 
-5. **Spawn watcher** (optional but recommended):
+   **Model Selection by Agent Tier:**
+   - Tier 1 (Opus): architecture, security, code review agents
+   - Tier 2 (Inherit/Sonnet): most specialists
+   - Tier 3 (Haiku): fast operational tasks
+
+6. **Spawn watcher** (optional but recommended):
    ```bash
    python ~/.claude/emergent-learning/watcher/watcher_loop.py prompt
    ```
@@ -92,19 +142,11 @@ Watchers do NOT self-perpetuate (cost control). The cycle is driven by user inte
    - prompt: (output from above command)
    ```
 
-   The watcher will:
-   - Do ONE comprehensive monitoring pass
-   - Detect problems (stale agents, errors)
-   - Fix issues directly (update blackboard)
-   - Log findings and exit
+7. **Iterate** on follow-up tasks from queue (max 5 iterations)
 
-   A UserPromptSubmit hook will remind you to spawn another watcher if needed.
+8. **Synthesize** all findings into summary
 
-6. **Iterate** on follow-up tasks from queue (max 5 iterations)
-
-7. **Synthesize** all findings into summary
-
-8. **Stop monitoring** when done:
+9. **Stop monitoring** when done:
    ```bash
    python ~/.claude/emergent-learning/watcher/watcher_loop.py stop
    ```
@@ -134,7 +176,25 @@ Stop monitoring:
 python ~/.claude/emergent-learning/watcher/watcher_loop.py stop
 ```
 
-This creates a `watcher-stop` file that prevents future watcher spawns.
+---
+
+## Task-to-Agent Mapping
+
+Use this reference when selecting agents:
+
+| Task Type | Primary Agents | Support Agents |
+|-----------|---------------|----------------|
+| **New API** | backend-architect, graphql-architect | security-auditor, test-automator |
+| **Auth System** | security-auditor, backend-security-coder | backend-architect |
+| **Frontend Feature** | frontend-developer, ui-ux-designer | test-automator |
+| **Database Schema** | database-architect, sql-pro | backend-architect |
+| **Performance Issue** | performance-engineer, debugger | observability-engineer |
+| **Code Review** | code-reviewer, architect-review | security-auditor |
+| **Refactoring** | legacy-modernizer, code-reviewer | test-automator |
+| **CI/CD Pipeline** | deployment-engineer, devops-troubleshooter | terraform-specialist |
+| **Kubernetes** | kubernetes-architect, cloud-architect | network-engineer |
+| **ML Pipeline** | ml-engineer, data-scientist | mlops-engineer |
+| **Documentation** | docs-architect, api-documenter | mermaid-expert |
 
 ---
 
