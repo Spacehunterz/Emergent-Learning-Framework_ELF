@@ -220,6 +220,34 @@ See [query/MIGRATION.md](query/MIGRATION.md) for migration guide from sync API.
 | **Skeptic** | Break things, find edge cases |
 | **Creative** | Novel solutions, lateral thinking |
 
+### Agent Pool (100 Specialists)
+
+Beyond the core personas, ELF integrates **100 specialized agents** from the [wshobson/agents](https://github.com/wshobson/agents) collection:
+
+| Category | Agents | Use Case |
+|----------|--------|----------|
+| **backend** | backend-architect, graphql-architect, fastapi-pro | API design, microservices |
+| **frontend** | frontend-developer, mobile-developer, ui-ux-designer | UI/UX, mobile apps |
+| **infrastructure** | cloud-architect, kubernetes-architect, terraform-specialist | DevOps, cloud |
+| **security** | security-auditor, threat-modeling-expert | Security hardening |
+| **database** | database-architect, sql-pro, data-engineer | Schema, queries |
+| **quality** | code-reviewer, test-automator, tdd-orchestrator | Reviews, testing |
+| **ai_ml** | ai-engineer, prompt-engineer, ml-engineer | AI/ML development |
+| **languages** | python-pro, typescript-pro, rust-pro, golang-pro + 13 more | Language specialists |
+
+**Install agent pool:**
+```bash
+./tools/setup/install-agents.sh
+```
+
+**Use with swarm:**
+```bash
+/swarm implement a new REST API    # Auto-selects backend-architect, security-auditor
+/swarm optimize database queries   # Auto-selects database-architect, sql-pro
+```
+
+See [Swarm Wiki](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/wiki/Swarm) for full agent list and usage.
+
 ## Documentation
 
 **Quick Start:** [Getting Started Guide](GETTING_STARTED.md) - Step-by-step setup from zero to running
@@ -299,6 +327,10 @@ SOFTWARE.
 <a href="https://www.buymeacoffee.com/Spacehunterz">
   <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="150">
 </a>
+
+## Credits
+
+- **Agent Pool:** [wshobson/agents](https://github.com/wshobson/agents) - 100 specialized agent personas by [@wshobson](https://github.com/wshobson)
 
 ## Development Status
 
