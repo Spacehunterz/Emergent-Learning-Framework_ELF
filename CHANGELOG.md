@@ -5,6 +5,18 @@ All notable changes to the Emergent Learning Framework will be documented in thi
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.9] - 2026-01-04
+
+### Changed
+- **Swarm Skill** - Complete rewrite with full agent pool (~100+ specialized agents)
+  - Replaced 4-agent pattern (Researcher/Architect/Creative/Skeptic) with domain-based selection
+  - Added `ultrathink` mode: 15-25 agents for maximum depth analysis
+  - Added `focused` mode: 4-8 agents for targeted domain analysis
+  - Added `quick` mode: 2-4 agents for fast surveys
+  - Domain-to-agent mapping table (Python, TypeScript, Security, Databases, etc.)
+  - Async-first execution rules documented
+  - Anti-patterns section to prevent common mistakes
+
 ## [0.3.2] - 2025-12-28
 
 ### Fixed
