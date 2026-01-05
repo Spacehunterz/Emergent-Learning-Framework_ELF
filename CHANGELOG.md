@@ -5,6 +5,19 @@ All notable changes to the Emergent Learning Framework will be documented in thi
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.11] - 2026-01-05
+
+### Fixed
+- **Exponential Backoff in Auto-Capture** - Added backoff (2^n up to 300s) on consecutive errors to prevent tight error loops
+- **Session ID Validation** - UUID format validation before subprocess calls in summarizer
+- **Fraud Detector Error Propagation** - `_store_fraud_report` now returns bool; response actions only execute on successful storage
+- **Thread-Safe Session Index** - Added `threading.RLock` protecting `_index` across all methods (scan, list, get)
+- **Timeline Event Type Validation** - Validate `event_type` against enum before TypeScript cast
+- **Subprocess Timeout Handling** - Explicit `TimeoutExpired` handling with specific error messages in summarizers
+- **Session Corruption Tracking** - New `is_partial` and `corruption_count` fields in `SessionMetadata` for JSON parse errors
+- **SQLite JSON Queries** - Replaced fragile `LIKE '%"outcome": "unknown"%'` with `json_extract(output_json, '$.outcome')`
+- **Editor Error Toast** - Show notification when "open in editor" fails instead of silent failure
+
 ## [0.3.10] - 2026-01-05
 
 ### Added
