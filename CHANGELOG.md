@@ -22,6 +22,26 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **CONTRIBUTING.md** - Developer onboarding, code style guide, PR workflow
 - **Test Infrastructure** - Test files for critical bugs (WebSocket stress, auto-capture rollback, broadcast race)
 
+### Fixed
+- **SQL Injection Vulnerability** - Added whitelist-based validation in `main.py`
+  - `ALLOWED_TABLE_CONFIGS` dictionary with valid tables, columns, and order_by fields
+  - `_validate_query_params()` function with O(1) frozenset lookups
+  - Blocks all SQL injection attempts in dynamic query building
+- **Path Traversal Vulnerability** - Hardened `admin.py` file access
+  - `_is_path_allowed()` validates paths against allowed directories
+  - Symlink resolution with `strict=True` for security
+  - Defense-in-depth for `/ceo-inbox/{filename}` endpoint
+- **Python 3.14 Test Compatibility** - Fixed `test_auto_capture_rollback.py`
+  - Added `@contextmanager` decorator to mock context functions
+  - Removed monkey-patching of read-only sqlite3 attributes
+  - Added `gc.collect()` retry loop for Windows file locking in `conftest.py`
+
+### Changed
+- **Documentation Organization** - Moved analysis docs to `docs/analysis/`
+  - CRITICAL_BUGS_QUICKREF.md, DEBUG_ANALYSIS_REPORT.md
+  - DOCUMENTATION_ARCHITECTURE_ANALYSIS.md, TEST_SUMMARY.md
+- **Gitignore** - Added `**/rembg_env/` pattern for Python virtual environments
+
 ## [0.3.11] - 2026-01-05
 
 ### Fixed
