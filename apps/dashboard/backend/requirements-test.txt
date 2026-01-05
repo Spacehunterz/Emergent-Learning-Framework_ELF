@@ -1,0 +1,22 @@
+# Testing dependencies for Emergent Learning Dashboard backend tests
+#
+# Install with: pip install -r requirements-test.txt
+
+# Core testing framework
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# Coverage reporting
+pytest-cov>=4.1.0
+
+# Parallel test execution (optional)
+pytest-xdist>=3.3.0
+
+# Timeout support (optional)
+pytest-timeout>=2.1.0
+
+# Better assertion introspection
+pytest-clarity>=1.0.1
+
+# Test count/repeat (optional for stress testing)
+pytest-repeat>=0.9.1
