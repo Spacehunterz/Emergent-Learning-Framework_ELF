@@ -27,8 +27,11 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env.local (development) or .env (production)
+from pathlib import Path
+env_local = Path(__file__).parent / ".env.local"
+env_file = env_local if env_local.exists() else Path(__file__).parent / ".env"
+load_dotenv(env_file)
 
 # Path import helpers
 def _import_get_base_path() -> Optional[callable]:
