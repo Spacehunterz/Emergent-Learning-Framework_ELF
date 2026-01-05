@@ -104,6 +104,12 @@ try:
 except ImportError:
     from context import ContextBuilderMixin
 
+# Import schema migrations
+try:
+    from query.migrations import SchemaMigrator
+except ImportError:
+    from migrations import SchemaMigrator
+
 
 class QuerySystem(
     HeuristicQueryMixin,
@@ -331,6 +337,21 @@ class QuerySystem(
                     await model.create_table(safe=True)
 
         self._log_debug("Database tables created/verified via peewee-aio")
+
+        # Run schema migrations to ensure all columns/tables are up to date
+        try:
+            migrator = SchemaMigrator(str(self.db_path))
+            migration_result = await migrator.migrate()
+            if migration_result['total_applied'] > 0:
+                self._log_debug(
+                    f"Applied {migration_result['total_applied']} schema migrations"
+                )
+            if migration_result.get('migrations_failed'):
+                self._log_debug(
+                    f"Warning: {len(migration_result['migrations_failed'])} migrations failed"
+                )
+        except Exception as e:
+            self._log_debug(f"Warning: Schema migration error: {e}")
 
         # SECURITY: Set secure file permissions on database file
         if db_just_created or True:  # Always enforce secure permissions
