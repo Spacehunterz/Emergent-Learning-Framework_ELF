@@ -51,22 +51,21 @@ interface GameContextType extends GameState {
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [state, setState] = useState<GameState>({
+    const [state, setState] = useState<GameState>(() => ({
         score: 0,
         level: 1,
-
         unlockedCursors: ['default'],
         githubUser: null,
         isMenuOpen: false,
         isSetupOpen: false,
-        isGameEnabled: false, // Default OFF as requested
-        activeShip: 'default', // Default System Cursor
-        activeTrail: 'none',
+        isGameEnabled: false,
+        activeShip: (localStorage.getItem('gameState_activeShip') as 'default' | 'star_ship' | 'drone' | 'glitch') || 'default',
+        activeTrail: (localStorage.getItem('gameState_activeTrail') as 'none' | 'cyan' | 'star' | 'plasma' | 'fire') || 'none',
         shields: 100,
-        viewMode: 'cockpit', // Changed from 'static' - enables pointer lock
+        viewMode: (localStorage.getItem('gameState_viewMode') as 'static' | 'cockpit') || 'cockpit',
         isGameOver: false,
-        lastHitTime: 0 // Added lastHitTime to initial state
-    });
+        lastHitTime: 0
+    }));
 
     // Fetch initial state from backend
     const checkAuth = useCallback(async () => {
@@ -97,6 +96,26 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         checkAuth();
     }, [checkAuth]);
+
+    useEffect(() => {
+        localStorage.setItem('gameState_activeShip', state.activeShip);
+    }, [state.activeShip]);
+
+    useEffect(() => {
+        localStorage.setItem('gameState_activeTrail', state.activeTrail);
+    }, [state.activeTrail]);
+
+    useEffect(() => {
+        localStorage.setItem('gameState_viewMode', state.viewMode);
+    }, [state.viewMode]);
+
+    useEffect(() => {
+        if (state.activeShip !== 'default') {
+            document.documentElement.classList.add('cosmic-cursor-hidden');
+        } else {
+            document.documentElement.classList.remove('cosmic-cursor-hidden');
+        }
+    }, [state.activeShip]);
 
     // Sync Score to Backend 
     const addScore = (points: number) => {
