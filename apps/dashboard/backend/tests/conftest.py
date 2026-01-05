@@ -108,8 +108,16 @@ def temp_db() -> Generator[Path, None, None]:
 
     yield db_path
 
-    # Cleanup
-    db_path.unlink(missing_ok=True)
+    import gc
+    import time
+    gc.collect()
+    for _ in range(3):
+        try:
+            db_path.unlink(missing_ok=True)
+            break
+        except PermissionError:
+            time.sleep(0.1)
+            gc.collect()
 
 
 @pytest.fixture
