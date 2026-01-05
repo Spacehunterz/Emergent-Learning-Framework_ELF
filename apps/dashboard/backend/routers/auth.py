@@ -16,6 +16,7 @@ from slowapi.util import get_remote_address
 from utils.database import get_db, dict_from_row
 
 logger = logging.getLogger(__name__)
+audit_logger = logging.getLogger(f"{__name__}.audit")
 
 # Router
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -73,14 +74,16 @@ async def init_redis():
 
 
 class InMemorySessionStore:
-    """Thread-safe in-memory session storage with TTL and automatic expiration."""
+    """Thread-safe in-memory session storage with TTL, idle timeout, and automatic expiration."""
 
     MAX_SESSIONS = 10000  # Prevent unbounded memory growth
     CLEANUP_INTERVAL = 300  # Run cleanup every 5 minutes
 
-    def __init__(self, max_age: int):
-        self.sessions: Dict[str, tuple] = {}  # {token: (encrypted_data, timestamp)}
+    def __init__(self, max_age: int, idle_timeout: int):
+        # {token: (encrypted_data, created_timestamp, last_access_timestamp)}
+        self.sessions: Dict[str, tuple] = {}
         self.max_age = max_age
+        self.idle_timeout = idle_timeout
         self.last_cleanup = time.time()
 
     def set(self, token: str, encrypted_data: bytes) -> None:
@@ -92,21 +95,31 @@ class InMemorySessionStore:
             logger.warning(f"In-memory session store at capacity ({self.MAX_SESSIONS}), purging oldest sessions")
             self._purge_oldest_sessions()
 
-        self.sessions[token] = (encrypted_data, time.time())
+        now = time.time()
+        self.sessions[token] = (encrypted_data, now, now)
 
     def get(self, token: str) -> Optional[bytes]:
-        """Retrieve session if not expired. Returns None if expired or missing."""
+        """Retrieve session if not expired or idle. Returns None if expired/idle or missing."""
         if token not in self.sessions:
             return None
 
-        encrypted_data, timestamp = self.sessions[token]
+        encrypted_data, created_timestamp, last_access = self.sessions[token]
+        now = time.time()
 
-        # Check if expired
-        if time.time() - timestamp > self.max_age:
+        # Check if session exceeded max age (absolute timeout)
+        if now - created_timestamp > self.max_age:
             del self.sessions[token]
-            logger.debug(f"Session expired: {token[:8]}...")
+            audit_logger.warning(f"Session expired by max age: {token[:8]}... (age: {now - created_timestamp:.0f}s)")
             return None
 
+        # Check if session is idle (idle timeout)
+        if now - last_access > self.idle_timeout:
+            del self.sessions[token]
+            audit_logger.warning(f"Session expired by idle timeout: {token[:8]}... (idle: {now - last_access:.0f}s)")
+            return None
+
+        # Update last access time
+        self.sessions[token] = (encrypted_data, created_timestamp, now)
         return encrypted_data
 
     def delete(self, token: str) -> bool:
@@ -114,41 +127,41 @@ class InMemorySessionStore:
         return self.sessions.pop(token, None) is not None
 
     def _cleanup_if_needed(self) -> None:
-        """Periodically remove expired sessions."""
+        """Periodically remove expired/idle sessions."""
         now = time.time()
         if now - self.last_cleanup < self.CLEANUP_INTERVAL:
             return
 
         expired = [
-            token for token, (_, timestamp) in self.sessions.items()
-            if now - timestamp > self.max_age
+            token for token, (_, created, last_access) in self.sessions.items()
+            if (now - created > self.max_age) or (now - last_access > self.idle_timeout)
         ]
 
         for token in expired:
             del self.sessions[token]
 
         if expired:
-            logger.debug(f"Cleaned up {len(expired)} expired in-memory sessions")
+            logger.debug(f"Cleaned up {len(expired)} expired/idle in-memory sessions")
 
         self.last_cleanup = now
 
     def _purge_oldest_sessions(self) -> None:
         """Remove oldest 25% of sessions when at capacity."""
-        # Sort by timestamp and remove oldest sessions
+        # Sort by created timestamp and remove oldest sessions
         sorted_sessions = sorted(
             self.sessions.items(),
-            key=lambda x: x[1][1]
+            key=lambda x: x[1][1]  # created_timestamp
         )
 
         purge_count = len(sorted_sessions) // 4
         for token, _ in sorted_sessions[:purge_count]:
             del self.sessions[token]
 
-        logger.warning(f"Purged {purge_count} oldest in-memory sessions")
+        audit_logger.warning(f"Purged {purge_count} oldest in-memory sessions due to capacity limit")
 
 
-# Initialize in-memory session store with max age
-IN_MEMORY_SESSIONS = InMemorySessionStore(SESSION_MAX_AGE)
+# Initialize in-memory session store with max age and idle timeout
+IN_MEMORY_SESSIONS = InMemorySessionStore(SESSION_MAX_AGE, SESSION_IDLE_TIMEOUT)
 
 
 class SessionData(BaseModel):
@@ -291,77 +304,99 @@ async def login(request: Request):
 @limiter.limit("3/minute")
 async def dev_callback(request: Request, response: Response, dev_token: Optional[str] = None):
     """Mock callback for development - REQUIRES DEV_ACCESS_TOKEN"""
+    client_ip = request.client.host if request.client else "unknown"
     if not IS_DEV_MOCK:
+        audit_logger.warning(f"Dev mode disabled attempt from {client_ip}")
         raise HTTPException(status_code=403, detail="Dev mode disabled")
     if not dev_token or dev_token != DEV_ACCESS_TOKEN:
-        logger.warning("Failed dev authentication attempt with invalid token")
+        audit_logger.warning(f"Failed dev authentication with invalid token from {client_ip}")
         raise HTTPException(status_code=401, detail="Invalid dev access token")
-    return await handle_login(response, 12345, "DevUser", None, "mock_token")
+    audit_logger.info(f"Dev authentication successful from {client_ip}")
+    return await handle_login(response, 12345, "DevUser", None, "mock_token", client_ip)
 
 
 @router.get("/callback")
 @limiter.limit("5/minute")
 async def callback(request: Request, code: str, response: Response):
     """Handle GitHub OAuth callback."""
+    client_ip = request.client.host if request.client else "unknown"
     if IS_DEV_MOCK:
+        audit_logger.warning(f"OAuth callback attempt in dev mode from {client_ip}")
         raise HTTPException(status_code=400, detail="In Dev Mode")
     async with httpx.AsyncClient() as client:
-        token_res = await client.post(
-            "https://github.com/login/oauth/access_token",
-            headers={"Accept": "application/json"},
-            data={
-                "client_id": GITHUB_CLIENT_ID,
-                "client_secret": GITHUB_CLIENT_SECRET,
-                "code": code,
-                "redirect_uri": "http://localhost:8888/api/auth/callback"
-            }
-        )
-        token_data = token_res.json()
-        access_token = token_data.get("access_token")
-        if not access_token:
-            raise HTTPException(status_code=400, detail="Failed to get access token")
-        user_res = await client.get(
-            "https://api.github.com/user",
-            headers={"Authorization": f"token {access_token}"}
-        )
-        user_data = user_res.json()
-        return await handle_login(response, user_data["id"], user_data["login"], user_data.get("avatar_url"), access_token)
+        try:
+            token_res = await client.post(
+                "https://github.com/login/oauth/access_token",
+                headers={"Accept": "application/json"},
+                data={
+                    "client_id": GITHUB_CLIENT_ID,
+                    "client_secret": GITHUB_CLIENT_SECRET,
+                    "code": code,
+                    "redirect_uri": "http://localhost:8888/api/auth/callback"
+                }
+            )
+            token_data = token_res.json()
+            access_token = token_data.get("access_token")
+            if not access_token:
+                audit_logger.warning(f"Failed to get GitHub access token from {client_ip}")
+                raise HTTPException(status_code=400, detail="Failed to get access token")
+            user_res = await client.get(
+                "https://api.github.com/user",
+                headers={"Authorization": f"token {access_token}"}
+            )
+            user_data = user_res.json()
+            return await handle_login(response, user_data["id"], user_data["login"], user_data.get("avatar_url"), access_token, client_ip)
+        except HTTPException:
+            raise
+        except Exception as e:
+            audit_logger.error(f"OAuth callback error from {client_ip}: {type(e).__name__}")
+            raise HTTPException(status_code=400, detail="OAuth authentication failed")
 
 
-async def handle_login(response: Response, github_id: int, username: str, avatar_url: Optional[str], access_token: str) -> RedirectResponse:
+async def handle_login(response: Response, github_id: int, username: str, avatar_url: Optional[str], access_token: str, client_ip: str = "unknown") -> RedirectResponse:
     """Common login logic: Upsert User, Create Session, Redirect."""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE github_id = ?", (github_id,))
-        existing = cursor.fetchone()
-        if existing:
-            user_id = existing["id"]
-            cursor.execute("UPDATE users SET username = ?, avatar_url = ? WHERE id = ?", (username, avatar_url, user_id))
-        else:
-            cursor.execute("INSERT INTO users (github_id, username, avatar_url) VALUES (?, ?, ?)", (github_id, username, avatar_url))
-            user_id = cursor.lastrowid
-            cursor.execute("INSERT OR IGNORE INTO game_state (user_id) VALUES (?)", (user_id,))
-        conn.commit()
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE github_id = ?", (github_id,))
+            existing = cursor.fetchone()
+            if existing:
+                user_id = existing["id"]
+                is_new_user = False
+                cursor.execute("UPDATE users SET username = ?, avatar_url = ? WHERE id = ?", (username, avatar_url, user_id))
+            else:
+                cursor.execute("INSERT INTO users (github_id, username, avatar_url) VALUES (?, ?, ?)", (github_id, username, avatar_url))
+                user_id = cursor.lastrowid
+                is_new_user = True
+                cursor.execute("INSERT OR IGNORE INTO game_state (user_id) VALUES (?)", (user_id,))
+            conn.commit()
 
-    session_data = SessionData(
-        id=user_id,
-        github_id=github_id,
-        username=username,
-        avatar_url=avatar_url
-    )
-    token = await create_session(session_data)
+        session_data = SessionData(
+            id=user_id,
+            github_id=github_id,
+            username=username,
+            avatar_url=avatar_url
+        )
+        token = await create_session(session_data)
 
-    redirect = RedirectResponse(url="http://localhost:3001")
-    redirect.set_cookie(
-        key="session_token",
-        value=token,
-        httponly=True,
-        secure=True,
-        max_age=86400 * 7,
-        samesite="strict",
-        domain=SESSION_DOMAIN
-    )
-    return redirect
+        # Audit log successful login
+        event_type = "new_user_signup" if is_new_user else "user_login"
+        audit_logger.info(f"{event_type}: user_id={user_id} username={username} github_id={github_id} from {client_ip}")
+
+        redirect = RedirectResponse(url="http://localhost:3001")
+        redirect.set_cookie(
+            key="session_token",
+            value=token,
+            httponly=True,
+            secure=True,
+            max_age=86400 * 7,
+            samesite="strict",
+            domain=SESSION_DOMAIN
+        )
+        return redirect
+    except Exception as e:
+        audit_logger.error(f"Login failed for github_id={github_id} from {client_ip}: {type(e).__name__}: {e}")
+        raise
 
 
 @router.get("/me")
@@ -372,7 +407,9 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
         return {"is_authenticated": False}
     user = await get_session(token)
     if not user:
+        audit_logger.debug(f"Invalid/expired session token attempted: {token[:8] if token else 'None'}...")
         return {"is_authenticated": False}
+    audit_logger.debug(f"Session validated for user_id={user.id} username={user.username}")
     return {**user.model_dump(), "is_authenticated": True}
 
 
@@ -380,8 +417,19 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
 async def logout(response: Response, request: Request) -> Dict[str, bool]:
     """Logout: delete session and clear cookie"""
     token = request.cookies.get("session_token")
+    client_ip = request.client.host if request.client else "unknown"
     success = True
+
     if token:
+        # Get user info before deleting session for audit log
+        user_session = await get_session(token)
         success = await delete_session(token)
+        if user_session:
+            audit_logger.info(f"user_logout: user_id={user_session.id} username={user_session.username} from {client_ip}")
+        else:
+            audit_logger.debug(f"Logout attempted with invalid/expired token from {client_ip}")
+    else:
+        audit_logger.debug(f"Logout attempted without session token from {client_ip}")
+
     response.delete_cookie("session_token", domain=SESSION_DOMAIN)
     return {"success": success}
