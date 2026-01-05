@@ -19,12 +19,45 @@ logger = logging.getLogger(__name__)
 
 # Path will be set from main.py
 EMERGENT_LEARNING_PATH = None
+ALLOWED_OPEN_PATHS = []
 
 
 def set_paths(elf_path: Path):
     """Set the paths for admin operations."""
-    global EMERGENT_LEARNING_PATH
+    global EMERGENT_LEARNING_PATH, ALLOWED_OPEN_PATHS
     EMERGENT_LEARNING_PATH = elf_path
+    ALLOWED_OPEN_PATHS = [
+        elf_path.resolve(),
+        Path.home().resolve(),
+    ]
+
+
+def _is_path_allowed(file_path: Path) -> bool:
+    """
+    Check if a path is within allowed directories.
+
+    Prevents path traversal attacks by validating the resolved path
+    is within one of the allowed base directories.
+    """
+    try:
+        resolved = file_path.resolve()
+
+        if not resolved.exists():
+            return False
+
+        if resolved.is_symlink():
+            resolved = resolved.resolve(strict=True)
+
+        for allowed_base in ALLOWED_OPEN_PATHS:
+            try:
+                resolved.relative_to(allowed_base)
+                return True
+            except ValueError:
+                continue
+
+        return False
+    except (OSError, RuntimeError):
+        return False
 
 
 @router.get("/ceo-inbox")
@@ -82,11 +115,17 @@ async def get_ceo_inbox_item(filename: str):
     if EMERGENT_LEARNING_PATH is None:
         raise HTTPException(status_code=500, detail="Paths not configured")
 
-    # Security: validate filename
     if not re.match(r'^[\w\-]+\.md$', filename):
         raise HTTPException(status_code=400, detail="Invalid filename")
 
-    file_path = EMERGENT_LEARNING_PATH / "ceo-inbox" / filename
+    ceo_inbox_dir = (EMERGENT_LEARNING_PATH / "ceo-inbox").resolve()
+    file_path = (ceo_inbox_dir / filename).resolve()
+
+    try:
+        file_path.relative_to(ceo_inbox_dir)
+    except ValueError:
+        logger.warning(f"Path traversal blocked in ceo-inbox: {filename}")
+        raise HTTPException(status_code=400, detail="Invalid filename")
 
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Item not found")
@@ -181,17 +220,15 @@ async def open_in_editor(request: OpenInEditorRequest) -> ActionResult:
         path = request.path
         line = request.line
 
-        # Validate path exists
         file_path = Path(path)
-        if not file_path.exists():
-            return ActionResult(success=False, message=f"File not found: {path}")
 
-        # Build VS Code command with line number if provided
+        if not _is_path_allowed(file_path):
+            logger.warning(f"Path traversal blocked: {path}")
+            return ActionResult(success=False, message="Access denied: path not in allowed directories")
+
         if line:
-            # SECURITY: Removed shell=True to prevent command injection
             subprocess.Popen(["code", "-g", f"{file_path}:{line}"])
         else:
-            # SECURITY: Removed shell=True to prevent command injection
             subprocess.Popen(["code", "-g", str(file_path)])
 
         return ActionResult(success=True, message=f"Opened {path} in VS Code")

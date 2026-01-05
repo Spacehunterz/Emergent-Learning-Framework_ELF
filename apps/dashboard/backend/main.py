@@ -262,6 +262,81 @@ app.include_router(setup_router)
 
 
 # ==============================================================================
+# SQL Query Whitelist (Defense-in-Depth for SQL Injection Prevention)
+# ==============================================================================
+
+ALLOWED_TABLE_CONFIGS = {
+    'metrics': {
+        'columns': frozenset(['id', 'metric_type', 'metric_name', 'metric_value', 'timestamp']),
+        'order_by': frozenset(['timestamp', 'id', 'metric_type']),
+    },
+    'trails': {
+        'columns': frozenset(['id', 'location', 'scent', 'strength', 'agent_id', 'message', 'created_at']),
+        'order_by': frozenset(['created_at', 'id', 'strength']),
+    },
+    'workflow_runs': {
+        'columns': frozenset(['id', 'workflow_name', 'status', 'phase', 'created_at']),
+        'order_by': frozenset(['created_at', 'id']),
+    },
+    'heuristics': {
+        'columns': frozenset(['id', 'domain', 'rule', 'confidence', 'is_golden', 'updated_at', 'created_at']),
+        'order_by': frozenset(['updated_at', 'created_at', 'confidence', 'id']),
+    },
+    'learnings': {
+        'columns': frozenset(['id', 'type', 'title', 'summary', 'domain', 'created_at']),
+        'order_by': frozenset(['created_at', 'id']),
+    },
+    'decisions': {
+        'columns': frozenset(['id', 'title', 'status', 'domain', 'created_at']),
+        'order_by': frozenset(['created_at', 'id', 'status']),
+    },
+    'invariants': {
+        'columns': frozenset(['id', 'statement', 'status', 'severity', 'domain', 'violation_count', 'created_at']),
+        'order_by': frozenset(['created_at', 'id', 'violation_count', 'severity']),
+    },
+}
+
+MAX_QUERY_LIMIT = 1000
+
+
+def _validate_query_params(table: str, columns: str, order_by: str, limit: int) -> tuple:
+    """
+    Validate query parameters against whitelist to prevent SQL injection.
+
+    Returns validated (table, columns, order_by, limit) tuple.
+    Raises ValueError if validation fails.
+    """
+    if table not in ALLOWED_TABLE_CONFIGS:
+        logger.warning(f"SQL injection blocked: invalid table '{table}'")
+        raise ValueError(f"Invalid table: {table}")
+
+    config = ALLOWED_TABLE_CONFIGS[table]
+
+    col_list = [c.strip() for c in columns.split(',')]
+    for col in col_list:
+        if not col or not col.replace('_', '').isalnum():
+            logger.warning(f"SQL injection blocked: invalid column format '{col}'")
+            raise ValueError(f"Invalid column format: {col}")
+        if col not in config['columns']:
+            logger.warning(f"SQL injection blocked: column '{col}' not allowed for {table}")
+            raise ValueError(f"Column '{col}' not allowed for table '{table}'")
+
+    order_by = order_by.strip()
+    if not order_by.replace('_', '').isalnum():
+        logger.warning(f"SQL injection blocked: invalid order_by format '{order_by}'")
+        raise ValueError(f"Invalid order_by format: {order_by}")
+    if order_by not in config['order_by']:
+        logger.warning(f"SQL injection blocked: order_by '{order_by}' not allowed for {table}")
+        raise ValueError(f"Order by '{order_by}' not allowed for table '{table}'")
+
+    if not isinstance(limit, int) or limit < 1:
+        raise ValueError(f"Limit must be positive integer, got {limit}")
+    limit = min(limit, MAX_QUERY_LIMIT)
+
+    return table, columns, order_by, limit
+
+
+# ==============================================================================
 # Background Task: Monitor for Changes
 # ==============================================================================
 
@@ -303,10 +378,18 @@ def _get_db_change_counts():
 
 
 def _get_recent_data(table: str, columns: str, order_by: str, limit: int = 5):
-    """Fetch recent data from a table (runs in dedicated thread)."""
+    """
+    Fetch recent data from a table with SQL injection protection.
+
+    All parameters are validated against whitelist before query execution.
+    Runs in dedicated thread via asyncio.to_thread().
+    """
+    table, columns, order_by, limit = _validate_query_params(table, columns, order_by, limit)
+
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(f"SELECT {columns} FROM {table} ORDER BY {order_by} DESC LIMIT {limit}")
+        query = f"SELECT {columns} FROM {table} ORDER BY {order_by} DESC LIMIT ?"
+        cursor.execute(query, (limit,))
         return [dict_from_row(r) for r in cursor.fetchall()]
 
 
