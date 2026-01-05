@@ -57,6 +57,8 @@ class AutoCapture:
         self.lookback_hours = lookback_hours
         self.running = False
         self.last_check: Optional[datetime] = None
+        self._consecutive_errors = 0
+        self._max_backoff = 300
         self.stats = {
             "failures_captured": 0,
             "successes_captured": 0,
@@ -76,7 +78,6 @@ class AutoCapture:
 
         while self.running:
             try:
-                # Capture both failures and successes
                 failures = await self.capture_new_failures()
                 successes = await self.capture_new_successes()
                 reanalyzed = await self.reanalyze_unknown_outcomes()
@@ -84,6 +85,7 @@ class AutoCapture:
 
                 self.stats["runs"] += 1
                 self.stats["last_batch_size"] = total
+                self._consecutive_errors = 0
 
                 if failures > 0:
                     logger.info(f"AutoCapture: captured {failures} new failure(s)")
@@ -91,11 +93,14 @@ class AutoCapture:
                     logger.info(f"AutoCapture: captured {successes} new success(es)")
                 if reanalyzed > 0:
                     logger.info(f"AutoCapture: re-analyzed {reanalyzed} unknown outcome(s)")
+
+                await asyncio.sleep(self.interval)
             except Exception as e:
                 self.stats["errors"] += 1
-                logger.error(f"AutoCapture error: {e}")
-
-            await asyncio.sleep(self.interval)
+                self._consecutive_errors += 1
+                backoff = min(self.interval * (2 ** self._consecutive_errors), self._max_backoff)
+                logger.error(f"AutoCapture error (attempt {self._consecutive_errors}): {e}. Backing off {backoff}s")
+                await asyncio.sleep(backoff)
 
     def stop(self):
         """Stop the auto-capture background loop."""
@@ -120,7 +125,7 @@ class AutoCapture:
                 WHERE status = 'completed'
                 AND completed_nodes >= total_nodes
                 AND total_nodes > 0
-                AND output_json LIKE '%"outcome": "unknown"%'
+                AND json_extract(output_json, '$.outcome') = 'unknown'
                 """
             )
             fixed = cursor.rowcount
@@ -142,7 +147,7 @@ class AutoCapture:
                        wr.completed_nodes, wr.total_nodes
                 FROM workflow_runs wr
                 WHERE wr.created_at > datetime('now', ?)
-                AND wr.output_json LIKE '%"outcome": "unknown"%'
+                AND json_extract(wr.output_json, '$.outcome') = 'unknown'
                 """,
                 (f"-{self.lookback_hours} hours",),
             )

@@ -715,16 +715,12 @@ class FraudDetector:
         """
         Run complete fraud detection analysis and create report.
         """
-        # Run all detectors
         signals = self.run_all_detectors(heuristic_id)
 
-        # Calculate combined score
         fraud_score, likelihood_ratio = self.calculate_combined_score(signals)
 
-        # Classify
         classification = self.classify_fraud_score(fraud_score)
 
-        # Create report
         report = FraudReport(
             heuristic_id=heuristic_id,
             fraud_score=fraud_score,
@@ -734,19 +730,16 @@ class FraudDetector:
             timestamp=datetime.now()
         )
 
-        # Store in database
-        self._store_fraud_report(report)
-
-        # Take response action
-        self._handle_fraud_response(report)
+        stored = self._store_fraud_report(report)
+        if stored:
+            self._handle_fraud_response(report)
 
         return report
 
-    def _store_fraud_report(self, report: FraudReport):
-        """Store fraud report in database."""
+    def _store_fraud_report(self, report: FraudReport) -> bool:
+        """Store fraud report in database. Returns True on success."""
         conn = self._get_connection()
         try:
-            # Insert fraud report
             cursor = conn.execute("""
                 INSERT INTO fraud_reports
                 (heuristic_id, fraud_score, classification, likelihood_ratio, signal_count)
@@ -761,7 +754,6 @@ class FraudDetector:
 
             fraud_report_id = cursor.lastrowid
 
-            # Insert anomaly signals
             for signal in report.signals:
                 conn.execute("""
                     INSERT INTO anomaly_signals
@@ -777,7 +769,6 @@ class FraudDetector:
                     json.dumps(signal.evidence)
                 ))
 
-            # Update heuristic fraud tracking
             conn.execute("""
                 UPDATE heuristics SET
                     fraud_flags = COALESCE(fraud_flags, 0) + 1,
@@ -786,6 +777,12 @@ class FraudDetector:
             """, (report.heuristic_id,))
 
             conn.commit()
+            return True
+        except Exception as e:
+            conn.rollback()
+            import logging
+            logging.getLogger(__name__).error(f"Failed to store fraud report: {e}")
+            return False
         finally:
             conn.close()
 
