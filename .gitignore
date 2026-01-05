@@ -9,6 +9,7 @@ __pycache__/
 # Python virtual environment
 .venv/
 venv/
+**/rembg_env/
 
 # Private user data - NEVER push to public repo
 memory/
