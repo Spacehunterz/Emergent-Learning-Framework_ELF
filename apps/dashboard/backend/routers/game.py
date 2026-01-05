@@ -68,7 +68,7 @@ async def get_leaderboard(
     Returns:
         LeaderboardResponse with ranked entries and metadata
     """
-    current_user_id = get_user_id(request)
+    current_user_id = await get_user_id(request)
 
     with get_db() as conn:
         cursor = conn.cursor()
@@ -182,7 +182,7 @@ async def get_leaderboard_around_me(
     Returns:
         LeaderboardResponse centered on the current user
     """
-    current_user_id = get_user_id(request)
+    current_user_id = await get_user_id(request)
     if not current_user_id:
         raise HTTPException(status_code=401, detail="Authentication required")
 
@@ -281,7 +281,7 @@ class GameState(BaseModel):
 @router.get("/state")
 async def get_game_state(request: Request):
     """Get authoritative game state for current user."""
-    user_id = get_user_id(request)
+    user_id = await get_user_id(request)
     if not user_id:
         # Return default Guest state
         return {
@@ -313,7 +313,7 @@ async def get_game_state(request: Request):
 @router.post("/sync")
 async def sync_score(request: Request, payload: Dict[str, Any] = Body(...)):
     """Sync score from client (Server Validated)."""
-    user_id = get_user_id(request)
+    user_id = await get_user_id(request)
     if not user_id:
         return {"success": False, "message": "Login required to save progress"}
 
@@ -336,7 +336,7 @@ async def sync_score(request: Request, payload: Dict[str, Any] = Body(...)):
 @router.post("/equip")
 async def equip_item(request: Request, payload: Dict[str, str] = Body(...)):
     """Server-side equip (prevents client from forcing locked items)."""
-    user_id = get_user_id(request)
+    user_id = await get_user_id(request)
     if not user_id: return {"error": "Guest"}
     
     item_id = payload.get("id")
@@ -360,7 +360,7 @@ async def verify_star(request: Request):
     CHECK GITHUB API: Did this user star server-authoritative repo?
     If yes -> Unlock 'star_blaster' and 'star_cursor'.
     """
-    user_id = get_user_id(request)
+    user_id = await get_user_id(request)
     if not user_id:
          raise HTTPException(status_code=401, detail="Login required")
 

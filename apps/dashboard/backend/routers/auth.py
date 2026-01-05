@@ -210,11 +210,14 @@ async def create_session(user_data: SessionData) -> str:
     if USE_REDIS and async_redis_client:
         try:
             await async_redis_client.setex(f"session:{token}", SESSION_MAX_AGE, encrypted)
+            logger.info(f"Session stored in Redis: {token[:20]}...")
         except Exception as e:
             logger.error(f"Failed to store session in Redis: {type(e).__name__}")
             IN_MEMORY_SESSIONS.set(token, encrypted)
+            logger.info(f"Session fallback to in-memory: {token[:20]}...")
     else:
         IN_MEMORY_SESSIONS.set(token, encrypted)
+        logger.info(f"Session stored in-memory: {token[:20]}... (sessions count: {len(IN_MEMORY_SESSIONS.sessions)})")
 
     return token
 
@@ -298,7 +301,7 @@ async def require_auth(request: Request) -> int:
 async def login(request: Request):
     """Redirect to GitHub OAuth."""
     if IS_DEV_MOCK:
-        return RedirectResponse(url="/api/auth/dev-callback")
+        return RedirectResponse(url=f"/api/auth/dev-callback?dev_token={DEV_ACCESS_TOKEN}")
     redirect_uri = "http://localhost:8888/api/auth/callback"
     return RedirectResponse(
         url=f"https://github.com/login/oauth/authorize?client_id={GITHUB_CLIENT_ID}&redirect_uri={redirect_uri}&scope=read:user"
@@ -317,7 +320,7 @@ async def dev_callback(request: Request, response: Response, dev_token: Optional
         audit_logger.warning(f"Failed dev authentication with invalid token from {client_ip}")
         raise HTTPException(status_code=401, detail="Invalid dev access token")
     audit_logger.info(f"Dev authentication successful from {client_ip}")
-    return await handle_login(response, 12345, "DevUser", None, "mock_token", client_ip)
+    return await handle_login(response, 999999, "DevUser", None, "mock_token", client_ip)
 
 
 @router.get("/callback")
