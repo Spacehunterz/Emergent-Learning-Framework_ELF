@@ -6,3 +6,8 @@ python-dateutil>=2.8.0
 peewee>=3.17.0
 python-dotenv>=1.0.0
 httpx>=0.27.0
+# Security packages
+cryptography>=43.0.3
+redis==5.2.1
+slowapi==0.1.9
+secure==0.3.0

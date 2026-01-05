@@ -2,12 +2,14 @@
 Pytest configuration and shared fixtures for the Emergent Learning Dashboard tests.
 
 Provides common test fixtures for database connections, WebSocket mocking,
-and other test utilities.
+security testing utilities, and authentication helpers.
 """
 
 import asyncio
 import sqlite3
 import tempfile
+import os
+import secrets
 from pathlib import Path
 from typing import Generator, AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock
@@ -177,3 +179,281 @@ def sample_failed_run(db_connection: sqlite3.Connection) -> int:
     """, ("test_workflow", "failed", "Test error", '{"outcome": "failure", "reason": "Test error"}', 1, 3))
     db_connection.commit()
     return cursor.lastrowid
+
+
+# ==============================================================================
+# Security Testing Fixtures
+# ==============================================================================
+
+@pytest.fixture(scope="session")
+def app():
+    """Create FastAPI application for testing with security configuration."""
+    # Set test environment variables
+    try:
+        from cryptography.fernet import Fernet
+        os.environ["SESSION_ENCRYPTION_KEY"] = Fernet.generate_key().decode()
+    except ImportError:
+        os.environ["SESSION_ENCRYPTION_KEY"] = "test_key_" + secrets.token_urlsafe(32)
+
+    os.environ["DEV_ACCESS_TOKEN"] = secrets.token_hex(32)
+    os.environ["GITHUB_CLIENT_ID"] = "mock"
+    os.environ["SESSION_DOMAIN"] = "localhost"
+    os.environ["ENVIRONMENT"] = "test"
+
+    # Import after env vars are set
+    import sys
+    backend_path = Path(__file__).parent.parent
+    if str(backend_path) not in sys.path:
+        sys.path.insert(0, str(backend_path))
+
+    try:
+        from main import app as fastapi_app
+        return fastapi_app
+    except ImportError as e:
+        pytest.skip(f"Could not import FastAPI app: {e}")
+
+
+@pytest.fixture
+def client(app):
+    """Create test client for making HTTP requests."""
+    try:
+        from fastapi.testclient import TestClient
+        return TestClient(app)
+    except ImportError:
+        pytest.skip("FastAPI TestClient not available")
+
+
+@pytest.fixture
+def dev_token():
+    """Get DEV_ACCESS_TOKEN for testing authentication."""
+    return os.environ.get("DEV_ACCESS_TOKEN")
+
+
+@pytest.fixture
+def authenticated_client(client, dev_token):
+    """Create an authenticated test client with valid session."""
+    # Perform login
+    response = client.get(
+        f"/api/auth/dev-callback?dev_token={dev_token}",
+        follow_redirects=False
+    )
+
+    # Extract session token
+    session_token = response.cookies.get("session_token")
+
+    if session_token:
+        # Set cookie on client
+        client.cookies.set("session_token", session_token)
+
+    return client
+
+
+@pytest.fixture
+def mock_request_with_session():
+    """Create mock request with valid session token."""
+    try:
+        from routers.auth import create_session
+
+        user_data = {"id": 1, "username": "test_user", "github_id": 12345}
+        token = create_session(user_data)
+
+        request = MagicMock()
+        request.cookies = MagicMock()
+        request.cookies.get = MagicMock(return_value=token)
+
+        return request
+    except ImportError:
+        pytest.skip("Auth module not available")
+
+
+@pytest.fixture
+def mock_request_no_session():
+    """Create mock request without session (unauthenticated)."""
+    request = MagicMock()
+    request.cookies = MagicMock()
+    request.cookies.get = MagicMock(return_value=None)
+    return request
+
+
+@pytest.fixture
+def mock_request_invalid_token():
+    """Create mock request with invalid/malicious token."""
+    request = MagicMock()
+    request.cookies = MagicMock()
+    request.cookies.get = MagicMock(return_value="invalid_token_12345")
+    return request
+
+
+# ==============================================================================
+# Redis Testing Fixtures
+# ==============================================================================
+
+@pytest.fixture
+def mock_redis():
+    """Create mock Redis client for testing."""
+    redis_mock = MagicMock()
+    redis_mock.get = MagicMock(return_value=None)
+    redis_mock.setex = MagicMock(return_value=True)
+    redis_mock.delete = MagicMock(return_value=True)
+    redis_mock.ping = MagicMock(return_value=True)
+    redis_mock.ttl = MagicMock(return_value=3600)
+    return redis_mock
+
+
+@pytest.fixture
+def mock_redis_failure():
+    """Create mock Redis client that simulates connection failure."""
+    redis_mock = MagicMock()
+    redis_mock.get = MagicMock(side_effect=ConnectionError("Redis unavailable"))
+    redis_mock.setex = MagicMock(side_effect=ConnectionError("Redis unavailable"))
+    redis_mock.ping = MagicMock(side_effect=ConnectionError("Redis unavailable"))
+    return redis_mock
+
+
+# ==============================================================================
+# Attack Payload Fixtures
+# ==============================================================================
+
+@pytest.fixture
+def sql_injection_payloads():
+    """Common SQL injection attack payloads."""
+    return [
+        "' OR '1'='1",
+        "'; DROP TABLE users; --",
+        "admin'--",
+        "' OR 1=1--",
+        "1' UNION SELECT NULL--",
+        "admin'; EXEC sp_MSForEachTable 'DROP TABLE ?'; --",
+        "' OR 'a'='a",
+        "1' AND '1'='1",
+    ]
+
+
+@pytest.fixture
+def xss_payloads():
+    """Common XSS (Cross-Site Scripting) attack payloads."""
+    return [
+        "<script>alert('XSS')</script>",
+        "<img src=x onerror=alert(1)>",
+        "<svg/onload=alert(1)>",
+        "javascript:alert(1)",
+        "<iframe src='javascript:alert(1)'>",
+        "<body onload=alert(1)>",
+        "<input onfocus=alert(1) autofocus>",
+    ]
+
+
+@pytest.fixture
+def path_traversal_payloads():
+    """Common path traversal attack payloads."""
+    return [
+        "../../etc/passwd",
+        "..\\..\\windows\\system32\\config\\sam",
+        "....//....//etc/passwd",
+        "..%2F..%2Fetc%2Fpasswd",
+        "..%252F..%252Fetc%252Fpasswd",
+    ]
+
+
+@pytest.fixture
+def malicious_origins():
+    """Malicious CORS origins for testing."""
+    return [
+        "http://evil.com",
+        "https://attacker.com",
+        "http://localhost:9999",  # Different port
+        "https://localhost:3001",  # Different protocol
+        "null",
+        "http://127.0.0.1:3001",  # Different host representation
+    ]
+
+
+@pytest.fixture
+def oversized_payloads():
+    """Payloads for testing request size limits."""
+    return {
+        "just_under_10mb": "x" * (10 * 1024 * 1024 - 1000),
+        "exactly_10mb": "x" * (10 * 1024 * 1024),
+        "over_10mb": "x" * (10 * 1024 * 1024 + 1),
+        "way_over": "x" * (50 * 1024 * 1024),
+    }
+
+
+# ==============================================================================
+# Security Test Helpers
+# ==============================================================================
+
+def assert_secure_cookie(set_cookie_header: str):
+    """Assert that Set-Cookie header has secure attributes."""
+    assert "HttpOnly" in set_cookie_header, "Cookie missing HttpOnly flag"
+    assert "Secure" in set_cookie_header, "Cookie missing Secure flag"
+    assert "SameSite" in set_cookie_header, "Cookie missing SameSite attribute"
+
+
+def assert_security_headers(response):
+    """Assert that response has required security headers."""
+    headers = response.headers
+
+    assert headers.get("X-Frame-Options") == "DENY", "Missing or incorrect X-Frame-Options"
+    assert headers.get("X-Content-Type-Options") == "nosniff", "Missing X-Content-Type-Options"
+    assert headers.get("X-XSS-Protection") == "1; mode=block", "Missing X-XSS-Protection"
+    assert "Permissions-Policy" in headers, "Missing Permissions-Policy"
+    assert headers.get("Referrer-Policy") == "strict-origin-when-cross-origin", "Missing Referrer-Policy"
+
+
+# Make helper functions available to tests
+pytest.assert_secure_cookie = assert_secure_cookie
+pytest.assert_security_headers = assert_security_headers
+
+
+# ==============================================================================
+# Session Cleanup
+# ==============================================================================
+
+@pytest.fixture(autouse=True)
+def cleanup_test_sessions():
+    """Automatically clean up test sessions after each test."""
+    yield
+
+    try:
+        from routers.auth import IN_MEMORY_SESSIONS
+        IN_MEMORY_SESSIONS.clear()
+    except ImportError:
+        pass  # Auth module not loaded
+
+
+# ==============================================================================
+# Database Setup for Security Tests
+# ==============================================================================
+
+@pytest.fixture
+def security_db(temp_db: Path) -> Generator[sqlite3.Connection, None, None]:
+    """Create database with users table for security testing."""
+    conn = sqlite3.connect(str(temp_db))
+    conn.row_factory = sqlite3.Row
+
+    # Create users table
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            github_id INTEGER UNIQUE NOT NULL,
+            username TEXT NOT NULL,
+            avatar_url TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Create game_state table
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS game_state (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER UNIQUE NOT NULL,
+            score INTEGER DEFAULT 0,
+            level INTEGER DEFAULT 1,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    """)
+
+    conn.commit()
+    yield conn
+    conn.close()

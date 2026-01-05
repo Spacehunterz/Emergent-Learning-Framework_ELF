@@ -1,0 +1,230 @@
+name: Security Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run security tests nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  unit-tests:
+    name: Unit Tests (Security)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        working-directory: apps/dashboard/backend
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio pytest-timeout
+
+      - name: Run unit tests
+        working-directory: apps/dashboard/backend
+        run: |
+          pytest tests/unit/ -v --tb=short --cov=routers.auth --cov-report=xml --cov-report=term
+        env:
+          SESSION_ENCRYPTION_KEY: ${{ secrets.TEST_SESSION_ENCRYPTION_KEY }}
+          DEV_ACCESS_TOKEN: ${{ secrets.TEST_DEV_ACCESS_TOKEN }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./apps/dashboard/backend/coverage.xml
+          flags: unit-tests,security
+          name: security-unit-tests
+
+  integration-tests:
+    name: Integration Tests (Security)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        working-directory: apps/dashboard/backend
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-timeout
+
+      - name: Run integration tests
+        working-directory: apps/dashboard/backend
+        run: |
+          pytest tests/integration/ -v --tb=short
+        env:
+          SESSION_ENCRYPTION_KEY: ${{ secrets.TEST_SESSION_ENCRYPTION_KEY }}
+          DEV_ACCESS_TOKEN: ${{ secrets.TEST_DEV_ACCESS_TOKEN }}
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+
+  security-tests:
+    name: Security Attack Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        working-directory: apps/dashboard/backend
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-timeout
+
+      - name: Run security tests
+        working-directory: apps/dashboard/backend
+        run: |
+          pytest tests/security/ -v --tb=short
+        env:
+          SESSION_ENCRYPTION_KEY: ${{ secrets.TEST_SESSION_ENCRYPTION_KEY }}
+          DEV_ACCESS_TOKEN: ${{ secrets.TEST_DEV_ACCESS_TOKEN }}
+
+  coverage-check:
+    name: Coverage Validation
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, security-tests]
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        working-directory: apps/dashboard/backend
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio
+
+      - name: Run all tests with coverage
+        working-directory: apps/dashboard/backend
+        run: |
+          pytest tests/ -v --cov=routers.auth --cov-report=html --cov-report=term --cov-fail-under=95
+        env:
+          SESSION_ENCRYPTION_KEY: ${{ secrets.TEST_SESSION_ENCRYPTION_KEY }}
+          DEV_ACCESS_TOKEN: ${{ secrets.TEST_DEV_ACCESS_TOKEN }}
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: apps/dashboard/backend/htmlcov/
+          retention-days: 30
+
+  sast-scan:
+    name: Static Application Security Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install security tools
+        run: |
+          pip install bandit safety pip-audit semgrep
+
+      - name: Run Bandit (Python security linter)
+        working-directory: apps/dashboard/backend
+        run: |
+          bandit -r routers/ utils/ -f json -o bandit-report.json || true
+          bandit -r routers/ utils/ -f screen
+
+      - name: Run Safety (dependency vulnerability check)
+        working-directory: apps/dashboard/backend
+        run: |
+          safety check --json || true
+          safety check
+
+      - name: Run pip-audit (dependency audit)
+        working-directory: apps/dashboard/backend
+        run: |
+          pip-audit || true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            apps/dashboard/backend/bandit-report.json
+          retention-days: 30
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, security-tests, sast-scan]
+    if: always()
+
+    steps:
+      - name: Summary
+        run: |
+          echo "# Security Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Unit Tests: ${{ needs.unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Integration Tests: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Security Tests: ${{ needs.security-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "✅ SAST Scan: ${{ needs.sast-scan.result }}" >> $GITHUB_STEP_SUMMARY
