@@ -133,12 +133,12 @@ class FraudDetector:
 
             total_apps = row['times_validated'] + row['times_violated'] + row['times_contradicted']
 
-            # Insufficient data
-            if total_apps < self.config.min_applications:
+            # Guard against division by zero FIRST (defensive programming)
+            if total_apps == 0:
                 return None
 
-            # Guard against division by zero (defensive programming)
-            if total_apps == 0:
+            # Insufficient data
+            if total_apps < self.config.min_applications:
                 return None
 
             success_rate = row['times_validated'] / total_apps

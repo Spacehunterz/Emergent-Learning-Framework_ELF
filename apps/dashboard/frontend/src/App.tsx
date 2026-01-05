@@ -174,16 +174,19 @@ function AppContent() {
             'Summarizing your last session in the background...'
           )
         } else if (response?.status === 'ready') {
-          // Optional: Could show a "Last Session" summary modal here
           console.log('[Check-in] Last session summary ready:', response.session_id)
         }
       } catch (err) {
         console.error('[Check-in] Handshake failed:', err)
+        notifications.error(
+          'Check-in Failed',
+          'Could not connect to session history. Some features may be unavailable.'
+        )
       }
     }
 
     performCheckIn()
-  }, [])
+  }, [api, notifications])
 
   // Command Palette keyboard shortcut
   useEffect(() => {

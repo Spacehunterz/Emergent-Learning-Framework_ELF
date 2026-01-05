@@ -90,13 +90,17 @@ class SessionIndex:
     # Max chars for tool input display
     MAX_INPUT_CHARS = 500
 
-    def _truncate_tool_input(self, tool_name: str, raw_input: Any) -> Any:
+    def _truncate_tool_input(self, tool_name: str, raw_input: Any, depth: int = 0) -> Any:
         """
         Truncate tool input to prevent context flooding.
 
         For file-based tools, shows path and truncation indicator.
         For other tools, truncates long string values.
+        Includes depth limit to prevent memory leaks from deeply nested structures.
         """
+        if depth > 3:
+            return "[nested object truncated]"
+
         if not isinstance(raw_input, dict):
             if isinstance(raw_input, str) and len(raw_input) > self.MAX_INPUT_CHARS:
                 return raw_input[:self.MAX_INPUT_CHARS] + "... [truncated]"
@@ -105,10 +109,8 @@ class SessionIndex:
         truncated = {}
         for key, value in raw_input.items():
             if key in ("file_path", "path", "filepath", "notebook_path"):
-                # Always keep file paths
                 truncated[key] = value
             elif key in ("content", "new_source", "old_string", "new_string"):
-                # These are the large content fields - heavily truncate
                 if isinstance(value, str):
                     if len(value) > 100:
                         truncated[key] = value[:100] + f"... [{len(value)} chars truncated]"
@@ -116,12 +118,17 @@ class SessionIndex:
                         truncated[key] = value
                 else:
                     truncated[key] = value
+            elif isinstance(value, dict):
+                truncated[key] = self._truncate_tool_input(tool_name, value, depth + 1)
+            elif isinstance(value, list):
+                truncated[key] = [self._truncate_tool_input(tool_name, item, depth + 1) for item in value[:10]]
+                if len(value) > 10:
+                    truncated[key].append(f"[{len(value) - 10} more items truncated]")
             elif isinstance(value, str) and len(value) > self.MAX_INPUT_CHARS:
                 truncated[key] = value[:self.MAX_INPUT_CHARS] + "... [truncated]"
             else:
                 truncated[key] = value
 
-        # Add truncation flag for large-input tools
         if tool_name in self.LARGE_INPUT_TOOLS:
             truncated["_truncated"] = True
 

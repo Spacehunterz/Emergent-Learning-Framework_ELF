@@ -177,9 +177,11 @@ class AutoCapture:
                         new_output = json.dumps({"outcome": new_outcome, "reason": new_reason})
                         cursor.execute("UPDATE workflow_runs SET output_json = ? WHERE id = ?", (new_output, run_id))
                         cursor.execute("UPDATE node_executions SET result_json = ? WHERE run_id = ?", (new_output, run_id))
+                        conn.commit()
                         updated += 1
                     except Exception as e:
-                        logger.warning(f"Failed to update run {run_id}: {e}")
+                        conn.rollback()
+                        logger.error(f"Failed to update run {run_id}: {e}")
 
             if updated > 0:
                 cursor.execute(

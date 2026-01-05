@@ -265,6 +265,51 @@ app.include_router(setup_router)
 # Background Task: Monitor for Changes
 # ==============================================================================
 
+def _get_db_change_counts():
+    """Synchronous DB operations for monitor_changes (runs in dedicated thread)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM metrics")
+        metrics_count = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM trails")
+        trail_count = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM workflow_runs")
+        run_count = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM heuristics")
+        heuristics_count = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM learnings")
+        learnings_count = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM decisions")
+        decisions_count = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM invariants")
+        invariants_count = cursor.fetchone()[0]
+
+        return {
+            'metrics': metrics_count,
+            'trails': trail_count,
+            'runs': run_count,
+            'heuristics': heuristics_count,
+            'learnings': learnings_count,
+            'decisions': decisions_count,
+            'invariants': invariants_count,
+        }
+
+
+def _get_recent_data(table: str, columns: str, order_by: str, limit: int = 5):
+    """Fetch recent data from a table (runs in dedicated thread)."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT {columns} FROM {table} ORDER BY {order_by} DESC LIMIT {limit}")
+        return [dict_from_row(r) for r in cursor.fetchall()]
+
+
 async def monitor_changes():
     """Monitor database for changes and broadcast updates."""
     last_metrics_count = 0
@@ -278,114 +323,72 @@ async def monitor_changes():
 
     while True:
         try:
-            with get_db() as conn:
-                cursor = conn.cursor()
+            # Wrap blocking DB operations in thread to prevent blocking event loop
+            counts = await asyncio.to_thread(_get_db_change_counts)
 
-                # Check for new metrics
-                cursor.execute("SELECT COUNT(*) FROM metrics")
-                metrics_count = cursor.fetchone()[0]
+            metrics_count = counts['metrics']
+            trail_count = counts['trails']
+            run_count = counts['runs']
+            heuristics_count = counts['heuristics']
+            learnings_count = counts['learnings']
+            decisions_count = counts['decisions']
+            invariants_count = counts['invariants']
 
-                cursor.execute("SELECT COUNT(*) FROM trails")
-                trail_count = cursor.fetchone()[0]
+            # Broadcast if changes detected
+            if metrics_count > last_metrics_count:
+                recent = await asyncio.to_thread(
+                    _get_recent_data, "metrics", "metric_type, metric_name, metric_value, timestamp", "timestamp"
+                )
+                await manager.broadcast_update("metrics", {"recent": recent})
+                last_metrics_count = metrics_count
 
-                cursor.execute("SELECT COUNT(*) FROM workflow_runs")
-                run_count = cursor.fetchone()[0]
+            if trail_count > last_trail_count:
+                recent = await asyncio.to_thread(
+                    _get_recent_data, "trails", "location, scent, strength, agent_id, message, created_at", "created_at"
+                )
+                await manager.broadcast_update("trails", {"recent": recent})
+                last_trail_count = trail_count
 
-                cursor.execute("SELECT COUNT(*) FROM heuristics")
-                heuristics_count = cursor.fetchone()[0]
+            if run_count > last_run_count:
+                recent = await asyncio.to_thread(
+                    _get_recent_data, "workflow_runs", "id, workflow_name, status, phase, created_at", "created_at", 1
+                )
+                await manager.broadcast_update("runs", {"latest": recent[0] if recent else None})
+                last_run_count = run_count
 
-                cursor.execute("SELECT COUNT(*) FROM learnings")
-                learnings_count = cursor.fetchone()[0]
+            if heuristics_count > last_heuristics_count:
+                recent = await asyncio.to_thread(
+                    _get_recent_data, "heuristics", "id, domain, rule, confidence, is_golden, updated_at", "updated_at"
+                )
+                await manager.broadcast_update("heuristics", {"recent": recent})
+                last_heuristics_count = heuristics_count
 
-                cursor.execute("SELECT COUNT(*) FROM decisions")
-                decisions_count = cursor.fetchone()[0]
+            if learnings_count > last_learnings_count:
+                recent = await asyncio.to_thread(
+                    _get_recent_data, "learnings", "id, type, title, summary, domain, created_at", "created_at"
+                )
+                await manager.broadcast_update("learnings", {"recent": recent})
+                last_learnings_count = learnings_count
 
-                cursor.execute("SELECT COUNT(*) FROM invariants")
-                invariants_count = cursor.fetchone()[0]
+            if decisions_count > last_decisions_count:
+                recent = await asyncio.to_thread(
+                    _get_recent_data, "decisions", "id, title, status, domain, created_at", "created_at"
+                )
+                await manager.broadcast_update("decisions", {"recent": recent})
+                last_decisions_count = decisions_count
 
-                # Broadcast if changes detected
-                if metrics_count > last_metrics_count:
-                    cursor.execute("""
-                        SELECT metric_type, metric_name, metric_value, timestamp
-                        FROM metrics
-                        ORDER BY timestamp DESC
-                        LIMIT 5
-                    """)
-                    recent = [dict_from_row(r) for r in cursor.fetchall()]
-                    await manager.broadcast_update("metrics", {"recent": recent})
-                    last_metrics_count = metrics_count
-
-                if trail_count > last_trail_count:
-                    cursor.execute("""
-                        SELECT location, scent, strength, agent_id, message, created_at
-                        FROM trails
-                        ORDER BY created_at DESC
-                        LIMIT 5
-                    """)
-                    recent = [dict_from_row(r) for r in cursor.fetchall()]
-                    await manager.broadcast_update("trails", {"recent": recent})
-                    last_trail_count = trail_count
-
-                if run_count > last_run_count:
-                    cursor.execute("""
-                        SELECT id, workflow_name, status, phase, created_at
-                        FROM workflow_runs
-                        ORDER BY created_at DESC
-                        LIMIT 1
-                    """)
-                    recent = dict_from_row(cursor.fetchone())
-                    await manager.broadcast_update("runs", {"latest": recent})
-                    last_run_count = run_count
-
-                if heuristics_count > last_heuristics_count:
-                    cursor.execute("""
-                        SELECT id, domain, rule, confidence, is_golden, updated_at
-                        FROM heuristics
-                        ORDER BY updated_at DESC
-                        LIMIT 5
-                    """)
-                    recent = [dict_from_row(r) for r in cursor.fetchall()]
-                    await manager.broadcast_update("heuristics", {"recent": recent})
-                    last_heuristics_count = heuristics_count
-
-                if learnings_count > last_learnings_count:
-                    cursor.execute("""
-                        SELECT id, type, title, summary, domain, created_at
-                        FROM learnings
-                        ORDER BY created_at DESC
-                        LIMIT 5
-                    """)
-                    recent = [dict_from_row(r) for r in cursor.fetchall()]
-                    await manager.broadcast_update("learnings", {"recent": recent})
-                    last_learnings_count = learnings_count
-
-                if decisions_count > last_decisions_count:
-                    cursor.execute("""
-                        SELECT id, title, status, domain, created_at
-                        FROM decisions
-                        ORDER BY created_at DESC
-                        LIMIT 5
-                    """)
-                    recent = [dict_from_row(r) for r in cursor.fetchall()]
-                    await manager.broadcast_update("decisions", {"recent": recent})
-                    last_decisions_count = decisions_count
-
-                if invariants_count > last_invariants_count:
-                    cursor.execute("""
-                        SELECT id, statement, status, severity, domain, violation_count, created_at
-                        FROM invariants
-                        ORDER BY created_at DESC
-                        LIMIT 5
-                    """)
-                    recent = [dict_from_row(r) for r in cursor.fetchall()]
-                    await manager.broadcast_update("invariants", {"recent": recent})
-                    last_invariants_count = invariants_count
+            if invariants_count > last_invariants_count:
+                recent = await asyncio.to_thread(
+                    _get_recent_data, "invariants", "id, statement, status, severity, domain, violation_count, created_at", "created_at"
+                )
+                await manager.broadcast_update("invariants", {"recent": recent})
+                last_invariants_count = invariants_count
 
             # Rescan session index every 5 minutes
             current_time = datetime.now()
             if last_session_scan is None or (current_time - last_session_scan).total_seconds() > 300:
                 try:
-                    session_count = session_index.scan()
+                    session_count = await asyncio.to_thread(session_index.scan)
                     logger.info(f"Session index refreshed: {session_count} sessions")
                     last_session_scan = current_time
                 except Exception as e:
@@ -471,7 +474,7 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
     finally:
-        manager.disconnect(websocket)
+        await manager.disconnect(websocket)
 
 
 # ==============================================================================

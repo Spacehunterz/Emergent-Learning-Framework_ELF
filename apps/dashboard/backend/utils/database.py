@@ -149,19 +149,17 @@ def get_db(scope: str = "global"):
     else:
         db_path = GLOBAL_DB_PATH
 
-    # Ensure directory exists
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     conn = sqlite3.connect(str(db_path), timeout=10.0)
     conn.row_factory = sqlite3.Row
-    
-
-
-    # Initialize game tables on connection (lightweight check)
-    init_game_tables(conn)
 
     try:
+        init_game_tables(conn)
         yield conn
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 
