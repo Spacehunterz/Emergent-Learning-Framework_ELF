@@ -15,6 +15,7 @@ Tests cover:
 import pytest
 import json
 import secrets
+import os
 from fastapi.testclient import TestClient
 
 
@@ -25,7 +26,7 @@ def client(app):
 
 @pytest.fixture
 def dev_token():
-    return secrets.token_urlsafe(32)
+    return os.environ.get("DEV_ACCESS_TOKEN")
 
 
 class TestSessionManagement:

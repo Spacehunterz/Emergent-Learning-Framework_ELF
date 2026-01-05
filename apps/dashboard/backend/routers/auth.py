@@ -126,6 +126,10 @@ class InMemorySessionStore:
         """Delete session. Returns True if session existed."""
         return self.sessions.pop(token, None) is not None
 
+    def clear(self) -> None:
+        """Clear all sessions (for testing)."""
+        self.sessions.clear()
+
     def _cleanup_if_needed(self) -> None:
         """Periodically remove expired/idle sessions."""
         now = time.time()
@@ -162,6 +166,7 @@ class InMemorySessionStore:
 
 # Initialize in-memory session store with max age and idle timeout
 IN_MEMORY_SESSIONS = InMemorySessionStore(SESSION_MAX_AGE, SESSION_IDLE_TIMEOUT)
+SESSIONS = IN_MEMORY_SESSIONS
 
 
 class SessionData(BaseModel):
