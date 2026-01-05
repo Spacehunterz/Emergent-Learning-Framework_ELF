@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Trophy, Github, Lock, Rocket, Sparkles, Navigation, Zap } from 'lucide-react';
+import { X, Trophy, Github, Lock, Rocket, Sparkles, Navigation, Zap, Crown } from 'lucide-react';
 import { useGame } from '../../context/GameContext';
 import { useSound } from './systems/SoundManager';
+import { Leaderboard } from './Leaderboard';
 
-type MenuTab = 'ships' | 'trails';
+type MenuTab = 'ships' | 'trails' | 'leaderboard';
 
 export const GameMenu: React.FC = () => {
     const {
@@ -130,6 +131,15 @@ export const GameMenu: React.FC = () => {
                                 >
                                     <Sparkles className="w-4 h-4" />
                                     <span className="font-bold text-sm">Trails</span>
+                                </button>
+
+                                <button
+                                    onClick={() => { setActiveTab('leaderboard'); sound.playUiClick() }}
+                                    onMouseEnter={() => sound.playUiHover()}
+                                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${activeTab === 'leaderboard' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-slate-400 hover:bg-white/5'}`}
+                                >
+                                    <Crown className="w-4 h-4" />
+                                    <span className="font-bold text-sm">Leaderboard</span>
                                 </button>
 
                                 <div className="mt-auto pt-8">
@@ -372,6 +382,11 @@ export const GameMenu: React.FC = () => {
                                             )}
                                         </div>
                                     </div>
+                                )}
+
+                                {/* LEADERBOARD TAB */}
+                                {activeTab === 'leaderboard' && (
+                                    <Leaderboard compact={false} maxEntries={10} />
                                 )}
 
                             </div>

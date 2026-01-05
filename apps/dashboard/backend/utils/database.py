@@ -112,7 +112,7 @@ def escape_like(s: str) -> str:
 def init_game_tables(conn):
     """Initialize game-related tables if they don't exist."""
     cursor = conn.cursor()
-    
+
     # Users table for OAuth
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
@@ -135,6 +135,14 @@ def init_game_tables(conn):
         FOREIGN KEY (user_id) REFERENCES users (id)
     )
     """)
+
+    # Performance index for leaderboard queries (ORDER BY score DESC)
+    # This index significantly speeds up leaderboard pagination for 1000s of users
+    cursor.execute("""
+    CREATE INDEX IF NOT EXISTS idx_game_state_score_desc
+    ON game_state (score DESC)
+    """)
+
     conn.commit()
 
 @contextmanager
