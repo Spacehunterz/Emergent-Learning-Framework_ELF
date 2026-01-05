@@ -5,6 +5,20 @@ All notable changes to the Emergent Learning Framework will be documented in thi
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.10] - 2026-01-05
+
+### Added
+- **Heuristic Validation Tracking** - New `scripts/validate-heuristic.py` script
+  - Track when heuristics are validated (worked) or violated (failed)
+  - `--validate` / `--violate` flags to record outcomes
+  - `--recalc` to adjust confidence based on validation ratio
+  - `--list` to view all heuristics with validation stats
+
+### Fixed
+- **Unicode Encoding Error (Windows)** - Added `encoding='utf-8'` to file operations in `record-heuristic.py`
+- **Package Manager Fallback** - `start.ps1` now detects bun first, falls back to npm if unavailable
+- **Windows Rollup Dependency** - Added platform-specific Rollup binaries to `optionalDependencies` in frontend `package.json`
+
 ## [0.3.9] - 2026-01-04
 
 ### Changed
