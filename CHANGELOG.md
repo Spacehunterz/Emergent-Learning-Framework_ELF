@@ -8,6 +8,13 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.3.12] - 2026-01-05
 
 ### Added
+- **Game Leaderboard** - Full leaderboard system for the space shooter game
+  - `GET /api/game/leaderboard` - Top N scores with pagination and user info
+  - `GET /api/game/leaderboard/around-me` - Scores centered on current user
+  - React `Leaderboard.tsx` component with sci-fi styling
+  - Crown/Medal icons for top 3, user highlighting, loading states
+  - Anti-cheat filtering with configurable MAX_VALID_SCORE
+  - Performance index `idx_game_state_score_desc` for fast queries
 - **Comprehensive API Reference** - Complete documentation for all public APIs
   - `docs/api/index.md` - API overview and quick start guide
   - `docs/api/QuerySystem.md` - All 30+ async query methods with examples
