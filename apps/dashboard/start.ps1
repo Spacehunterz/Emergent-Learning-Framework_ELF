@@ -22,13 +22,32 @@ try {
     exit 1
 }
 
-# Check Bun
-Write-Host "[2/4] Checking Bun..." -ForegroundColor Yellow
+# Check Bun or npm
+Write-Host "[2/4] Checking package manager..." -ForegroundColor Yellow
+$useBun = $false
+$useNpm = $false
 try {
     $bunVersion = bun --version 2>&1
-    Write-Host "  Found: bun $bunVersion" -ForegroundColor Green
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  Found: bun $bunVersion" -ForegroundColor Green
+        $useBun = $true
+    }
 } catch {
-    Write-Host "  ERROR: Bun not found. Please install from https://bun.sh" -ForegroundColor Red
+    # Bun not found, try npm
+}
+if (-not $useBun) {
+    try {
+        $npmVersion = npm --version 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "  Found: npm $npmVersion (bun not available, using npm)" -ForegroundColor Yellow
+            $useNpm = $true
+        }
+    } catch {
+        # npm not found either
+    }
+}
+if (-not $useBun -and -not $useNpm) {
+    Write-Host "  ERROR: Neither Bun nor npm found. Please install Bun (https://bun.sh) or Node.js (https://nodejs.org)" -ForegroundColor Red
     exit 1
 }
 
@@ -47,7 +66,11 @@ Pop-Location
 # Install frontend dependencies
 Write-Host "[4/4] Installing frontend dependencies..." -ForegroundColor Yellow
 Push-Location $FrontendPath
-bun install
+if ($useBun) {
+    bun install
+} else {
+    npm install
+}
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  ERROR: Failed to install frontend dependencies" -ForegroundColor Red
     Pop-Location
@@ -69,7 +92,11 @@ Start-Sleep -Seconds 2
 
 # Start frontend
 Write-Host "Starting frontend (Vite)..." -ForegroundColor Yellow
-$frontendJob = Start-Process -FilePath "bun" -ArgumentList "run", "dev" -WorkingDirectory $FrontendPath -PassThru -NoNewWindow
+if ($useBun) {
+    $frontendJob = Start-Process -FilePath "bun" -ArgumentList "run", "dev" -WorkingDirectory $FrontendPath -PassThru -NoNewWindow
+} else {
+    $frontendJob = Start-Process -FilePath "npm" -ArgumentList "run", "dev" -WorkingDirectory $FrontendPath -PassThru -NoNewWindow
+}
 Start-Sleep -Seconds 3
 
 Write-Host ""

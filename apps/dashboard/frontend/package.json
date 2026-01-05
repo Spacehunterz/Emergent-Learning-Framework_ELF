@@ -23,6 +23,11 @@
     "three": "0.160.0",
     "zustand": "4.5.2"
   },
+  "optionalDependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.9.0",
+    "@rollup/rollup-linux-x64-gnu": "^4.9.0",
+    "@rollup/rollup-darwin-x64": "^4.9.0"
+  },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@types/d3": "^7.4.3",
