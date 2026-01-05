@@ -69,6 +69,11 @@ export function useWebSocket(url: string, onMessage: (data: any) => void) {
 
         // Attempt to reconnect with exponential backoff
         if (reconnectAttempts.current < maxReconnectAttempts && mountedRef.current) {
+          // Clear any existing reconnect timeout to prevent race condition
+          if (reconnectTimeout.current) {
+            clearTimeout(reconnectTimeout.current)
+          }
+
           const delay = Math.min(baseReconnectDelay * Math.pow(2, reconnectAttempts.current), 10000)
           console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current + 1}/${maxReconnectAttempts})`)
           reconnectAttempts.current++
