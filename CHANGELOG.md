@@ -5,6 +5,23 @@ All notable changes to the Emergent Learning Framework will be documented in thi
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.12] - 2026-01-05
+
+### Added
+- **Comprehensive API Reference** - Complete documentation for all public APIs
+  - `docs/api/index.md` - API overview and quick start guide
+  - `docs/api/QuerySystem.md` - All 30+ async query methods with examples
+  - `docs/api/Models.md` - Documentation for all 22 database models
+  - `docs/api/Hooks.md` - Hook development guide with 28 security patterns
+  - `docs/api/Conductor.md` - Workflow orchestration and swarm coordination
+- **Database Schema Documentation** - `docs/database/schema.md` with 50+ tables, ERD, and migration notes
+- **Developer Guides**
+  - `docs/guides/testing.md` - Test organization, fixtures, coverage requirements
+  - `docs/guides/performance.md` - Query optimization, indexing, token cost analysis
+  - `docs/guides/extensions.md` - Custom hooks, mixins, personas, dashboard plugins
+- **CONTRIBUTING.md** - Developer onboarding, code style guide, PR workflow
+- **Test Infrastructure** - Test files for critical bugs (WebSocket stress, auto-capture rollback, broadcast race)
+
 ## [0.3.11] - 2026-01-05
 
 ### Fixed
