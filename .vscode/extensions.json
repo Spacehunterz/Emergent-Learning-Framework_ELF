@@ -1,0 +1,18 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.debugpy",
+    "ms-pyright.pyright",
+    "biomejs.biome",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "shellformat.shell-format",
+    "timonwong.shellcheckrc",
+    "redhat.vscode-yaml",
+    "ms-vscode.makefile-tools",
+    "eamodio.gitlens",
+    "GitHub.copilot",
+    "ms-vscode-remote.remote-containers"
+  ]
+}

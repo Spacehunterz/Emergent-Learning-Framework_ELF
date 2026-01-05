@@ -1,0 +1,152 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Setup development environment",
+      "type": "shell",
+      "command": "make",
+      "args": ["setup"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      }
+    },
+    {
+      "label": "Start development servers",
+      "type": "shell",
+      "command": "make",
+      "args": ["dev"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^.*$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Application startup complete.*",
+          "endsPattern": "^.*Shutting down.*"
+        }
+      }
+    },
+    {
+      "label": "Start backend only",
+      "type": "shell",
+      "command": "make",
+      "args": ["dev-backend"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "isBackground": true
+    },
+    {
+      "label": "Start frontend only",
+      "type": "shell",
+      "command": "make",
+      "args": ["dev-frontend"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "isBackground": true
+    },
+    {
+      "label": "Run all tests",
+      "type": "shell",
+      "command": "make",
+      "args": ["test"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": {
+        "pattern": "^(FAILED|ERROR|PASSED).*$"
+      }
+    },
+    {
+      "label": "Run tests with coverage",
+      "type": "shell",
+      "command": "make",
+      "args": ["test-coverage"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Run tests in watch mode",
+      "type": "shell",
+      "command": "make",
+      "args": ["test-watch"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "isBackground": true
+    },
+    {
+      "label": "Format code",
+      "type": "shell",
+      "command": "make",
+      "args": ["format"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Lint code",
+      "type": "shell",
+      "command": "make",
+      "args": ["lint"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": [
+        "$mypy",
+        "$pylint"
+      ]
+    },
+    {
+      "label": "Type check (strict)",
+      "type": "shell",
+      "command": "make",
+      "args": ["type-check"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Build frontend",
+      "type": "shell",
+      "command": "make",
+      "args": ["build"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Clean artifacts",
+      "type": "shell",
+      "command": "make",
+      "args": ["clean"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}

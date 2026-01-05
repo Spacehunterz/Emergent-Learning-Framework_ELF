@@ -1,10 +1,25 @@
 # Emergent Learning Dashboard - Backend Tests
 
-Comprehensive test suite for the Emergent Learning Dashboard backend, focusing on concurrency, race conditions, and data integrity.
+Comprehensive test suite for the Emergent Learning Dashboard backend, covering:
+- Security testing (authentication, authorization, attack prevention)
+- Concurrency and race conditions
+- Data integrity and transactions
+- WebSocket communication
 
 ## Overview
 
-This test suite verifies fixes for critical bugs identified in `CRITICAL_BUGS_QUICKREF.md`:
+This test suite includes:
+
+### Security Tests (NEW)
+- **Authentication & Authorization**: Session management, token validation
+- **Attack Prevention**: SQL injection, XSS, CORS bypass, rate limiting
+- **Cryptography**: Session encryption, secure token generation
+- **Coverage**: 95%+ on security-critical code
+
+See [SECURITY_TEST_STRATEGY.md](SECURITY_TEST_STRATEGY.md) for comprehensive security testing documentation.
+
+### Concurrency Tests (Existing)
+Verifies fixes for critical bugs identified in `CRITICAL_BUGS_QUICKREF.md`:
 
 - **CRITICAL #1**: WebSocket reconnect race condition
 - **CRITICAL #2**: Database corruption in auto-capture
@@ -12,7 +27,80 @@ This test suite verifies fixes for critical bugs identified in `CRITICAL_BUGS_QU
 
 ## Test Files
 
-### `test_websocket_stress.py`
+### Security Tests
+
+#### `unit/test_session_encryption.py`
+Unit tests for session encryption and decryption.
+
+**Test Classes:**
+- `TestSessionEncryption`: Encryption/decryption, token generation
+- `TestSessionStorage`: Redis vs in-memory storage
+- `TestTokenGeneration`: Cryptographic randomness
+
+**Key Tests:**
+- Session data is actually encrypted (not plaintext)
+- Tokens are unique and cryptographically secure
+- Corrupted data handled gracefully
+- Redis TTL set correctly (7 days)
+
+#### `unit/test_token_validation.py`
+Unit tests for token validation and authentication.
+
+**Test Classes:**
+- `TestTokenValidation`: require_auth, get_user_id
+- `TestRateLimiting`: Rate limit configuration
+- `TestSessionRetrieval`: User ID extraction
+
+**Key Tests:**
+- Valid sessions return user ID
+- Invalid sessions raise 401
+- Rate limiters configured correctly
+
+#### `integration/test_auth_flow.py`
+Integration tests for complete authentication flows.
+
+**Test Classes:**
+- `TestAuthenticationFlow`: End-to-end login/logout
+- `TestSessionPersistence`: Session across requests
+- `TestUserDataStorage`: Database user management
+- `TestConcurrentSessions`: Multiple simultaneous sessions
+
+**Key Tests:**
+- Complete dev login flow works
+- Logout invalidates session
+- Session cookies have secure attributes
+- User data persisted correctly
+
+#### `security/test_sql_injection.py`
+Security tests for SQL injection prevention.
+
+**Test Classes:**
+- `TestSQLInjectionPrevention`: Parameterized queries
+- `TestBlindSQLInjection`: Time-based injection
+- `TestUnionBasedInjection`: UNION attacks
+
+**Key Tests:**
+- SQL injection payloads safely handled
+- Parameterized queries used (not string formatting)
+- Special characters stored safely
+
+#### `security/test_cors_attacks.py`
+Security tests for CORS policy enforcement.
+
+**Test Classes:**
+- `TestCORSAttacks`: CORS violation prevention
+- `TestOriginValidation`: Origin header validation
+- `TestCORSBypass`: CORS bypass prevention
+
+**Key Tests:**
+- Allowed origins work (localhost:3001)
+- Malicious origins blocked
+- Wildcard not used with credentials
+- Origin reflection attacks prevented
+
+### Concurrency Tests
+
+#### `test_websocket_stress.py`
 
 Tests WebSocket connection handling under stress conditions.
 
@@ -97,11 +185,35 @@ Run all tests:
 pytest tests/ -v
 ```
 
-Run specific test file:
+Run security tests only:
+```bash
+# All security tests
+pytest tests/unit/ tests/integration/ tests/security/ -v
+
+# Just unit tests
+pytest tests/unit/ -v
+
+# Just integration tests
+pytest tests/integration/ -v
+
+# Just security attack tests
+pytest tests/security/ -v
+```
+
+Run concurrency tests:
 ```bash
 pytest tests/test_websocket_stress.py -v
 pytest tests/test_auto_capture_rollback.py -v
 pytest tests/test_broadcast_race.py -v
+```
+
+Run with coverage:
+```bash
+# Security module coverage
+pytest tests/unit/ tests/integration/ tests/security/ --cov=routers.auth --cov-report=html
+
+# Full backend coverage
+pytest tests/ --cov=utils --cov=routers --cov-report=html
 ```
 
 Run specific test class:

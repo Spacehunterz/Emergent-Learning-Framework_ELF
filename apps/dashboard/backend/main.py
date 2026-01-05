@@ -101,6 +101,7 @@ from routers import (
     game_router,
     setup_router,
 )
+from routers.auth import init_redis
 
 # Configure logging
 logging.basicConfig(
@@ -192,6 +193,31 @@ app.add_middleware(
 # Security Headers Middleware
 # ==============================================================================
 
+# ==============================================================================
+# Request Size Limit Middleware
+# ==============================================================================
+
+class LimitUploadSize(BaseHTTPMiddleware):
+    """Limit request body size to prevent DoS"""
+
+    def __init__(self, app, max_upload_size: int = 10 * 1024 * 1024):
+        super().__init__(app)
+        self.max_upload_size = max_upload_size
+
+    async def dispatch(self, request, call_next):
+        if request.method in ["POST", "PUT", "PATCH"]:
+            if "content-length" in request.headers:
+                content_length = int(request.headers["content-length"])
+                if content_length > self.max_upload_size:
+                    from fastapi.responses import JSONResponse
+                    return JSONResponse(
+                        {"error": "Request body too large"},
+                        status_code=413
+                    )
+        response = await call_next(request)
+        return response
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers to all HTTP responses."""
 
@@ -215,6 +241,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         return response
 
+
+app.add_middleware(LimitUploadSize, max_upload_size=10 * 1024 * 1024)
 
 app.add_middleware(SecurityHeadersMiddleware)
 
@@ -491,6 +519,9 @@ async def startup_event():
         logger.info(f"Project context detected: {ctx.project_name} at {ctx.project_root}")
     else:
         logger.info("No project context - using global scope only")
+
+    # Initialize async Redis for session storage
+    await init_redis()
 
     # Initialize Peewee database and create tables
     # MUST happen before monitor_changes() tries to query metrics table
