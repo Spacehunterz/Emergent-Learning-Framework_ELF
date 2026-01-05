@@ -3,6 +3,7 @@ Sessions Router - Session history and projects.
 """
 
 import logging
+import re
 import subprocess
 import sys
 from dataclasses import asdict
@@ -10,6 +11,8 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
+
+UUID_PATTERN = re.compile(r'^(agent-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
 
 from utils.database import get_base_path
 
@@ -219,6 +222,10 @@ async def get_session_summary(session_id: str):
 
 def _run_summarizer(session_id: str, use_llm: bool = True):
     """Background task to run the summarizer script."""
+    if not UUID_PATTERN.match(session_id):
+        logger.error(f"Invalid session_id format: {session_id}")
+        return
+
     try:
         cmd = [sys.executable, str(SUMMARIZER_SCRIPT), session_id]
         if not use_llm:
@@ -229,6 +236,8 @@ def _run_summarizer(session_id: str, use_llm: bool = True):
             logger.error(f"Summarizer failed for {session_id}: {result.stderr}")
         else:
             logger.info(f"Summarized session {session_id}")
+    except subprocess.TimeoutExpired:
+        logger.error(f"Summarizer timed out for {session_id}")
     except Exception as e:
         logger.error(f"Error running summarizer for {session_id}: {e}")
 
@@ -294,7 +303,6 @@ async def trigger_batch_summarize(
         if not use_llm:
             cmd.append("--no-llm")
 
-        # Run in background
         def run_batch():
             try:
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
@@ -302,6 +310,8 @@ async def trigger_batch_summarize(
                     logger.error(f"Batch summarizer failed: {result.stderr}")
                 else:
                     logger.info(f"Batch summarization completed: {result.stdout}")
+            except subprocess.TimeoutExpired:
+                logger.error("Batch summarizer timed out after 300s - consider reducing limit or running manually")
             except Exception as e:
                 logger.error(f"Batch summarizer error: {e}")
 

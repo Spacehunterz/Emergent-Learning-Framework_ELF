@@ -8,6 +8,7 @@ loading full content for performance. Provides lazy loading for full sessions.
 
 import json
 import logging
+import threading
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
@@ -31,6 +32,8 @@ class SessionMetadata:
     is_agent: bool
     file_path: str
     file_size: int
+    is_partial: bool = False
+    corruption_count: int = 0
 
 
 @dataclass
@@ -77,7 +80,8 @@ class SessionIndex:
         
         self._index: Dict[str, SessionMetadata] = {}
         self._last_scan: Optional[datetime] = None
-        
+        self._lock = threading.RLock()
+
         try:
             from utils.database import get_base_path
             self._db_path = get_base_path() / "memory" / "index.db"
@@ -185,33 +189,34 @@ class SessionIndex:
             Number of sessions indexed
         """
         logger.info(f"Scanning projects directory: {self.projects_dir}")
-        self._index.clear()
 
         if not self.projects_dir.exists():
             logger.warning(f"Projects directory does not exist: {self.projects_dir}")
             return 0
 
+        new_index: Dict[str, SessionMetadata] = {}
         session_count = 0
 
-        # Scan all project directories
         for project_dir in self.projects_dir.iterdir():
             if not project_dir.is_dir():
                 continue
 
             project_name = project_dir.name
 
-            # Find all JSONL files in this project
             for jsonl_file in project_dir.glob("*.jsonl"):
                 try:
                     metadata = self._extract_metadata(jsonl_file, project_name)
                     if metadata:
-                        self._index[metadata.session_id] = metadata
+                        new_index[metadata.session_id] = metadata
                         session_count += 1
                 except Exception as e:
                     logger.error(f"Error indexing {jsonl_file}: {e}", exc_info=True)
                     continue
 
-        self._last_scan = datetime.now()
+        with self._lock:
+            self._index = new_index
+            self._last_scan = datetime.now()
+
         logger.info(f"Indexed {session_count} sessions from {len(list(self.projects_dir.iterdir()))} projects")
         return session_count
 
@@ -241,23 +246,24 @@ class SessionIndex:
             if file_size < 10:
                 return None
 
-            # Read file line by line to extract metadata
             first_timestamp = None
             last_timestamp = None
             prompt_count = 0
             first_prompt_preview = ""
             git_branch = ""
+            corruption_count = 0
 
             with open(file_path, 'r', encoding='utf-8') as f:
                 for line in f:
-                    # Skip empty lines
                     if not line.strip():
                         continue
 
                     try:
                         data = json.loads(line)
                     except json.JSONDecodeError as e:
-                        logger.warning(f"JSON parse error in {file_path}: {e}")
+                        corruption_count += 1
+                        if corruption_count <= 3:
+                            logger.warning(f"JSON parse error in {file_path}: {e}")
                         continue
 
                     # Skip sidechains
@@ -322,7 +328,9 @@ class SessionIndex:
                 git_branch=git_branch,
                 is_agent=is_agent,
                 file_path=str(file_path),
-                file_size=file_size
+                file_size=file_size,
+                is_partial=corruption_count > 0,
+                corruption_count=corruption_count
             )
 
         except Exception as e:
@@ -352,7 +360,8 @@ class SessionIndex:
         Returns:
             Tuple of (sessions, total_count)
         """
-        sessions = list(self._index.values())
+        with self._lock:
+            sessions = list(self._index.values())
 
         # Filter by agent files
         if not include_agent:
@@ -391,7 +400,8 @@ class SessionIndex:
 
     def get_session_metadata(self, session_id: str) -> Optional[SessionMetadata]:
         """Get metadata for a specific session."""
-        return self._index.get(session_id)
+        with self._lock:
+            return self._index.get(session_id)
 
     def load_full_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -539,7 +549,10 @@ class SessionIndex:
         """
         projects = {}
 
-        for metadata in self._index.values():
+        with self._lock:
+            index_values = list(self._index.values())
+
+        for metadata in index_values:
             project_name = metadata.project
 
             if project_name not in projects:
@@ -563,15 +576,19 @@ class SessionIndex:
 
     def get_stats(self) -> Dict[str, Any]:
         """Get statistics about indexed sessions."""
-        total_sessions = len(self._index)
-        agent_sessions = sum(1 for m in self._index.values() if m.is_agent)
-        total_prompts = sum(m.prompt_count for m in self._index.values())
+        with self._lock:
+            index_values = list(self._index.values())
+            last_scan = self._last_scan
+
+        total_sessions = len(index_values)
+        agent_sessions = sum(1 for m in index_values if m.is_agent)
+        total_prompts = sum(m.prompt_count for m in index_values)
 
         return {
             "total_sessions": total_sessions,
             "agent_sessions": agent_sessions,
             "user_sessions": total_sessions - agent_sessions,
             "total_prompts": total_prompts,
-            "last_scan": self._last_scan.isoformat() if self._last_scan else None,
-            "projects_count": len(set(m.project for m in self._index.values()))
+            "last_scan": last_scan.isoformat() if last_scan else None,
+            "projects_count": len(set(m.project for m in index_values))
         }

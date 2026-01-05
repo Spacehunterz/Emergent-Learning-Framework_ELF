@@ -223,14 +223,14 @@ function AppContent() {
     }
   }
 
-  // FIXED: Wrap in useCallback to prevent unnecessary re-renders
   const handleOpenInEditor = useCallback(async (path: string, line?: number) => {
     try {
       await api.post('/api/open-in-editor', { path, line })
     } catch (err) {
       console.error('Failed to open in editor:', err)
+      notifications.error('Editor Error', `Could not open ${path.split('/').pop() || 'file'} in editor`)
     }
-  }, [api])
+  }, [api, notifications])
 
   const { performanceMode } = useCosmicSettings()
   const { setParticleCount } = useTheme()
@@ -403,16 +403,21 @@ function AppContent() {
 
           {activeTab === 'timeline' && (
             <TimelineView
-              events={events.map((e, idx) => ({
-                id: idx,
-                timestamp: e.timestamp,
-                event_type: (e.event_type || e.type || 'task_start') as TimelineEvent['event_type'],
-                description: e.description || e.message || '',
-                metadata: e.metadata || (e.tags ? { tags: e.tags } : {}),
-                file_path: e.file_path,
-                line_number: e.line_number,
-                domain: e.domain,
-              }))}
+              events={events.map((e, idx) => {
+                const validEventTypes = ['task_start', 'task_end', 'heuristic_consulted', 'heuristic_validated', 'heuristic_violated', 'failure_recorded', 'golden_promoted'] as const
+                const rawType = e.event_type || e.type || 'task_start'
+                const eventType = validEventTypes.includes(rawType as any) ? rawType as TimelineEvent['event_type'] : 'task_start'
+                return {
+                  id: idx,
+                  timestamp: e.timestamp,
+                  event_type: eventType,
+                  description: e.description || e.message || '',
+                  metadata: e.metadata || (e.tags ? { tags: e.tags } : {}),
+                  file_path: e.file_path,
+                  line_number: e.line_number,
+                  domain: e.domain,
+                }
+              })}
               heuristics={normalizedHeuristics}
               onEventClick={() => { }}
             />
