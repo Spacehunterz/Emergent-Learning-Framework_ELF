@@ -84,14 +84,16 @@ class SchemaMigrator:
             conn.close()
 
     def apply_migration(self, version: int, migration_file: Path) -> bool:
-        """Apply a single migration file."""
+        """Apply a single migration file with transaction safety."""
         try:
             with open(migration_file, "r") as f:
                 sql_statements = f.read()
 
             conn = sqlite3.connect(self.db_path, timeout=10.0)
+            conn.isolation_level = None
             try:
                 cursor = conn.cursor()
+                cursor.execute("BEGIN TRANSACTION")
 
                 for statement in sql_statements.split(";"):
                     statement = statement.strip()
@@ -99,18 +101,25 @@ class SchemaMigrator:
                         try:
                             cursor.execute(statement)
                         except sqlite3.OperationalError as e:
-                            if "already exists" not in str(e) and \
-                               "duplicate column" not in str(e) and \
-                               "no such column" not in str(e):
+                            error_msg = str(e).lower()
+                            if "already exists" in error_msg or "duplicate column" in error_msg:
+                                logger.debug(f"Skipping idempotent statement: {statement[:50]}...")
+                            else:
+                                cursor.execute("ROLLBACK")
                                 raise
-                            logger.debug(f"Skipping idempotent statement: {statement[:50]}...")
 
-                conn.commit()
+                cursor.execute("COMMIT")
 
                 description = migration_file.stem.split("_", 1)[1] if "_" in migration_file.stem else "migration"
                 self.record_migration(version, description)
 
                 return True
+            except Exception:
+                try:
+                    cursor.execute("ROLLBACK")
+                except Exception:
+                    pass
+                raise
             finally:
                 conn.close()
         except Exception as e:
@@ -165,36 +174,46 @@ class SchemaMigrator:
         elif result["total_applied"] > 0:
             logger.info(f"Successfully applied {result['total_applied']} migrations")
 
+        validation = self.validate_schema()
+        result["schema_valid"] = validation["valid"]
+        if not validation["valid"]:
+            logger.error(f"Schema validation failed: {validation['issues']}")
+            result["validation_issues"] = validation["issues"]
+            if result["status"] == "success":
+                result["status"] = "validation_failed"
+
         return result
 
     def validate_schema(self) -> Dict[str, any]:
         """Validate that the database schema is complete and correct."""
         issues = []
 
+        required_columns = {
+            "spike_reports": ["id", "title", "topic", "question", "findings", "gotchas",
+                             "resources", "domain", "tags", "access_count", "updated_at"],
+            "heuristics": ["id", "domain", "rule", "explanation", "confidence"],
+            "learnings": ["id", "type", "filepath", "title"],
+            "schema_version": ["version"],
+        }
+
         try:
             conn = sqlite3.connect(self.db_path, timeout=10.0)
             cursor = conn.cursor()
 
-            checks = [
-                ("spike_reports", "topic", "TEXT"),
-                ("spike_reports", "title", "TEXT"),
-                ("heuristics", "id", "INTEGER"),
-                ("learnings", "id", "INTEGER"),
-            ]
-
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
             tables = {row[0] for row in cursor.fetchall()}
 
-            for table_name, column_name, expected_type in checks:
+            for table_name, required_cols in required_columns.items():
                 if table_name not in tables:
                     issues.append(f"Missing table: {table_name}")
                     continue
 
                 cursor.execute(f"PRAGMA table_info({table_name})")
-                columns = {row[1]: row[2] for row in cursor.fetchall()}
+                existing_columns = {row[1] for row in cursor.fetchall()}
 
-                if column_name not in columns:
-                    issues.append(f"Missing column: {table_name}.{column_name}")
+                for col in required_cols:
+                    if col not in existing_columns:
+                        issues.append(f"Missing column: {table_name}.{col}")
 
             conn.close()
         except Exception as e:
@@ -203,4 +222,53 @@ class SchemaMigrator:
         return {
             "valid": len(issues) == 0,
             "issues": issues
+        }
+
+    def repair_schema(self) -> Dict[str, any]:
+        """Attempt to repair a corrupted schema by adding missing columns."""
+        validation = self.validate_schema()
+        if validation["valid"]:
+            return {"repaired": False, "message": "Schema is already valid"}
+
+        repairs = []
+        errors = []
+
+        column_defaults = {
+            "spike_reports.topic": "TEXT NOT NULL DEFAULT ''",
+            "spike_reports.question": "TEXT NOT NULL DEFAULT ''",
+            "spike_reports.findings": "TEXT NOT NULL DEFAULT ''",
+            "spike_reports.gotchas": "TEXT",
+            "spike_reports.resources": "TEXT",
+            "spike_reports.domain": "TEXT",
+            "spike_reports.tags": "TEXT",
+            "spike_reports.access_count": "INTEGER DEFAULT 0",
+            "spike_reports.updated_at": "DATETIME",
+        }
+
+        try:
+            conn = sqlite3.connect(self.db_path, timeout=10.0)
+            cursor = conn.cursor()
+
+            for issue in validation["issues"]:
+                if issue.startswith("Missing column: "):
+                    col_ref = issue.replace("Missing column: ", "")
+                    if col_ref in column_defaults:
+                        table, col = col_ref.split(".")
+                        col_type = column_defaults[col_ref]
+                        try:
+                            cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}")
+                            repairs.append(col_ref)
+                        except Exception as e:
+                            errors.append(f"Failed to add {col_ref}: {e}")
+
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            errors.append(f"Repair failed: {e}")
+
+        return {
+            "repaired": len(repairs) > 0,
+            "repairs": repairs,
+            "errors": errors,
+            "revalidation": self.validate_schema() if repairs else validation
         }
