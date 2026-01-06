@@ -767,7 +767,7 @@ def test_multiagent_integration():
         completed_tasks = [t for t in tasks if t["status"] == "completed"]
         assert len(completed_tasks) == 5, (
             f"Expected all 5 tasks completed, but only {len(completed_tasks)} completed. "
-            f"Incomplete: {[t['description'] for t in tasks if t['status'] != 'completed']}"
+            f"Incomplete: {[t.get('task', t.get('description', 'unknown')) for t in tasks if t['status'] != 'completed']}"
         )
 
         # Assert 2: Findings were recorded (at least 5 - one per agent minimum)
