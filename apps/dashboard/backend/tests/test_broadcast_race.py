@@ -22,7 +22,7 @@ class TestBroadcastListModification:
     """Test list modification safety during broadcast operations."""
 
     @pytest.fixture
-    async def connection_manager(self):
+    def connection_manager(self):
         """Create a ConnectionManager instance for testing."""
         return ConnectionManager()
 
