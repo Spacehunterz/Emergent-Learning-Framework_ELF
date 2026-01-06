@@ -51,9 +51,9 @@ class TestSessionEncryption:
         retrieved_data = await get_session(token)
 
         assert retrieved_data is not None, "Should return session data"
-        assert retrieved_data["id"] == 42, "Should preserve user id"
-        assert retrieved_data["username"] == "alice", "Should preserve username"
-        assert retrieved_data["github_id"] == 12345, "Should preserve github_id"
+        assert retrieved_data.id == 42, "Should preserve user id"
+        assert retrieved_data.username == "alice", "Should preserve username"
+        assert retrieved_data.github_id == 12345, "Should preserve github_id"
 
     async def test_get_session_returns_none_for_invalid_token(self):
         """get_session should return None for non-existent tokens."""
