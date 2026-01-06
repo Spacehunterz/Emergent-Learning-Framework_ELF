@@ -626,6 +626,11 @@ class OrchestratorAgent:
         for agent in agents:
             agent.join()
 
+        # Allow time for any pending state writes to flush
+        # This prevents race conditions in CI where thread.join() returns
+        # but background state persistence is still completing
+        time.sleep(0.5)
+
         elapsed = time.time() - start_time
         self.timeline.log("orchestrator", f"All agents completed in {elapsed:.2f}s")
 
