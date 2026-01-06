@@ -48,6 +48,17 @@ python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
 addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::pytest.PytestUnraisableExceptionWarning",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "concurrent: marks tests with threading/async",
+    "database: marks tests requiring database",
+    "integration: marks integration tests",
+    "stress: marks stress/load tests",
+]
 
 [tool.mypy]
 # Mypy configuration will be in mypy.ini for better organization

@@ -8,107 +8,88 @@ Tests cover:
 3. TTL/expiration handling
 4. Concurrent access simulation
 5. Edge cases
+
+Run with: python -m pytest tests/test_claim_chains_comprehensive.py -v
 """
 
-import sys
-import os
 import time
 import threading
-from pathlib import Path
 from datetime import datetime, timedelta
 
-# Add the coordinator directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "coordinator"))
+import pytest
 
 from blackboard import Blackboard, BlockedError, ClaimChain
 
-
-class _TestResults:
-    """Track test results."""
-    def __init__(self):
-        self.passed = 0
-        self.failed = 0
-        self.errors = []
-
-    def record_pass(self, test_name: str):
-        self.passed += 1
-        print(f"[PASS] {test_name}")
-
-    def record_fail(self, test_name: str, reason: str):
-        self.failed += 1
-        error_msg = f"[FAIL] {test_name}: {reason}"
-        self.errors.append(error_msg)
-        print(error_msg)
-
-    def summary(self):
-        total = self.passed + self.failed
-        print(f"\n{'='*60}")
-        print(f"Test Results: {self.passed}/{total} passed")
-        if self.failed > 0:
-            print(f"\nFailed tests:")
-            for error in self.errors:
-                print(f"  {error}")
-        print(f"{'='*60}")
-        return self.failed == 0
+# =============================================================================
+# TEST CONSTANTS
+# =============================================================================
+NUM_CONCURRENT_AGENTS = 5
+NUM_STRESS_AGENTS = 20
+NUM_CONTENTION_AGENTS = 10
+NUM_PERFORMANCE_FILES = 100
+NUM_PERFORMANCE_CYCLES = 50
+CONCURRENT_SLEEP_MS = 0.1
+STRESS_SLEEP_MS = 0.01
+CONTENTION_SLEEP_MS = 0.05
 
 
-def _test_basic_operations(bb: Blackboard, results: _TestResults):
+# =============================================================================
+# BASIC OPERATIONS TESTS
+# =============================================================================
+class TestBasicOperations:
     """Test 1: Basic claim chain operations."""
-    print("\n=== Test 1: Basic Operations ===")
 
-    # Test 1.1: claim_chain succeeds with free files
-    try:
+    def test_claim_chain_succeeds_with_free_files(self, bb):
+        """claim_chain() succeeds with free files."""
         chain = bb.claim_chain(
             agent_id="agent1",
             files=["file1.txt", "file2.txt"],
             reason="Testing basic claim",
             ttl_minutes=5
         )
-        assert chain is not None
-        assert chain.agent_id == "agent1"
-        assert len(chain.files) == 2
-        assert chain.status == "active"
-        results.record_pass("claim_chain() succeeds with free files")
-    except Exception as e:
-        results.record_fail("claim_chain() succeeds with free files", str(e))
+        assert chain is not None, "Chain should not be None"
+        assert chain.agent_id == "agent1", f"Expected agent1, got {chain.agent_id}"
+        assert len(chain.files) == 2, f"Expected 2 files, got {len(chain.files)}"
+        assert chain.status == "active", f"Expected active status, got {chain.status}"
+        bb.release_chain("agent1", chain.chain_id)
 
-    # Test 1.2: get_claim_for_file returns correct claim
-    try:
+    def test_get_claim_for_file_returns_correct_claim(self, bb):
+        """get_claim_for_file() returns correct claim."""
+        chain = bb.claim_chain(
+            agent_id="agent1",
+            files=["file1.txt", "file2.txt"],
+            reason="Testing basic claim",
+            ttl_minutes=5
+        )
         claim = bb.get_claim_for_file("file1.txt")
-        assert claim is not None
-        assert claim.agent_id == "agent1"
-        assert claim.chain_id == chain.chain_id
-        results.record_pass("get_claim_for_file() returns correct claim")
-    except Exception as e:
-        results.record_fail("get_claim_for_file() returns correct claim", str(e))
+        assert claim is not None, "Claim should not be None"
+        assert claim.agent_id == "agent1", f"Expected agent1, got {claim.agent_id}"
+        assert claim.chain_id == chain.chain_id, f"Chain ID mismatch"
+        bb.release_chain("agent1", chain.chain_id)
 
-    # Test 1.3: release_chain frees files for others
-    try:
+    def test_release_chain_frees_files_for_others(self, bb):
+        """release_chain() frees files for others."""
+        chain = bb.claim_chain(
+            agent_id="agent1",
+            files=["file1.txt", "file2.txt"],
+            reason="Testing release",
+            ttl_minutes=5
+        )
         success = bb.release_chain("agent1", chain.chain_id)
-        assert success is True
+        assert success is True, "Release should succeed"
 
-        # Verify file is now free
         claim = bb.get_claim_for_file("file1.txt")
-        assert claim is None
-        results.record_pass("release_chain() frees files for others")
-    except Exception as e:
-        results.record_fail("release_chain() frees files for others", str(e))
+        assert claim is None, "File should be free after release"
 
-    # Test 1.4: complete_chain marks work done
-    try:
-        # Claim again
-        chain2 = bb.claim_chain("agent1", ["file3.txt"], "Test complete")
+    def test_complete_chain_marks_work_done(self, bb):
+        """complete_chain() marks work done."""
+        chain = bb.claim_chain("agent1", ["file3.txt"], "Test complete")
 
-        # Complete it
-        success = bb.complete_chain("agent1", chain2.chain_id)
-        assert success is True
+        success = bb.complete_chain("agent1", chain.chain_id)
+        assert success is True, "Complete should succeed"
 
-        # Verify file is now free (completed chains don't block)
         claim = bb.get_claim_for_file("file3.txt")
-        assert claim is None
-        results.record_pass("complete_chain() marks work done")
-    except Exception as e:
-        results.record_fail("complete_chain() marks work done", str(e))
+        assert claim is None, "File should be free after completion"
 
 
 def _test_atomic_failure(bb: Blackboard, results: _TestResults):
@@ -551,47 +532,41 @@ def _test_stress(bb: Blackboard, results: _TestResults):
         results.record_fail("High contention scenario", str(e))
 
 
+# =============================================================================
+# LEGACY STANDALONE RUNNER (use pytest instead)
+# =============================================================================
 def main():
-    """Run all tests."""
-    print("="*60)
+    """
+    Legacy standalone runner - prefer using pytest instead:
+        python -m pytest tests/test_claim_chains_comprehensive.py -v
+    """
+    import tempfile
+    import shutil
+
+    print("=" * 60)
     print("Claim Chain Comprehensive Test Suite")
-    print("="*60)
+    print("=" * 60)
+    print("NOTE: Prefer running with pytest for better output")
 
-    # Create a test blackboard in temp location
-    test_dir = Path(__file__).parent / "test_blackboard_temp"
-    test_dir.mkdir(exist_ok=True)
-
-    bb = Blackboard(project_root=str(test_dir))
-    bb.reset()  # Start fresh
-
-    results = _TestResults()
+    test_dir = tempfile.mkdtemp(prefix="claim_chain_test_")
+    print(f"Using temp directory: {test_dir}")
 
     try:
-        # Run all test suites
-        _test_basic_operations(bb, results)
-        _test_atomic_failure(bb, results)
-        _test_ttl_expiration(bb, results)
-        _test_concurrent_simulation(bb, results)
-        _test_edge_cases(bb, results)
-        _test_performance(bb, results)
-        _test_stress(bb, results)
-
-    finally:
-        # Cleanup
+        from blackboard import Blackboard
+        bb = Blackboard(project_root=str(test_dir))
         bb.reset()
 
-        # Clean up test directory
-        try:
-            import shutil
-            shutil.rmtree(test_dir)
-        except Exception:
-            pass
-
-    # Print summary
-    all_passed = results.summary()
-
-    return 0 if all_passed else 1
+        print("\nRunning tests via pytest...")
+        import subprocess
+        result = subprocess.run(
+            ["python", "-m", "pytest", __file__, "-v", "--tb=short"],
+            capture_output=False
+        )
+        return result.returncode
+    finally:
+        shutil.rmtree(test_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
+    import sys
     sys.exit(main())
