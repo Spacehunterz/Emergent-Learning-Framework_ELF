@@ -121,12 +121,16 @@ class AgentAlpha(threading.Thread):
             )
             self.timeline.log(self.agent_id, "Registered with interests: auth, security")
 
-            # Claim task from queue
-            pending_tasks = self.bb.get_pending_tasks()
-            my_task = next((t for t in pending_tasks if t["assigned_to"] == self.agent_id), None)
-            if my_task:
-                self.bb.claim_task(my_task["id"], self.agent_id)
-                self.timeline.log(self.agent_id, f"Claimed task: {my_task['id']}")
+            # Claim task from queue with retry
+            my_task = None
+            for _ in range(5):
+                pending_tasks = self.bb.get_pending_tasks()
+                my_task = next((t for t in pending_tasks if t["assigned_to"] == self.agent_id), None)
+                if my_task:
+                    self.bb.claim_task(my_task["id"], self.agent_id)
+                    self.timeline.log(self.agent_id, f"Claimed task: {my_task['id']}")
+                    break
+                time.sleep(0.2)
 
             # Claim files
             files = ["auth.py", "user.py"]
@@ -297,7 +301,16 @@ class AgentGamma(threading.Thread):
             )
             self.timeline.log(self.agent_id, f"Claimed files: {', '.join(files)}")
 
-            # Add findings
+            # Ask blocking question early so Delta has time to answer
+            question = self.bb.ask_question(
+                self.agent_id,
+                question="Should we implement API versioning via URL path or header?",
+                options=["URL path (/v1/)", "Header (Accept: version=1)"],
+                blocking=True
+            )
+            self.timeline.log(self.agent_id, f"Asked BLOCKING question: {question['id']}")
+
+            # Add findings while waiting for answer
             self.bb.add_finding(
                 self.agent_id,
                 finding_type="discovery",
@@ -307,7 +320,7 @@ class AgentGamma(threading.Thread):
             )
             self.timeline.log(self.agent_id, "Added finding about OpenAPI spec")
 
-            time.sleep(0.5)
+            time.sleep(0.3)
 
             self.bb.add_finding(
                 self.agent_id,
@@ -319,22 +332,12 @@ class AgentGamma(threading.Thread):
             )
             self.timeline.log(self.agent_id, "Added warning about rate limiting")
 
-            # Ask blocking question
-            question = self.bb.ask_question(
-                self.agent_id,
-                question="Should we implement API versioning via URL path or header?",
-                options=["URL path (/v1/)", "Header (Accept: version=1)"],
-                blocking=True
-            )
-            self.timeline.log(self.agent_id, f"Asked BLOCKING question: {question['id']}")
-
-            # Wait for answer (poll every 0.5s)
-            max_wait = 10
-            for _ in range(max_wait * 2):
-                time.sleep(0.5)
+            # Wait for answer (poll every 0.3s, max 15s)
+            max_wait = 15
+            for _ in range(max_wait * 3):
+                time.sleep(0.3)
                 questions = self.bb.get_open_questions()
                 if not any(q["id"] == question["id"] for q in questions):
-                    # Question answered
                     answered = [q for q in self.bb.get_full_state()["questions"] if q["id"] == question["id"]][0]
                     self.timeline.log(self.agent_id, f"Question answered: {answered['answer']}")
                     break
@@ -391,8 +394,10 @@ class AgentDelta(threading.Thread):
 
             # Monitor findings via cursor
             cursor = self.bb.get_agent_cursor(self.agent_id)
-            poll_interval = 0.5
-            max_polls = 20
+            poll_interval = 0.3
+            max_polls = 50
+            questions_answered = 0
+            findings_detected = 0
 
             for poll_num in range(max_polls):
                 time.sleep(poll_interval)
@@ -405,17 +410,33 @@ class AgentDelta(threading.Thread):
                             self.agent_id,
                             f"Detected finding from {finding['agent_id']}: {finding['content'][:40]}..."
                         )
+                        findings_detected += 1
                     cursor = self.bb.update_agent_cursor(self.agent_id)
 
                 # Check for open questions
                 questions = self.bb.get_open_questions()
                 for q in questions:
                     if q["status"] == "open":
-                        # Answer the question
                         answer = "URL path (/v1/) - more explicit and easier to cache"
                         self.bb.answer_question(q["id"], answer, self.agent_id)
                         self.timeline.log(self.agent_id, f"Answered question {q['id']}: {answer}")
+                        questions_answered += 1
                         break
+
+                # Early exit if we've done meaningful work and other agents are likely done
+                if poll_num >= 30 and questions_answered > 0 and findings_detected >= 3:
+                    self.timeline.log(self.agent_id, "Sufficient monitoring complete, finishing early")
+                    break
+
+            # Add finding about monitoring activity
+            self.bb.add_finding(
+                self.agent_id,
+                finding_type="observation",
+                content=f"Monitoring complete: detected {findings_detected} findings, answered {questions_answered} questions",
+                importance="normal",
+                tags=["monitoring", "coordination"]
+            )
+            self.timeline.log(self.agent_id, f"Added monitoring summary finding")
 
             # Try to claim files that might be available now
             files = ["api.py"]
@@ -426,7 +447,7 @@ class AgentDelta(threading.Thread):
                     reason="Post-analysis review"
                 )
                 self.timeline.log(self.agent_id, f"Claimed released files: {', '.join(files)}")
-                time.sleep(0.5)
+                time.sleep(0.3)
                 self.bb.blackboard.complete_chain(self.agent_id, chain.chain_id)
             except BlockedError:
                 self.timeline.log(self.agent_id, "Files still claimed, skipping")
@@ -616,11 +637,13 @@ class OrchestratorAgent:
             AgentEpsilon(self.bb, self.timeline, self.project_root)
         ]
 
-        # Start all agents
+        # Start all agents with slight stagger to reduce contention
         start_time = time.time()
-        for agent in agents:
+        for i, agent in enumerate(agents):
             agent.start()
             self.timeline.log("orchestrator", f"Started {agent.name}")
+            if i < len(agents) - 1:
+                time.sleep(0.1)
 
         # Wait for all agents to complete
         self.timeline.log("orchestrator", "Waiting for agents to complete...")
@@ -630,7 +653,7 @@ class OrchestratorAgent:
         # Allow time for any pending state writes to flush
         # This prevents race conditions in CI where thread.join() returns
         # but background state persistence is still completing
-        time.sleep(0.5)
+        time.sleep(1.0)
 
         elapsed = time.time() - start_time
         self.timeline.log("orchestrator", f"All agents completed in {elapsed:.2f}s")
@@ -740,7 +763,6 @@ class OrchestratorAgent:
         return True
 
 
-@pytest.mark.skip(reason="Flaky race condition in CI - task completion timing varies across environments")
 def test_multiagent_integration():
     """
     Pytest entry point for multi-agent integration test.
@@ -777,10 +799,11 @@ def test_multiagent_integration():
             f"Incomplete: {[t.get('task', t.get('description', 'unknown')) for t in tasks if t['status'] != 'completed']}"
         )
 
-        # Assert 2: Findings were recorded (at least 5 - one per agent minimum)
+        # Assert 2: Findings were recorded (at least 6 - agents contribute multiple findings)
+        # Alpha:1, Beta:1, Gamma:2, Delta:1, Epsilon:1 = 6 minimum
         findings = state.get("findings", [])
-        assert len(findings) >= 5, (
-            f"Expected at least 5 findings (one per agent), got {len(findings)}"
+        assert len(findings) >= 6, (
+            f"Expected at least 6 findings, got {len(findings)}"
         )
 
         # Assert 3: All questions answered
