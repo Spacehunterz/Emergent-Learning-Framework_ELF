@@ -27,7 +27,7 @@ except ImportError:
 
 EMERGENT_LEARNING_PATH = get_base_path(Path(__file__))
 PROMPT_PATH = EMERGENT_LEARNING_PATH / "agents" / "learning-extractor" / "PROMPT.md"
-MEMORY_DB = EMERGENT_LEARNING_PATH / "memory" / "learnings.db"
+MEMORY_DB = EMERGENT_LEARNING_PATH / "memory" / "index.db"
 PROPOSALS_PENDING = EMERGENT_LEARNING_PATH / "proposals" / "pending"
 PROCESSED_MARKER = EMERGENT_LEARNING_PATH / "sessions" / ".processed"
 
