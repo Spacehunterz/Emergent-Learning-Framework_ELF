@@ -51,6 +51,11 @@ class TestSessionManagement:
         )
         assert login.status_code == 307
 
+        # TestClient doesn't auto-persist cookies with domain attribute
+        # Manually set the session cookie for subsequent requests
+        session_token = login.cookies["session_token"]
+        client.cookies.set("session_token", session_token)
+
         user = client.get("/api/auth/me")
         assert user.status_code == 200
         data = user.json()

@@ -26,7 +26,7 @@ class TestAutoCaptureDatabaseRollback:
     """Test transaction rollback behavior in auto-capture operations."""
 
     @pytest.fixture
-    async def auto_capture_instance(self, temp_db: Path):
+    def auto_capture_instance(self, temp_db: Path):
         """Create an AutoCapture instance with mocked database."""
         @contextmanager
         def mock_context_manager():

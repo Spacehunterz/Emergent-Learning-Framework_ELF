@@ -22,7 +22,7 @@ class TestWebSocketConcurrentConnections:
     """Test concurrent WebSocket connection handling."""
 
     @pytest.fixture
-    async def connection_manager(self):
+    def connection_manager(self):
         """Create a ConnectionManager instance for testing."""
         return ConnectionManager()
 
@@ -174,7 +174,7 @@ class TestBroadcastRaceConditions:
     """Test broadcast message ordering and race conditions."""
 
     @pytest.fixture
-    async def connection_manager(self):
+    def connection_manager(self):
         """Create a ConnectionManager instance for testing."""
         return ConnectionManager()
 
