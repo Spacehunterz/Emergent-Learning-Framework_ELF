@@ -7,7 +7,10 @@ and protected endpoint access.
 
 import pytest
 import sys
+import sqlite3
 from pathlib import Path
+from contextlib import contextmanager
+from unittest.mock import patch
 
 # Ensure backend is in path
 backend_path = Path(__file__).parent.parent.parent
@@ -127,46 +130,75 @@ class TestRedirectBehavior:
 class TestUserDataStorage:
     """Test that user data is properly stored in database."""
 
-    @pytest.mark.skip(reason="Test fixture uses separate database from app - needs database mock integration")
-    def test_user_created_on_first_login(self, client, dev_token, security_db):
-        """First login should create user in database."""
-        # Login
-        client.get(
-            f"/api/auth/dev-callback?dev_token={dev_token}",
-            follow_redirects=False
-        )
+    @pytest.fixture
+    def test_db_path(self, temp_db):
+        """Get path to temp database and initialize tables."""
+        conn = sqlite3.connect(str(temp_db), check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        from utils.database import init_game_tables
+        init_game_tables(conn)
+        conn.close()
+        return temp_db
 
-        # Check database
-        cursor = security_db.cursor()
+    @pytest.fixture
+    def patched_db(self, test_db_path):
+        """Patch get_db to use the test database path."""
+        @contextmanager
+        def mock_get_db(scope="global"):
+            conn = sqlite3.connect(str(test_db_path), check_same_thread=False)
+            conn.row_factory = sqlite3.Row
+            try:
+                yield conn
+            finally:
+                conn.close()
+        return mock_get_db
+
+    def test_user_created_on_first_login(self, client, dev_token, test_db_path, patched_db):
+        """First login should create user in database."""
+        with patch("routers.auth.get_db", patched_db):
+            client.get(
+                f"/api/auth/dev-callback?dev_token={dev_token}",
+                follow_redirects=False
+            )
+
+        conn = sqlite3.connect(str(test_db_path))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
         cursor.execute("SELECT * FROM users WHERE github_id = ?", (999999,))
         user = cursor.fetchone()
+        conn.close()
 
         assert user is not None, "User should be created"
         assert user["username"] == "DevUser"
 
-    @pytest.mark.skip(reason="Test fixture uses separate database from app - needs database mock integration")
-    def test_user_updated_on_subsequent_login(self, client, dev_token, security_db):
+    def test_user_updated_on_subsequent_login(self, client, dev_token, test_db_path, patched_db):
         """Subsequent logins should update user data."""
-        # First login
-        client.get(
-            f"/api/auth/dev-callback?dev_token={dev_token}",
-            follow_redirects=False
-        )
+        with patch("routers.auth.get_db", patched_db):
+            client.get(
+                f"/api/auth/dev-callback?dev_token={dev_token}",
+                follow_redirects=False
+            )
 
-        # Modify user in database
-        cursor = security_db.cursor()
+        conn = sqlite3.connect(str(test_db_path))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
         cursor.execute("UPDATE users SET username = ? WHERE github_id = ?", ("OldUsername", 999999))
-        security_db.commit()
+        conn.commit()
+        conn.close()
 
-        # Second login (should update username back to DevUser)
-        client.get(
-            f"/api/auth/dev-callback?dev_token={dev_token}",
-            follow_redirects=False
-        )
+        with patch("routers.auth.get_db", patched_db):
+            client.get(
+                f"/api/auth/dev-callback?dev_token={dev_token}",
+                follow_redirects=False
+            )
 
-        # Check updated
+        conn = sqlite3.connect(str(test_db_path))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
         cursor.execute("SELECT username FROM users WHERE github_id = ?", (999999,))
         user = cursor.fetchone()
+        conn.close()
+
         assert user["username"] == "DevUser", "Username should be updated"
 
 
