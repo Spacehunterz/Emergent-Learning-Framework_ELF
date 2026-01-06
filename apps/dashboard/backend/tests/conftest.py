@@ -194,16 +194,20 @@ def sample_failed_run(db_connection: sqlite3.Connection) -> int:
 @pytest.fixture(scope="session")
 def app():
     """Create FastAPI application for testing with security configuration."""
-    # Set test environment variables
-    try:
-        from cryptography.fernet import Fernet
-        os.environ["SESSION_ENCRYPTION_KEY"] = Fernet.generate_key().decode()
-    except ImportError:
-        os.environ["SESSION_ENCRYPTION_KEY"] = "test_key_" + secrets.token_urlsafe(32)
+    # Set test environment variables ONLY if not already set (CI may set them)
+    if not os.environ.get("SESSION_ENCRYPTION_KEY"):
+        try:
+            from cryptography.fernet import Fernet
+            os.environ["SESSION_ENCRYPTION_KEY"] = Fernet.generate_key().decode()
+        except ImportError:
+            os.environ["SESSION_ENCRYPTION_KEY"] = "test_key_" + secrets.token_urlsafe(32)
 
-    os.environ["DEV_ACCESS_TOKEN"] = secrets.token_hex(32)
-    os.environ["GITHUB_CLIENT_ID"] = "mock"
-    os.environ["SESSION_DOMAIN"] = "localhost"
+    if not os.environ.get("DEV_ACCESS_TOKEN"):
+        os.environ["DEV_ACCESS_TOKEN"] = secrets.token_hex(32)
+    if not os.environ.get("GITHUB_CLIENT_ID"):
+        os.environ["GITHUB_CLIENT_ID"] = "mock"
+    if not os.environ.get("SESSION_DOMAIN"):
+        os.environ["SESSION_DOMAIN"] = "localhost"
     os.environ["ENVIRONMENT"] = "test"
 
     # Import after env vars are set
