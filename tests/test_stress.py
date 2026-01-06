@@ -12,6 +12,9 @@ Each test runs multiple threads performing operations and verifies:
 - No race conditions
 - No deadlocks
 - Proper resource cleanup
+
+Run with: python -m pytest tests/test_stress.py -v -m slow
+Skip slow tests: python -m pytest tests/test_stress.py -v -m "not slow"
 """
 
 import sys
@@ -25,6 +28,8 @@ from pathlib import Path
 from typing import List, Dict, Set, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
+
+import pytest
 
 # Import modules directly from coordinator package
 import importlib.util
@@ -189,6 +194,8 @@ class TestRunner:
 # Test 1: Blackboard Concurrent Access
 # =============================================================================
 
+@pytest.mark.slow
+@pytest.mark.concurrent
 def test_blackboard_concurrent_access(runner: TestRunner) -> TestResult:
     """
     Test concurrent access to blackboard with 10 threads performing:
@@ -347,6 +354,8 @@ def test_blackboard_concurrent_access(runner: TestRunner) -> TestResult:
 # Test 2: Event Log Stress
 # =============================================================================
 
+@pytest.mark.slow
+@pytest.mark.concurrent
 def test_event_log_stress(runner: TestRunner) -> TestResult:
     """
     Test event log with:
@@ -496,6 +505,8 @@ def test_event_log_stress(runner: TestRunner) -> TestResult:
 # Test 3: Claim Chain Contention
 # =============================================================================
 
+@pytest.mark.slow
+@pytest.mark.concurrent
 def test_claim_chain_contention(runner: TestRunner) -> TestResult:
     """
     Test claim chains with 10 agents competing for overlapping file sets.
@@ -617,6 +628,8 @@ def test_claim_chain_contention(runner: TestRunner) -> TestResult:
 # Test 4: File Lock Stress
 # =============================================================================
 
+@pytest.mark.slow
+@pytest.mark.concurrent
 def test_file_lock_stress(runner: TestRunner) -> TestResult:
     """
     Test rapid lock/unlock cycles.
@@ -712,6 +725,7 @@ def test_file_lock_stress(runner: TestRunner) -> TestResult:
 # Test 5: Memory/Resource Usage
 # =============================================================================
 
+@pytest.mark.slow
 def test_resource_usage(runner: TestRunner) -> TestResult:
     """
     Monitor resource usage over 30 seconds.
