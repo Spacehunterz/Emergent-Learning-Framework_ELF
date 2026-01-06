@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from coordinator.dependency_graph import DependencyGraph
 
 
-class TestResults:
+class ResultsTracker:
     """Track test results."""
     def __init__(self):
         self.passed = 0
@@ -120,7 +120,7 @@ def broken(
     return temp_dir
 
 
-def test_import_parsing(results: TestResults, test_dir: Path):
+def test_import_parsing(results: ResultsTracker, test_dir: Path):
     """Test 1: Import Parsing - various import styles."""
     print("\n=== Test 1: Import Parsing ===")
 
@@ -147,7 +147,7 @@ def test_import_parsing(results: TestResults, test_dir: Path):
     results.pass_test("Nested module imports")
 
 
-def test_graph_building(results: TestResults, test_dir: Path):
+def test_graph_building(results: ResultsTracker, test_dir: Path):
     """Test 2: Graph Building - forward and reverse graphs."""
     print("\n=== Test 2: Graph Building ===")
 
@@ -168,7 +168,7 @@ def test_graph_building(results: TestResults, test_dir: Path):
     results.pass_test("Reverse graph correctly tracks dependents")
 
 
-def test_cluster_generation(results: TestResults, test_dir: Path):
+def test_cluster_generation(results: ResultsTracker, test_dir: Path):
     """Test 3: Cluster Generation - depth 1 and 2."""
     print("\n=== Test 3: Cluster Generation ===")
 
@@ -197,7 +197,7 @@ def test_cluster_generation(results: TestResults, test_dir: Path):
     results.pass_test("Cluster includes dependents")
 
 
-def test_chain_suggestion(results: TestResults, test_dir: Path):
+def test_chain_suggestion(results: ResultsTracker, test_dir: Path):
     """Test 4: Chain Suggestion - single and multiple files."""
     print("\n=== Test 4: Chain Suggestion ===")
 
@@ -226,7 +226,7 @@ def test_chain_suggestion(results: TestResults, test_dir: Path):
     results.pass_test("Chain includes transitive dependencies")
 
 
-def test_edge_cases(results: TestResults, test_dir: Path):
+def test_edge_cases(results: ResultsTracker, test_dir: Path):
     """Test 5: Edge Cases - no imports, circular imports, errors."""
     print("\n=== Test 5: Edge Cases ===")
 
@@ -265,7 +265,7 @@ def test_edge_cases(results: TestResults, test_dir: Path):
         results.pass_test("Syntax error file handled gracefully (excluded)")
 
 
-def test_elf_codebase(results: TestResults):
+def test_elf_codebase(results: ResultsTracker):
     """Test 6: ELF Codebase - scan the actual ELF framework."""
     print("\n=== Test 6: ELF Codebase Analysis ===")
 
@@ -308,10 +308,8 @@ def test_elf_codebase(results: TestResults):
     if max_dependents_file[0]:
         print(f"  Most dependents: {max_dependents_file[0]} ({len(max_dependents_file[1])} dependents)")
 
-    return stats
 
-
-def test_query_before_scan(results: TestResults, test_dir: Path):
+def test_query_before_scan(results: ResultsTracker, test_dir: Path):
     """Test 7: Error handling - query before scan."""
     print("\n=== Test 7: Error Handling ===")
 
@@ -338,7 +336,7 @@ def main():
     print("Dependency Graph Comprehensive Test Suite")
     print("="*60)
 
-    results = TestResults()
+    results = ResultsTracker()
     test_dir = None
 
     try:
@@ -356,13 +354,10 @@ def main():
         test_edge_cases(results, test_dir)
 
         # Test real ELF codebase
-        elf_stats = test_elf_codebase(results)
+        test_elf_codebase(results)
 
         # Print summary
         results.summary()
-
-        # Return stats
-        return elf_stats
 
     finally:
         # Cleanup

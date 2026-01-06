@@ -31,7 +31,7 @@ from query.lifecycle_manager import (
 )
 
 
-class TestDatabase:
+class MockDatabase:
     """Test database manager with isolation."""
 
     def __init__(self):
@@ -199,7 +199,7 @@ class TestPumpAndDump(unittest.TestCase):
     """
 
     def setUp(self):
-        self.db = TestDatabase()
+        self.db = MockDatabase()
         self.config = LifecycleConfig(
             max_updates_per_day=5,
             cooldown_minutes=1  # 1 minute cooldown for testing
@@ -265,7 +265,7 @@ class TestStatisticalAssassination(unittest.TestCase):
     """
 
     def setUp(self):
-        self.db = TestDatabase()
+        self.db = MockDatabase()
         self.config = LifecycleConfig(
             min_applications_for_deprecation=10,
             contradiction_rate_threshold=0.30
@@ -346,7 +346,7 @@ class TestDomainGridlock(unittest.TestCase):
     """
 
     def setUp(self):
-        self.db = TestDatabase()
+        self.db = MockDatabase()
         self.config = LifecycleConfig(
             max_active_per_domain=5,
             dormant_after_days=60
@@ -452,7 +452,7 @@ class TestEvictionPolicy(unittest.TestCase):
     """
 
     def setUp(self):
-        self.db = TestDatabase()
+        self.db = MockDatabase()
         self.config = LifecycleConfig(
             max_active_per_domain=5
         )
@@ -517,7 +517,7 @@ class TestConfidenceBounds(unittest.TestCase):
     """Test that confidence stays within bounds (0.05-0.95)."""
 
     def setUp(self):
-        self.db = TestDatabase()
+        self.db = MockDatabase()
         self.config = LifecycleConfig(
             min_confidence=0.05,
             max_confidence=0.95
@@ -564,7 +564,7 @@ class TestSymmetricConfidenceFormula(unittest.TestCase):
     """Test that success/failure are symmetric to prevent gaming."""
 
     def setUp(self):
-        self.db = TestDatabase()
+        self.db = MockDatabase()
         self.manager = LifecycleManager(db_path=self.db.db_path)
 
     def tearDown(self):
