@@ -7,6 +7,7 @@ security testing utilities, and authentication helpers.
 
 import asyncio
 import sqlite3
+import sys
 import tempfile
 import os
 import secrets
@@ -15,6 +16,11 @@ from typing import Generator, AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+
+# Ensure backend path is in sys.path for all tests
+BACKEND_ROOT = Path(__file__).parent.parent
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
 
 try:
     import pytest_asyncio
@@ -208,6 +214,14 @@ def app():
 
     try:
         from main import app as fastapi_app
+
+        # Disable rate limiting for tests
+        try:
+            from routers.auth import limiter
+            limiter.enabled = False
+        except (ImportError, AttributeError):
+            pass
+
         return fastapi_app
     except ImportError as e:
         pytest.skip(f"Could not import FastAPI app: {e}")
@@ -412,7 +426,25 @@ pytest.assert_security_headers = assert_security_headers
 
 @pytest.fixture(autouse=True)
 def cleanup_test_sessions():
-    """Automatically clean up test sessions after each test."""
+    """Automatically clean up test sessions and reset rate limiter after each test."""
+    # Reset rate limiter BEFORE test runs
+    try:
+        from routers.auth import limiter
+        # Clear the rate limiter storage
+        if hasattr(limiter, '_storage'):
+            limiter._storage.reset()
+        elif hasattr(limiter, 'storage'):
+            limiter.storage.reset()
+        # For in-memory storage, clear the internal dict
+        if hasattr(limiter, '_limiter') and hasattr(limiter._limiter, '_storage'):
+            storage = limiter._limiter._storage
+            if hasattr(storage, 'storage'):
+                storage.storage.clear()
+            elif hasattr(storage, '_storage'):
+                storage._storage.clear()
+    except (ImportError, AttributeError):
+        pass  # Rate limiter not available or different version
+
     yield
 
     try:
