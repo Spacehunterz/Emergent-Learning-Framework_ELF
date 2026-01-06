@@ -39,7 +39,7 @@ class TestAuthenticationFlow:
         user_data = me_response.json()
         assert user_data["is_authenticated"] is True, "User should be authenticated"
         assert user_data["username"] == "DevUser", "Username should be DevUser"
-        assert user_data["github_id"] == 12345, "GitHub ID should match"
+        assert user_data["github_id"] == 999999, "GitHub ID should match dev mock"
 
     def test_dev_login_requires_valid_token(self, client):
         """Dev login should reject invalid tokens."""
@@ -137,7 +137,7 @@ class TestUserDataStorage:
 
         # Check database
         cursor = security_db.cursor()
-        cursor.execute("SELECT * FROM users WHERE github_id = ?", (12345,))
+        cursor.execute("SELECT * FROM users WHERE github_id = ?", (999999,))
         user = cursor.fetchone()
 
         assert user is not None, "User should be created"
@@ -153,7 +153,7 @@ class TestUserDataStorage:
 
         # Modify user in database
         cursor = security_db.cursor()
-        cursor.execute("UPDATE users SET username = ? WHERE github_id = ?", ("OldUsername", 12345))
+        cursor.execute("UPDATE users SET username = ? WHERE github_id = ?", ("OldUsername", 999999))
         security_db.commit()
 
         # Second login (should update username back to DevUser)
@@ -163,7 +163,7 @@ class TestUserDataStorage:
         )
 
         # Check updated
-        cursor.execute("SELECT username FROM users WHERE github_id = ?", (12345,))
+        cursor.execute("SELECT username FROM users WHERE github_id = ?", (999999,))
         user = cursor.fetchone()
         assert user["username"] == "DevUser", "Username should be updated"
 
