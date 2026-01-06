@@ -96,6 +96,7 @@ jobs:
         env:
           SESSION_ENCRYPTION_KEY: ${{ secrets.TEST_SESSION_ENCRYPTION_KEY || 'QgL6WE5rriiPpNBid3KZS8XXxMViqgoop57l30nF7n0=' }}
           DEV_ACCESS_TOKEN: ${{ secrets.TEST_DEV_ACCESS_TOKEN || 'test-dev-token-for-ci' }}
+          SESSION_DOMAIN: ""
 
   frontend-tests:
     name: Frontend Tests

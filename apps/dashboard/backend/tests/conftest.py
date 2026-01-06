@@ -206,8 +206,8 @@ def app():
         os.environ["DEV_ACCESS_TOKEN"] = secrets.token_hex(32)
     if not os.environ.get("GITHUB_CLIENT_ID"):
         os.environ["GITHUB_CLIENT_ID"] = "mock"
-    if not os.environ.get("SESSION_DOMAIN"):
-        os.environ["SESSION_DOMAIN"] = "localhost"
+    # SESSION_DOMAIN must be empty for TestClient - domain=localhost doesn't match testclient's host
+    os.environ["SESSION_DOMAIN"] = ""
     os.environ["ENVIRONMENT"] = "test"
 
     # Import after env vars are set
