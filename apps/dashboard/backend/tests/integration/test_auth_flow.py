@@ -93,9 +93,11 @@ class TestSessionPersistence:
 
         # Check cookie attributes
         set_cookie = response.headers.get("set-cookie")
-        assert "HttpOnly" in set_cookie, "Cookie should be HttpOnly"
-        assert "Secure" in set_cookie, "Cookie should be Secure"
-        assert "SameSite=strict" in set_cookie.lower() or "SameSite=Strict" in set_cookie, "Cookie should use SameSite=strict"
+        assert set_cookie is not None, "Should have Set-Cookie header"
+        set_cookie_lower = set_cookie.lower()
+        assert "httponly" in set_cookie_lower, "Cookie should be HttpOnly"
+        assert "secure" in set_cookie_lower, "Cookie should be Secure"
+        assert "samesite=strict" in set_cookie_lower, "Cookie should use SameSite=strict"
 
     def test_unauthenticated_user_info(self, client):
         """Unauthenticated requests should return is_authenticated=false."""
