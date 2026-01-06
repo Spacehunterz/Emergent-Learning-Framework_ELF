@@ -736,6 +736,8 @@ def test_resource_usage(runner: TestRunner) -> TestResult:
 
     Report any leaks.
     """
+    psutil = pytest.importorskip("psutil", reason="psutil required for resource usage test")
+
     project_root = runner.create_temp_project()
     bb = BlackboardV2(project_root, validation_interval=0, log_divergence=False)
 
@@ -743,7 +745,6 @@ def test_resource_usage(runner: TestRunner) -> TestResult:
     warnings = []
 
     # Get initial resource usage
-    import psutil
     process = psutil.Process()
 
     initial_fds = process.num_fds() if hasattr(process, 'num_fds') else len(process.open_files())
