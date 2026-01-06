@@ -11,6 +11,7 @@ Tests cover:
 
 Run with: python -m pytest tests/test_claim_chains_comprehensive.py -v
 """
+from __future__ import annotations
 
 import time
 import threading

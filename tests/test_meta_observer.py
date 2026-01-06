@@ -14,7 +14,10 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import json
 import unittest
-import numpy as np
+
+import pytest
+
+np = pytest.importorskip("numpy", reason="numpy required for meta-observer tests")
 
 # Add src directory to path for imports
 REPO_ROOT = Path(__file__).resolve().parent.parent
