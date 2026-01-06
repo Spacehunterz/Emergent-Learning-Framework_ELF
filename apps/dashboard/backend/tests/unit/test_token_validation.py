@@ -22,9 +22,9 @@ class TestTokenValidation:
 
     async def test_require_auth_with_valid_session(self):
         """require_auth should return user_id for valid session."""
-        from routers.auth import require_auth, create_session
+        from routers.auth import require_auth, create_session, SessionData
 
-        user_data = {"id": 1, "username": "test_user", "github_id": 12345}
+        user_data = SessionData(id=1, username="test_user", github_id=12345)
         token = await create_session(user_data)
 
         request = MagicMock()
@@ -106,9 +106,9 @@ class TestSessionRetrieval:
 
     async def test_get_user_id_extracts_correct_id(self):
         """get_user_id should extract user ID from session."""
-        from routers.auth import create_session, get_user_id
+        from routers.auth import create_session, get_user_id, SessionData
 
-        user_data = {"id": 42, "username": "alice", "github_id": 99999}
+        user_data = SessionData(id=42, username="alice", github_id=99999)
         token = await create_session(user_data)
 
         request = MagicMock()
