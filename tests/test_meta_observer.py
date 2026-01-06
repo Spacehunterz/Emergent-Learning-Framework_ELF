@@ -24,7 +24,7 @@ sys.path.insert(0, str(SRC_ROOT))
 from query.meta_observer import MetaObserver
 
 
-class TestDatabase:
+class MockDatabase:
     """Test database manager with isolation."""
 
     def __init__(self):
@@ -141,7 +141,7 @@ class TestMetricRecording(unittest.TestCase):
     """Test basic metric recording and retrieval."""
 
     def setUp(self):
-        self.db = TestDatabase()
+        self.db = MockDatabase()
         self.observer = MetaObserver(db_path=self.db.db_path)
 
     def tearDown(self):
@@ -184,7 +184,7 @@ class TestRollingWindow(unittest.TestCase):
     """Test rolling window queries."""
 
     def setUp(self):
-        self.db = TestDatabase()
+        self.db = MockDatabase()
         self.observer = MetaObserver(db_path=self.db.db_path)
 
     def tearDown(self):
@@ -231,7 +231,7 @@ class TestTrendDetection(unittest.TestCase):
     """Test linear trend detection."""
 
     def setUp(self):
-        self.db = TestDatabase()
+        self.db = MockDatabase()
         self.observer = MetaObserver(db_path=self.db.db_path)
 
     def tearDown(self):
@@ -309,7 +309,7 @@ class TestAnomalyDetection(unittest.TestCase):
     """Test z-score anomaly detection."""
 
     def setUp(self):
-        self.db = TestDatabase()
+        self.db = MockDatabase()
         self.observer = MetaObserver(db_path=self.db.db_path)
 
     def tearDown(self):
@@ -388,7 +388,7 @@ class TestAlertManagement(unittest.TestCase):
     """Test alert creation and state management."""
 
     def setUp(self):
-        self.db = TestDatabase()
+        self.db = MockDatabase()
         self.observer = MetaObserver(db_path=self.db.db_path)
 
     def tearDown(self):
@@ -516,7 +516,7 @@ class TestAlertConditions(unittest.TestCase):
     """Test automatic alert triggering."""
 
     def setUp(self):
-        self.db = TestDatabase()
+        self.db = MockDatabase()
         self.observer = MetaObserver(db_path=self.db.db_path)
 
     def tearDown(self):
@@ -582,7 +582,7 @@ class TestFalsePositiveTracking(unittest.TestCase):
     """Test false positive rate tracking."""
 
     def setUp(self):
-        self.db = TestDatabase()
+        self.db = MockDatabase()
         self.observer = MetaObserver(db_path=self.db.db_path)
 
     def tearDown(self):

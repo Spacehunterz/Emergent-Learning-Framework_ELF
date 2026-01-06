@@ -91,12 +91,8 @@ def test_database_schema(temp_base):
         print(f"  {status} {table}")
 
     missing = set(expected) - set(tables)
-    if missing:
-        print(f"\nMissing: {missing}")
-        return False
-
+    assert not missing, f"Missing tables: {missing}"
     print("\n[OK] All required tables/views exist\n")
-    return True
 
 
 def test_refresh_schedule(detector):
@@ -111,9 +107,7 @@ def test_refresh_schedule(detector):
     # Query schedule
     needs_refresh = detector.get_domains_needing_refresh()
     print(f"[OK] Found {len(needs_refresh)} domains needing refresh")
-
     print()
-    return True
 
 
 def test_baseline_update_with_history(detector):
@@ -140,7 +134,7 @@ def test_baseline_update_with_history(detector):
         print("[WARN] No domains with sufficient data (need 3+ heuristics)")
         print("  Skipping baseline update test")
         print()
-        return True
+        return
 
     domain = row['domain']
     print(f"Testing domain: {domain} ({row['heuristic_count']} heuristics)")
@@ -150,7 +144,7 @@ def test_baseline_update_with_history(detector):
     if "error" in result1:
         print(f"[WARN] Baseline update error: {result1['error']}")
         print()
-        return True
+        return
 
     print(f"[OK] Initial baseline: {result1['avg_success_rate']:.4f}")
 
@@ -173,9 +167,7 @@ def test_baseline_update_with_history(detector):
             print(f"[OK] Drift detected: {drift:+.1f}%")
         else:
             print("[OK] No drift (baseline unchanged)")
-
     print()
-    return True
 
 
 def test_drift_alerts(detector):
@@ -201,9 +193,7 @@ def test_drift_alerts(detector):
         alerts_after = detector.get_unacknowledged_drift_alerts()
         if len(alerts_after) < len(alerts):
             print("[OK] Alert removed from unacknowledged list")
-
     print()
-    return True
 
 
 def test_refresh_all(detector):
@@ -222,9 +212,7 @@ def test_refresh_all(detector):
         print("\n  Drift Alerts:")
         for alert in result['drift_alerts'][:3]:
             print(f"    {alert['domain']}: {alert['drift_percentage']:+.1f}%")
-
     print()
-    return True
 
 
 def test_cli_commands(temp_base):
@@ -258,9 +246,7 @@ def test_cli_commands(temp_base):
                 print(f"[FAIL] {description} (exit code {result.returncode})")
         except Exception as e:
             print(f"[FAIL] {description} (error: {e})")
-
     print()
-    return True
 
 
 def main():
