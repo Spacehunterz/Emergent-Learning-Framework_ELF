@@ -11,11 +11,10 @@ Query the Emergent Learning Framework for institutional knowledge and summarize 
 
 2. **Summarize the previous session using Task(model="haiku"):**
 
-   First, extract session data:
+   Check if previous session needs summarization:
    ```bash
    python -c "
 from pathlib import Path
-import json
 import sqlite3
 
 sessions = sorted(Path.home().glob('.claude/projects/*/*.jsonl'), key=lambda p: p.stat().st_mtime, reverse=True)
@@ -25,6 +24,7 @@ if len(non_agent) >= 2:
     prev = non_agent[1]
     session_id = prev.stem
     project = prev.parent.name
+    file_path = str(prev).replace(chr(92), '/')  # Windows path fix
 
     # Check if already summarized with haiku
     db = Path.home() / '.claude/emergent-learning/memory/index.db'
@@ -37,39 +37,48 @@ if len(non_agent) >= 2:
     if row and row[0] == 'haiku':
         print(f'ALREADY_SUMMARIZED:{session_id[:8]}')
     else:
-        # Extract data for haiku
-        tool_counts = {}
-        msg_count = 0
-        with open(prev, 'r', encoding='utf-8') as f:
-            for line in f:
-                if not line.strip():
-                    continue
-                try:
-                    data = json.loads(line)
-                    if data.get('isSidechain'):
-                        continue
-                    if data.get('type') == 'user':
-                        msg_count += 1
-                    elif data.get('type') == 'assistant':
-                        for item in data.get('message', {}).get('content', []):
-                            if isinstance(item, dict) and item.get('type') == 'tool_use':
-                                name = item.get('name', 'unknown')
-                                tool_counts[name] = tool_counts.get(name, 0) + 1
-                except:
-                    pass
-        tools_str = ', '.join(f'{v}x {k}' for k, v in sorted(tool_counts.items(), key=lambda x: -x[1])[:5])
-        print(f'NEEDS_SUMMARY:{session_id}|{project}|{msg_count}|{tools_str}')
+        print(f'NEEDS_SUMMARY:{session_id}|{project}|{file_path}')
 else:
     print('NO_PREVIOUS_SESSION')
 "
    ```
 
-   If output shows `NEEDS_SUMMARY:session_id|project|msg_count|tools`:
-   - Use `Task(model="haiku", subagent_type="general-purpose")` to summarize
-   - Prompt: "Summarize this session. Return JSON only: {tool_summary, content_summary, conversation_summary}"
-   - Save result to database with `summarizer_model = 'haiku'`
+   If output shows `NEEDS_SUMMARY:session_id|project|file_path`:
+   - Use `Task(model="haiku", subagent_type="general-purpose", run_in_background=true)` with this prompt:
 
-   **IMPORTANT:** Per Golden Rule #11, use Task tool (Max subscription) NOT subprocess API calls.
+   ```
+   Summarize session and write directly to database.
+
+   Session file: [file_path]
+   Session ID: [session_id]
+   Project: [project]
+   Database: ~/.claude/emergent-learning/memory/index.db
+
+   Steps:
+   1. Read the session file using the Read tool
+   2. Analyze: count tool usage, identify main topics discussed
+   3. Create summaries:
+      - tool_summary: "Used Nx ToolName, Mx OtherTool" (top 5 tools)
+      - conversation_summary: 1-2 sentence summary of what was accomplished
+   4. Write to database using Bash:
+      python -c "
+      import sqlite3
+      from pathlib import Path
+      from datetime import datetime
+      db = Path.home() / '.claude/emergent-learning/memory/index.db'
+      conn = sqlite3.connect(str(db))
+      cur = conn.cursor()
+      cur.execute('''INSERT OR REPLACE INTO session_summaries
+          (session_id, project, tool_summary, conversation_summary, summarizer_model, summarized_at)
+          VALUES (?, ?, ?, ?, 'haiku', ?)''',
+          ('[session_id]', '[project]', '[your tool_summary]', '[your conversation_summary]', datetime.now().isoformat()))
+      conn.commit()
+      conn.close()
+      print('Summary saved to database')
+      "
+   ```
+
+   **IMPORTANT:** Agent writes directly to DB - no need to read output file.
 
 3. Show the latest session summary from database:
    ```bash
