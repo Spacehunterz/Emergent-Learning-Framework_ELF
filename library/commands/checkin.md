@@ -73,7 +73,7 @@ else:
 
 3. Show the latest session summary from database:
    ```bash
-   python -c "
+   set PYTHONIOENCODING=utf-8 && python -c "
 import sqlite3
 from pathlib import Path
 db = Path.home() / '.claude/emergent-learning/memory/index.db'
@@ -83,8 +83,10 @@ cur.execute('SELECT session_id, project, conversation_summary, tool_summary, sum
 row = cur.fetchone()
 if row:
     print(f'Last Session: {row[0][:8]}... ({row[1]})')
-    print(f'Summary: {row[2]}')
-    print(f'Tools: {row[3]}')
+    summary = row[2].encode('ascii', 'replace').decode('ascii') if row[2] else 'None'
+    tools = row[3].encode('ascii', 'replace').decode('ascii') if row[3] else 'None'
+    print(f'Summary: {summary}')
+    print(f'Tools: {tools}')
     print(f'Summarized: {row[4]}')
 else:
     print('No session summaries found')
