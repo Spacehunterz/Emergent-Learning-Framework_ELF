@@ -163,12 +163,15 @@ preflight_check() {
         if command -v python3 &> /dev/null || command -v python &> /dev/null; then
             log "INFO" "Switching to Python implementation (record-heuristic.py)"
 
-            # Build Python command with same arguments
             python_script="$SCRIPT_DIR/record-heuristic.py"
             if [ -f "$python_script" ]; then
-                # Re-execute using Python with original arguments
-                "$python_script" "$@"
-                exit $?
+                if command -v python3 &> /dev/null; then
+                    python3 "$python_script" "$@"
+                    exit $?
+                elif command -v python &> /dev/null; then
+                    python "$python_script" "$@"
+                    exit $?
+                fi
             fi
         fi
 
