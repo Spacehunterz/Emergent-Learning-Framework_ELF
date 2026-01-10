@@ -126,7 +126,7 @@ export const Stage13Drone = ({ data }: { data: Enemy }) => {
             particleGroupRef.current.rotation.y += delta * 0.5;
         }
 
-        particleRefs.current.forEach((p) => {
+        particleRefs.current.forEach((p, i) => {
             if (!p) return;
             const angle = t * particles[i].speed + particles[i].offset;
             p.position.x = Math.cos(angle) * particles[i].dist;
@@ -143,7 +143,7 @@ export const Stage13Drone = ({ data }: { data: Enemy }) => {
         }
         trailPositions.current[0].copy(data.position);
 
-        trailRefs.current.forEach((trail) => {
+        trailRefs.current.forEach((trail, i) => {
             if (!trail) return;
             trail.position.copy(trailPositions.current[i]);
             if (trail.material instanceof THREE.MeshBasicMaterial) {
@@ -161,7 +161,7 @@ export const Stage13Drone = ({ data }: { data: Enemy }) => {
             </mesh>
             {/* Swirling violet particles */}
             <group ref={particleGroupRef}>
-                {particles.map((_) => (
+                {particles.map((_, i) => (
                     <mesh
                         key={i}
                         ref={el => particleRefs.current[i] = el}
@@ -215,7 +215,7 @@ export const Stage13Fighter = ({ data }: { data: Enemy }) => {
         ref.current.visible = visible;
 
         // Planes slowly shift and rearrange
-        planeRefs.current.forEach((plane) => {
+        planeRefs.current.forEach((plane, i) => {
             if (!plane) return;
             plane.rotation.y = planes[i].rot[1] + Math.sin(t * 0.5 + planes[i].shift) * 0.2;
             if (plane.material instanceof THREE.MeshBasicMaterial) {
@@ -227,7 +227,7 @@ export const Stage13Fighter = ({ data }: { data: Enemy }) => {
     return (
         <group ref={ref} scale={0}>
             {/* Intersecting shadow planes */}
-            {planes.map((p) => (
+            {planes.map((p, i) => (
                 <mesh
                     key={i}
                     ref={el => planeRefs.current[i] = el}
@@ -335,7 +335,7 @@ export const Stage13Boss = ({ data }: { data: Enemy }) => {
         }
 
         // Tendrils lash out
-        tendrilRefs.current.forEach((tendril) => {
+        tendrilRefs.current.forEach((tendril, i) => {
             if (!tendril) return;
             tendril.rotation.x = Math.sin(t * 2 + i) * 0.3;
             tendril.rotation.z = Math.cos(t * 1.5 + i) * 0.2;
@@ -363,18 +363,18 @@ export const Stage13Boss = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#000000" transparent opacity={0.95} />
             </mesh>
             {/* Shadow tendrils */}
-            {tendrils.map((t) => (
+            {tendrils.map((td, i) => (
                 <group
                     key={i}
                     ref={el => tendrilRefs.current[i] = el}
                     position={[
-                        Math.cos(t.angle) * 2,
-                        Math.sin(t.angle) * 2,
+                        Math.cos(td.angle) * 2,
+                        Math.sin(td.angle) * 2,
                         -1
                     ]}
-                    rotation={[0, 0, t.angle]}
+                    rotation={[0, 0, td.angle]}
                 >
-                    {Array.from({ length: t.segments }).map((_, j) => (
+                    {Array.from({ length: td.segments }).map((_, j) => (
                         <mesh key={j} position={[0, 0, -j * 0.8]} scale={[0.3 - j * 0.05, 0.3 - j * 0.05, 0.8]}>
                             <cylinderGeometry args={[1, 0.7, 1, 6]} />
                             <meshBasicMaterial color="#480082" transparent opacity={0.7 - j * 0.1} />

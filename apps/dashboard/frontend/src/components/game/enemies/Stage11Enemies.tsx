@@ -68,7 +68,7 @@ export const Stage11Asteroid = ({ data }: { data: Enemy }) => {
         }
 
         // Crystals glow independently and jitter
-        crystalRefs.current.forEach((crystal) => {
+        crystalRefs.current.forEach((crystal, i) => {
             if (!crystal || !(crystal.material instanceof THREE.MeshBasicMaterial)) return;
             crystal.material.opacity = 0.7 + Math.sin(t * 3 + i) * 0.3;
             // Random jitter
@@ -90,7 +90,7 @@ export const Stage11Asteroid = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial ref={mainMatRef} color="#7CFC00" wireframe transparent opacity={0} />
             </mesh>
             {/* Yellow crystal protrusions */}
-            {crystals.map((c) => (
+            {crystals.map((c, i) => (
                 <mesh
                     key={i}
                     ref={el => crystalRefs.current[i] = el}
@@ -151,7 +151,7 @@ export const Stage11Drone = ({ data }: { data: Enemy }) => {
         }
         trailPositions.current[0].copy(data.position);
 
-        trailRefs.current.forEach((trail) => {
+        trailRefs.current.forEach((trail, i) => {
             if (!trail) return;
             trail.position.copy(trailPositions.current[i]);
             if (trail.material instanceof THREE.MeshBasicMaterial) {
@@ -314,7 +314,7 @@ export const Stage11Elite = ({ data }: { data: Enemy }) => {
             </mesh>
             {/* Spinning shard shield */}
             <group ref={shardGroupRef}>
-                {shards.map((s) => (
+                {shards.map((s, i) => (
                     <mesh
                         key={i}
                         ref={el => shardRefs.current[i] = el}
@@ -366,7 +366,7 @@ export const Stage11Boss = ({ data }: { data: Enemy }) => {
         }
 
         // Vents rotate
-        ventRefs.current.forEach((vent) => {
+        ventRefs.current.forEach((vent, i) => {
             if (!vent) return;
             vent.rotation.y += delta * (2 + i * 0.5);
         });
@@ -389,7 +389,7 @@ export const Stage11Boss = ({ data }: { data: Enemy }) => {
                 <meshBasicMaterial color="#FFFF00" wireframe transparent opacity={0.4} />
             </mesh>
             {/* Rotating vents */}
-            {vents.map((v) => (
+            {vents.map((v, i) => (
                 <mesh
                     key={i}
                     ref={el => ventRefs.current[i] = el}
