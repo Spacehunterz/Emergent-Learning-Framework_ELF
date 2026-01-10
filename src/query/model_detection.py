@@ -9,9 +9,12 @@ based on task characteristics and model strengths.
 import subprocess
 import shutil
 import re
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 import yaml
+
+CREATE_NO_WINDOW = 0x08000000 if sys.platform == 'win32' else 0
 
 
 # Default routing config embedded for when no config file exists
@@ -107,7 +110,8 @@ def get_cli_version(cli_name: str) -> Optional[str]:
                     [cli_name, flag],
                     capture_output=True,
                     text=True,
-                    timeout=5
+                    timeout=5,
+                    creationflags=CREATE_NO_WINDOW
                 )
                 output = result.stdout.strip()
                 if not output:
