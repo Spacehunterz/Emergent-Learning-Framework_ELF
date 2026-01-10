@@ -353,8 +353,8 @@ class QuerySystem(
         except Exception as e:
             self._log_debug(f"Warning: Schema migration error: {e}")
 
-        # SECURITY: Set secure file permissions on database file
-        if db_just_created or True:  # Always enforce secure permissions
+        # SECURITY: Set secure file permissions on database file (only on creation)
+        if db_just_created:
             try:
                 import stat
                 os.chmod(str(self.db_path), stat.S_IRUSR | stat.S_IWUSR)
@@ -365,10 +365,12 @@ class QuerySystem(
                         import subprocess
                         username = os.environ.get("USERNAME", "")
                         if username and re.match(r'^[a-zA-Z0-9_\-\.]+$', username):
+                            CREATE_NO_WINDOW = 0x08000000
                             subprocess.run(
                                 ['icacls', str(self.db_path), '/inheritance:r',
                                  '/grant:r', f'{username}:F'],
-                                check=False, capture_output=True
+                                check=False, capture_output=True,
+                                creationflags=CREATE_NO_WINDOW
                             )
                             self._log_debug(f"Set Windows ACLs for {self.db_path}")
                         else:
