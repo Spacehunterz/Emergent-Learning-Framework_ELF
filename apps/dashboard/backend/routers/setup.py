@@ -1,13 +1,13 @@
 import os
+import httpx
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import Optional
 
 router = APIRouter(prefix="/api/setup", tags=["setup"])
 
-# Path to .env file
 ENV_PATH = Path(__file__).parent.parent / ".env"
+OAUTH_WORKER_URL = os.environ.get("OAUTH_WORKER_URL", "https://elf-oauth.elf0auth.workers.dev")
 
 class SetupConfig(BaseModel):
     client_id: str
@@ -15,23 +15,36 @@ class SetupConfig(BaseModel):
 
 @router.get("/status")
 async def get_setup_status():
-    """Check if GitHub Auth is configured."""
+    """Check if GitHub Auth is configured (local env OR OAuth worker)."""
     client_id = os.environ.get("GITHUB_CLIENT_ID")
     client_secret = os.environ.get("GITHUB_CLIENT_SECRET")
-    
-    # Check if they are the placeholder values
+
     is_placeholder = client_id == "your_client_id_here"
-    
+
+    if client_secret and not is_placeholder:
+        return {"configured": True, "missing": [], "is_placeholder": False, "mode": "local"}
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{OAUTH_WORKER_URL}/oauth/config")
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("client_id"):
+                    return {"configured": True, "missing": [], "is_placeholder": False, "mode": "worker"}
+    except:
+        pass
+
     missing = []
     if not client_id or is_placeholder:
         missing.append("GITHUB_CLIENT_ID")
     if not client_secret or is_placeholder:
         missing.append("GITHUB_CLIENT_SECRET")
-        
+
     return {
-        "configured": len(missing) == 0,
+        "configured": False,
         "missing": missing,
-        "is_placeholder": is_placeholder
+        "is_placeholder": is_placeholder,
+        "mode": "none"
     }
 
 @router.post("/config")
