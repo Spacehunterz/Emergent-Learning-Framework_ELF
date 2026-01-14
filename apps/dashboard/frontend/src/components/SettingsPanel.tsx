@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Settings, X, Moon, Sun, Sparkles, Leaf, Zap, Flame, Droplets, Heart, Circle, CircleDot } from 'lucide-react'
+import { Settings, X, Moon, Sun, Sparkles, Leaf, Zap, Flame, Droplets, Heart, Circle, CircleDot, Lock, Mic } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useTheme, Theme, useCosmicSettings, useCosmicAudio } from '../context'
+import { useTheme, Theme, useCosmicSettings, useCosmicAudio, useGame } from '../context'
 
 export function SettingsPanel() {
   const [isOpen, setIsOpen] = useState(false)
   const { theme, setTheme, particleCount, setParticleCount, glassOpacity, setGlassOpacity } = useTheme()
   const { trailsEnabled, setTrailsEnabled, audioEnabled, setAudioEnabled, performanceMode, setPerformanceMode } = useCosmicSettings()
   const { playToggle, playHover, playClick } = useCosmicAudio()
+  const { talkinheadUnlocked, talkinheadAutolaunch, setTalkinheadAutolaunch, githubUser, verifyStar } = useGame()
 
   const themes: { id: Theme; name: string; icon: any; color: string; description: string }[] = [
     { id: 'black-hole', name: 'Black Hole', icon: Circle, color: 'text-orange-400', description: 'Dark mode' },
@@ -217,6 +218,51 @@ export function SettingsPanel() {
                         ))}
                       </div>
                     </div>
+                  </div>
+
+                  {/* TalkinHead Settings */}
+                  <div className="space-y-4 pt-4 border-t" style={{ borderColor: 'var(--theme-bg-card)' }}>
+                    <h3 className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--theme-text-primary)' }}>
+                      <Mic className="w-4 h-4 text-violet-400" />
+                      TalkinHead AI
+                    </h3>
+
+                    {!githubUser ? (
+                      <p className="text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                        Login with GitHub to unlock TalkinHead features
+                      </p>
+                    ) : !talkinheadUnlocked ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--theme-text-secondary)' }}>
+                          <Lock className="w-3 h-3" />
+                          Star our GitHub repo to unlock TalkinHead
+                        </div>
+                        <button
+                          onClick={() => {
+                            verifyStar();
+                            playClick();
+                          }}
+                          onMouseEnter={() => playHover()}
+                          className="w-full px-3 py-2 text-sm rounded border border-violet-500/50 text-violet-400 hover:bg-violet-500/10 transition-colors"
+                        >
+                          Verify Star & Unlock
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>Auto-launch with Dashboard</span>
+                        <button
+                          onClick={() => {
+                            setTalkinheadAutolaunch(!talkinheadAutolaunch);
+                            playToggle(!talkinheadAutolaunch);
+                          }}
+                          onMouseEnter={() => playHover()}
+                          className={`w-10 h-6 rounded-full transition-colors relative ${talkinheadAutolaunch ? 'bg-violet-500' : 'bg-slate-700'}`}
+                        >
+                          <span className={`block w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${talkinheadAutolaunch ? 'left-5' : 'left-1'}`} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="pt-4 border-t" style={{ borderColor: 'var(--theme-bg-card)' }}>

@@ -129,12 +129,20 @@ def init_game_tables(conn):
     CREATE TABLE IF NOT EXISTS game_state (
         user_id INTEGER PRIMARY KEY,
         score INTEGER DEFAULT 0,
-        unlocked_weapons TEXT DEFAULT '["pulse_laser"]', -- JSON list
-        unlocked_cursors TEXT DEFAULT '["default"]', -- JSON list
+        unlocked_weapons TEXT DEFAULT '["pulse_laser"]',
+        unlocked_cursors TEXT DEFAULT '["default"]',
         active_weapon TEXT DEFAULT 'pulse_laser',
+        talkinhead_unlocked INTEGER DEFAULT 0,
+        talkinhead_autolaunch INTEGER DEFAULT 0,
         FOREIGN KEY (user_id) REFERENCES users (id)
     )
     """)
+
+    for col in ["talkinhead_unlocked", "talkinhead_autolaunch"]:
+        try:
+            cursor.execute(f"ALTER TABLE game_state ADD COLUMN {col} INTEGER DEFAULT 0")
+        except:
+            pass
 
     # Performance index for leaderboard queries (ORDER BY score DESC)
     # This index significantly speeds up leaderboard pagination for 1000s of users

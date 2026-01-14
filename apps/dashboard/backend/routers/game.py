@@ -283,31 +283,38 @@ async def get_game_state(request: Request):
     """Get authoritative game state for current user."""
     user_id = await get_user_id(request)
     if not user_id:
-        # Return default Guest state
         return {
             "score": 0,
             "level": 1,
             "active_weapon": "pulse_laser",
             "unlocked_weapons": ["pulse_laser"],
-            "unlocked_cursors": ["default"]
+            "unlocked_cursors": ["default"],
+            "talkinhead_unlocked": False,
+            "talkinhead_autolaunch": False
         }
 
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM game_state WHERE user_id = ?", (user_id,))
         row = cursor.fetchone()
-        
+
         if not row:
-            # Initialize if missing
-            return { "score": 0, "unlocked_weapons": ["pulse_laser"] }
-            
+            return {
+                "score": 0,
+                "unlocked_weapons": ["pulse_laser"],
+                "talkinhead_unlocked": False,
+                "talkinhead_autolaunch": False
+            }
+
         data = dict_from_row(row)
         return {
             "score": data["score"],
-            "level": 1, # Logic for levels can be added later
+            "level": 1,
             "active_weapon": data["active_weapon"],
             "unlocked_weapons": json.loads(data["unlocked_weapons"]),
-            "unlocked_cursors": json.loads(data["unlocked_cursors"])
+            "unlocked_cursors": json.loads(data["unlocked_cursors"]),
+            "talkinhead_unlocked": bool(data.get("talkinhead_unlocked", 0)),
+            "talkinhead_autolaunch": bool(data.get("talkinhead_autolaunch", 0))
         }
 
 @router.post("/sync")
@@ -390,37 +397,81 @@ async def verify_star(request: Request):
         res_status = res.status_code
 
     if res_status == 204:
-        # 3. UNLOCK REWARD
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT unlocked_weapons, unlocked_cursors FROM game_state WHERE user_id = ?", (user_id,))
+            cursor.execute("SELECT unlocked_weapons, unlocked_cursors, talkinhead_unlocked FROM game_state WHERE user_id = ?", (user_id,))
             row = dict_from_row(cursor.fetchone())
-            
+
             weapons = json.loads(row["unlocked_weapons"])
             cursors = json.loads(row["unlocked_cursors"])
-            
+            talkinhead_was_locked = not row.get("talkinhead_unlocked", 0)
+
             unlocked_any = False
             if "star_blaster" not in weapons:
                 weapons.append("star_blaster")
                 unlocked_any = True
 
-            # Unlock star_ship cursor and star_trail
             if "star_ship" not in cursors:
                 cursors.append("star_ship")
                 unlocked_any = True
             if "star_trail" not in cursors:
                 cursors.append("star_trail")
                 unlocked_any = True
-            
+
+            if talkinhead_was_locked:
+                unlocked_any = True
+
             if unlocked_any:
                 cursor.execute("""
-                    UPDATE game_state 
-                    SET unlocked_weapons = ?, unlocked_cursors = ?
+                    UPDATE game_state
+                    SET unlocked_weapons = ?, unlocked_cursors = ?, talkinhead_unlocked = 1
                     WHERE user_id = ?
                 """, (json.dumps(weapons), json.dumps(cursors), user_id))
                 conn.commit()
-                return {"success": True, "message": "Star confirmed! Rewards unlocked!"}
+                return {
+                    "success": True,
+                    "message": "Star confirmed! Rewards unlocked!",
+                    "unlocked": ["star_blaster", "star_ship", "star_trail", "talkinhead"]
+                }
             else:
-                 return {"success": True, "message": "Already unlocked.", "already_unlocked": True}
+                return {"success": True, "message": "Already unlocked.", "already_unlocked": True}
 
     return {"success": False, "message": "Repo not starred. Please star to unlock!"}
+
+
+class TalkinHeadSettings(BaseModel):
+    """Settings for TalkinHead feature."""
+    autolaunch: bool = Field(..., description="Whether to auto-launch TalkinHead with dashboard")
+
+
+@router.post("/talkinhead-settings")
+async def update_talkinhead_settings(request: Request, settings: TalkinHeadSettings):
+    """
+    Update TalkinHead settings.
+    Requires TalkinHead to be unlocked (via starring the repo).
+    """
+    user_id = await get_user_id(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Login required")
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # Check if TalkinHead is unlocked
+        cursor.execute("SELECT talkinhead_unlocked FROM game_state WHERE user_id = ?", (user_id,))
+        row = cursor.fetchone()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="No game state found")
+
+        if not row["talkinhead_unlocked"]:
+            raise HTTPException(status_code=403, detail="TalkinHead not unlocked. Star the repo first!")
+
+        # Update autolaunch setting
+        cursor.execute(
+            "UPDATE game_state SET talkinhead_autolaunch = ? WHERE user_id = ?",
+            (1 if settings.autolaunch else 0, user_id)
+        )
+        conn.commit()
+
+    return {"success": True, "autolaunch": settings.autolaunch}
