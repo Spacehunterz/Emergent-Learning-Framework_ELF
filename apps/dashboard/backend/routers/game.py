@@ -10,6 +10,13 @@ router = APIRouter(prefix="/api/game", tags=["game"])
 
 
 # =============================================================================
+# Global Leaderboard Configuration
+# =============================================================================
+
+GLOBAL_LEADERBOARD_API = "https://elf-oauth.elf0auth.workers.dev/leaderboard/sync"
+
+
+# =============================================================================
 # Leaderboard Models
 # =============================================================================
 
@@ -327,18 +334,76 @@ async def sync_score(request: Request, payload: Dict[str, Any] = Body(...)):
     # Basic Anti-Cheat: Rate limiting / Delta checks could go here.
     # For now, we trust the client's score addition but log it.
     score_delta = payload.get("score_delta", 0)
-    
+
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT score FROM game_state WHERE user_id = ?", (user_id,))
         current_score = cursor.fetchone()["score"]
-        
+
         new_score = current_score + score_delta
-        
+
         cursor.execute("UPDATE game_state SET score = ? WHERE user_id = ?", (new_score, user_id))
         conn.commit()
-        
+
+    # Sync to global leaderboard (non-blocking)
+    try:
+        token = request.cookies.get("session_token")
+        if token:
+            session = await get_session(token)
+            if session and session.access_token:
+                async with httpx.AsyncClient() as client:
+                    await client.post(
+                        GLOBAL_LEADERBOARD_API,
+                        json={"score": new_score},
+                        headers={"Authorization": f"Bearer {session.access_token}"},
+                        timeout=5.0
+                    )
+    except Exception:
+        pass
+
     return {"success": True, "new_score": new_score}
+
+@router.post("/sync-global")
+async def sync_to_global(request: Request):
+    """Manually sync current score to global leaderboard."""
+    user_id = await get_user_id(request)
+    if not user_id:
+        return {"success": False, "message": "Login required"}
+
+    # Get current score from local DB
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT score FROM game_state WHERE user_id = ?", (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            return {"success": False, "message": "No game state found"}
+        current_score = row["score"]
+
+    # Sync to global leaderboard
+    try:
+        token = request.cookies.get("session_token")
+        if not token:
+            return {"success": False, "message": "Session expired"}
+
+        session = await get_session(token)
+        if not session or not session.access_token:
+            return {"success": False, "message": "Session expired"}
+
+        async with httpx.AsyncClient() as client:
+            res = await client.post(
+                GLOBAL_LEADERBOARD_API,
+                json={"score": current_score},
+                headers={"Authorization": f"Bearer {session.access_token}"},
+                timeout=5.0
+            )
+            if res.status_code == 200:
+                data = res.json()
+                return {"success": True, "rank": data.get("rank"), "score": current_score}
+            else:
+                return {"success": False, "message": "Global sync failed"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
 
 @router.post("/equip")
 async def equip_item(request: Request, payload: Dict[str, str] = Body(...)):

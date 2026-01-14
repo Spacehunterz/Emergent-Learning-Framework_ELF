@@ -4,3 +4,8 @@ compatibility_date = "2024-01-01"
 
 [vars]
 OAUTH_REDIRECT_URI = "http://localhost:8888/api/auth/callback"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "elf-leaderboard"
+database_id = "a4a602bb-9f75-4c50-94f4-6a0daaaa2660"
