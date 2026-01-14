@@ -3,17 +3,16 @@ import secrets
 import json
 import httpx
 import logging
-import asyncio
 import time
-from fastapi import APIRouter, HTTPException, Depends, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any
 from cryptography.fernet import Fernet, InvalidToken
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from utils.database import get_db, dict_from_row
+from utils.database import get_db
 
 logger = logging.getLogger(__name__)
 audit_logger = logging.getLogger(f"{__name__}.audit")
@@ -24,22 +23,32 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
-# Configuration
+# Configuration - GitHub OAuth
+# Option 1: Direct OAuth (set GITHUB_CLIENT_ID + GITHUB_CLIENT_SECRET)
+# Option 2: Worker proxy (set OAUTH_WORKER_URL only - client_id fetched from worker)
+OAUTH_WORKER_URL = os.environ.get("OAUTH_WORKER_URL", "https://elf-oauth.elf0auth.workers.dev")
 GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET")
-is_missing = not (GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET)
-is_mock_config = GITHUB_CLIENT_ID == "mock"
-IS_DEV_MOCK = is_missing or is_mock_config
 
-# Development mode requires a secure token
-DEV_ACCESS_TOKEN = os.environ.get("DEV_ACCESS_TOKEN")
-if IS_DEV_MOCK and not DEV_ACCESS_TOKEN:
-    raise RuntimeError("DEV_ACCESS_TOKEN environment variable required")
+USE_OAUTH_WORKER = not GITHUB_CLIENT_SECRET
 
-# Session encryption key
+async def get_oauth_config():
+    """Get OAuth config - from env or worker"""
+    global GITHUB_CLIENT_ID
+    if GITHUB_CLIENT_ID:
+        return GITHUB_CLIENT_ID
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f"{OAUTH_WORKER_URL}/oauth/config")
+        data = resp.json()
+        GITHUB_CLIENT_ID = data.get("client_id")
+        return GITHUB_CLIENT_ID
+
+# Session encryption key - auto-generate if not set
 SESSION_ENCRYPTION_KEY = os.environ.get("SESSION_ENCRYPTION_KEY")
 if not SESSION_ENCRYPTION_KEY:
-    raise RuntimeError("SESSION_ENCRYPTION_KEY environment variable required")
+    from cryptography.fernet import Fernet
+    SESSION_ENCRYPTION_KEY = Fernet.generate_key().decode()
+    logger.warning("SESSION_ENCRYPTION_KEY not set - generated temporary key (sessions won't persist across restarts)")
 
 cipher = Fernet(SESSION_ENCRYPTION_KEY.encode())
 SESSION_DOMAIN = os.environ.get("SESSION_DOMAIN", "localhost")
@@ -171,27 +180,29 @@ SESSIONS = IN_MEMORY_SESSIONS
 
 class SessionData(BaseModel):
     """Validated session data structure"""
+    model_config = {"frozen": True}
+
     id: int = Field(..., gt=0)
     github_id: int = Field(..., gt=0)
     username: str = Field(..., min_length=1, max_length=255)
     avatar_url: Optional[str] = Field(None, max_length=2048)
+    access_token: Optional[str] = Field(None, max_length=255)
 
-    @validator("username")
-    def sanitize_username(cls, v):
+    @field_validator("username")
+    @classmethod
+    def sanitize_username(cls, v: str) -> str:
         if not v or not v.strip():
             raise ValueError("Username cannot be empty")
         return v.strip()[:255]
 
-    @validator("avatar_url")
-    def validate_avatar_url(cls, v):
+    @field_validator("avatar_url")
+    @classmethod
+    def validate_avatar_url(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
         if not v.startswith(("https://", "http://")):
             raise ValueError("Avatar URL must be HTTP(S)")
         return v[:2048]
-
-    class Config:
-        frozen = True
 
 
 class User(BaseModel):
@@ -300,27 +311,36 @@ async def require_auth(request: Request) -> int:
 @limiter.limit("10/minute")
 async def login(request: Request):
     """Redirect to GitHub OAuth."""
-    if IS_DEV_MOCK:
-        return RedirectResponse(url=f"/api/auth/dev-callback?dev_token={DEV_ACCESS_TOKEN}")
+    client_id = await get_oauth_config()
+    if not client_id:
+        raise HTTPException(status_code=500, detail="OAuth not configured")
     redirect_uri = "http://localhost:8888/api/auth/callback"
     return RedirectResponse(
-        url=f"https://github.com/login/oauth/authorize?client_id={GITHUB_CLIENT_ID}&redirect_uri={redirect_uri}&scope=read:user"
+        url=f"https://github.com/login/oauth/authorize?client_id={client_id}&redirect_uri={redirect_uri}&scope=read:user"
     )
 
 
-@router.get("/dev-callback")
-@limiter.limit("3/minute")
-async def dev_callback(request: Request, response: Response, dev_token: Optional[str] = None):
-    """Mock callback for development - REQUIRES DEV_ACCESS_TOKEN"""
-    client_ip = request.client.host if request.client else "unknown"
-    if not IS_DEV_MOCK:
-        audit_logger.warning(f"Dev mode disabled attempt from {client_ip}")
-        raise HTTPException(status_code=403, detail="Dev mode disabled")
-    if not dev_token or dev_token != DEV_ACCESS_TOKEN:
-        audit_logger.warning(f"Failed dev authentication with invalid token from {client_ip}")
-        raise HTTPException(status_code=401, detail="Invalid dev access token")
-    audit_logger.info(f"Dev authentication successful from {client_ip}")
-    return await handle_login(response, 999999, "DevUser", None, "mock_token", client_ip)
+async def exchange_code_for_token(code: str, redirect_uri: str) -> dict:
+    """Exchange OAuth code for access token - via worker or direct."""
+    async with httpx.AsyncClient() as client:
+        if USE_OAUTH_WORKER:
+            resp = await client.post(
+                f"{OAUTH_WORKER_URL}/oauth/token",
+                json={"code": code, "redirect_uri": redirect_uri}
+            )
+            return resp.json()
+        else:
+            resp = await client.post(
+                "https://github.com/login/oauth/access_token",
+                headers={"Accept": "application/json"},
+                data={
+                    "client_id": GITHUB_CLIENT_ID,
+                    "client_secret": GITHUB_CLIENT_SECRET,
+                    "code": code,
+                    "redirect_uri": redirect_uri
+                }
+            )
+            return resp.json()
 
 
 @router.get("/callback")
@@ -328,37 +348,31 @@ async def dev_callback(request: Request, response: Response, dev_token: Optional
 async def callback(request: Request, code: str, response: Response):
     """Handle GitHub OAuth callback."""
     client_ip = request.client.host if request.client else "unknown"
-    if IS_DEV_MOCK:
-        audit_logger.warning(f"OAuth callback attempt in dev mode from {client_ip}")
-        raise HTTPException(status_code=400, detail="In Dev Mode")
-    async with httpx.AsyncClient() as client:
-        try:
-            token_res = await client.post(
-                "https://github.com/login/oauth/access_token",
-                headers={"Accept": "application/json"},
-                data={
-                    "client_id": GITHUB_CLIENT_ID,
-                    "client_secret": GITHUB_CLIENT_SECRET,
-                    "code": code,
-                    "redirect_uri": "http://localhost:8888/api/auth/callback"
-                }
-            )
-            token_data = token_res.json()
-            access_token = token_data.get("access_token")
-            if not access_token:
-                audit_logger.warning(f"Failed to get GitHub access token from {client_ip}")
-                raise HTTPException(status_code=400, detail="Failed to get access token")
+    redirect_uri = "http://localhost:8888/api/auth/callback"
+
+    try:
+        token_data = await exchange_code_for_token(code, redirect_uri)
+        access_token = token_data.get("access_token")
+
+        if not access_token:
+            error_msg = token_data.get("error_description", token_data.get("error", "Unknown error"))
+            audit_logger.warning(f"Failed to get GitHub access token from {client_ip}: {error_msg}")
+            raise HTTPException(status_code=400, detail=f"Failed to get access token: {error_msg}")
+
+        async with httpx.AsyncClient() as client:
             user_res = await client.get(
                 "https://api.github.com/user",
                 headers={"Authorization": f"token {access_token}"}
             )
             user_data = user_res.json()
-            return await handle_login(response, user_data["id"], user_data["login"], user_data.get("avatar_url"), access_token, client_ip)
-        except HTTPException:
-            raise
-        except Exception as e:
-            audit_logger.error(f"OAuth callback error from {client_ip}: {type(e).__name__}")
-            raise HTTPException(status_code=400, detail="OAuth authentication failed")
+
+        return await handle_login(response, user_data["id"], user_data["login"], user_data.get("avatar_url"), access_token, client_ip)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        audit_logger.error(f"OAuth callback error from {client_ip}: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=400, detail="OAuth authentication failed")
 
 
 async def handle_login(response: Response, github_id: int, username: str, avatar_url: Optional[str], access_token: str, client_ip: str = "unknown") -> RedirectResponse:
@@ -383,7 +397,8 @@ async def handle_login(response: Response, github_id: int, username: str, avatar
             id=user_id,
             github_id=github_id,
             username=username,
-            avatar_url=avatar_url
+            avatar_url=avatar_url,
+            access_token=access_token
         )
         token = await create_session(session_data)
 

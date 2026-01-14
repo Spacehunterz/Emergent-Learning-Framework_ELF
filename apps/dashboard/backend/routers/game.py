@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Body, Query
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 from utils.database import get_db, dict_from_row
-from routers.auth import get_user_id, SESSIONS
+from routers.auth import get_user_id, get_session
 
 router = APIRouter(prefix="/api/game", tags=["game"])
 
@@ -373,28 +373,21 @@ async def verify_star(request: Request):
     username = user_row["username"]
     
     token = request.cookies.get("session_token")
-    if not token or token not in SESSIONS:
-         raise HTTPException(status_code=401, detail="Session expired")
-         
-    access_token = SESSIONS[token].get("access_token")
-    
-    # In a real app we'd use the stored OAuth Access Token for private checks.
+    if not token:
+        raise HTTPException(status_code=401, detail="Session expired")
+
+    session = await get_session(token)
+    if not session or not session.access_token:
+        raise HTTPException(status_code=401, detail="Session expired or missing token")
+
     async with httpx.AsyncClient() as client:
-        # Check if AUTHENTICATED user starred it
-        # GET /user/starred/{owner}/{repo}
         url = "https://api.github.com/user/starred/Spacehunterz/Emergent-Learning-Framework_ELF"
-        
         headers = {
-            "Authorization": f"token {access_token}",
+            "Authorization": f"token {session.access_token}",
             "Accept": "application/vnd.github+json"
         }
-        
-        # MOCK FOR DEV
-        if access_token == "mock_token":
-             res_status = 204
-        else:
-             res = await client.get(url, headers=headers)
-             res_status = res.status_code
+        res = await client.get(url, headers=headers)
+        res_status = res.status_code
 
     if res_status == 204:
         # 3. UNLOCK REWARD

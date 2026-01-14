@@ -1,0 +1,6 @@
+name = "elf-oauth"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+OAUTH_REDIRECT_URI = "http://localhost:8888/api/auth/callback"
