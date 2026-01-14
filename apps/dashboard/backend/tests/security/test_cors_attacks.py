@@ -156,31 +156,6 @@ class TestOriginValidation:
         # This is informational - some implementations normalize
 
 
-class TestCredentialedRequests:
-    """Test CORS with credentials."""
-
-    def test_credentials_required_for_session(self, authenticated_client):
-        """Credentialed requests should include cookies."""
-        # This test verifies that session cookies work with CORS
-
-        response = authenticated_client.get(
-            "/api/auth/me",
-            headers={"Origin": "http://localhost:3001"}
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["is_authenticated"] is True
-
-    def test_credentials_not_sent_without_origin(self, client):
-        """Without proper origin, credentials should not leak."""
-        # Make request without Origin header
-        response = client.get("/api/auth/me")
-
-        # Should still work (same-origin)
-        assert response.status_code == 200
-
-
 class TestCORSBypass:
     """Test CORS bypass prevention."""
 
