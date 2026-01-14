@@ -25,7 +25,7 @@ class TestSQLInjectionPrevention:
         "' OR 1=1--",
         "1' UNION SELECT NULL--",
     ])
-    def test_sql_injection_in_username(self, authenticated_client, security_db, payload):
+    def test_sql_injection_in_username(self, security_db, payload):
         """SQL injection in username should be prevented."""
         # Attempt to use malicious username
         # This tests that the auth system uses parameterized queries

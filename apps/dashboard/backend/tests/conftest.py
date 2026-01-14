@@ -202,8 +202,6 @@ def app():
         except ImportError:
             os.environ["SESSION_ENCRYPTION_KEY"] = "test_key_" + secrets.token_urlsafe(32)
 
-    if not os.environ.get("DEV_ACCESS_TOKEN"):
-        os.environ["DEV_ACCESS_TOKEN"] = secrets.token_hex(32)
     if not os.environ.get("GITHUB_CLIENT_ID"):
         os.environ["GITHUB_CLIENT_ID"] = "mock"
     # SESSION_DOMAIN must be empty for TestClient - domain=localhost doesn't match testclient's host
@@ -239,31 +237,6 @@ def client(app):
         return TestClient(app)
     except ImportError:
         pytest.skip("FastAPI TestClient not available")
-
-
-@pytest.fixture
-def dev_token():
-    """Get DEV_ACCESS_TOKEN for testing authentication."""
-    return os.environ.get("DEV_ACCESS_TOKEN")
-
-
-@pytest.fixture
-def authenticated_client(client, dev_token):
-    """Create an authenticated test client with valid session."""
-    # Perform login
-    response = client.get(
-        f"/api/auth/dev-callback?dev_token={dev_token}",
-        follow_redirects=False
-    )
-
-    # Extract session token
-    session_token = response.cookies.get("session_token")
-
-    if session_token:
-        # Set cookie on client
-        client.cookies.set("session_token", session_token)
-
-    return client
 
 
 @pytest.fixture
