@@ -178,11 +178,44 @@ class ComplexityScorer:
         }
 
 
+DOMAIN_ALIASES = {
+    "frontend": ["react", "ui-architecture", "ui-interaction", "ui-layout", "react-performance"],
+    "javascript": ["react", "react-performance", "react-websocket", "d3-svg-events", "three-js"],
+    "database": ["database-operations", "database-optimization", "database-maintenance"],
+    "api": ["api-polling"],
+    "testing": ["integration-test", "visual-testing", "mcp-testing"],
+    "git": ["git-workflow"],
+    "python": ["pyqt"],
+    "configuration": ["configuration-management"],
+    "error-handling": [],
+    "security": [],
+    "performance": ["caching", "react-performance"],
+    "authentication": ["security"],
+    "production": ["devops", "infrastructure"],
+    "agent": ["agent-behavior", "agent-architecture", "agent-coordination", "multi-agent", "multi-agent-coordination"],
+    "workflow": ["workflow-design", "development-workflow"],
+    "windows": ["windows-compatibility", "windows-gotchas", "cross-platform"],
+    "hooks": ["learning"],
+    "documentation": [],
+    "coordination": ["service-coordination", "multi-agent-coordination"],
+    "cli": ["cli-architecture", "cli-design"],
+    "file": ["file-io", "file-operations", "file-organization", "file-write-safety"],
+}
+
+
+def expand_domains_with_aliases(domains: List[str]) -> List[str]:
+    """Expand extracted domains with their aliases for broader matching."""
+    expanded = set(domains)
+    for domain in domains:
+        if domain in DOMAIN_ALIASES:
+            expanded.update(DOMAIN_ALIASES[domain])
+    return list(expanded)
+
+
 def extract_domain_from_context(tool_name: str, tool_input: dict) -> List[str]:
     """Extract likely domains from the tool call context."""
     domains = []
 
-    # Get text to analyze
     text = ""
     if tool_name == "Task":
         text = tool_input.get("prompt", "") + " " + tool_input.get("description", "")
@@ -193,7 +226,6 @@ def extract_domain_from_context(tool_name: str, tool_input: dict) -> List[str]:
 
     text = text.lower()
 
-    # Domain keyword mapping
     domain_keywords = {
         "authentication": ["auth", "login", "session", "jwt", "token", "oauth", "password"],
         "database": ["sql", "query", "schema", "migration", "db", "database", "sqlite", "postgres"],
@@ -201,21 +233,31 @@ def extract_domain_from_context(tool_name: str, tool_input: dict) -> List[str]:
         "api": ["api", "endpoint", "rest", "graphql", "route", "controller"],
         "security": ["security", "vulnerability", "injection", "xss", "csrf", "sanitiz"],
         "testing": ["test", "spec", "coverage", "mock", "fixture", "assert"],
-        "frontend": ["react", "vue", "component", "css", "style", "ui", "dom"],
+        "react": ["react", "component", "usestate", "useeffect", "jsx", "tsx"],
+        "frontend": ["vue", "css", "style", "ui", "dom", "frontend"],
         "performance": ["performance", "cache", "optimize", "memory", "speed"],
         "error-handling": ["error", "exception", "catch", "throw", "try"],
         "configuration": ["config", "env", "setting", "option"],
         "production": ["production", "prod", "deploy", "release"],
         "git": ["git", "commit", "branch", "merge", "rebase"],
         "python": ["python", "pip", "venv", ".py"],
-        "javascript": ["node", "npm", "yarn", "bun", ".js", ".ts"],
+        "hooks": ["hook", "pre_tool", "post_tool", "learning-loop"],
+        "agent": ["agent", "subagent", "task tool", "swarm"],
+        "workflow": ["workflow", "pipeline", "automation"],
+        "windows": ["windows", "powershell", "cmd", "taskkill", "netstat"],
+        "file": ["file", "read", "write", "path", "directory"],
+        "cli": ["cli", "command", "terminal", "shell"],
+        "coordination": ["coordination", "handoff", "blackboard"],
+        "documentation": ["document", "readme", "claude.md"],
+        "general": ["general", "misc"],
     }
 
     for domain, keywords in domain_keywords.items():
         if any(kw in text for kw in keywords):
             domains.append(domain)
 
-    return domains[:5]  # Limit to 5
+    expanded = expand_domains_with_aliases(domains)
+    return list(expanded)[:10]
 
 
 def get_relevant_heuristics(domains: List[str], limit: int = 5) -> List[Dict]:
