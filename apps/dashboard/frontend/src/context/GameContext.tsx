@@ -94,6 +94,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     talkinheadUnlocked: gameData.talkinhead_unlocked || false,
                     talkinheadAutolaunch: gameData.talkinhead_autolaunch || false,
                 }));
+
+                // 3. Sync to global leaderboard (non-blocking)
+                fetch('http://localhost:8888/api/game/sync-global', {
+                    method: 'POST',
+                    credentials: 'include'
+                }).catch(() => {/* Ignore errors - global sync is best-effort */});
             }
         } catch (err) {
             console.error("Failed to sync game state:", err);

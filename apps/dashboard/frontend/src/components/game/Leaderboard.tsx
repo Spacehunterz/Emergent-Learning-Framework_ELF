@@ -44,21 +44,10 @@ export interface LeaderboardProps {
 }
 
 // ============================================================================
-// Mock Data (for demonstration - remove in production)
+// API Configuration
 // ============================================================================
 
-const MOCK_LEADERBOARD: LeaderboardEntry[] = [
-    { rank: 1, username: 'CosmicDestroyer', score: 2847500, level: 42, avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4' },
-    { rank: 2, username: 'StarPilot_X', score: 2156000, level: 38, avatar_url: 'https://avatars.githubusercontent.com/u/2?v=4' },
-    { rank: 3, username: 'NebulaCrusher', score: 1892300, level: 35, avatar_url: 'https://avatars.githubusercontent.com/u/3?v=4' },
-    { rank: 4, username: 'VoidWalker99', score: 1654200, level: 32 },
-    { rank: 5, username: 'PhotonRider', score: 1423100, level: 29, avatar_url: 'https://avatars.githubusercontent.com/u/5?v=4' },
-    { rank: 6, username: 'GalacticAce', score: 1287600, level: 27 },
-    { rank: 7, username: 'AsteroidHunter', score: 1098500, level: 24, avatar_url: 'https://avatars.githubusercontent.com/u/7?v=4' },
-    { rank: 8, username: 'WarpDriveMaster', score: 956400, level: 22 },
-    { rank: 9, username: 'CometChaser', score: 823700, level: 20, avatar_url: 'https://avatars.githubusercontent.com/u/9?v=4' },
-    { rank: 10, username: 'SolarFlareKid', score: 712300, level: 18 },
-];
+const GLOBAL_LEADERBOARD_API = 'https://elf-oauth.elf0auth.workers.dev/leaderboard';
 
 // ============================================================================
 // Utility Functions
@@ -365,21 +354,13 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                     const data = await fetchLeaderboard();
                     setEntries(data);
                 } else {
-                    // Try to fetch from API, fallback to mock data
-                    try {
-                        const res = await fetch('/api/game/leaderboard', {
-                            credentials: 'include'
-                        });
-                        if (res.ok) {
-                            const data = await res.json();
-                            setEntries(data.entries || []);
-                        } else {
-                            // Use mock data for demo
-                            setEntries(MOCK_LEADERBOARD);
-                        }
-                    } catch {
-                        // Use mock data for demo
-                        setEntries(MOCK_LEADERBOARD);
+                    // Fetch from global leaderboard API
+                    const res = await fetch(GLOBAL_LEADERBOARD_API);
+                    if (res.ok) {
+                        const data = await res.json();
+                        setEntries(data.entries || []);
+                    } else {
+                        throw new Error('Failed to fetch leaderboard');
                     }
                 }
             } catch (err) {
