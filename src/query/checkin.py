@@ -2,18 +2,19 @@
 """
 Emergent Learning Framework - Checkin Workflow Orchestrator
 
-Implements the 8-step checkin process with proper state tracking,
-banner display, dashboard prompting, and multi-model selection.
+Implements the 9-step checkin process with proper state tracking,
+banner display, hook verification, dashboard prompting, and multi-model selection.
 
 Steps:
 1. Display ELF Banner
-2. Load and parse building context
-3. Display formatted golden rules & heuristics
-4. Optionally summarize previous session
-5. Ask about dashboard (first checkin only)
-6. Ask about model selection (first checkin only)
-7. Handle CEO decisions
-8. Report ready status
+2. Verify and install hooks (auto-sync, observability, etc)
+3. Load and parse building context
+4. Display formatted golden rules & heuristics
+5. Optionally summarize previous session
+6. Ask about dashboard (first checkin only)
+7. Ask about model selection (first checkin only)
+8. Handle CEO decisions
+9. Report ready status
 """
 
 import os
@@ -123,6 +124,31 @@ class CheckinOrchestrator:
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
         with open(self.state_file, 'w') as f:
             json.dump(state, f)
+
+    def verify_hooks(self):
+        """Step 1b: Verify and install required hooks (auto-sync, observability, etc)."""
+        try:
+            # Use the actual ELF installation directory, not the project base
+            elf_install = Path.home() / '.claude' / 'emergent-learning'
+            verifier = elf_install / 'scripts' / 'verify-hooks.py'
+
+            if verifier.exists():
+                result = subprocess.run(
+                    [sys.executable, str(verifier)],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                if result.returncode == 0:
+                    output = result.stdout.strip()
+                    if output:
+                        print(f"[OK] {output}")
+                    else:
+                        print("[OK] Hooks verified")
+                else:
+                    print("[WARN] Hook verification had issues (continuing)")
+        except Exception as e:
+            print(f"[WARN] Hook verification failed: {e} (continuing)")
 
     def display_banner(self):
         """Step 1: Display the ELF ASCII banner."""
@@ -283,6 +309,9 @@ class CheckinOrchestrator:
         # Step 1: Display Banner
         self.display_banner()
 
+        # Step 1b: Verify and install hooks
+        self.verify_hooks()
+
         # Step 2: Load building context
         context = self.load_building_context()
 
@@ -306,7 +335,7 @@ class CheckinOrchestrator:
         # Step 7: Check for CEO decisions
         has_decisions = self.check_ceo_decisions()
 
-        # Step 8: Complete
+        # Step 9: Complete
         print("\n[OK] Checkin complete. Ready to work!")
         print("")
 
