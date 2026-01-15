@@ -37,17 +37,17 @@ Claude: [Queries building, starts dashboard, returns golden rules + heuristics]
 - **Already configured:** Proceeds normally
 
 **What "check in" does:**
-- **First time ever:** Auto-installs config, hooks, /search, /checkin, /swarm commands
+- **First time ever:** Auto-installs config, hooks, /search, /checkin, /checkout, /swarm commands
 - **Start of session:** Loads knowledge, starts dashboard at http://localhost:3001 (Ctrl+click to open)
 - **When stuck:** Searches for relevant patterns that might help
-- **Before closing:** Ensures learnings are captured (CYA - cover your ass)
+- **Before closing:** Run `/checkout` to record learnings (CYA - cover your ass)
 
-**When to check in:**
-| Moment | Why |
-|--------|-----|
-| Start of every session | Load context, start dashboard, prevent repeating mistakes |
-| When you hit a problem | See if building knows about this issue |
-| Before closing session | Ensure learnings are captured |
+**When to check in / checkout:**
+| Moment | Command | Why |
+|--------|---------|-----|
+| Start of every session | `/checkin` | Load context, start dashboard, prevent repeating mistakes |
+| When you hit a problem | `/search` | See if building knows about this issue |
+| Before closing session | `/checkout` | Record postmortems, heuristics, failures, and notes |
 
 ## Dashboard Views
 
@@ -144,22 +144,51 @@ Runs automatically - no user interaction required. See [src/watcher/README.md](s
 +---------------------------------------------------+
 ```
 
+## Auto-Learning with [LEARNED:] Markers
+
+Subagents can mark discoveries inline to auto-record learnings:
+
+```
+[LEARNED:domain] The lesson or pattern discovered
+```
+
+Examples:
+- `[LEARNED:react] Always use refs for callbacks in useEffect`
+- `[LEARNED:api] Validate input at system boundaries`
+
+**How it works:** Post-tool hooks extract markers and convert them to heuristics (if they contain "always", "never", "should", "must") or observations. Domain is optional—defaults to "general" if not specified.
+
+**Benefit:** Quick, inline learning capture without manual recording. Automatic confidence tracking.
+
+---
+
 ## Key Phrases
 
-| Say This | What Happens |
+| Say This / Command | What Happens |
 |----------|--------------|
-| `check in` | Start dashboard, query building, show golden rules + heuristics |
-| `query the building` | Same as check in |
+| `/checkin` | Start dashboard, query building, show golden rules + heuristics |
+| `check in` | Same as /checkin |
+| `query the building` | Same as /checkin |
 | `what does the building know about X` | Search for topic X |
+| `/checkout` | Record postmortems, heuristics, failures, and notes before closing |
+| `/search [question]` | Search session history with natural language |
 | `record this failure: [lesson]` | Create failure log |
 | `record this success: [pattern]` | Document what worked |
-| `/search [question]` | Search session history with natural language |
 
 ## Quick Commands
 
 ```bash
+# Start of session - load context
+/checkin
+
+# Before closing - record learnings
+/checkout
+
 # Check what has been learned
 python src/query/query.py --stats
+
+# Search session history
+/search what was I working on yesterday?
 
 # Start dashboard manually (if needed)
 cd apps/dashboard && ./run-dashboard.sh
@@ -322,6 +351,16 @@ SOFTWARE.
 ## Credits
 
 - **Agent Pool:** [wshobson/agents](https://github.com/wshobson/agents) - 100 specialized agent personas by [@wshobson](https://github.com/wshobson)
+
+## Contributors 🙏
+
+A special thanks to the incredible humans shaping ELF:
+
+- **🐛 [@Mimosel](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/discussions)** - #1 Bug Tester & UX Champion
+
+  Mimosel has been instrumental in identifying edge cases, questioning assumptions, and pushing the framework to be better. From catching critical bugs to proposing features like `/checkout`, your relentless testing and thoughtful feedback have made ELF what it is today. 🚀 The framework wouldn't be nearly as solid without you!
+
+---
 
 ## Development Status
 
