@@ -5,6 +5,31 @@ All notable changes to the Emergent Learning Framework will be documented in thi
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] - 2026-01-15
+
+### Added
+- **Golden Rules Auto-Sync Infrastructure** - Automatic database synchronization with markdown source
+  - `scripts/sync-golden-rules.py` - Manual sync script for golden rules markdown to database
+  - `scripts/verify-hooks.py` - Hook verification and auto-installation utility
+  - `scripts/install-hooks.py` - Hook template installation from `.hooks-templates/`
+  - `.hooks-templates/` - Versioned hook templates for distribution and auto-install
+  - `.hooks-templates/PostToolUse/sync-golden-rules.py` - Post-tool hook for auto-sync
+  - `.hooks-templates/README.md` - Hook development and troubleshooting documentation
+- **Hook Auto-Installation for New Users** - Seamless hook setup during first install
+  - Hooks automatically installed from templates during setup
+  - `/checkin` command verifies hooks are present and auto-installs if missing
+  - Zero manual configuration needed for new users
+- **Checkin Integration** - Hook verification integrated into checkin workflow
+  - Added `verify_hooks()` method as Step 1b in checkin process
+  - Auto-installs missing hooks with [OK] status message
+  - Safety net ensures framework hooks always present
+
+### Fixed
+- **Golden Rules Synchronization Lag** - Markdown and database now stay in sync
+  - Previously markdown had 30 golden rules but database had stale count (55)
+  - Post-tool hook now detects changes and syncs automatically
+  - Database is updated after each tool execution if markdown changed
+
 ## [0.3.12] - 2026-01-05
 
 ### Added
