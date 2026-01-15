@@ -68,7 +68,8 @@ jobs:
 
       - name: Run MyPy type checking
         run: |
-          mypy src/ --strict --no-implicit-reexport --pretty || true
+          mypy src/ --strict --no-implicit-reexport --pretty
+        continue-on-error: true
 
   backend-tests:
     name: Backend Tests
@@ -120,7 +121,7 @@ jobs:
       - name: Run frontend tests
         run: |
           cd apps/dashboard/frontend
-          npm run test -- --run || true
+          npm run test -- --run
 
       - name: Build frontend
         run: |
