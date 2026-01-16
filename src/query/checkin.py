@@ -122,11 +122,13 @@ class CheckinOrchestrator:
                         return True
 
                     timestamp_str = state.get('timestamp')
-                    if timestamp_str:
-                        last_checkin = datetime.fromisoformat(timestamp_str)
-                        expiry = timedelta(hours=STATE_EXPIRY_HOURS)
-                        if datetime.now() - last_checkin > expiry:
-                            return True
+                    if not timestamp_str:
+                        return True
+
+                    last_checkin = datetime.fromisoformat(timestamp_str)
+                    expiry = timedelta(hours=STATE_EXPIRY_HOURS)
+                    if datetime.now() - last_checkin > expiry:
+                        return True
 
                     return False
             except:
