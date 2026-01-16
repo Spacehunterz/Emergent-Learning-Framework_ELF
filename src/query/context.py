@@ -5,6 +5,8 @@ Context builder mixin - builds agent context from the knowledge base (async).
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional
 
+from peewee import fn
+
 try:
     from query.models import Heuristic, Learning, get_manager
     from query.utils import AsyncTimeoutHandler
@@ -715,25 +717,23 @@ class ContextBuilderMixin:
             m = get_manager()
             async with m:
                 async with m.connection():
-                    total_confidence = 0.0
-                    heuristic_count = 0
-                    validation_count = 0
-                    total_violations = 0
-                    total_applications = 0
-
-                    query = Heuristic.select()
+                    query = Heuristic.select(
+                        fn.COUNT(Heuristic.id).alias('heuristic_count'),
+                        fn.COALESCE(fn.AVG(fn.COALESCE(Heuristic.confidence, 0.5)), 0).alias('avg_confidence'),
+                        fn.COALESCE(fn.SUM(fn.COALESCE(Heuristic.times_validated, 0)), 0).alias('validation_count'),
+                        fn.COALESCE(fn.SUM(fn.COALESCE(Heuristic.times_violated, 0)), 0).alias('total_violations')
+                    )
                     if domain:
                         query = query.where(Heuristic.domain == domain)
 
-                    async for h in query:
-                        total_confidence += h.confidence or 0.5
-                        heuristic_count += 1
-                        validation_count += h.times_validated or 0
-                        total_violations += h.times_violated or 0
-                        total_applications += (h.times_validated or 0) + (h.times_violated or 0)
+                    result = await query.aio_scalar(as_tuple=True)
+                    heuristic_count = result[0] if result else 0
+                    avg_conf = result[1] if result else 0.0
+                    validation_count = result[2] if result else 0
+                    total_violations = result[3] if result else 0
+                    total_applications = validation_count + total_violations
 
                     if heuristic_count > 0:
-                        avg_conf = total_confidence / heuristic_count
                         observer.record_metric('avg_confidence', avg_conf, domain=domain,
                                               metadata={'heuristic_count': heuristic_count})
 

@@ -199,3 +199,37 @@ def get_current_time_ms() -> int:
         Integer timestamp in milliseconds
     """
     return int(datetime.now().timestamp() * 1000)
+
+
+def build_csv_tag_conditions(field, tags: list):
+    """
+    Build SQL conditions for matching tags in a comma-separated field.
+
+    Unlike simple contains(), this matches complete tags (not substrings).
+    Handles: exact match, tag at start, tag at end, tag in middle.
+
+    Note: Still uses LIKE patterns which can't leverage B-tree indexes.
+    For high-performance tag queries, consider normalizing to a junction table.
+
+    Args:
+        field: Peewee field to query (e.g., Learning.tags)
+        tags: List of tags to search for
+
+    Returns:
+        Combined OR condition for all tags
+    """
+    from operator import or_
+    from functools import reduce
+
+    all_conditions = []
+    for tag in tags:
+        escaped = escape_like(tag)
+        tag_conditions = (
+            (field == escaped) |
+            field.startswith(escaped + ',') |
+            field.endswith(',' + escaped) |
+            field.contains(',' + escaped + ',')
+        )
+        all_conditions.append(tag_conditions)
+
+    return reduce(or_, all_conditions) if all_conditions else None
