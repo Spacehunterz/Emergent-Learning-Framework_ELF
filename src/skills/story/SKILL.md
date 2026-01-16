@@ -57,6 +57,37 @@ Interactively change: status, priority, acceptance criteria
 
 Generate markdown summary grouped by priority and status.
 
+## Two Paths: Quick vs Structured
+
+When you run `/story new`, you choose your approach:
+
+### Quick Path (Default)
+Traditional narrative format - fast for simple stories.
+- User role → Desired action → Business value
+- Builds "As a X, I want Y, so that Z" automatically
+- Best for: Simple features, quick iterations, clear scope
+
+### Structured Path (Prevents Ralph Spiraling)
+Ryan's methodology - comprehensive planning for complex work.
+- Problem statement (what challenge does this solve?)
+- Narrative format (As a / I want / So that)
+- Functional requirements (what must the system do?)
+- Constraints & non-goals (what's out of scope?)
+- Success metrics (how do we measure success?)
+- Auto-generates subtasks to prevent infinite iteration loops
+
+**Choose Structured when:**
+- Building large features with many moving parts
+- You want Ralph to have clear sub-goals
+- You need to prevent "Ralph spiraling" (infinite iteration loops)
+- You want detailed requirements documented
+
+**Why Structured prevents spiraling:**
+- Breaks complex work into finite, testable subtasks
+- Each subtask has one clear purpose
+- Ralph processes TASK-001, TASK-002... in order
+- Forces upfront thinking about scope and boundaries
+
 ## Story Format
 
 Stories follow the **user story narrative**:
@@ -112,19 +143,45 @@ OR blocked ✗ (Ralph encountered an issue)
 ### `/story new`
 Create a new story interactively.
 
-**Prompts:**
-1. Story ID (auto-suggest next available)
-2. User role
-3. Desired action
-4. Business value
-5. Title (auto-suggested)
-6. Priority (1-3)
-7. Files (comma-separated)
-8. Acceptance criteria (loop, blank to finish)
+First, you choose your path: **[Q] Quick** (default) or **[S] Structured**
 
-**Output:**
+#### Quick Path Prompts
+1. Story ID (auto-suggest next available)
+2. Path choice: `[Q/S, default=Q]`
+3. User role (As a)
+4. Desired action (I want to)
+5. Business value (So that)
+6. Title (auto-suggested from action)
+7. Priority (1-3)
+8. Files (comma-separated, optional)
+9. Acceptance criteria (blank to finish, at least 1)
+
+#### Structured Path Prompts
+1. Story ID (auto-suggest next available)
+2. Path choice: `[S]`
+3. Problem statement (What problem does this solve?)
+4. User role (As a)
+5. Desired action (I want to)
+6. Business value (So that)
+7. Title (auto-suggested)
+8. Priority (1-3)
+9. Functional requirements (blank to finish)
+10. Constraints & non-goals (blank to finish)
+11. Success metrics (blank to finish, at least 1 recommended)
+12. Files (comma-separated, optional)
+13. Acceptance criteria (blank to finish, at least 1)
+14. Generate subtasks? `[Y/n, default=Y]`
+    - If yes: Automatically creates TASK-001, TASK-002... for each requirement
+
+**Output (Quick Path):**
 ```
 ✓ Created story: [STORY-001] Your Story Title
+```
+
+**Output (Structured Path):**
+```
+✓ Created story: [STORY-006] Your Story Title
+  Linked subtasks: 4
 ```
 
 ### `/story show`
@@ -251,6 +308,34 @@ Stories start as **pending** → Ralph changes to **in_progress** → ends as **
 
 You can manually update status with `/story update` if needed.
 
+### How Ralph Processes Stories with Subtasks
+
+When a story has subtasks (created with structured path):
+
+1. Ralph processes **subtasks in order** (TASK-001, TASK-002...)
+2. Each subtask is a separate, finite work item
+3. Ralph marks each subtask **in_progress → done** individually
+4. When **all subtasks done** → parent story marked **done**
+5. If any subtask **fails** → parent story marked **blocked**
+
+**Why this prevents spiraling:**
+- Each subtask is too small to spiral on (one clear purpose)
+- Ralph finishes TASK-001 completely before TASK-002
+- Clear success criteria at the subtask level
+- Parent story only marks done when all children done
+
+**Example flow:**
+```
+STORY-007: Search Context Card
+  ├─ TASK-001: Create feature branch [DONE]
+  ├─ TASK-002: Search is case-insensitive [DONE]
+  ├─ TASK-003: Highlights matching [DONE]
+  ├─ TASK-004: Returns count [IN_PROGRESS]
+  └─ TASK-005: Filters nested objects [PENDING]
+```
+
+Ralph is working on TASK-004. When done, moves to TASK-005. Once all complete, STORY-007 marked done.
+
 ## Validation
 
 Stories are validated for:
@@ -354,28 +439,94 @@ Both tools read/write the same `prd.json` - they're complementary!
 
 ## Examples
 
-### Example 1: Create a React Component Story
+### Example 1: Quick Path - React Component Story
 
 ```bash
 $ /story new
 
 Story ID [STORY-006]:
-User role: developer in a React project
-Desired action: implement a collapsible JSON card component
-Business value: display context at a glance without opening other windows
+Path [Q/S, default=Q]: Q
+User role (As a): developer in a React project
+Desired action (I want to): implement a collapsible JSON card component
+Business value (So that): display context at a glance without opening other windows
 Title [Implement Collapsible JSON Card]:
-Priority [1-3]: 1
-Files: src/components/ContextCard.tsx, src/hooks/useContext.ts, tests/ContextCard.test.tsx
-Acceptance criteria:
+Priority [1=high, 2=normal, 3=low, default=2]: 1
+Files (comma-separated, optional): src/components/ContextCard.tsx, src/hooks/useContext.ts, tests/ContextCard.test.tsx
+Add acceptance criteria (blank line to finish, need at least 1):
   - Component accepts JSON data as prop
   - Sections collapse/expand on click
   - JSON is syntax-highlighted
   - Works with deeply nested objects
   - Component is <500ms to render
-  - No external dependencies (no 3rd party JSON viewers)
+  - No external dependencies
   (blank to finish)
 
 ✓ Created story: [STORY-006] Implement Collapsible JSON Card
+```
+
+### Example 2: Structured Path - Complex Feature with Subtasks
+
+```bash
+$ /story new
+
+Story ID [STORY-007]:
+Path [Q/S, default=Q]: S
+
+=== Problem Statement ===
+What problem does this solve? Users can't easily search through large heuristics in the context card
+
+Create narrative: 'As a X, I want Y, so that Z'
+User role (As a): developer in Ralph loop with large knowledge base
+Desired action (I want to): search the context card by domain or keyword
+Business value (So that): I can find relevant heuristics without manual scrolling
+
+Title [Search Context Card By Domain Or Keyword]:
+Priority [1=high, 2=normal, 3=low, default=2]: 1
+
+=== Functional Requirements ===
+List what the system must do (blank to finish):
+  Requirement: Search is case-insensitive
+  Requirement: Highlights matching keys and values
+  Requirement: Returns count of matches
+  Requirement: Filters work with nested objects
+  Requirement: Search input is sticky while scrolling
+  Requirement: (blank to finish)
+
+=== Constraints & Non-Goals ===
+What should this NOT do? Any limits? (blank to finish):
+  Constraint: Don't add external search libraries (keep it lightweight)
+  Constraint: Don't modify the JSON structure for search purposes
+  Constraint: (blank to finish)
+
+=== Success Metrics ===
+How do we measure success? (blank to finish, at least 1):
+  Metric: Search returns results in <100ms
+  Metric: All criteria work with 1000+ item datasets
+  Metric: Works offline without external dependencies
+  Metric: (blank to finish)
+
+Files (comma-separated, optional): src/components/ContextCard.tsx, src/components/SearchFilter.tsx
+
+Add acceptance criteria (blank line to finish, need at least 1):
+  - Search box accepts text input
+  - Results highlight in card
+  - Count displayed: "X matches found"
+  - Escape key clears search
+  - (blank to finish)
+
+Generate subtasks to prevent Ralph spiraling? [Y/n]: Y
+
+=== Generating Subtasks ===
+  - [TASK-001] Create feature branch
+  - [TASK-002] Search is case-insensitive
+  - [TASK-003] Highlights matching keys and values
+  - [TASK-004] Returns count of matches
+  - [TASK-005] Filters work with nested objects
+  - [TASK-006] Search input is sticky while scrolling
+✓ Generated 5 subtasks (plus feature branch)
+
+✓ Created story: [STORY-007] Search Context Card By Domain Or Keyword
+  Linked subtasks: 6
 ```
 
 ### Example 2: Filter High-Priority Pending Work

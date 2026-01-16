@@ -96,6 +96,30 @@ try:
             if not ('As a' in desc and 'I want' in desc and 'so that' in desc):
                 warnings.append(f"Story {story.get('id', idx)}: description should follow 'As a X, I want Y, so that Z' format")
 
+        # Validate parent-child relationships for TASK-* entries
+        if story.get('id', '').startswith('TASK-'):
+            parent_id = story.get('parent_id')
+            if not parent_id:
+                warnings.append(f"Story {story.get('id', idx)}: TASK should have parent_id")
+            elif parent_id not in seen_ids:
+                # Parent might not be seen yet, will check later
+                pass
+
+    # Check parent-child relationships
+    for idx, story in enumerate(prd.get('stories', [])):
+        if story.get('id', '').startswith('TASK-'):
+            parent_id = story.get('parent_id')
+            parent_exists = any(s['id'] == parent_id for s in prd.get('stories', []))
+            if parent_id and not parent_exists:
+                errors.append(f"Story {story.get('id', idx)}: parent '{parent_id}' not found")
+
+        # Validate subtasks array references
+        if story.get('subtasks'):
+            for subtask_id in story.get('subtasks', []):
+                subtask_exists = any(s['id'] == subtask_id for s in prd.get('stories', []))
+                if not subtask_exists:
+                    errors.append(f"Story {story.get('id', idx)}: subtask '{subtask_id}' not found")
+
     if errors:
         print("ERRORS:")
         for err in errors:
