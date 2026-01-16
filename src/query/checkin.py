@@ -20,31 +20,37 @@ Steps:
 import os
 import sys
 import json
+import io
 from pathlib import Path
-from typing import Dict, Any, Optional, List
-from datetime import datetime
+from typing import Dict, Any, Optional
+from datetime import datetime, timedelta
 import subprocess
+
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
+STATE_EXPIRY_HOURS = 4
 
 
 class CheckinOrchestrator:
     """Orchestrates the full checkin workflow."""
 
-    # Banner for display (ASCII-safe for cross-platform compatibility)
     BANNER = """
-+------------------------------------+
-|    Emergent Learning Framework     |
-+------------------------------------+
-|                                    |
-|      #####   #      #####          |
-|      #       #      #              |
-|      ####    #      ####           |
-|      #       #      #              |
-|      #####   ##### #              |
-|                                    |
-+------------------------------------+
+┌────────────────────────────────────┐
+│    Emergent Learning Framework     │
+├────────────────────────────────────┤
+│                                    │
+│      █████▒  █▒     █████▒         │
+│      █▒      █▒     █▒             │
+│      ████▒   █▒     ████▒          │
+│      █▒      █▒     █▒             │
+│      █████▒  █████▒ █▒             │
+│                                    │
+└────────────────────────────────────┘
 """
 
-    def __init__(self, interactive: bool = None):
+    def __init__(self, interactive: Optional[bool] = None):
         """
         Initialize the checkin orchestrator.
 
@@ -104,19 +110,29 @@ class CheckinOrchestrator:
         """
         Determine if this is the first checkin of the conversation.
 
-        Uses conversation session ID or a marker file to track state.
+        Uses timestamp-based expiry - if last checkin was more than
+        STATE_EXPIRY_HOURS ago, treat as new conversation.
         """
-        # If we have an explicit session marker, use that
         if self.state_file.exists():
             try:
                 with open(self.state_file, 'r') as f:
                     state = json.load(f)
-                    # Check if this is a new session
-                    return not state.get('checkin_completed', False)
+
+                    if not state.get('checkin_completed', False):
+                        return True
+
+                    timestamp_str = state.get('timestamp')
+                    if timestamp_str:
+                        last_checkin = datetime.fromisoformat(timestamp_str)
+                        expiry = timedelta(hours=STATE_EXPIRY_HOURS)
+                        if datetime.now() - last_checkin > expiry:
+                            return True
+
+                    return False
             except:
                 pass
 
-        return True  # Default to first checkin if we can't determine
+        return True
 
     def _mark_checkin_complete(self):
         """Mark that first checkin has been completed."""
@@ -178,8 +194,8 @@ class CheckinOrchestrator:
         except subprocess.TimeoutExpired:
             print("[!] Warning: Context loading timed out")
             return {'raw_output': ''}
-        except Exception as e:
-            print(f"[!] Warning: Error loading context")
+        except Exception:
+            print("[!] Warning: Error loading context")
             return {'raw_output': ''}
 
     def display_golden_rules(self, context: Dict[str, Any]):
@@ -261,8 +277,6 @@ class CheckinOrchestrator:
     def start_dashboard(self):
         """Start the dashboard in a visible terminal window that user can close."""
         try:
-            # Check for both .bat and .ps1 versions
-            dashboard_bat = self.elf_home / 'apps' / 'dashboard' / 'run-dashboard.bat'
             dashboard_ps1 = self.elf_home / 'apps' / 'dashboard' / 'run-dashboard.ps1'
             dashboard_sh = self.elf_home / 'apps' / 'dashboard' / 'run-dashboard.sh'
 
@@ -333,7 +347,7 @@ class CheckinOrchestrator:
             self.prompt_model_selection()
 
         # Step 7: Check for CEO decisions
-        has_decisions = self.check_ceo_decisions()
+        self.check_ceo_decisions()
 
         # Step 9: Complete
         print("\n[OK] Checkin complete. Ready to work!")
