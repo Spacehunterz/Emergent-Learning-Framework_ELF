@@ -5,6 +5,23 @@ All notable changes to the Emergent Learning Framework will be documented in thi
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4] - 2026-01-16
+
+### Changed
+- **Automated /checkout** - No more prompts at session end
+  - Auto-detects session activity (commits, files modified, domains)
+  - Counts heuristics recorded in last 4 hours
+  - Shows summary and exits - no questions asked
+  - Philosophy: record learnings during sessions, checkout just summarizes
+
+### Fixed
+- **Checkin state expiry** - State now expires after 4 hours
+  - New conversations trigger dashboard/model prompts
+  - Old state files without timestamps treated as expired
+- **Unicode banner restoration** - Better-looking ELF banner with box-drawing chars
+  - Added UTF-8 output encoding for Windows compatibility
+- **Type hints cleanup** - Fixed Pyright warnings in checkin.py
+
 ## [0.4.3] - 2026-01-15
 
 ### Added
