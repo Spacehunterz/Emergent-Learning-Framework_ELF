@@ -264,7 +264,7 @@ main() {
         echo "   → Will update: progress.txt"
         echo ""
 
-        if claude-code < "$PROMPT_FILE"; then
+        if claude-code --dangerously-skip-permissions < "$PROMPT_FILE"; then
             update_story_status "$STORY_ID" "done"
             echo ""
             echo "✅ Story complete: [$STORY_ID] $STORY_TITLE"
