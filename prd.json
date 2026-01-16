@@ -80,6 +80,98 @@
         "prd.json",
         "progress.txt"
       ]
+    },
+    {
+      "id": "CARD-001",
+      "title": "View ELF Context Card in Ralph Loop",
+      "description": "As a developer running a Ralph loop, I want to see a compact JSON card displaying my ELF context (TIER 0, relevant golden rules, current domain) so that I have context at a glance without switching windows",
+      "priority": 1,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Card displays TIER 0 project context",
+        "Card shows top 5 relevant golden rules for current domain",
+        "Card is readable within 1280px viewport",
+        "JSON is syntax-highlighted (keys, values, strings colored differently)",
+        "Card has 'Collapse all' button to minimize nested objects",
+        "Card loads in <500ms",
+        "Works offline (no external CDN dependencies)"
+      ],
+      "files": [
+        "src/components/ContextCard.tsx",
+        "src/components/ContextCard.css"
+      ]
+    },
+    {
+      "id": "CARD-002",
+      "title": "Search Context Card by Domain or Keyword",
+      "description": "As a developer in a deep project with many heuristics, I want to search the JSON card by domain, confidence level, or keyword so that I can find relevant heuristics without scrolling",
+      "priority": 2,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Search is case-insensitive",
+        "Highlights matching keys and values",
+        "Returns count of matches",
+        "Filters work with nested objects",
+        "Search input is sticky (stays visible when scrolling)",
+        "Supports filters: domain:react, confidence:>0.8"
+      ],
+      "files": [
+        "src/components/ContextCard.tsx",
+        "src/components/SearchFilter.tsx"
+      ]
+    },
+    {
+      "id": "CARD-003",
+      "title": "Export Context JSON for Debugging",
+      "description": "As a developer whose Ralph loop failed, I want to export the context JSON that caused the failure so that I can save it, analyze it later, or share it with someone for help",
+      "priority": 2,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Export button copies raw JSON to clipboard",
+        "Export button downloads JSON file with timestamp",
+        "Exported JSON is valid and parseable",
+        "Includes metadata: timestamp, domain, Ralph iteration number",
+        "File is named predictably: context-TIMESTAMP.json"
+      ],
+      "files": [
+        "src/components/ContextCard.tsx",
+        "src/utils/export.ts"
+      ]
+    },
+    {
+      "id": "CARD-004",
+      "title": "Refresh Context from ELF Building",
+      "description": "As a developer running multiple Ralph iterations, I want to refresh the context card to see updated heuristics and progress so that my card stays in sync with the ELF building",
+      "priority": 3,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Refresh button fetches latest from ~/.claude/emergent-learning",
+        "Shows 'Last updated: X seconds ago' timestamp",
+        "Auto-refresh option every 30s (configurable)",
+        "Highlights new or changed rules since last load",
+        "Gracefully handles offline/unavailable building"
+      ],
+      "files": [
+        "src/components/ContextCard.tsx",
+        "src/hooks/useElfContext.ts"
+      ]
+    },
+    {
+      "id": "CARD-005",
+      "title": "Navigate Nested Context with Breadcrumbs",
+      "description": "As a developer exploring deeply nested context (TIER 1 golden rules with multiple levels), I want breadcrumb navigation to jump between levels so that I don't get lost in the structure",
+      "priority": 3,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Breadcrumbs show current path (e.g., TIER 1 > golden-rules > [RULE-001])",
+        "Click any breadcrumb to jump to that level",
+        "Breadcrumbs stay visible while scrolling",
+        "Works with any nesting depth"
+      ],
+      "files": [
+        "src/components/ContextCard.tsx",
+        "src/components/Breadcrumbs.tsx"
+      ]
     }
   ]
 }
