@@ -423,9 +423,12 @@ async def upsert_pattern(pattern: Dict[str, Any]) -> int:
     async with m:
         async with m.connection():
             # Try to find existing pattern
-            try:
-                existing = await Pattern.aio_get(Pattern.pattern_hash == pattern_hash)
+            existing = None
+            async for p in Pattern.select().where(Pattern.pattern_hash == pattern_hash):
+                existing = p
+                break
 
+            if existing:
                 # Update existing pattern
                 existing.occurrence_count += pattern.get('occurrence_count', 1)
                 existing.last_seen = now
@@ -438,12 +441,12 @@ async def upsert_pattern(pattern: Dict[str, Any]) -> int:
                 existing.session_ids = json.dumps(session_ids)
 
                 existing.updated_at = now
-                await existing.aio_save()
+                await existing.save()
                 return existing.id
 
-            except Pattern.DoesNotExist:
+            else:
                 # Create new pattern
-                new_pattern = await Pattern.aio_create(
+                new_pattern = await Pattern.create(
                     pattern_type=pattern['pattern_type'],
                     pattern_hash=pattern_hash,
                     pattern_text=pattern['pattern_text'],
