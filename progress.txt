@@ -40,6 +40,16 @@ Each session should append an entry like:
 - Each spawned session reads prompt.md, implements story, updates progress.txt, exits
 - This is a FEATURE: fresh context per iteration prevents degradation
 
+### 2026-01-15 - UX Layer Complete: Three Skills for One-Command Work
+- /loop skill created: One-command to start entire work session
+- /start-work script: Auto-init PRD if missing, then launch ralph.sh
+- /prd skill created: Manage PRD (show, validate, create)
+- New scripts: start-work.sh, prd.sh
+- WORKFLOW IS NOW: Just type /loop and everything runs automatically
+- Auto-initialization: First time /loop runs, creates default PRD if missing
+- User can now turn on PC, run one command, and walk away
+- All work is orchestrated, documented, and committed automatically
+
 ---
 
 ## Patterns Learned
