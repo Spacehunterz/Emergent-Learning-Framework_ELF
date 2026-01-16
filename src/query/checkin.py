@@ -2,36 +2,27 @@
 """
 Emergent Learning Framework - Checkin Workflow Orchestrator
 
-Implements the 9-step checkin process with proper state tracking,
-banner display, hook verification, dashboard prompting, and multi-model selection.
-
 Steps:
 1. Display ELF Banner
-2. Verify and install hooks (auto-sync, observability, etc)
-3. Load and parse building context
-4. Display formatted golden rules & heuristics
-5. Optionally summarize previous session
-6. Ask about dashboard (first checkin only)
-7. Ask about model selection (first checkin only)
-8. Handle CEO decisions
-9. Report ready status
+2. Verify hooks
+3. Load building context
+4. Display golden rules & heuristics
+5. Prompt dashboard (Claude tracks per-session)
+6. Prompt model selection (Claude tracks per-session)
+7. Check CEO decisions
+8. Ready status
 """
 
 import os
 import sys
-import json
 import io
 from pathlib import Path
 from typing import Dict, Any, Optional
-from datetime import datetime, timedelta
 import subprocess
 
 if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
-
-STATE_EXPIRY_HOURS = 4
-
 
 class CheckinOrchestrator:
     """Orchestrates the full checkin workflow."""
@@ -59,17 +50,13 @@ class CheckinOrchestrator:
                          When False, skips input() prompts and outputs JSON hints
                          for Claude to ask questions via AskUserQuestion tool.
         """
-        # Auto-detect interactive mode if not specified
         if interactive is None:
             self.interactive = sys.stdin.isatty()
         else:
             self.interactive = interactive
 
-        # Find ELF home using elf_paths if available
         self.elf_home = self._resolve_elf_home()
-        self.state_file = Path.home() / '.claude' / '.elf_checkin_state'
         self.selected_model = os.environ.get('ELF_MODEL', 'claude')
-        self.is_first_checkin = self._check_first_checkin()
 
     def _resolve_elf_home(self) -> Path:
         """Resolve ELF home using centralized elf_paths or fallback."""
@@ -106,42 +93,6 @@ class CheckinOrchestrator:
         # Fallback to global location (will error if not found)
         return global_elf
 
-    def _check_first_checkin(self) -> bool:
-        """
-        Determine if this is the first checkin of the conversation.
-
-        Uses timestamp-based expiry - if last checkin was more than
-        STATE_EXPIRY_HOURS ago, treat as new conversation.
-        """
-        if self.state_file.exists():
-            try:
-                with open(self.state_file, 'r') as f:
-                    state = json.load(f)
-
-                    if not state.get('checkin_completed', False):
-                        return True
-
-                    timestamp_str = state.get('timestamp')
-                    if not timestamp_str:
-                        return True
-
-                    last_checkin = datetime.fromisoformat(timestamp_str)
-                    expiry = timedelta(hours=STATE_EXPIRY_HOURS)
-                    if datetime.now() - last_checkin > expiry:
-                        return True
-
-                    return False
-            except:
-                pass
-
-        return True
-
-    def _mark_checkin_complete(self):
-        """Mark that first checkin has been completed."""
-        state = {'checkin_completed': True, 'timestamp': datetime.now().isoformat()}
-        self.state_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.state_file, 'w') as f:
-            json.dump(state, f)
 
     def verify_hooks(self):
         """Step 1b: Verify and install required hooks (auto-sync, observability, etc)."""
@@ -211,10 +162,7 @@ class CheckinOrchestrator:
             print("[OK] Context loaded")
 
     def prompt_dashboard(self) -> bool:
-        """Step 5: Ask about dashboard (first checkin only)."""
-        if not self.is_first_checkin:
-            return False  # Don't ask again
-
+        """Step 5: Ask about dashboard. Claude tracks session state."""
         if not self.interactive:
             # Non-interactive: Output JSON hint for Claude to use AskUserQuestion
             print('[PROMPT_NEEDED] {"type": "dashboard", "question": "Start ELF Dashboard?", "default": "yes"}')
@@ -231,14 +179,7 @@ class CheckinOrchestrator:
             return False
 
     def prompt_model_selection(self) -> str:
-        """
-        Step 6: Ask about model selection (first checkin only).
-
-        Returns the selected model name.
-        """
-        if not self.is_first_checkin:
-            return self.selected_model  # Use environment or default
-
+        """Step 6: Ask about model selection. Claude tracks session state."""
         if not self.interactive:
             # Non-interactive: Output JSON hint for Claude to use AskUserQuestion
             print('[PROMPT_NEEDED] {"type": "model", "question": "Select AI model", "options": ["claude", "gemini", "codex", "skip"]}')
@@ -334,30 +275,19 @@ class CheckinOrchestrator:
         # Step 3: Display golden rules (parsed from context)
         self.display_golden_rules(context)
 
-        # Step 4: Optionally summarize previous session (skipped for now)
-        # Would spawn async haiku agent here
+        # Step 5: Ask about dashboard (Claude tracks session state)
+        start_dashboard = self.prompt_dashboard()
+        if start_dashboard:
+            self.start_dashboard()
 
-        # Step 5: Ask about dashboard (first checkin only)
-        if self.is_first_checkin:
-            start_dashboard = self.prompt_dashboard()
-
-            if start_dashboard:
-                self.start_dashboard()
-
-        # Step 6: Ask about model selection (first checkin only)
-        if self.is_first_checkin:
-            self.prompt_model_selection()
+        # Step 6: Ask about model selection (Claude tracks session state)
+        self.prompt_model_selection()
 
         # Step 7: Check for CEO decisions
         self.check_ceo_decisions()
 
-        # Step 9: Complete
+        # Step 8: Complete
         print("\n[OK] Checkin complete. Ready to work!")
-        print("")
-
-        # Mark first checkin as done
-        if self.is_first_checkin:
-            self._mark_checkin_complete()
 
 
 def main():
