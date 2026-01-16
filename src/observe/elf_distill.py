@@ -120,7 +120,7 @@ async def apply_decay(project_path: Optional[str] = None) -> int:
                 if abs(new_strength - pattern.strength) > 0.001:
                     pattern.strength = new_strength
                     pattern.updated_at = now
-                    await pattern.aio_save()
+                    await pattern.save()
                     updated += 1
 
     return updated
@@ -267,7 +267,7 @@ async def promote_pattern_to_heuristic(pattern) -> int:
     async with m:
         async with m.connection():
             # Create heuristic
-            heuristic = await Heuristic.aio_create(
+            heuristic = await Heuristic.create(
                 domain=pattern.domain,
                 rule=pattern.pattern_text,
                 explanation=f"Auto-extracted pattern: {pattern.signature or 'behavioral'}. "
@@ -286,7 +286,7 @@ async def promote_pattern_to_heuristic(pattern) -> int:
             # Mark pattern as promoted
             pattern.promoted_to_heuristic_id = heuristic.id
             pattern.updated_at = datetime.utcnow()
-            await pattern.aio_save()
+            await pattern.save()
 
             return heuristic.id
 
