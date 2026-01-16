@@ -2,18 +2,21 @@
 """
 Emergent Learning Framework - Checkout Workflow Orchestrator
 
-Implements the 8-step checkout process with learning recording prompts,
-plan completion, and session summary capture.
+Implements the 11-step checkout process with automated session analysis,
+learning recording prompts, plan completion, and session summary capture.
 
 Steps:
+0. Analyze Session Data (auto)
 1. Display Checkout Banner
 2. Detect Active Plans
 3. Postmortem Prompt (if active plans exist)
-4. Heuristic Discovery Prompt
-5. Failure Documentation Prompt
-6. Quick Notes Collection
-7. Session Statistics
-8. Complete Checkout
+4. Heuristic Validation (review relevant heuristics)
+5. Auto-Detected Patterns (suggest potential heuristics)
+6. Heuristic Discovery Prompt (manual)
+7. Failure Documentation Prompt
+8. Quick Notes Collection
+9. Session Statistics
+10. Complete Checkout
 """
 
 import os
@@ -23,6 +26,7 @@ import sqlite3
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+from collections import Counter
 import subprocess
 
 
@@ -61,8 +65,16 @@ class CheckoutOrchestrator:
         self.learnings_recorded = {
             'postmortems': 0,
             'heuristics': 0,
+            'heuristics_validated': 0,
+            'heuristics_violated': 0,
             'failures': 0,
             'notes': False
+        }
+        self.session_analysis = {
+            'domains': [],
+            'tool_counts': {},
+            'patterns': [],
+            'suggested_heuristics': []
         }
 
     def _resolve_elf_home(self) -> Path:
@@ -94,13 +106,258 @@ class CheckoutOrchestrator:
 
         return global_elf
 
+    def analyze_session(self) -> Dict[str, Any]:
+        """Step 0: Analyze current session data for patterns and metrics."""
+        analysis = {
+            'domains': [],
+            'tool_counts': {},
+            'patterns': [],
+            'suggested_heuristics': [],
+            'relevant_heuristics': []
+        }
+
+        try:
+            sessions_dir = Path.home() / '.claude' / 'projects'
+            if not sessions_dir.exists():
+                return analysis
+
+            session_files = sorted(
+                sessions_dir.glob('*/*.jsonl'),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True
+            )
+
+            current_session = None
+            for sf in session_files:
+                if 'agent-' not in sf.name:
+                    current_session = sf
+                    break
+
+            if not current_session:
+                return analysis
+
+            tool_counts = Counter()
+            domains_mentioned = set()
+            actions = []
+
+            with open(current_session, 'r', encoding='utf-8', errors='ignore') as f:
+                for line in f:
+                    try:
+                        entry = json.loads(line.strip())
+                        if entry.get('type') == 'tool_use':
+                            tool_name = entry.get('name', 'unknown')
+                            tool_counts[tool_name] += 1
+                            actions.append(tool_name)
+                        if entry.get('type') == 'assistant':
+                            content = str(entry.get('message', {}).get('content', ''))
+                            for domain in ['react', 'api', 'database', 'frontend', 'backend', 'security', 'testing', 'infrastructure']:
+                                if domain in content.lower():
+                                    domains_mentioned.add(domain)
+                    except (json.JSONDecodeError, KeyError):
+                        continue
+
+            analysis['tool_counts'] = dict(tool_counts.most_common(10))
+            analysis['domains'] = list(domains_mentioned)
+
+            if len(actions) >= 3:
+                action_counts = Counter(actions)
+                for action, count in action_counts.most_common(3):
+                    if count >= 3:
+                        analysis['patterns'].append({
+                            'action': action,
+                            'count': count,
+                            'suggestion': f"Repeated {action} usage ({count}x) - consider automation"
+                        })
+
+            if tool_counts.get('Edit', 0) > 5 and tool_counts.get('Bash', 0) > 3:
+                analysis['suggested_heuristics'].append({
+                    'domain': 'workflow',
+                    'rule': 'Run tests after multiple file edits',
+                    'explanation': 'Session had many edits followed by bash commands - testing pattern detected'
+                })
+
+            if tool_counts.get('Read', 0) > 10:
+                analysis['suggested_heuristics'].append({
+                    'domain': 'exploration',
+                    'rule': 'Use grep/glob before reading many files',
+                    'explanation': f'High file read count ({tool_counts.get("Read", 0)}) - targeted search may be faster'
+                })
+
+        except (OSError, IOError):
+            pass
+
+        self.session_analysis = analysis
+        return analysis
+
+    def display_session_analysis(self):
+        """Display automated session analysis results."""
+        if not any(self.session_analysis.values()):
+            return
+
+        print("\n[*] Session Analysis (auto-detected)")
+
+        if self.session_analysis.get('domains'):
+            print(f"   Domains worked on: {', '.join(self.session_analysis['domains'])}")
+
+        if self.session_analysis.get('tool_counts'):
+            top_tools = list(self.session_analysis['tool_counts'].items())[:5]
+            tool_str = ', '.join([f"{t[0]}({t[1]}x)" for t in top_tools])
+            print(f"   Tool usage: {tool_str}")
+
+        if self.session_analysis.get('patterns'):
+            print(f"   Patterns detected: {len(self.session_analysis['patterns'])}")
+            for p in self.session_analysis['patterns'][:3]:
+                print(f"      - {p['suggestion']}")
+
+    def get_relevant_heuristics(self) -> List[Dict[str, Any]]:
+        """Get heuristics relevant to domains worked on today."""
+        if not self.session_analysis.get('domains'):
+            return []
+
+        try:
+            with sqlite3.connect(str(self.db_path)) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+
+                domains = self.session_analysis['domains']
+                placeholders = ','.join(['?' for _ in domains])
+
+                cursor.execute(f"""
+                    SELECT id, domain, rule, times_validated, times_violated, confidence
+                    FROM heuristics
+                    WHERE status = 'active'
+                    AND domain IN ({placeholders})
+                    AND (times_validated + times_violated) >= 3
+                    ORDER BY confidence DESC
+                    LIMIT 5
+                """, domains)
+
+                return [dict(row) for row in cursor.fetchall()]
+
+        except sqlite3.Error:
+            return []
+
+    def prompt_heuristic_validation(self, heuristics: List[Dict[str, Any]]):
+        """Step 4: Allow user to validate or violate relevant heuristics."""
+        if not heuristics:
+            return
+
+        print("\n[*] Heuristic Validation (review today's relevant rules)")
+        for h in heuristics:
+            print(f"   [{h['id']}] {h['rule']}")
+            print(f"       Domain: {h['domain']} | Confidence: {h['confidence']:.2f} | Validated: {h['times_validated']} | Violated: {h['times_violated']}")
+
+        if not self.interactive:
+            print('[PROMPT_NEEDED] {"type": "heuristic_validation", "heuristics": ' + json.dumps([h['id'] for h in heuristics]) + '}')
+            return
+
+        try:
+            response = input("\n   Validate any of these? (enter IDs comma-separated, or 'n'): ").strip()
+            if response.lower() not in ['n', 'no', '']:
+                for hid in response.split(','):
+                    hid = hid.strip()
+                    if hid.isdigit():
+                        self._record_validation(int(hid), validated=True)
+                        self.learnings_recorded['heuristics_validated'] += 1
+
+            response = input("   Violate any? (enter IDs comma-separated, or 'n'): ").strip()
+            if response.lower() not in ['n', 'no', '']:
+                for hid in response.split(','):
+                    hid = hid.strip()
+                    if hid.isdigit():
+                        self._record_validation(int(hid), validated=False)
+                        self.learnings_recorded['heuristics_violated'] += 1
+
+        except (EOFError, KeyboardInterrupt):
+            pass
+
+    def _record_validation(self, heuristic_id: int, validated: bool):
+        """Record a validation or violation for a heuristic."""
+        try:
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
+
+                if validated:
+                    cursor.execute("""
+                        UPDATE heuristics
+                        SET times_validated = times_validated + 1,
+                            confidence = MIN(1.0, confidence + 0.02)
+                        WHERE id = ?
+                    """, (heuristic_id,))
+                else:
+                    cursor.execute("""
+                        UPDATE heuristics
+                        SET times_violated = times_violated + 1,
+                            confidence = MAX(0.1, confidence - 0.05)
+                        WHERE id = ?
+                    """, (heuristic_id,))
+
+                if cursor.rowcount == 0:
+                    print(f"   [!] Heuristic {heuristic_id} not found")
+                    return
+
+                conn.commit()
+                print(f"   [OK] Heuristic {heuristic_id} {'validated' if validated else 'violated'}")
+        except sqlite3.Error as e:
+            print(f"   [!] Could not record: {e}")
+
+    def prompt_suggested_heuristics(self):
+        """Step 5: Present auto-detected patterns as potential heuristics."""
+        suggestions = self.session_analysis.get('suggested_heuristics', [])
+        if not suggestions:
+            return
+
+        print("\n[*] Auto-Detected Patterns (potential heuristics)")
+        for i, s in enumerate(suggestions, 1):
+            print(f"   [{i}] {s['rule']}")
+            print(f"       Domain: {s['domain']} | Reason: {s['explanation']}")
+
+        if not self.interactive:
+            print('[PROMPT_NEEDED] {"type": "suggested_heuristics", "suggestions": ' + json.dumps(suggestions) + '}')
+            return
+
+        try:
+            response = input("\n   Record any of these? (enter numbers comma-separated, or 'n'): ").strip()
+            if response.lower() not in ['n', 'no', '']:
+                for idx in response.split(','):
+                    idx = idx.strip()
+                    if idx.isdigit() and 0 < int(idx) <= len(suggestions):
+                        s = suggestions[int(idx) - 1]
+                        self._record_suggested_heuristic(s)
+
+        except (EOFError, KeyboardInterrupt):
+            pass
+
+    def _record_suggested_heuristic(self, suggestion: Dict[str, Any]):
+        """Record an auto-suggested heuristic."""
+        try:
+            cmd = [
+                sys.executable,
+                str(self.elf_home / 'scripts' / 'record-heuristic.py'),
+                '--domain', suggestion['domain'],
+                '--rule', suggestion['rule'],
+                '--explanation', suggestion['explanation'],
+                '--confidence', '0.5',
+                '--source', 'auto-detected'
+            ]
+
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            if result.returncode == 0:
+                print(f"   [OK] Heuristic recorded: {suggestion['rule'][:50]}...")
+                self.learnings_recorded['heuristics'] += 1
+            else:
+                error_detail = result.stderr.strip() if result.stderr else "Unknown error"
+                print(f"   [!] Failed to record heuristic: {error_detail}")
+        except (subprocess.TimeoutExpired, OSError) as e:
+            print(f"   [!] Error: {e}")
+
     def _load_state(self) -> Dict[str, Any]:
         """Load checkout state from file."""
         if self.state_file.exists():
             try:
                 with open(self.state_file, 'r') as f:
                     return json.load(f)
-            except:
+            except (json.JSONDecodeError, IOError):
                 pass
         return {}
 
@@ -118,23 +375,21 @@ class CheckoutOrchestrator:
     def detect_active_plans(self) -> List[Dict[str, Any]]:
         """Step 2: Query database for active plans."""
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
+            with sqlite3.connect(str(self.db_path)) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
 
-            cursor.execute("""
-                SELECT id, title, domain, created_at
-                FROM plans
-                WHERE status = 'active'
-                ORDER BY created_at DESC
-                LIMIT 10
-            """)
+                cursor.execute("""
+                    SELECT id, title, domain, created_at
+                    FROM plans
+                    WHERE status = 'active'
+                    ORDER BY created_at DESC
+                    LIMIT 10
+                """)
 
-            plans = [dict(row) for row in cursor.fetchall()]
-            conn.close()
-            return plans
+                return [dict(row) for row in cursor.fetchall()]
 
-        except Exception as e:
+        except sqlite3.Error as e:
             print(f"[!] Warning: Could not detect active plans: {e}")
             return []
 
@@ -149,7 +404,8 @@ class CheckoutOrchestrator:
 
         if not self.interactive:
             for plan in plans:
-                print(f'[PROMPT_NEEDED] {{"type": "postmortem", "plan_id": {plan["id"]}, "title": "{plan["title"]}"}}')
+                prompt_data = {"type": "postmortem", "plan_id": plan["id"], "title": plan["title"]}
+                print(f'[PROMPT_NEEDED] {json.dumps(prompt_data)}')
             return
 
         for plan in plans:
@@ -160,7 +416,7 @@ class CheckoutOrchestrator:
             except (EOFError, KeyboardInterrupt):
                 break
 
-    def _collect_and_record_postmortem(self, plan_id: int, title: str):
+    def _collect_and_record_postmortem(self, plan_id: int, _title: str):
         """Collect postmortem data and record via subprocess."""
         if not self.interactive:
             return
@@ -312,10 +568,13 @@ class CheckoutOrchestrator:
             print(f"   [!] Could not save notes: {e}")
 
     def display_session_stats(self):
-        """Step 7: Display session statistics."""
+        """Step 9: Display session statistics."""
         print("\n[=] Session Summary")
         print(f"   Postmortems recorded: {self.learnings_recorded['postmortems']}")
         print(f"   Heuristics recorded: {self.learnings_recorded['heuristics']}")
+        if self.learnings_recorded['heuristics_validated'] > 0 or self.learnings_recorded['heuristics_violated'] > 0:
+            print(f"   Heuristics validated: {self.learnings_recorded['heuristics_validated']}")
+            print(f"   Heuristics violated: {self.learnings_recorded['heuristics_violated']}")
         print(f"   Failures documented: {self.learnings_recorded['failures']}")
         print(f"   Notes saved: {'Yes' if self.learnings_recorded['notes'] else 'No'}")
 
@@ -327,8 +586,14 @@ class CheckoutOrchestrator:
     def run(self):
         """Execute the complete checkout workflow."""
         try:
+            # Step 0: Analyze Session (auto)
+            self.analyze_session()
+
             # Step 1: Display Banner
             self.display_banner()
+
+            # Step 1b: Display Session Analysis
+            self.display_session_analysis()
 
             # Step 2: Detect Active Plans
             plans = self.detect_active_plans()
@@ -337,19 +602,27 @@ class CheckoutOrchestrator:
             if plans:
                 self.prompt_postmortem(plans)
 
-            # Step 4: Heuristic Discovery
+            # Step 4: Heuristic Validation
+            relevant_heuristics = self.get_relevant_heuristics()
+            if relevant_heuristics:
+                self.prompt_heuristic_validation(relevant_heuristics)
+
+            # Step 5: Auto-Detected Pattern Suggestions
+            self.prompt_suggested_heuristics()
+
+            # Step 6: Manual Heuristic Discovery
             self.prompt_heuristic()
 
-            # Step 5: Failure Documentation
+            # Step 7: Failure Documentation
             self.prompt_failure()
 
-            # Step 6: Quick Notes
+            # Step 8: Quick Notes
             self.collect_quick_notes()
 
-            # Step 7: Session Statistics
+            # Step 9: Session Statistics
             self.display_session_stats()
 
-            # Step 8: Complete
+            # Step 10: Complete
             self.complete_checkout()
 
             # Save state

@@ -280,13 +280,40 @@ install_venv() {
 VENV_PYTHON=""
 
 install_commands() {
-    for file in "$SCRIPT_DIR/../../library/commands/"*; do
+    local commands_dir="$SCRIPT_DIR/../../library/commands"
+    local file filename dest
+    local count=0
+
+    if [ ! -d "$commands_dir" ]; then
+        echo "[ELF] Warning: Commands directory not found"
+        return 0
+    fi
+
+    for file in "$commands_dir"/*; do
         [ -f "$file" ] || continue
         filename=$(basename "$file")
-        if [ ! -f "$CLAUDE_DIR/commands/$filename" ]; then
-            cp "$file" "$CLAUDE_DIR/commands/$filename"
+        dest="$CLAUDE_DIR/commands/$filename"
+
+        if [ ! -f "$dest" ]; then
+            if cp "$file" "$dest" 2>/dev/null; then
+                echo "[ELF] Installed command: $filename"
+                count=$((count + 1))
+            else
+                echo "[ELF] Error: Failed to install $filename" >&2
+            fi
+        elif ! cmp -s "$file" "$dest"; then
+            if cp "$file" "$dest" 2>/dev/null; then
+                echo "[ELF] Updated command: $filename"
+                count=$((count + 1))
+            else
+                echo "[ELF] Error: Failed to update $filename" >&2
+            fi
         fi
     done
+
+    if [ $count -eq 0 ]; then
+        echo "[ELF] Commands already up to date"
+    fi
 }
 
 install_cli() {

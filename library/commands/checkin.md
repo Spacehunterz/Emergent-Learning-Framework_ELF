@@ -148,8 +148,16 @@ conn.close()
 7. Ask: "Start ELF Dashboard? [Y/n]"
    - Only ask on FIRST checkin of conversation
    - If Yes (run both in background):
-     - Dashboard: `cd ~/.claude/emergent-learning/apps/dashboard && bash run-dashboard.sh`
-     - TalkinHead: `cd ~/.claude/emergent-learning/apps/dashboard/TalkinHead && python main.py`
+     - Dashboard (try installed path first, fallback to dev):
+       `bash ~/.claude/emergent-learning/dashboard-app/run-dashboard.sh 2>/dev/null || bash ~/.claude/emergent-learning/apps/dashboard/run-dashboard.sh`
+     - TalkinHead: Check which path exists first:
+       ```bash
+       if [ -d ~/.claude/emergent-learning/dashboard-app/TalkinHead ]; then
+         cd ~/.claude/emergent-learning/dashboard-app/TalkinHead
+       else
+         cd ~/.claude/emergent-learning/apps/dashboard/TalkinHead
+       fi && (bun run dev 2>/dev/null || npm run dev 2>/dev/null || python main.py)
+       ```
    - If No: Skip
 
 8. If there are pending CEO decisions, list them and ask if the user wants to address them.

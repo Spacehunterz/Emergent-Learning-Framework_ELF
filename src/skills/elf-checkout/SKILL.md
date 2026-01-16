@@ -53,26 +53,46 @@ instead of blocking on `input()`. When you see these in the output:
    - Use `AskUserQuestion` tool to ask: "Any failures to document?"
    - If yes, provide guidance on creating failure-analysis/*.md file
 
-4. **Notes prompt**: `[PROMPT_NEEDED] {"type": "notes"}`
+4. **Heuristic validation prompt**: `[PROMPT_NEEDED] {"type": "heuristic_validation", "heuristics": [...]}`
+   - Use `AskUserQuestion` tool to ask about validating/violating displayed heuristics
+   - Record validation/violation to update confidence scores
+
+5. **Suggested heuristics prompt**: `[PROMPT_NEEDED] {"type": "suggested_heuristics", "suggestions": [...]}`
+   - Use `AskUserQuestion` tool to ask which auto-detected patterns to record
+   - Call record-heuristic.py for selected suggestions
+
+6. **Notes prompt**: `[PROMPT_NEEDED] {"type": "notes"}`
    - Use `AskUserQuestion` tool to ask: "Quick notes for next session?"
    - Store notes for continuity
 
-The orchestrator is a complete 8-step workflow:
-- Step 1: Display checkout banner
+The orchestrator is a complete 11-step workflow:
+- Step 0: Session analysis (auto - analyzes session data)
+- Step 1: Display checkout banner + session summary
 - Step 2: Detect active plans
 - Step 3: Postmortem prompt (if plans exist)
-- Step 4: Heuristic discovery prompt
-- Step 5: Failure documentation prompt
-- Step 6: Quick notes collection
-- Step 7: Session statistics
-- Step 8: Complete
+- Step 4: Heuristic validation (review relevant heuristics)
+- Step 5: Auto-detected patterns (suggest potential heuristics)
+- Step 6: Heuristic discovery prompt (manual)
+- Step 7: Failure documentation prompt
+- Step 8: Quick notes collection
+- Step 9: Session statistics
+- Step 10: Complete
 
-## Workflow Steps (8-Step Structured Process)
+## Workflow Steps (11-Step Structured Process)
+
+### Step 0: Session Analysis (auto) ✓
+Automatically analyze session data before prompting user
+- Reads current session JSONL file
+- Counts tool usage patterns
+- Detects domains worked on
+- Identifies repeated patterns (3+ occurrences)
+- Generates heuristic suggestions based on patterns
 
 ### Step 1: Display Banner ✓
 Show checkout ASCII art to signal session-end learning recording
 - **Always shown** on every checkout
 - **Signals** that learning capture is beginning
+- Displays session analysis summary (domains, tool usage, patterns)
 
 ### Step 2: Detect Active Plans ✓
 Query the database for any active plans
@@ -87,32 +107,47 @@ For each active plan, offer to complete with postmortem
 - Links postmortem to plan and marks plan as completed
 - Calls record-postmortem.py for each completed plan
 
-### Step 4: Heuristic Discovery ⚡
+### Step 4: Heuristic Validation ⚡ (NEW)
+Review existing heuristics relevant to today's work
+- Queries heuristics matching detected domains
+- Displays relevant rules with confidence scores
+- User can validate (confirm worked) or violate (didn't apply)
+- Updates confidence scores based on feedback
+
+### Step 5: Auto-Detected Patterns ⚡ (NEW)
+Present auto-detected patterns as potential heuristics
+- Shows patterns from session analysis
+- Suggests heuristics based on tool usage patterns
+- User can choose to record any as new heuristics
+- Recorded with 0.5 confidence and 'auto-detected' source
+
+### Step 6: Heuristic Discovery ⚡
 Ask if any reusable patterns or rules were discovered
 - "Did you discover any reusable patterns or rules?"
 - If yes: collect domain, rule, explanation, confidence level
 - Calls record-heuristic.py to store in database + markdown
 
-### Step 5: Failure Documentation ⚡
+### Step 7: Failure Documentation ⚡
 Ask about any unexpected failures or breakages
 - "Did anything break or fail unexpectedly?"
 - If yes: provide template and guidance for failure-analysis/*.md
 - Shows markdown template for users to complete manually
 
-### Step 6: Quick Notes ⚡
+### Step 8: Quick Notes ⚡
 Collect brief notes for continuity in next session
 - "Any quick notes for next session?"
 - Optional free-text input
 - Stored in ~/.checkout_notes for future reference
 
-### Step 7: Session Statistics ✓
+### Step 9: Session Statistics ✓
 Display summary of learning captured this session
 - Postmortems recorded count
 - Heuristics recorded count
+- Heuristics validated/violated counts (if any)
 - Failures documented count
 - Notes saved (yes/no)
 
-### Step 8: Complete ✓
+### Step 10: Complete ✓
 Print completion message
 - "Checkout complete. Session learnings recorded!"
 - Marks checkout as done (state file)
