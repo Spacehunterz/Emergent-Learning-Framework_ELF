@@ -26,6 +26,12 @@ if ! command -v python3 &> /dev/null; then
     PYTHON_CMD="python"
 fi
 
+# ELF Observation settings
+ELF_BASE="${HOME}/.claude/emergent-learning"
+ELF_SESSION_DIR="${REPO_ROOT}/.elf/sessions"
+SESSION_ID=$(date +%Y%m%d_%H%M%S)
+CHECKPOINT_INTERVAL=5  # Run observation checkpoint every N iterations
+
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -52,6 +58,42 @@ check_prerequisites() {
         echo "⚠️  claude-code not found in PATH"
         echo "   Ralph Loop needs Claude Code CLI to spawn sessions"
     fi
+}
+
+# -----------------------------------------------------------------------------
+# ELF Observation Functions
+# -----------------------------------------------------------------------------
+
+setup_elf_logging() {
+    mkdir -p "$ELF_SESSION_DIR"
+    echo "[ELF] Session logging enabled: ${ELF_SESSION_DIR}/loop_${SESSION_ID}_*.log"
+}
+
+elf_checkpoint() {
+    # Run mid-session pattern extraction (accumulate without promotion)
+    local iteration="$1"
+    local log_file="${ELF_SESSION_DIR}/loop_${SESSION_ID}_${iteration}.log"
+
+    if [ -f "$log_file" ]; then
+        echo "[ELF] Checkpoint: extracting patterns from iteration $iteration"
+        $PYTHON_CMD -m src.observe observe --session "$log_file" --dry-run 2>/dev/null || true
+    fi
+}
+
+elf_distill() {
+    # Run end-of-session distillation
+    echo ""
+    echo "[ELF] Session complete. Running pattern distillation..."
+
+    # Extract patterns from all loop logs
+    for log in "${ELF_SESSION_DIR}"/loop_${SESSION_ID}_*.log; do
+        if [ -f "$log" ]; then
+            $PYTHON_CMD -m src.observe observe --session "$log" 2>/dev/null || true
+        fi
+    done
+
+    # Run distillation with auto-append to golden rules
+    $PYTHON_CMD -m src.observe distill --run --auto-append 2>/dev/null || true
 }
 
 find_incomplete_story() {
@@ -215,13 +257,15 @@ PYSCRIPT
 main() {
     parse_args "$@"
     check_prerequisites
+    setup_elf_logging
 
     echo "═══════════════════════════════════════════════════════════"
-    echo "RALPH LOOP - Autonomous Story Executor"
+    echo "RALPH LOOP - Autonomous Story Executor (with ELF)"
     echo "═══════════════════════════════════════════════════════════"
     echo ""
     echo "PRD: $PRD_FILE"
     echo "Max iterations: $MAX_ITERATIONS"
+    echo "Session ID: $SESSION_ID"
     echo ""
 
     while [ $ITERATION -lt $MAX_ITERATIONS ]; do
@@ -239,6 +283,7 @@ main() {
             echo "✅ ALL STORIES COMPLETE"
             echo ""
             echo "Learnings recorded in: $PROGRESS_FILE"
+            elf_distill  # Run final distillation
             exit 0
         fi
 
@@ -259,12 +304,16 @@ main() {
 
         update_story_status "$STORY_ID" "in_progress"
 
+        LOG_FILE="${ELF_SESSION_DIR}/loop_${SESSION_ID}_${ITERATION}.log"
+
         echo "🔄 Spawning fresh Claude Code session..."
         echo "   → Reading: $PROMPT_FILE"
         echo "   → Will update: progress.txt"
+        echo "   → Logging to: $LOG_FILE"
         echo ""
 
-        if claude-code --dangerously-skip-permissions < "$PROMPT_FILE"; then
+        # Capture Claude output for ELF observation
+        if claude-code --dangerously-skip-permissions < "$PROMPT_FILE" 2>&1 | tee "$LOG_FILE"; then
             update_story_status "$STORY_ID" "done"
             echo ""
             echo "✅ Story complete: [$STORY_ID] $STORY_TITLE"
@@ -276,8 +325,14 @@ main() {
                 update_story_status "$STORY_ID" "blocked"
                 echo "❌ Marked as blocked: [$STORY_ID]"
                 echo "   Check progress.txt for details"
+                elf_distill  # Run distillation before exit
                 exit 1
             fi
+        fi
+
+        # Mid-session checkpoint every N iterations
+        if [ $((ITERATION % CHECKPOINT_INTERVAL)) -eq 0 ]; then
+            elf_checkpoint "$ITERATION"
         fi
 
         echo ""
@@ -292,6 +347,8 @@ main() {
     COMPLETED=$(count_completed)
     TOTAL=$(count_total)
     echo "Completed: $COMPLETED/$TOTAL stories"
+    echo ""
+    elf_distill  # Run final distillation
     echo ""
     echo "Review progress.txt for details and continue with:"
     echo "  bash $SCRIPT_DIR/ralph.sh"

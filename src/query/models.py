@@ -88,6 +88,7 @@ def _register_all_models(m: Manager):
         Violation,
         SpikeReport,
         Assumption,
+        Pattern,
         Metric,
         SystemHealth,
         SchemaVersion,
@@ -138,6 +139,7 @@ async def create_tables():
                 BuildingQuery,
                 SpikeReport,
                 Assumption,
+                Pattern,
                 SessionSummary,
                 Decision,
                 Invariant,
@@ -457,6 +459,64 @@ class Assumption(BaseModel):
             (('status',), False),
             (('confidence',), False),
             (('created_at',), False),
+        )
+
+
+class Pattern(BaseModel):
+    """
+    Accumulated patterns extracted from session logs (Ralph loops).
+
+    Patterns are ephemeral, accumulating signals that can be promoted
+    to heuristics once they reach sufficient strength and diversity.
+
+    Lifecycle: Extract → Accumulate → Decay → Promote (or fade)
+    """
+
+    VALID_TYPES = ('retry', 'error', 'search', 'success_sequence', 'tool_sequence')
+
+    id = fields.AutoField()
+    pattern_type = fields.TextField(
+        null=False,
+        constraints=[Check("pattern_type IN ('retry', 'error', 'search', 'success_sequence', 'tool_sequence')")]
+    )
+    pattern_hash = fields.TextField(null=False, unique=True)  # Dedup key
+    pattern_text = fields.TextField(null=False)  # Human-readable description
+    signature = fields.TextField(null=True)  # Tool/error signature for matching
+
+    # Accumulation tracking
+    occurrence_count = fields.IntegerField(default=1)
+    first_seen = fields.DateTimeField(default=datetime.utcnow)
+    last_seen = fields.DateTimeField(default=datetime.utcnow)
+
+    # Session tracking (JSON array of session IDs)
+    session_ids = fields.TextField(default='[]')
+
+    # Location-specific patterns: NULL = global, path = project-specific
+    project_path = fields.TextField(null=True, default=None)
+    domain = fields.TextField(default='general')
+
+    # Scoring - decays over time, boosted on re-observation
+    strength = fields.FloatField(
+        default=0.5,
+        constraints=[Check("strength >= 0.0 AND strength <= 1.0")]
+    )
+
+    # Promotion tracking
+    promoted_to_heuristic_id = fields.IntegerField(null=True)
+
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
+
+    class Meta:
+        table_name = 'patterns'
+        indexes = (
+            (('pattern_type',), False),
+            (('pattern_hash',), True),  # Unique index for dedup
+            (('strength',), False),
+            (('last_seen',), False),
+            (('project_path',), False),
+            (('domain', 'pattern_type'), False),
+            (('promoted_to_heuristic_id',), False),
         )
 
 
@@ -802,6 +862,7 @@ __all__ = [
     'Violation',
     'SpikeReport',
     'Assumption',
+    'Pattern',
 
     # Metrics & Health
     'Metric',
