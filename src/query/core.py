@@ -416,9 +416,7 @@ class QuerySystem(
                         'ceo_reviews': CeoReview
                     }
                     for table, model in model_map.items():
-                        count = 0
-                        async for _ in model.select():
-                            count += 1
+                        count = await model.select().aio_count()
                         results['checks'][f'{table}_count'] = count
 
         except Exception as e:

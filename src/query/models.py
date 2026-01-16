@@ -226,6 +226,7 @@ class Learning(BaseModel):
             (('tags',), False),
             (('created_at',), False),
             (('domain', 'created_at'), False),
+            (('type', 'created_at'), False),
         )
 
 
@@ -265,6 +266,7 @@ class Heuristic(BaseModel):
             (('created_at',), False),
             (('domain', 'confidence'), False),
             (('project_path',), False),
+            (('is_golden', 'created_at'), False),
         )
 
 

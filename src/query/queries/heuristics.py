@@ -4,8 +4,6 @@ Heuristic query mixin - golden rules, domain queries, tag queries (async).
 
 import aiofiles
 import time
-from functools import reduce
-from operator import or_
 from typing import Dict, List, Any, Optional
 
 _golden_rules_cache: Dict[str, str] = {}
@@ -15,11 +13,11 @@ _GOLDEN_RULES_CACHE_TTL = 300
 # Import with fallbacks
 try:
     from query.models import Heuristic, Learning, get_manager
-    from query.utils import AsyncTimeoutHandler, escape_like
+    from query.utils import AsyncTimeoutHandler, build_csv_tag_conditions
     from query.exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 except ImportError:
     from models import Heuristic, Learning, get_manager
-    from utils import AsyncTimeoutHandler, escape_like
+    from utils import AsyncTimeoutHandler, build_csv_tag_conditions
     from exceptions import TimeoutError, ValidationError, DatabaseError, QuerySystemError
 
 from .base import BaseQueryMixin
@@ -272,8 +270,7 @@ class HeuristicQueryMixin(BaseQueryMixin):
                 m = get_manager()
                 async with m:
                     async with m.connection():
-                        conditions = [Learning.tags.contains(escape_like(tag)) for tag in tags]
-                        combined_conditions = reduce(or_, conditions)
+                        combined_conditions = build_csv_tag_conditions(Learning.tags, tags)
 
                         query = (Learning
                             .select()
