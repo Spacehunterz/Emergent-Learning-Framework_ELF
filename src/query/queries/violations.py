@@ -76,41 +76,34 @@ class ViolationQueryMixin(BaseQueryMixin):
             m = get_manager()
             async with m:
                 async with m.connection():
-                    # Total count
                     total = 0
-                    async for _ in Violation.select().where(Violation.violation_date >= cutoff):
-                        total += 1
-
-                    # By rule (group by) - need to aggregate manually for async
-                    by_rule_dict = {}
-                    async for v in Violation.select().where(Violation.violation_date >= cutoff):
-                        key = (v.rule_id, v.rule_name)
-                        by_rule_dict[key] = by_rule_dict.get(key, 0) + 1
-
-                    by_rule = [{'rule_id': k[0], 'rule_name': k[1], 'count': v}
-                              for k, v in sorted(by_rule_dict.items(), key=lambda x: -x[1])]
-
-                    # Acknowledged count
                     acknowledged = 0
-                    async for _ in Violation.select().where(
-                        (Violation.violation_date >= cutoff) & (Violation.acknowledged == True)
-                    ):
-                        acknowledged += 1
+                    by_rule_dict = {}
+                    recent = []
+                    recent_count = 0
 
-                    # Recent violations (last 5)
-                    recent_query = (Violation
+                    query = (Violation
                         .select()
                         .where(Violation.violation_date >= cutoff)
-                        .order_by(Violation.violation_date.desc())
-                        .limit(5))
-                    recent = []
-                    async for r in recent_query:
-                        recent.append({
-                            'rule_id': r.rule_id,
-                            'rule_name': r.rule_name,
-                            'description': r.description,
-                            'date': str(r.violation_date) if r.violation_date else None
-                        })
+                        .order_by(Violation.violation_date.desc()))
+
+                    async for v in query:
+                        total += 1
+                        if v.acknowledged:
+                            acknowledged += 1
+                        key = (v.rule_id, v.rule_name)
+                        by_rule_dict[key] = by_rule_dict.get(key, 0) + 1
+                        if recent_count < 5:
+                            recent.append({
+                                'rule_id': v.rule_id,
+                                'rule_name': v.rule_name,
+                                'description': v.description,
+                                'date': str(v.violation_date) if v.violation_date else None
+                            })
+                            recent_count += 1
+
+                    by_rule = [{'rule_id': k[0], 'rule_name': k[1], 'count': c}
+                              for k, c in sorted(by_rule_dict.items(), key=lambda x: -x[1])]
 
         summary = {
             'total': total,
