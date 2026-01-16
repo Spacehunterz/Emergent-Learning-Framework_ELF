@@ -9,7 +9,7 @@
       "title": "Initialize Ralph Loop Infrastructure",
       "description": "Set up the core Ralph Loop system with bash orchestrator, PRD structure, and progress tracking",
       "priority": 1,
-      "status": "blocked",
+      "status": "pending",
       "acceptance_criteria": [
         "ralph.sh exists and is executable",
         "prd.json follows correct structure",
