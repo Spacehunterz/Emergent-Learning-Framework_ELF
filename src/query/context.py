@@ -323,60 +323,54 @@ class ContextBuilderMixin:
                 # Add project-specific heuristics (if in project mode)
                 if PROJECT_CONTEXT_AVAILABLE and project_ctx and project_ctx.has_project_context():
                     try:
-                        import sqlite3
+                        import aiosqlite
                         project_db = project_ctx.project_db_path
                         if project_db and project_db.exists():
-                            conn = sqlite3.connect(str(project_db))
-                            cursor = conn.cursor()
+                            async with aiosqlite.connect(str(project_db)) as conn:
+                                async with conn.execute("""
+                                    SELECT rule, explanation, domain, confidence, validation_count
+                                    FROM heuristics
+                                    ORDER BY confidence DESC, validation_count DESC
+                                    LIMIT ?
+                                """, (limits['heuristics'],)) as cursor:
+                                    project_heuristics = await cursor.fetchall()
 
-                            # Query project heuristics
-                            cursor.execute("""
-                                SELECT rule, explanation, domain, confidence, validation_count
-                                FROM heuristics
-                                ORDER BY confidence DESC, validation_count DESC
-                                LIMIT ?
-                            """, (limits['heuristics'],))
-                            project_heuristics = cursor.fetchall()
+                                if project_heuristics:
+                                    context_parts.append("\n## Project-Specific Heuristics\n\n")
+                                    for h in project_heuristics:
+                                        rule, explanation, h_domain, confidence, val_count = h
+                                        entry = f"- **{rule}** (confidence: {confidence:.2f}"
+                                        if val_count:
+                                            entry += f", validated: {val_count}x"
+                                        entry += ")\n"
+                                        if explanation:
+                                            expl = explanation[:100] + '...' if len(explanation) > 100 else explanation
+                                            entry += f"  {expl}\n"
+                                        entry += "\n"
+                                        context_parts.append(entry)
+                                        approx_tokens += len(entry) // 4
+                                    heuristics_count += len(project_heuristics)
 
-                            if project_heuristics:
-                                context_parts.append("\n## Project-Specific Heuristics\n\n")
-                                for h in project_heuristics:
-                                    rule, explanation, h_domain, confidence, val_count = h
-                                    entry = f"- **{rule}** (confidence: {confidence:.2f}"
-                                    if val_count:
-                                        entry += f", validated: {val_count}x"
-                                    entry += ")\n"
-                                    if explanation:
-                                        expl = explanation[:100] + '...' if len(explanation) > 100 else explanation
-                                        entry += f"  {expl}\n"
-                                    entry += "\n"
-                                    context_parts.append(entry)
-                                    approx_tokens += len(entry) // 4
-                                heuristics_count += len(project_heuristics)
+                                async with conn.execute("""
+                                    SELECT type, summary, details, domain
+                                    FROM learnings
+                                    ORDER BY created_at DESC
+                                    LIMIT ?
+                                """, (limits['learnings'],)) as cursor:
+                                    project_learnings = await cursor.fetchall()
 
-                            # Query project learnings
-                            cursor.execute("""
-                                SELECT type, summary, details, domain
-                                FROM learnings
-                                ORDER BY created_at DESC
-                                LIMIT ?
-                            """, (limits['learnings'],))
-                            project_learnings = cursor.fetchall()
-
-                            if project_learnings:
-                                context_parts.append("\n## Project-Specific Learnings\n\n")
-                                for l in project_learnings:
-                                    l_type, summary, details, l_domain = l
-                                    entry = f"- **{summary}** ({l_type})\n"
-                                    if details:
-                                        det = details[:100] + '...' if len(details) > 100 else details
-                                        entry += f"  {det}\n"
-                                    entry += "\n"
-                                    context_parts.append(entry)
-                                    approx_tokens += len(entry) // 4
-                                learnings_count += len(project_learnings)
-
-                            conn.close()
+                                if project_learnings:
+                                    context_parts.append("\n## Project-Specific Learnings\n\n")
+                                    for l in project_learnings:
+                                        l_type, summary, details, l_domain = l
+                                        entry = f"- **{summary}** ({l_type})\n"
+                                        if details:
+                                            det = details[:100] + '...' if len(details) > 100 else details
+                                            entry += f"  {det}\n"
+                                        entry += "\n"
+                                        context_parts.append(entry)
+                                        approx_tokens += len(entry) // 4
+                                    learnings_count += len(project_learnings)
                     except Exception as e:
                         self._log_debug(f"Failed to load project-specific content: {e}")
 
@@ -718,36 +712,32 @@ class ContextBuilderMixin:
         try:
             observer = MetaObserver(db_path=self.db_path)
 
-            # Calculate avg confidence using async queries
             m = get_manager()
             async with m:
                 async with m.connection():
                     total_confidence = 0.0
                     heuristic_count = 0
-                    async for h in Heuristic.select():
-                        if domain is None or h.domain == domain:
-                            total_confidence += h.confidence or 0.5
-                            heuristic_count += 1
+                    validation_count = 0
+                    total_violations = 0
+                    total_applications = 0
 
-                    avg_conf = total_confidence / heuristic_count if heuristic_count > 0 else 0.5
+                    query = Heuristic.select()
+                    if domain:
+                        query = query.where(Heuristic.domain == domain)
+
+                    async for h in query:
+                        total_confidence += h.confidence or 0.5
+                        heuristic_count += 1
+                        validation_count += h.times_validated or 0
+                        total_violations += h.times_violated or 0
+                        total_applications += (h.times_validated or 0) + (h.times_violated or 0)
 
                     if heuristic_count > 0:
+                        avg_conf = total_confidence / heuristic_count
                         observer.record_metric('avg_confidence', avg_conf, domain=domain,
                                               metadata={'heuristic_count': heuristic_count})
 
-                    # Validation velocity - sum of times_validated
-                    validation_count = 0
-                    async for h in Heuristic.select():
-                        if domain is None or h.domain == domain:
-                            validation_count += h.times_validated or 0
                     observer.record_metric('validation_velocity', validation_count, domain=domain)
-
-                    # Violation rate
-                    total_violations = 0
-                    total_applications = 0
-                    async for h in Heuristic.select():
-                        total_violations += h.times_violated or 0
-                        total_applications += (h.times_validated or 0) + (h.times_violated or 0)
 
                     if total_applications > 0:
                         violation_rate = total_violations / total_applications
