@@ -1,0 +1,85 @@
+{
+  "name": "Emergent Learning Framework - Ralph Loop",
+  "version": "1.0.0",
+  "description": "Autonomous task executor using fresh Claude Code sessions per story",
+  "created_at": "2026-01-15",
+  "stories": [
+    {
+      "id": "RALPH-001",
+      "title": "Initialize Ralph Loop Infrastructure",
+      "description": "Set up the core Ralph Loop system with bash orchestrator, PRD structure, and progress tracking",
+      "priority": 1,
+      "status": "blocked",
+      "acceptance_criteria": [
+        "ralph.sh exists and is executable",
+        "prd.json follows correct structure",
+        "prompt.md is generated correctly for each iteration",
+        "progress.txt tracks learnings across sessions",
+        "Pre-commit hook calls ralph.sh",
+        "Documentation explains the architecture"
+      ],
+      "files": [
+        "tools/scripts/ralph.sh",
+        "prd.json",
+        "prompt.md",
+        "progress.txt",
+        "tools/hooks/pre-commit",
+        "library/guides/ralph-loop-guide.md"
+      ]
+    },
+    {
+      "id": "RALPH-002",
+      "title": "Integrate with Claude Code Sessions",
+      "description": "Ensure each ralph.sh iteration spawns a fresh claude-code session with proper context",
+      "priority": 2,
+      "status": "pending",
+      "acceptance_criteria": [
+        "claude-code invocation reads prompt.md",
+        "Session can access git history and current PRD",
+        "Session updates progress.txt with learnings",
+        "Session commits work automatically",
+        "ralph.sh correctly detects session success/failure"
+      ],
+      "files": [
+        "tools/scripts/ralph.sh",
+        "prompt.md"
+      ]
+    },
+    {
+      "id": "RALPH-003",
+      "title": "Create Story Initialization Script",
+      "description": "Build init-ralph.sh to help users create their first prd.json from requirements",
+      "priority": 3,
+      "status": "pending",
+      "acceptance_criteria": [
+        "init-ralph.sh prompts for project name and requirements",
+        "Generates valid prd.json with initial stories",
+        "Creates progress.txt with timestamp",
+        "Provides quick-start instructions"
+      ],
+      "files": [
+        "tools/scripts/init-ralph.sh",
+        "tools/scripts/ralph.sh"
+      ]
+    },
+    {
+      "id": "RALPH-004",
+      "title": "Test Ralph Loop End-to-End",
+      "description": "Run through a complete Ralph Loop cycle with a sample PRD to verify it works",
+      "priority": 4,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Sample PRD completes all stories",
+        "Each iteration spawns fresh session",
+        "progress.txt accumulates learnings",
+        "No context degradation detected",
+        "Git history shows incremental commits"
+      ],
+      "files": [
+        "tools/scripts/ralph.sh",
+        "prd.json",
+        "progress.txt"
+      ]
+    }
+  ]
+}
