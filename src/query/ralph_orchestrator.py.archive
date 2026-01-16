@@ -1,0 +1,55 @@
+ARCHIVED: ralph_orchestrator.py
+
+This file has been replaced by a correct implementation following the real Ralph Loop pattern.
+
+## Why It Was Wrong
+
+The original ralph_orchestrator.py had critical architectural flaws:
+
+1. **No Real Agent Invocation**
+   - Lines 126-151 showed [REVIEWER WOULD RUN HERE] placeholders
+   - Never actually called the Task tool to spawn agents
+   - Simulated the entire workflow instead of executing it
+
+2. **Single Session Context Degradation**
+   - Everything ran in one Python process
+   - No context reset between iterations
+   - Defeated the whole purpose of Ralph Loop
+   - Would hit the "dumber at 100k tokens" problem
+
+3. **Missing Key Components**
+   - No PRD (Product Requirements Document)
+   - Wrong state tracking (status.json instead of prd.json)
+   - No progress.txt for append-only learnings
+   - No prompt.md generation for each iteration
+
+4. **No Fresh Sessions**
+   - Should spawn NEW Claude Code session per story
+   - Was trying to orchestrate locally instead
+
+## The Real Ralph Loop Architecture
+
+The correct implementation:
+- **ralph.sh** - Bash loop spawning fresh claude-code sessions
+- **prd.json** - Structured task list with completion tracking
+- **prompt.md** - Instructions generated per iteration
+- **progress.txt** - Append-only learnings (institutional memory)
+
+Each iteration:
+1. Read prd.json
+2. Find highest priority incomplete story
+3. Spawn fresh Claude Code session
+4. Session completes work, updates prd.json, appends to progress.txt
+5. Loop continues until all stories done
+
+## Key Insight
+
+Ralph Loop solves context degradation by ensuring:
+- Each session gets CLEAN context
+- Sessions only load: current story + git history + progress.txt
+- Scope per session is ONE story
+- No in-memory state carried between sessions
+- PRD.json and progress.txt are the blackboard
+
+This file kept for historical reference.
+See: tools/scripts/ralph.sh (new implementation)

@@ -1,0 +1,64 @@
+# Ralph Loop Progress Tracking
+
+This file is append-only. Each iteration adds its learnings here.
+It serves as the institutional memory bridging fresh Claude Code sessions.
+
+## How to Use
+
+Each session should append an entry like:
+
+```
+## [ISO Date] - [Story ID]: [Brief Title]
+- Learning 1
+- Learning 2
+- Issue encountered and resolution
+```
+
+---
+
+## Session History
+
+(Entries appear here as each iteration completes)
+
+### 2026-01-15 - Ralph Loop Restructuring Initiated
+- Discovered previous implementation was wrong: simulated agents instead of real sessions
+- Real Ralph pattern: bash loop spawns fresh session per story
+- Key insight: PRD.json holds state, progress.txt holds learnings, each session is stateless
+- Need to rewrite ralph_orchestrator.py as ralph.sh
+- jq is critical for parsing prd.json - must be available
+
+---
+
+## Patterns Learned
+
+### Context Management
+- Each fresh session has clean context
+- Only cross-session memory: git history + prd.json + this file
+- Do not rely on in-memory state between iterations
+
+### Story Completion
+- One story per iteration keeps scope tight
+- Acceptance criteria must be testable
+- Commit message should reference story ID
+
+### Progress Tracking
+- Use [LEARNED:domain] markers in session work
+- Append final summary to this file before exiting
+- Focus on transferable lessons, not just outcomes
+
+---
+
+## Known Issues
+
+(Tracking problems discovered during iterations)
+
+---
+
+## Next Steps
+
+(Guidance for future iterations)
+
+---
+
+Generated: 2026-01-15
+Ralph Loop Version: 1.0.0

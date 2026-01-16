@@ -1,84 +1,51 @@
 #!/bin/bash
 #
-# Pre-commit hook: Auto-improve code with Ralph loop
+# Pre-commit hook: Autonomous Ralph Loop executor
 #
-# Runs Code Reviewer → Code Simplifier on staged changes
-# before allowing commit
+# Checks if a PRD exists and runs Ralph loop to complete stories
+# Each commit can trigger one story completion
 #
-# Set SKIP_RALPH_LOOP=1 to bypass, or use:
+# Set SKIP_RALPH=1 to bypass Ralph, or use:
 #   git commit --no-verify
 #
 
 set -e
 
-# Allow opting out
-if [ "$SKIP_RALPH_LOOP" = "1" ]; then
+if [ "$SKIP_RALPH" = "1" ]; then
     exit 0
 fi
 
-# Get the project root
 REPO_ROOT=$(git rev-parse --show-toplevel)
-PYTHON_CMD=$(command -v python3 || command -v python)
+PRD_FILE="$REPO_ROOT/prd.json"
 
-if [ -z "$PYTHON_CMD" ]; then
-    echo "⚠️  Python not found - skipping Ralph loop"
+if [ ! -f "$PRD_FILE" ]; then
     exit 0
 fi
 
-# Get staged files (only review these, not entire repo)
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
-
-if [ -z "$STAGED_FILES" ]; then
-    exit 0
-fi
-
-echo "🔄 Ralph Loop: Auto-improving staged code..."
-echo ""
-
-# Filter to code files only (*.ts, *.tsx, *.js, *.jsx, *.py, *.go, etc)
-CODE_FILES=$(echo "$STAGED_FILES" | grep -E '\.(ts|tsx|js|jsx|py|go|java|rs|rb|php|cs|cpp|c|h|swift|kt)$' || true)
-
-if [ -z "$CODE_FILES" ]; then
-    # No code files, skip Ralph
-    exit 0
-fi
-
-RALPH_SCRIPT="$REPO_ROOT/src/query/ralph_orchestrator.py"
+RALPH_SCRIPT="$REPO_ROOT/tools/scripts/ralph.sh"
 
 if [ ! -f "$RALPH_SCRIPT" ]; then
-    echo "⚠️  Ralph orchestrator not found - skipping"
+    echo "⚠️  Ralph Loop not found - skipping"
     exit 0
 fi
 
-# Process each staged code file through Ralph loop
-SUCCESS=true
-for file in $CODE_FILES; do
-    if [ -f "$REPO_ROOT/$file" ]; then
-        echo "  Reviewing: $file"
+if [ ! -x "$RALPH_SCRIPT" ]; then
+    chmod +x "$RALPH_SCRIPT"
+fi
 
-        # Run Ralph loop with 2 iterations max (pre-commit, so keep it fast)
-        if $PYTHON_CMD "$RALPH_SCRIPT" --target "$REPO_ROOT/$file" --max-iterations 2 2>&1 | grep -q "RALPH LOOP COMPLETE"; then
-            echo "    ✓ Improved"
-        else
-            echo "    ℹ️  No changes needed"
-        fi
-    fi
-done
+echo "🔄 Ralph Loop: Executing next story..."
+echo ""
 
-# Check if any files were modified by Ralph
-if git diff --quiet; then
+if bash "$RALPH_SCRIPT" --max-iterations 1; then
     echo ""
-    echo "✓ All code reviewed and improved"
+    echo "✓ Ralph Loop completed"
     exit 0
 else
     echo ""
-    echo "⚠️  Files were improved by Ralph loop"
-    echo "   Stage the improvements and try committing again:"
-    echo ""
-    echo "   git add ."
-    echo "   git commit"
+    echo "⚠️  Ralph Loop encountered an issue"
+    echo "   Review progress.txt for details"
     echo ""
     echo "   Or skip Ralph with:"
-    echo "   SKIP_RALPH_LOOP=1 git commit -m 'message'"
+    echo "   SKIP_RALPH=1 git commit -m 'message'"
     exit 1
 fi
