@@ -87,6 +87,14 @@ try:
 
         if not story.get('acceptance_criteria'):
             warnings.append(f"Story {story.get('id', idx)}: no acceptance criteria defined")
+        elif len(story.get('acceptance_criteria', [])) < 3:
+            warnings.append(f"Story {story.get('id', idx)}: only {len(story.get('acceptance_criteria', []))} criteria (recommend 3+)")
+
+        # Validate narrative format for STORY-* entries
+        if story.get('id', '').startswith('STORY-'):
+            desc = story.get('description', '')
+            if not ('As a' in desc and 'I want' in desc and 'so that' in desc):
+                warnings.append(f"Story {story.get('id', idx)}: description should follow 'As a X, I want Y, so that Z' format")
 
     if errors:
         print("ERRORS:")
