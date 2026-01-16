@@ -30,6 +30,16 @@ Each session should append an entry like:
 - Tested: ralph.sh correctly identifies stories, generates prompts, updates status
 - Key design: Each iteration is stateless except for git history + prd.json + progress.txt
 
+### 2026-01-15 - Ralph Loop Ready for Real Execution
+- ralph.sh fully functional: bash orchestrator, PRD parsing, story selection working
+- init-ralph.sh bootstrap script created and tested
+- Documentation complete (ralph-loop-guide.md)
+- NOTE: ralph.sh is meant to spawn NEW sessions, not run within current session
+- claude-code CLI needs to be installed for ralph.sh to spawn iterations
+- In normal operation: user runs `bash ralph.sh` → spawns fresh claude-code per story
+- Each spawned session reads prompt.md, implements story, updates progress.txt, exits
+- This is a FEATURE: fresh context per iteration prevents degradation
+
 ---
 
 ## Patterns Learned
