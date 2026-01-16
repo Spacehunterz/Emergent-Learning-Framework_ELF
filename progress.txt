@@ -20,12 +20,15 @@ Each session should append an entry like:
 
 (Entries appear here as each iteration completes)
 
-### 2026-01-15 - Ralph Loop Restructuring Initiated
-- Discovered previous implementation was wrong: simulated agents instead of real sessions
-- Real Ralph pattern: bash loop spawns fresh session per story
-- Key insight: PRD.json holds state, progress.txt holds learnings, each session is stateless
-- Need to rewrite ralph_orchestrator.py as ralph.sh
-- jq is critical for parsing prd.json - must be available
+### 2026-01-15 - Ralph Loop Restructuring Completed
+- LEARNED:workflow: Ralph Loop must spawn FRESH sessions per story, not orchestrate locally
+- LEARNED:architecture: Three-file blackboard pattern: prd.json (state) + progress.txt (memory) + prompt.md (work order)
+- LEARNED:workflow: Previous implementation was fundamentally wrong - had simulated agents instead of real sessions
+- LEARNED:performance: Context degradation solved by: one story per iteration + fresh session + prd.json as memory
+- LEARNED:bash: Use Python for JSON parsing in bash scripts when jq unavailable (Windows compatibility)
+- Fixed pre-commit hook to call ralph.sh instead of old orchestrator
+- Tested: ralph.sh correctly identifies stories, generates prompts, updates status
+- Key design: Each iteration is stateless except for git history + prd.json + progress.txt
 
 ---
 
