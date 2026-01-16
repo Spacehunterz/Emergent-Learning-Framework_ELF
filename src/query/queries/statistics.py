@@ -43,79 +43,53 @@ class StatisticsQueryMixin(BaseQueryMixin):
             m = get_manager()
             async with m:
                 async with m.connection():
-                    # Count learnings by type (aggregate manually for async)
                     learnings_by_type = {}
-                    async for l in Learning.select():
-                        t = l.type
-                        learnings_by_type[t] = learnings_by_type.get(t, 0) + 1
-                    stats['learnings_by_type'] = learnings_by_type
-
-                    # Count learnings by domain
                     learnings_by_domain = {}
-                    async for l in Learning.select():
-                        d = l.domain
-                        learnings_by_domain[d] = learnings_by_domain.get(d, 0) + 1
-                    stats['learnings_by_domain'] = learnings_by_domain
-
-                    # Count heuristics by domain
-                    heuristics_by_domain = {}
-                    async for h in Heuristic.select():
-                        d = h.domain
-                        heuristics_by_domain[d] = heuristics_by_domain.get(d, 0) + 1
-                    stats['heuristics_by_domain'] = heuristics_by_domain
-
-                    # Count golden heuristics
-                    golden_count = 0
-                    async for h in Heuristic.select().where(Heuristic.is_golden == True):
-                        golden_count += 1
-                    stats['golden_heuristics'] = golden_count
-
-                    # Count experiments by status
-                    experiments_by_status = {}
-                    async for e in Experiment.select():
-                        s = e.status
-                        experiments_by_status[s] = experiments_by_status.get(s, 0) + 1
-                    stats['experiments_by_status'] = experiments_by_status
-
-                    # Count CEO reviews by status
-                    ceo_by_status = {}
-                    async for c in CeoReview.select():
-                        s = c.status
-                        ceo_by_status[s] = ceo_by_status.get(s, 0) + 1
-                    stats['ceo_reviews_by_status'] = ceo_by_status
-
-                    # Total counts
                     total_learnings = 0
-                    async for _ in Learning.select():
+                    async for l in Learning.select():
                         total_learnings += 1
+                        learnings_by_type[l.type] = learnings_by_type.get(l.type, 0) + 1
+                        learnings_by_domain[l.domain] = learnings_by_domain.get(l.domain, 0) + 1
+                    stats['learnings_by_type'] = learnings_by_type
+                    stats['learnings_by_domain'] = learnings_by_domain
                     stats['total_learnings'] = total_learnings
 
+                    heuristics_by_domain = {}
+                    golden_count = 0
                     total_heuristics = 0
-                    async for _ in Heuristic.select():
+                    async for h in Heuristic.select():
                         total_heuristics += 1
+                        heuristics_by_domain[h.domain] = heuristics_by_domain.get(h.domain, 0) + 1
+                        if h.is_golden:
+                            golden_count += 1
+                    stats['heuristics_by_domain'] = heuristics_by_domain
+                    stats['golden_heuristics'] = golden_count
                     stats['total_heuristics'] = total_heuristics
 
+                    experiments_by_status = {}
                     total_experiments = 0
-                    async for _ in Experiment.select():
+                    async for e in Experiment.select():
                         total_experiments += 1
+                        experiments_by_status[e.status] = experiments_by_status.get(e.status, 0) + 1
+                    stats['experiments_by_status'] = experiments_by_status
                     stats['total_experiments'] = total_experiments
 
+                    ceo_by_status = {}
                     total_ceo_reviews = 0
-                    async for _ in CeoReview.select():
+                    async for c in CeoReview.select():
                         total_ceo_reviews += 1
+                        ceo_by_status[c.status] = ceo_by_status.get(c.status, 0) + 1
+                    stats['ceo_reviews_by_status'] = ceo_by_status
                     stats['total_ceo_reviews'] = total_ceo_reviews
 
-                    # Violation statistics (last 7 days)
                     cutoff_7d = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
                     violations_7d = 0
-                    async for _ in Violation.select().where(Violation.violation_date >= cutoff_7d):
-                        violations_7d += 1
-                    stats['violations_7d'] = violations_7d
-
                     violations_by_rule = {}
                     async for v in Violation.select().where(Violation.violation_date >= cutoff_7d):
+                        violations_7d += 1
                         key = f"Rule {v.rule_id}: {v.rule_name}"
                         violations_by_rule[key] = violations_by_rule.get(key, 0) + 1
+                    stats['violations_7d'] = violations_7d
                     stats['violations_by_rule_7d'] = violations_by_rule
 
         self._log_debug(f"Statistics gathered: {stats['total_learnings']} learnings total")

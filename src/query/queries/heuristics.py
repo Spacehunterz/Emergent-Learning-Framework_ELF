@@ -3,9 +3,14 @@ Heuristic query mixin - golden rules, domain queries, tag queries (async).
 """
 
 import aiofiles
+import time
 from functools import reduce
 from operator import or_
 from typing import Dict, List, Any, Optional
+
+_golden_rules_cache: Dict[str, str] = {}
+_golden_rules_cache_time: Dict[str, float] = {}
+_GOLDEN_RULES_CACHE_TTL = 300
 
 # Import with fallbacks
 try:
@@ -25,7 +30,7 @@ class HeuristicQueryMixin(BaseQueryMixin):
 
     async def get_golden_rules(self, categories: Optional[List[str]] = None) -> str:
         """
-        Read and return golden rules from memory/golden-rules.md (async).
+        Read and return golden rules from memory/golden-rules.md (async with caching).
 
         Args:
             categories: Optional list of categories to filter by (e.g., ['core', 'git']).
@@ -38,16 +43,30 @@ class HeuristicQueryMixin(BaseQueryMixin):
         if not self.golden_rules_path.exists():
             return "# Golden Rules\n\nNo golden rules have been established yet."
 
+        cache_key = str(self.golden_rules_path)
+        now = time.time()
+
+        if cache_key in _golden_rules_cache:
+            if now - _golden_rules_cache_time.get(cache_key, 0) < _GOLDEN_RULES_CACHE_TTL:
+                content = _golden_rules_cache[cache_key]
+                if not categories:
+                    self._log_debug(f"Golden rules from cache ({len(content)} chars)")
+                    return content
+                filtered = self._filter_golden_rules_by_category(content, categories)
+                self._log_debug(f"Golden rules from cache filtered by {categories}")
+                return filtered
+
         try:
             async with aiofiles.open(self.golden_rules_path, 'r', encoding='utf-8') as f:
                 content = await f.read()
 
-            # If no category filter, return everything
+            _golden_rules_cache[cache_key] = content
+            _golden_rules_cache_time[cache_key] = now
+
             if not categories:
                 self._log_debug(f"Loaded golden rules ({len(content)} chars)")
                 return content
 
-            # Parse and filter by category
             filtered = self._filter_golden_rules_by_category(content, categories)
             self._log_debug(f"Loaded golden rules filtered by {categories} ({len(filtered)} chars)")
             return filtered

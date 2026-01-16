@@ -9,6 +9,11 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 import os
 import sys
+import time
+
+_custom_golden_rules_cache: Optional[str] = None
+_custom_golden_rules_cache_time: float = 0
+_CUSTOM_GOLDEN_RULES_CACHE_TTL = 300
 
 # Add parent directory to sys.path so we can import elf_paths
 _parent_dir = str(Path(__file__).parent.parent)
@@ -145,17 +150,27 @@ def load_config() -> Dict[str, Any]:
 
 def load_custom_golden_rules() -> Optional[str]:
     """
-    Load custom golden rules if they exist.
+    Load custom golden rules if they exist (with caching).
 
     Returns the content of custom/golden-rules.md, or None if not found.
     """
+    global _custom_golden_rules_cache, _custom_golden_rules_cache_time
+
     custom_rules_path = CUSTOM_PATH / 'golden-rules.md'
 
     if not custom_rules_path.exists():
         return None
 
+    now = time.time()
+    if _custom_golden_rules_cache is not None:
+        if now - _custom_golden_rules_cache_time < _CUSTOM_GOLDEN_RULES_CACHE_TTL:
+            return _custom_golden_rules_cache
+
     try:
-        return custom_rules_path.read_text(encoding='utf-8')
+        content = custom_rules_path.read_text(encoding='utf-8')
+        _custom_golden_rules_cache = content
+        _custom_golden_rules_cache_time = now
+        return content
     except Exception:
         return None
 
