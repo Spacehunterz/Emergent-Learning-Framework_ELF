@@ -76,7 +76,7 @@ Start Dashboard? [Y/n]
    ```
    Start command (handles port detection, skips if already running):
    ```bash
-   bash ~/.claude/emergent-learning/dashboard-app/run-dashboard.sh
+   bash ~/.claude/emergent-learning/dashboard-app/run-dashboard.sh 2>/dev/null || bash ~/.claude/emergent-learning/apps/dashboard/run-dashboard.sh
    ```
 
 **This protocol is MANDATORY. Query before acting. Every single time.**
