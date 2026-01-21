@@ -2,6 +2,9 @@
 """
 Record a heuristic in the Emergent Learning Framework
 
+NOTE: This file is duplicated in /tools/scripts/ for convenience and CLI access.
+Both versions should remain identical. Update both files when making changes.
+
 Usage (interactive): python record-heuristic.py
 Usage (non-interactive):
   python record-heuristic.py --domain "domain" --rule "rule" --explanation "why"

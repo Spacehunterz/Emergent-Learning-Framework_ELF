@@ -2,6 +2,11 @@
 """
 Promote a heuristic or create a new golden rule with emergent categorization.
 
+NOTE: This file is duplicated in /scripts/ for convenience and CLI access.
+Both versions should remain identical. Update both files when making changes.
+
+This script:
+
 This script:
 1. Parses existing golden rules to discover categories
 2. Accepts a new rule (from heuristic ID or direct input)

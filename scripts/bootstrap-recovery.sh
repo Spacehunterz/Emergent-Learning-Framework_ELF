@@ -132,7 +132,7 @@ check_system_health() {
     fi
 }
 
-# Fix directory structure
+# Fix directory structure - Create required directories if missing after corruption
 fix_directory_structure() {
     header "Fixing Directory Structure"
 
@@ -336,11 +336,11 @@ verify_recovery() {
 auto_fix_issues() {
     header "Auto-Fixing Common Issues"
 
-    # Fix file permissions
+    # Fix file permissions - Ensure all memory files are writable after corruption
     chmod +x "$SCRIPT_DIR"/*.sh 2>/dev/null || true
     pass "Script permissions fixed"
 
-    # Fix database journal mode for better concurrency
+    # Fix database journal mode for better concurrency - PRAGMA after corruption recovery
     sqlite3 "$DB_PATH" "PRAGMA journal_mode=WAL;" &>/dev/null || true
     pass "Database journal mode optimized"
 

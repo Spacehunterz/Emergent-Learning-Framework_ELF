@@ -1,6 +1,9 @@
 -- Migration: Cleanup test domains
 -- Description: Remove test and invalid domain entries from heuristics table
 -- Bug: #80 - Corrupted domain names in database
+-- WARNING: This migration uses a hardcoded domain list that could potentially
+-- delete legitimate heuristics if they happen to use these domain names.
+-- Manual review recommended before running in production environments.
 
 -- Begin transaction
 BEGIN;

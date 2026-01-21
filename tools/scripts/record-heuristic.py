@@ -2,6 +2,11 @@
 """
 Record a heuristic in the Emergent Learning Framework
 
+NOTE: This file is duplicated in /scripts/ for convenience and CLI access.
+Both versions should remain identical. Update both files when making changes.
+
+Usage (interactive): python record-heuristic.py
+
 Usage (interactive): python record-heuristic.py
 Usage (non-interactive):
   python record-heuristic.py --domain "domain" --rule "rule" --explanation "why"
@@ -125,13 +130,13 @@ def record_heuristic(domain, rule, explanation, source_type, confidence):
         domain_file = heuristics_dir / f"{domain}.md"
 
         if not domain_file.exists():
-            with open(domain_file, 'w') as f:
+            with open(domain_file, 'w', encoding='utf-8') as f:
                 f.write(f"# Heuristics: {domain}\n\n")
                 f.write(f"Generated from failures, successes, and observations in the **{domain}** domain.\n\n")
                 f.write("---\n\n")
             logger.info(f"Created new domain file: {domain_file}")
 
-        with open(domain_file, 'a') as f:
+        with open(domain_file, 'a', encoding='utf-8') as f:
             f.write(f"## H-{heuristic_id}: {rule}\n\n")
             f.write(f"**Confidence**: {confidence}\n")
             f.write(f"**Source**: {source_type}\n")
