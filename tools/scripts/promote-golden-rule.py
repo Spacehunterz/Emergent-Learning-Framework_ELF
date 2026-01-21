@@ -210,30 +210,34 @@ def interactive_mode() -> Optional[Dict]:
 
     print(f"This will be Golden Rule #{next_num}\n")
 
-    title = input("Title (short name): ").strip()
-    if not title:
-        print("ERROR: Title required", file=sys.stderr)
+    try:
+        title = input("Title (short name): ").strip()
+        if not title:
+            print("ERROR: Title required", file=sys.stderr)
+            return None
+
+        rule = input("Rule (the principle, imperative form): ").strip()
+        if not rule:
+            print("ERROR: Rule required", file=sys.stderr)
+            return None
+
+        why = input("Why (explanation): ").strip()
+        if not why:
+            print("ERROR: Explanation required", file=sys.stderr)
+            return None
+
+        # Suggest category
+        suggested = suggest_category(rule, why, categories)
+        print(f"\nSuggested category: {suggested}")
+
+        category = input(f"Category [{suggested}]: ").strip()
+        if not category:
+            category = suggested
+
+        source = input("Source [observation]: ").strip() or "observation"
+    except (EOFError, KeyboardInterrupt):
+        print("\nOperation cancelled by user.")
         return None
-
-    rule = input("Rule (the principle, imperative form): ").strip()
-    if not rule:
-        print("ERROR: Rule required", file=sys.stderr)
-        return None
-
-    why = input("Why (explanation): ").strip()
-    if not why:
-        print("ERROR: Explanation required", file=sys.stderr)
-        return None
-
-    # Suggest category
-    suggested = suggest_category(rule, why, categories)
-    print(f"\nSuggested category: {suggested}")
-
-    category = input(f"Category [{suggested}]: ").strip()
-    if not category:
-        category = suggested
-
-    source = input("Source [observation]: ").strip() or "observation"
 
     return {
         'num': next_num,
@@ -333,11 +337,15 @@ Examples:
         print(f"Suggested category: {suggested}")
 
         if sys.stdin.isatty() and not args.dry_run and not args.auto:
-            category = input(f"Category [{suggested}]: ").strip() or suggested
-            title = input(f"Title [{heuristic['rule'][:40]}...]: ").strip()
-            if not title:
-                # Generate title from rule
-                title = heuristic['rule'][:50].rstrip('.')
+            try:
+                category = input(f"Category [{suggested}]: ").strip() or suggested
+                title = input(f"Title [{heuristic['rule'][:40]}...]: ").strip()
+                if not title:
+                    # Generate title from rule
+                    title = heuristic['rule'][:50].rstrip('.')
+            except (EOFError, KeyboardInterrupt):
+                print("\nOperation cancelled by user.")
+                return None
         else:
             category = args.category or suggested
             title = heuristic['rule'][:50].rstrip('.')
@@ -400,9 +408,13 @@ Examples:
 
     # Confirm (skip if --auto)
     if sys.stdin.isatty() and not args.auto:
-        confirm = input("Add this golden rule? [Y/n]: ").strip().lower()
-        if confirm and confirm != 'y':
-            print("Cancelled.")
+        try:
+            confirm = input("Add this golden rule? [Y/n]: ").strip().lower()
+            if confirm and confirm != 'y':
+                print("Cancelled.")
+                return 0
+        except (EOFError, KeyboardInterrupt):
+            print("\nOperation cancelled by user.")
             return 0
 
     # Write
