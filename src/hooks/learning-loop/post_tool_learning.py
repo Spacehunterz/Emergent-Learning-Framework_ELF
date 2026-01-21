@@ -350,23 +350,38 @@ def validate_heuristics(heuristic_ids: List[int], outcome: str):
                 """, (f"heuristic_id:{hid}", "failure"))
 
         elif outcome == "unknown":
-            # Record consultation without adjusting confidence
-            # This maintains validation count without biasing confidence for ambiguous outcomes
-            # (e.g., background tasks, minimal output, structured data)
+            # Record unknown outcome with light validation
+            # Unknown outcomes indicate ambiguous situations that may need investigation
+            # but shouldn't heavily impact confidence without more evidence
             placeholders = ",".join("?" * len(heuristic_ids))
+
+            # Light penalty for unknown outcomes - slight confidence adjustment
             cursor.execute(f"""
                 UPDATE heuristics
                 SET times_consulted = COALESCE(times_consulted, 0) + 1,
+                    times_unknown = COALESCE(times_unknown, 0) + 1,
+                    confidence = MAX(0.0, confidence - 0.005),  # Very small penalty
                     updated_at = ?
                 WHERE id IN ({placeholders})
             """, (datetime.now().isoformat(), *heuristic_ids))
 
-            # Log the consultation
+            # Log the unknown outcome consultation
             for hid in heuristic_ids:
                 cursor.execute("""
                     INSERT INTO metrics (metric_type, metric_name, metric_value, tags, context)
                     VALUES ('heuristic_consulted', 'unknown_outcome', 1, ?, ?)
                 """, (f"heuristic_id:{hid}", "unknown"))
+
+                # Log if this heuristic has many unknown outcomes
+                cursor.execute("""
+                    SELECT times_unknown FROM heuristics WHERE id = ?
+                """, (hid,))
+                result = cursor.fetchone()
+                if result and result['times_unknown'] and result['times_unknown'] % 5 == 0:
+                    cursor.execute("""
+                        INSERT INTO metrics (metric_type, metric_name, metric_value, tags, context)
+                        VALUES ('heuristic_warning', 'frequent_unknown_outcomes', 1, ?, ?)
+                    """, (f"heuristic_id:{hid}", f"Unknown outcomes threshold reached: {result['times_unknown']}"))
 
         conn.commit()
 
@@ -416,50 +431,88 @@ def check_golden_rule_promotion(conn):
 
 
 def auto_record_failure(tool_input: dict, tool_output: dict, outcome_reason: str, domains: List[str]):
-    """Auto-record a failure to the learnings table."""
-    conn = get_db_connection()
-    if not conn:
-        return
-
+    """Auto-record a failure using the record-failure.sh script."""
     try:
-        cursor = conn.cursor()
+        import subprocess
+        import os
 
         # Extract details
-        prompt = tool_input.get("prompt", "")[:500]
         description = tool_input.get("description", "unknown task")
 
         # Get output content
         output_content = ""
         if isinstance(tool_output, dict):
-            output_content = str(tool_output.get("content", ""))[:1000]
+            output_content = str(tool_output.get("content", ""))[:500]
         elif isinstance(tool_output, str):
-            output_content = tool_output[:1000]
+            output_content = tool_output[:500]
 
-        # Create failure record
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filepath = f"auto-failures/failure_{timestamp}.md"
-        title = f"Auto-captured: {description[:50]}"
-        summary = f"Reason: {outcome_reason}\n\nTask: {description}\n\nOutput snippet: {output_content[:200]}"
-        domain = domains[0] if domains else "general"
+        # Set environment variables for the script
+        env = os.environ.copy()
+        env['FAILURE_TITLE'] = f"Auto-captured: {description[:50]}"
+        env['FAILURE_DOMAIN'] = domains[0] if domains else "general"
+        env['FAILURE_SUMMARY'] = f"Reason: {outcome_reason}\n\nTask: {description}\n\nOutput snippet: {output_content[:200]}"
+        env['FAILURE_SEVERITY'] = "3"  # Medium severity
 
-        cursor.execute("""
-            INSERT INTO learnings (type, filepath, title, summary, domain, severity, created_at)
-            VALUES ('failure', ?, ?, ?, ?, 3, ?)
-        """, (filepath, title, summary, domain, datetime.now().isoformat()))
+        # Find and execute the record-failure.sh script
+        script_paths = [
+            str(EMERGENT_LEARNING_PATH / "scripts" / "record-failure.sh"),
+            str(EMERGENT_LEARNING_PATH / "tools" / "scripts" / "record-failure.sh"),
+        ]
 
-        # Log the auto-capture
-        cursor.execute("""
-            INSERT INTO metrics (metric_type, metric_name, metric_value, context)
-            VALUES ('auto_failure_capture', 'capture', 1, ?)
-        """, (title,))
+        script_found = False
+        for script_path in script_paths:
+            if os.path.exists(script_path):
+                try:
+                    # Run the script with environment variables
+                    result = subprocess.run(
+                        ['bash', script_path],
+                        env=env,
+                        capture_output=True,
+                        text=True,
+                        timeout=30
+                    )
+                    if result.returncode == 0:
+                        sys.stderr.write(f"AUTO-RECORDED FAILURE: {env['FAILURE_TITLE']}\n")
+                        script_found = True
+                        break
+                    else:
+                        sys.stderr.write(f"record-failure.sh failed: {result.stderr}\n")
+                except Exception as e:
+                    sys.stderr.write(f"Error running record-failure.sh: {e}\n")
+                break
 
-        conn.commit()
-        sys.stderr.write(f"AUTO-RECORDED FAILURE: {title}\n")
+        # Fallback to database recording if script not found or failed
+        if not script_found:
+            conn = get_db_connection()
+            if conn:
+                try:
+                    cursor = conn.cursor()
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    filepath = f"auto-failures/failure_{timestamp}.md"
+                    title = env['FAILURE_TITLE']
+                    summary = env['FAILURE_SUMMARY']
+                    domain = env['FAILURE_DOMAIN']
+
+                    cursor.execute("""
+                        INSERT INTO learnings (type, filepath, title, summary, domain, severity, created_at)
+                        VALUES ('failure', ?, ?, ?, ?, 3, ?)
+                    """, (filepath, title, summary, domain, datetime.now().isoformat()))
+
+                    # Log the auto-capture
+                    cursor.execute("""
+                        INSERT INTO metrics (metric_type, metric_name, metric_value, context)
+                        VALUES ('auto_failure_capture', 'capture', 1, ?)
+                    """, (title,))
+
+                    conn.commit()
+                    sys.stderr.write(f"FALLBACK AUTO-RECORDED FAILURE: {title}\n")
+                except Exception as e:
+                    sys.stderr.write(f"Warning: Failed to fallback auto-record failure: {e}\n")
+                finally:
+                    conn.close()
 
     except Exception as e:
         sys.stderr.write(f"Warning: Failed to auto-record failure: {e}\n")
-    finally:
-        conn.close()
 
 
 def log_advisory_warning(file_path: str, advisory_result: Dict):
@@ -783,8 +836,8 @@ def main():
                 VALUES ('task_outcome', ?, 1, ?, ?)
             """, (outcome, f"reason:{reason[:50]}", datetime.now().isoformat()))
             conn.commit()
-        except:
-            pass
+        except Exception as e:
+            sys.stderr.write(f"Warning: Failed to log task outcome: {e}\n")
         finally:
             conn.close()
 
