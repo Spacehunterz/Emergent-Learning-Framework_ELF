@@ -349,6 +349,25 @@ def validate_heuristics(heuristic_ids: List[int], outcome: str):
                     VALUES ('heuristic_violated', 'violation', 1, ?, ?)
                 """, (f"heuristic_id:{hid}", "failure"))
 
+        elif outcome == "unknown":
+            # Record consultation without adjusting confidence
+            # This maintains validation count without biasing confidence for ambiguous outcomes
+            # (e.g., background tasks, minimal output, structured data)
+            placeholders = ",".join("?" * len(heuristic_ids))
+            cursor.execute(f"""
+                UPDATE heuristics
+                SET times_consulted = COALESCE(times_consulted, 0) + 1,
+                    updated_at = ?
+                WHERE id IN ({placeholders})
+            """, (datetime.now().isoformat(), *heuristic_ids))
+
+            # Log the consultation
+            for hid in heuristic_ids:
+                cursor.execute("""
+                    INSERT INTO metrics (metric_type, metric_name, metric_value, tags, context)
+                    VALUES ('heuristic_consulted', 'unknown_outcome', 1, ?, ?)
+                """, (f"heuristic_id:{hid}", "unknown"))
+
         conn.commit()
 
     except Exception as e:
