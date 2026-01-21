@@ -8,7 +8,12 @@ This hook closes the learning loop by:
 3. Injecting applicable rules and warnings into the agent's context
 4. Tracking which heuristics are being consulted (for validation)
 
-Works with: Grep, Read, Glob, Task, Bash (investigation tools)
+Works with: Task, Bash, Grep, Read, Glob, Edit, Write (all investigation and modification tools)
+
+Bug fixes applied:
+- Bug #82: Now processes ALL tools, not just Task
+- Bug #83: Domain keywords now map directly to DB domain names (no alias expansion)
+- Bug #85: Silent exception handlers now log errors
 """
 
 import json
@@ -49,9 +54,27 @@ def output_result(result: dict):
 
 def load_session_state() -> dict:
     """Load current session state."""
+    # Check if this is a new session by comparing session start time
+    current_session_start = datetime.now().strftime("%Y-%m-%d")
+
     if STATE_FILE.exists():
         try:
-            return json.loads(STATE_FILE.read_text())
+            state = json.loads(STATE_FILE.read_text())
+            # Check if state is from a previous day (new session)
+            if state.get("session_start", ""):
+                try:
+                    last_session = datetime.fromisoformat(state["session_start"])
+                    if last_session.strftime("%Y-%m-%d") != current_session_start:
+                        # New session - clear state
+                        return {
+                            "session_start": datetime.now().isoformat(),
+                            "heuristics_consulted": [],
+                            "domains_queried": [],
+                            "task_context": None
+                        }
+                except (ValueError, KeyError):
+                    pass
+            return state
         except (json.JSONDecodeError, IOError, ValueError):
             pass
     return {
@@ -240,6 +263,9 @@ def extract_domain_from_context(tool_name: str, tool_input: dict) -> List[str]:
         text = tool_input.get("command", "")
     elif tool_name in ("Grep", "Read", "Glob"):
         text = tool_input.get("pattern", "") + " " + tool_input.get("file_path", "") + " " + tool_input.get("path", "")
+    elif tool_name in ("Edit", "Write"):
+        # Include file path and content for Edit/Write operations
+        text = tool_input.get("file_path", "") + " " + tool_input.get("old_string", "") + " " + tool_input.get("new_string", "") + " " + tool_input.get("content", "")
 
     text = text.lower()
 
@@ -289,8 +315,10 @@ def extract_domain_from_context(tool_name: str, tool_input: dict) -> List[str]:
         if any(kw in text for kw in keywords):
             domains.append(domain)
 
-    expanded = expand_domains_with_aliases(domains)
-    return list(expanded)[:10]
+    # Bug #83 fix: Return canonical domain names directly for database queries.
+    # The domain_keywords dict already returns canonical names that match DB entries.
+    # The expand_domains_with_aliases() function was adding non-existent aliases.
+    return list(set(domains))[:10]
 
 
 def get_relevant_heuristics(domains: List[str], limit: int = 5) -> List[Dict]:
@@ -359,10 +387,33 @@ def get_recent_failures(domains: List[str], limit: int = 3) -> List[Dict]:
             """, (limit,))
 
         return [dict(row) for row in cursor.fetchall()]
-    except:
+    except Exception as e:
+        sys.stderr.write(f"Warning: Failed to query failures: {e}\n")
         return []
     finally:
         conn.close()
+
+
+def check_ceo_decisions() -> bool:
+    """Check for pending CEO decisions that might block this operation."""
+    ceo_inbox = EMERGENT_LEARNING_PATH / 'ceo-inbox'
+
+    if not ceo_inbox.exists():
+        return False
+
+    pending = list(ceo_inbox.glob('*.md'))
+    if pending:
+        # Log the pending decision
+        sys.stderr.write(f"[CEO_DECISION_BLOCKER] {len(pending)} pending CEO decisions detected:\n")
+        for decision in pending[:3]:  # Show first 3
+            sys.stderr.write(f"  - {decision.stem}\n")
+        if len(pending) > 3:
+            sys.stderr.write(f"  ... and {len(pending) - 3} more\n")
+
+        # Block operation if there are pending CEO decisions
+        return True
+
+    return False
 
 
 def record_heuristics_consulted(heuristic_ids: List[int]):
@@ -452,9 +503,18 @@ def main():
         output_result({"decision": "approve"})
         return
 
-    # Only inject for Task tool (subagent spawning)
-    # Other tools get the golden-rule-enforcer treatment
-    if tool_name != "Task":
+    # Enforce CEO decisions - block if there are pending decisions
+    if check_ceo_decisions():
+        output_result({
+            "decision": "reject",
+            "reason": "Operation blocked by pending CEO decisions. Please resolve pending decisions before proceeding."
+        })
+        return
+
+    # Learning loop processes ALL investigation and modification tools
+    # This enables learning from Grep, Read, Glob, Edit, Write, Bash operations
+    INVESTIGATION_TOOLS = {"Task", "Bash", "Grep", "Read", "Glob", "Edit", "Write"}
+    if tool_name not in INVESTIGATION_TOOLS:
         output_result({"decision": "approve"})
         return
 
