@@ -56,8 +56,8 @@ def sync_golden_rules():
         conn = sqlite3.connect(str(DB_FILE))
         cur = conn.cursor()
         
-        # Get all active heuristics
-        cur.execute('SELECT id, rule, is_golden FROM heuristics WHERE status="active"')
+        # Get all heuristics (no status column exists)
+        cur.execute('SELECT id, rule, is_golden FROM heuristics')
         all_heuristics = cur.fetchall()
         
         updates = 0

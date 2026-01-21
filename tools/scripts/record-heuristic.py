@@ -2,6 +2,11 @@
 """
 Record a heuristic in the Emergent Learning Framework
 
+NOTE: This file is duplicated in /scripts/ for convenience and CLI access.
+Both versions should remain identical. Update both files when making changes.
+
+Usage (interactive): python record-heuristic.py
+
 Usage (interactive): python record-heuristic.py
 Usage (non-interactive):
   python record-heuristic.py --domain "domain" --rule "rule" --explanation "why"
@@ -125,13 +130,13 @@ def record_heuristic(domain, rule, explanation, source_type, confidence):
         domain_file = heuristics_dir / f"{domain}.md"
 
         if not domain_file.exists():
-            with open(domain_file, 'w') as f:
+            with open(domain_file, 'w', encoding='utf-8') as f:
                 f.write(f"# Heuristics: {domain}\n\n")
                 f.write(f"Generated from failures, successes, and observations in the **{domain}** domain.\n\n")
                 f.write("---\n\n")
             logger.info(f"Created new domain file: {domain_file}")
 
-        with open(domain_file, 'a') as f:
+        with open(domain_file, 'a', encoding='utf-8') as f:
             f.write(f"## H-{heuristic_id}: {rule}\n\n")
             f.write(f"**Confidence**: {confidence}\n")
             f.write(f"**Source**: {source_type}\n")
@@ -156,29 +161,33 @@ def interactive_mode():
     """Interactive prompt for heuristic input"""
     print("=== Record Heuristic ===\n")
 
-    domain = input("Domain: ").strip()
-    if not domain:
-        logger.error("Domain cannot be empty")
-        print("ERROR: Domain cannot be empty", file=sys.stderr)
-        sys.exit(1)
+    try:
+        domain = input("Domain: ").strip()
+        if not domain:
+            logger.error("Domain cannot be empty")
+            print("ERROR: Domain cannot be empty", file=sys.stderr)
+            sys.exit(1)
 
-    rule = input("Rule (the heuristic): ").strip()
-    if not rule:
-        logger.error("Rule cannot be empty")
-        print("ERROR: Rule cannot be empty", file=sys.stderr)
-        sys.exit(1)
+        rule = input("Rule (the heuristic): ").strip()
+        if not rule:
+            logger.error("Rule cannot be empty")
+            print("ERROR: Rule cannot be empty", file=sys.stderr)
+            sys.exit(1)
 
-    explanation = input("Explanation: ").strip()
+        explanation = input("Explanation: ").strip()
 
-    source_type = input("Source type (failure/success/observation) [observation]: ").strip()
-    if not source_type:
-        source_type = "observation"
+        source_type = input("Source type (failure/success/observation) [observation]: ").strip()
+        if not source_type:
+            source_type = "observation"
 
-    confidence = input("Confidence (0.0-1.0) [0.7]: ").strip()
-    if not confidence:
-        confidence = "0.7"
+        confidence = input("Confidence (0.0-1.0) [0.7]: ").strip()
+        if not confidence:
+            confidence = "0.7"
 
-    return domain, rule, explanation, source_type, confidence
+        return domain, rule, explanation, source_type, confidence
+    except (EOFError, KeyboardInterrupt):
+        print("\nOperation cancelled by user.")
+        sys.exit(0)
 
 
 def main():

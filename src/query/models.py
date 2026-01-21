@@ -509,6 +509,7 @@ class Pattern(BaseModel):
 
     class Meta:
         table_name = 'patterns'
+        validate_backrefs = False  # Skip validation on import (defer until after migrations)
         indexes = (
             (('pattern_type',), False),
             (('pattern_hash',), True),  # Unique index for dedup

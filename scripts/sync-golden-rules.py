@@ -42,8 +42,8 @@ def sync_database(verbose=False):
     conn = sqlite3.connect(str(db))
     cur = conn.cursor()
     
-    # Get all active heuristics
-    cur.execute('SELECT id, rule, is_golden FROM heuristics WHERE status="active"')
+    # Get all heuristics (no status column exists)
+    cur.execute('SELECT id, rule, is_golden FROM heuristics')
     all_heuristics = cur.fetchall()
     
     updates = 0
@@ -71,7 +71,7 @@ def sync_database(verbose=False):
     conn.commit()
     
     # Verify result
-    cur.execute('SELECT COUNT(*) FROM heuristics WHERE is_golden=1 AND status="active"')
+    cur.execute('SELECT COUNT(*) FROM heuristics WHERE is_golden=1')
     final_golden_count = cur.fetchone()[0]
     
     conn.close()

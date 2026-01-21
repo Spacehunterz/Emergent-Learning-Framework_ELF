@@ -8,7 +8,12 @@ This hook closes the learning loop by:
 3. Injecting applicable rules and warnings into the agent's context
 4. Tracking which heuristics are being consulted (for validation)
 
-Works with: Grep, Read, Glob, Task, Bash (investigation tools)
+Works with: Task, Bash, Grep, Read, Glob, Edit, Write (all investigation and modification tools)
+
+Bug fixes applied:
+- Bug #82: Now processes ALL tools, not just Task
+- Bug #83: Domain keywords now map directly to DB domain names (no alias expansion)
+- Bug #85: Silent exception handlers now log errors
 """
 
 import json
@@ -48,14 +53,39 @@ def output_result(result: dict):
 
 
 def load_session_state() -> dict:
-    """Load current session state."""
+    """Load current session state.
+
+    Uses TTL-based session detection (4 hours) instead of date-based.
+    This handles cross-midnight work sessions more accurately.
+    """
+    # Session TTL: 4 hours in seconds
+    SESSION_TTL = 4 * 60 * 60  # 14400 seconds
+    current_time = datetime.now()
+
     if STATE_FILE.exists():
         try:
-            return json.loads(STATE_FILE.read_text())
+            state = json.loads(STATE_FILE.read_text())
+            # Check if state has expired based on TTL
+            if state.get("session_start", ""):
+                try:
+                    last_session = datetime.fromisoformat(state["session_start"])
+                    time_since_last_session = (current_time - last_session).total_seconds()
+
+                    if time_since_last_session > SESSION_TTL:
+                        # Session expired - clear state
+                        return {
+                            "session_start": current_time.isoformat(),
+                            "heuristics_consulted": [],
+                            "domains_queried": [],
+                            "task_context": None
+                        }
+                except (ValueError, KeyError):
+                    pass
+            return state
         except (json.JSONDecodeError, IOError, ValueError):
             pass
     return {
-        "session_start": datetime.now().isoformat(),
+        "session_start": current_time.isoformat(),
         "heuristics_consulted": [],
         "domains_queried": [],
         "task_context": None
@@ -92,6 +122,16 @@ class ComplexityScorer:
         'keywords': ['update', 'modify', 'change', 'refactor', 'migrate']
     }
 
+    # Risk threshold constants (extracted from magic numbers)
+    HIGH_RISK_THRESHOLD = 2
+    MEDIUM_RISK_THRESHOLD = 3
+
+    # Risk point values for different pattern types
+    HIGH_RISK_PATTERN_POINTS = 2
+    HIGH_RISK_DOMAIN_POINTS = 1
+    MEDIUM_RISK_PATTERN_POINTS = 1
+    MEDIUM_RISK_DOMAIN_POINTS = 1
+
     @classmethod
     def score(cls, tool_name: str, tool_input: dict, domains: List[str]) -> Dict:
         """
@@ -127,41 +167,41 @@ class ComplexityScorer:
         for pattern in cls.HIGH_RISK_PATTERNS['files']:
             # Check both file paths and text (task prompts might mention files)
             if re.search(pattern, file_paths_lower) or re.search(pattern, text_lower):
-                high_score += 2
+                high_score += cls.HIGH_RISK_PATTERN_POINTS
                 reasons.append(f"High-risk file pattern: {pattern}")
 
         for keyword in cls.HIGH_RISK_PATTERNS['keywords']:
             if keyword in text_lower:
-                high_score += 2
+                high_score += cls.HIGH_RISK_PATTERN_POINTS
                 reasons.append(f"High-risk keyword: {keyword}")
 
         for domain in cls.HIGH_RISK_PATTERNS['domains']:
             if domain in domains:
-                high_score += 1
+                high_score += cls.HIGH_RISK_DOMAIN_POINTS
                 reasons.append(f"High-risk domain: {domain}")
 
         # Check MEDIUM risk patterns
         for pattern in cls.MEDIUM_RISK_PATTERNS['files']:
             # Check both file paths and text (task prompts might mention files)
             if re.search(pattern, file_paths_lower) or re.search(pattern, text_lower):
-                medium_score += 1
+                medium_score += cls.MEDIUM_RISK_PATTERN_POINTS
                 reasons.append(f"Medium-risk file pattern: {pattern}")
 
         for keyword in cls.MEDIUM_RISK_PATTERNS['keywords']:
             if keyword in text_lower:
-                medium_score += 1
+                medium_score += cls.MEDIUM_RISK_PATTERN_POINTS
                 reasons.append(f"Medium-risk keyword: {keyword}")
 
         for domain in cls.MEDIUM_RISK_PATTERNS['domains']:
             if domain in domains:
-                medium_score += 1
+                medium_score += cls.MEDIUM_RISK_DOMAIN_POINTS
                 reasons.append(f"Medium-risk domain: {domain}")
 
         # Determine level and recommendation
-        if high_score >= 2:
+        if high_score >= cls.HIGH_RISK_THRESHOLD:
             level = 'HIGH'
             recommendation = "Extra scrutiny recommended. Consider CEO escalation if uncertain. Verify changes carefully before applying."
-        elif high_score >= 1 or medium_score >= 3:
+        elif high_score >= 1 or medium_score >= cls.MEDIUM_RISK_THRESHOLD:
             level = 'MEDIUM'
             recommendation = "Moderate care required. Review changes and test thoroughly."
         elif medium_score >= 1:
@@ -179,10 +219,27 @@ class ComplexityScorer:
 
 
 DOMAIN_ALIASES = {
-    "frontend": ["react", "ui-architecture", "ui-interaction", "ui-layout", "react-performance"],
-    "javascript": ["react", "react-performance", "react-websocket", "d3-svg-events", "three-js"],
+    # Critical domains - map extraction keywords to actual DB domain names
+    "architecture": ["architecture", "software-architecture", "design-patterns", "system-design", "architectural"],
+    "debugging": ["debugging", "troubleshooting", "error-analysis", "debug"],
+    "typescript": ["typescript", "javascript", "type-safety", "ts"],
+    "api-design": ["api-design", "api-design-patterns", "endpoint-design"],
+    "api-integration": ["api-integration", "webhook", "api-consumption", "third-party-integration"],
+    "ui": ["ui", "frontend", "user-interface", "ui-architecture", "ui-interaction", "ui-layout", "react", "vue", "jsx", "tsx"],
+    "software-architecture": ["software-architecture", "system-architecture", "architectural-design"],
+    "code-quality": ["code-quality", "clean-code", "refactoring", "technical-debt"],
+    "communication": ["communication", "messaging", "notifications"],
+    "feature-planning": ["feature-planning", "feature-design", "requirements-analysis"],
+    "problem-solving": ["problem-solving", "troubleshooting", "solution-strategy"],
+    "requirements": ["requirements", "specifications", "acceptance-criteria"],
+    "llm-output-processing": ["llm-output-processing", "response-parsing", "output-extraction"],
+    "user-experience": ["user-experience", "ux", "usability", "user-flow"],
+    "ai-models": ["ai-models", "ml-models", "machine-learning", "model-inference"],
+    # Existing mappings - updated to match DB domains
+    "frontend": ["ui"],  # Maps to ui domain in DB
+    "javascript": ["ui", "typescript"],  # Maps to ui/typescript domains
     "database": ["database-operations", "database-optimization", "database-maintenance"],
-    "api": ["api-polling"],
+    "api": ["api-design", "api-integration", "api-polling"],  # Maps to api-design/api-integration
     "testing": ["integration-test", "visual-testing", "mcp-testing"],
     "git": ["git-workflow"],
     "python": ["pyqt"],
@@ -223,20 +280,39 @@ def extract_domain_from_context(tool_name: str, tool_input: dict) -> List[str]:
         text = tool_input.get("command", "")
     elif tool_name in ("Grep", "Read", "Glob"):
         text = tool_input.get("pattern", "") + " " + tool_input.get("file_path", "") + " " + tool_input.get("path", "")
+    elif tool_name in ("Edit", "Write"):
+        # Include file path and content for Edit/Write operations
+        text = tool_input.get("file_path", "") + " " + tool_input.get("old_string", "") + " " + tool_input.get("new_string", "") + " " + tool_input.get("content", "")
 
     text = text.lower()
 
     domain_keywords = {
+        # Critical domains missing from original mapping
+        "architecture": ["architecture", "design pattern", "system design", "pattern", "structural", "layer", "component architecture"],
+        "debugging": ["debug", "troubleshoot", "fix bug", "issue", "breakpoint", "inspect", "diagnose"],
+        "typescript": ["typescript", "ts", "type", "typing", "interface", "type annotation", ".ts", ".tsx"],
+        "api-design": ["api design", "endpoint design", "rest design", "api contract", "api specification"],
+        "api-integration": ["api integration", "api call", "fetch api", "consume api", "webhook", "third-party api"],
+        "ui": ["ui", "user interface", "react", "vue", "component", "jsx", "tsx", "dom", "css", "style", "frontend"],
+        "software-architecture": ["software architecture", "system architecture", "architectural", "design principle"],
+        "code-quality": ["code quality", "clean code", "refactor", "code smell", "technical debt", "lint"],
+        "communication": ["communicate", "message", "notify", "alert", "notification", "broadcast"],
+        "feature-planning": ["feature", "planning", "plan", "requirement", "user story", "feature request"],
+        "problem-solving": ["solve", "problem", "solution", "approach", "strategy"],
+        "requirements": ["requirement", "spec", "specification", "acceptance criteria"],
+        "llm-output-processing": ["llm output", "parse output", "process response", "extract from response"],
+        "user-experience": ["ux", "user experience", "usability", "user flow", "interaction"],
+        "ai-models": ["ai model", "ml model", "machine learning", "model", "inference", "training"],
+        # Original domains that map to DB domains
         "authentication": ["auth", "login", "session", "jwt", "token", "oauth", "password"],
         "database": ["sql", "query", "schema", "migration", "db", "database", "sqlite", "postgres"],
         "database-migration": ["migration", "migrate", "schema change", "alter table"],
         "api": ["api", "endpoint", "rest", "graphql", "route", "controller"],
         "security": ["security", "vulnerability", "injection", "xss", "csrf", "sanitiz"],
         "testing": ["test", "spec", "coverage", "mock", "fixture", "assert"],
-        "react": ["react", "component", "usestate", "useeffect", "jsx", "tsx"],
-        "frontend": ["vue", "css", "style", "ui", "dom", "frontend"],
-        "performance": ["performance", "cache", "optimize", "memory", "speed"],
-        "error-handling": ["error", "exception", "catch", "throw", "try"],
+        "react": ["react", "usestate", "useeffect", "react component"],
+        "performance": ["performance", "cache", "optimize", "memory", "speed", "optimization"],
+        "error-handling": ["error", "exception", "catch", "throw", "try", "error handling"],
         "configuration": ["config", "env", "setting", "option"],
         "production": ["production", "prod", "deploy", "release"],
         "git": ["git", "commit", "branch", "merge", "rebase"],
@@ -256,8 +332,33 @@ def extract_domain_from_context(tool_name: str, tool_input: dict) -> List[str]:
         if any(kw in text for kw in keywords):
             domains.append(domain)
 
-    expanded = expand_domains_with_aliases(domains)
-    return list(expanded)[:10]
+    # Bug #83 fix: Return canonical domain names directly for database queries.
+    # The domain_keywords dict already returns canonical names that match DB entries.
+    # The expand_domains_with_aliases() function was adding non-existent aliases.
+    return list(set(domains))[:10]
+
+
+def validate_domains(domain_list: List[str], cursor: sqlite3.Cursor) -> List[str]:
+    """Validate domain names against known domains in database.
+
+    This prevents SQL injection by ensuring only valid domain names from the
+    database are used in SQL queries. Invalid domains are filtered and logged.
+
+    Args:
+        domain_list: List of domain names to validate
+        cursor: Active database cursor
+
+    Returns:
+        List of valid domain names (subset of input)
+    """
+    cursor.execute("SELECT DISTINCT domain FROM heuristics")
+    valid_domains = set(row[0] for row in cursor.fetchall())
+
+    invalid = [d for d in domain_list if d not in valid_domains]
+    if invalid:
+        sys.stderr.write(f"Warning: Invalid domains filtered: {invalid}\n")
+
+    return [d for d in domain_list if d in valid_domains]
 
 
 def get_relevant_heuristics(domains: List[str], limit: int = 5) -> List[Dict]:
@@ -270,15 +371,29 @@ def get_relevant_heuristics(domains: List[str], limit: int = 5) -> List[Dict]:
         cursor = conn.cursor()
 
         if domains:
-            placeholders = ",".join("?" * len(domains))
-            cursor.execute(f"""
-                SELECT id, domain, rule, explanation, confidence, times_validated, is_golden
-                FROM heuristics
-                WHERE domain IN ({placeholders})
-                   OR is_golden = 1
-                ORDER BY is_golden DESC, confidence DESC, times_validated DESC
-                LIMIT ?
-            """, (*domains, limit))
+            # Security: Validate domains against whitelist before SQL query
+            valid_domains = validate_domains(domains, cursor)
+
+            if not valid_domains:
+                # No valid domains, fall back to golden rules only
+                cursor.execute("""
+                    SELECT id, domain, rule, explanation, confidence, times_validated, is_golden
+                    FROM heuristics
+                    WHERE is_golden = 1
+                    ORDER BY confidence DESC, times_validated DESC
+                    LIMIT ?
+                """, (limit,))
+            else:
+                # Use validated domains in SQL query
+                placeholders = ",".join("?" * len(valid_domains))
+                cursor.execute(f"""
+                    SELECT id, domain, rule, explanation, confidence, times_validated, is_golden
+                    FROM heuristics
+                    WHERE domain IN ({placeholders})
+                       OR is_golden = 1
+                    ORDER BY is_golden DESC, confidence DESC, times_validated DESC
+                    LIMIT ?
+                """, (*valid_domains, limit))
         else:
             # Just get golden rules and top heuristics
             cursor.execute("""
@@ -307,15 +422,23 @@ def get_recent_failures(domains: List[str], limit: int = 3) -> List[Dict]:
         cursor = conn.cursor()
 
         if domains:
-            placeholders = ",".join("?" * len(domains))
-            cursor.execute(f"""
-                SELECT id, title, summary, domain
-                FROM learnings
-                WHERE type = 'failure'
-                  AND domain IN ({placeholders})
-                ORDER BY created_at DESC
-                LIMIT ?
-            """, (*domains, limit))
+            # Security: Validate domains against whitelist before SQL query
+            valid_domains = validate_domains(domains, cursor)
+
+            if not valid_domains:
+                # No valid domains, return empty list
+                return []
+            else:
+                # Use validated domains in SQL query
+                placeholders = ",".join("?" * len(valid_domains))
+                cursor.execute(f"""
+                    SELECT id, title, summary, domain
+                    FROM learnings
+                    WHERE type = 'failure'
+                      AND domain IN ({placeholders})
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                """, (*valid_domains, limit))
         else:
             cursor.execute("""
                 SELECT id, title, summary, domain
@@ -326,10 +449,71 @@ def get_recent_failures(domains: List[str], limit: int = 3) -> List[Dict]:
             """, (limit,))
 
         return [dict(row) for row in cursor.fetchall()]
-    except:
+    except Exception as e:
+        sys.stderr.write(f"Warning: Failed to query failures: {e}\n")
         return []
     finally:
         conn.close()
+
+
+def check_ceo_decisions() -> dict:
+    """Check for pending CEO decisions that might block this operation.
+
+    Returns:
+        dict with keys:
+        - 'blocked': bool - whether operation is blocked
+        - 'pending_count': int - number of pending decisions
+        - 'pending_items': list - list of pending decision names
+    """
+    ceo_inbox = EMERGENT_LEARNING_PATH / 'ceo-inbox'
+
+    if not ceo_inbox.exists():
+        return {"blocked": False, "pending_count": 0, "pending_items": []}
+
+    pending = list(ceo_inbox.glob('*.md'))
+    if pending:
+        # Extract decision names
+        pending_names = [decision.stem for decision in pending]
+
+        # Create prominent, multi-channel warning
+        warning_lines = [
+            "",
+            "=" * 70,
+            "!!! CEO DECISION BLOCKER !!!",
+            "=" * 70,
+            f"Operation BLOCKED: {len(pending)} pending CEO decisions require attention:",
+            "",
+        ]
+
+        # Add pending decision details
+        for decision_name in pending_names[:5]:  # Show first 5
+            warning_lines.append(f"  ► {decision_name}")
+
+        if len(pending_names) > 5:
+            warning_lines.append(f"  ... and {len(pending_names) - 5} more")
+
+        warning_lines.extend([
+            "",
+            "ACTION REQUIRED:",
+            "  1. Review pending decisions in: " + str(ceo_inbox),
+            "  2. Resolve or explicitly override decisions",
+            "  3. Retry operation",
+            "=" * 70,
+            "",
+        ])
+
+        # Write to stderr for terminal visibility
+        sys.stderr.write("\n".join(warning_lines) + "\n")
+        sys.stderr.flush()
+
+        # Return structured data for programmatic handling
+        return {
+            "blocked": True,
+            "pending_count": len(pending),
+            "pending_items": pending_names
+        }
+
+    return {"blocked": False, "pending_count": 0, "pending_items": []}
 
 
 def record_heuristics_consulted(heuristic_ids: List[int]):
@@ -419,9 +603,23 @@ def main():
         output_result({"decision": "approve"})
         return
 
-    # Only inject for Task tool (subagent spawning)
-    # Other tools get the golden-rule-enforcer treatment
-    if tool_name != "Task":
+    # Enforce CEO decisions - block if there are pending decisions
+    ceo_status = check_ceo_decisions()
+    if ceo_status["blocked"]:
+        output_result({
+            "decision": "reject",
+            "reason": "Operation blocked by pending CEO decisions. Please resolve pending decisions before proceeding.",
+            "ceo_blocker": {
+                "pending_count": ceo_status["pending_count"],
+                "pending_items": ceo_status["pending_items"]
+            }
+        })
+        return
+
+    # Learning loop processes ALL investigation and modification tools
+    # This enables learning from Grep, Read, Glob, Edit, Write, Bash operations
+    INVESTIGATION_TOOLS = {"Task", "Bash", "Grep", "Read", "Glob", "Edit", "Write"}
+    if tool_name not in INVESTIGATION_TOOLS:
         output_result({"decision": "approve"})
         return
 
