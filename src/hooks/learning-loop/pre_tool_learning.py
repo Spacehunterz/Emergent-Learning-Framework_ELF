@@ -53,21 +53,28 @@ def output_result(result: dict):
 
 
 def load_session_state() -> dict:
-    """Load current session state."""
-    # Check if this is a new session by comparing session start time
-    current_session_start = datetime.now().strftime("%Y-%m-%d")
+    """Load current session state.
+
+    Uses TTL-based session detection (4 hours) instead of date-based.
+    This handles cross-midnight work sessions more accurately.
+    """
+    # Session TTL: 4 hours in seconds
+    SESSION_TTL = 4 * 60 * 60  # 14400 seconds
+    current_time = datetime.now()
 
     if STATE_FILE.exists():
         try:
             state = json.loads(STATE_FILE.read_text())
-            # Check if state is from a previous day (new session)
+            # Check if state has expired based on TTL
             if state.get("session_start", ""):
                 try:
                     last_session = datetime.fromisoformat(state["session_start"])
-                    if last_session.strftime("%Y-%m-%d") != current_session_start:
-                        # New session - clear state
+                    time_since_last_session = (current_time - last_session).total_seconds()
+
+                    if time_since_last_session > SESSION_TTL:
+                        # Session expired - clear state
                         return {
-                            "session_start": datetime.now().isoformat(),
+                            "session_start": current_time.isoformat(),
                             "heuristics_consulted": [],
                             "domains_queried": [],
                             "task_context": None
@@ -78,7 +85,7 @@ def load_session_state() -> dict:
         except (json.JSONDecodeError, IOError, ValueError):
             pass
     return {
-        "session_start": datetime.now().isoformat(),
+        "session_start": current_time.isoformat(),
         "heuristics_consulted": [],
         "domains_queried": [],
         "task_context": None
@@ -115,6 +122,16 @@ class ComplexityScorer:
         'keywords': ['update', 'modify', 'change', 'refactor', 'migrate']
     }
 
+    # Risk threshold constants (extracted from magic numbers)
+    HIGH_RISK_THRESHOLD = 2
+    MEDIUM_RISK_THRESHOLD = 3
+
+    # Risk point values for different pattern types
+    HIGH_RISK_PATTERN_POINTS = 2
+    HIGH_RISK_DOMAIN_POINTS = 1
+    MEDIUM_RISK_PATTERN_POINTS = 1
+    MEDIUM_RISK_DOMAIN_POINTS = 1
+
     @classmethod
     def score(cls, tool_name: str, tool_input: dict, domains: List[str]) -> Dict:
         """
@@ -150,41 +167,41 @@ class ComplexityScorer:
         for pattern in cls.HIGH_RISK_PATTERNS['files']:
             # Check both file paths and text (task prompts might mention files)
             if re.search(pattern, file_paths_lower) or re.search(pattern, text_lower):
-                high_score += 2
+                high_score += cls.HIGH_RISK_PATTERN_POINTS
                 reasons.append(f"High-risk file pattern: {pattern}")
 
         for keyword in cls.HIGH_RISK_PATTERNS['keywords']:
             if keyword in text_lower:
-                high_score += 2
+                high_score += cls.HIGH_RISK_PATTERN_POINTS
                 reasons.append(f"High-risk keyword: {keyword}")
 
         for domain in cls.HIGH_RISK_PATTERNS['domains']:
             if domain in domains:
-                high_score += 1
+                high_score += cls.HIGH_RISK_DOMAIN_POINTS
                 reasons.append(f"High-risk domain: {domain}")
 
         # Check MEDIUM risk patterns
         for pattern in cls.MEDIUM_RISK_PATTERNS['files']:
             # Check both file paths and text (task prompts might mention files)
             if re.search(pattern, file_paths_lower) or re.search(pattern, text_lower):
-                medium_score += 1
+                medium_score += cls.MEDIUM_RISK_PATTERN_POINTS
                 reasons.append(f"Medium-risk file pattern: {pattern}")
 
         for keyword in cls.MEDIUM_RISK_PATTERNS['keywords']:
             if keyword in text_lower:
-                medium_score += 1
+                medium_score += cls.MEDIUM_RISK_PATTERN_POINTS
                 reasons.append(f"Medium-risk keyword: {keyword}")
 
         for domain in cls.MEDIUM_RISK_PATTERNS['domains']:
             if domain in domains:
-                medium_score += 1
+                medium_score += cls.MEDIUM_RISK_DOMAIN_POINTS
                 reasons.append(f"Medium-risk domain: {domain}")
 
         # Determine level and recommendation
-        if high_score >= 2:
+        if high_score >= cls.HIGH_RISK_THRESHOLD:
             level = 'HIGH'
             recommendation = "Extra scrutiny recommended. Consider CEO escalation if uncertain. Verify changes carefully before applying."
-        elif high_score >= 1 or medium_score >= 3:
+        elif high_score >= 1 or medium_score >= cls.MEDIUM_RISK_THRESHOLD:
             level = 'MEDIUM'
             recommendation = "Moderate care required. Review changes and test thoroughly."
         elif medium_score >= 1:
@@ -321,6 +338,29 @@ def extract_domain_from_context(tool_name: str, tool_input: dict) -> List[str]:
     return list(set(domains))[:10]
 
 
+def validate_domains(domain_list: List[str], cursor: sqlite3.Cursor) -> List[str]:
+    """Validate domain names against known domains in database.
+
+    This prevents SQL injection by ensuring only valid domain names from the
+    database are used in SQL queries. Invalid domains are filtered and logged.
+
+    Args:
+        domain_list: List of domain names to validate
+        cursor: Active database cursor
+
+    Returns:
+        List of valid domain names (subset of input)
+    """
+    cursor.execute("SELECT DISTINCT domain FROM heuristics")
+    valid_domains = set(row[0] for row in cursor.fetchall())
+
+    invalid = [d for d in domain_list if d not in valid_domains]
+    if invalid:
+        sys.stderr.write(f"Warning: Invalid domains filtered: {invalid}\n")
+
+    return [d for d in domain_list if d in valid_domains]
+
+
 def get_relevant_heuristics(domains: List[str], limit: int = 5) -> List[Dict]:
     """Get heuristics relevant to the given domains."""
     conn = get_db_connection()
@@ -331,15 +371,29 @@ def get_relevant_heuristics(domains: List[str], limit: int = 5) -> List[Dict]:
         cursor = conn.cursor()
 
         if domains:
-            placeholders = ",".join("?" * len(domains))
-            cursor.execute(f"""
-                SELECT id, domain, rule, explanation, confidence, times_validated, is_golden
-                FROM heuristics
-                WHERE domain IN ({placeholders})
-                   OR is_golden = 1
-                ORDER BY is_golden DESC, confidence DESC, times_validated DESC
-                LIMIT ?
-            """, (*domains, limit))
+            # Security: Validate domains against whitelist before SQL query
+            valid_domains = validate_domains(domains, cursor)
+
+            if not valid_domains:
+                # No valid domains, fall back to golden rules only
+                cursor.execute("""
+                    SELECT id, domain, rule, explanation, confidence, times_validated, is_golden
+                    FROM heuristics
+                    WHERE is_golden = 1
+                    ORDER BY confidence DESC, times_validated DESC
+                    LIMIT ?
+                """, (limit,))
+            else:
+                # Use validated domains in SQL query
+                placeholders = ",".join("?" * len(valid_domains))
+                cursor.execute(f"""
+                    SELECT id, domain, rule, explanation, confidence, times_validated, is_golden
+                    FROM heuristics
+                    WHERE domain IN ({placeholders})
+                       OR is_golden = 1
+                    ORDER BY is_golden DESC, confidence DESC, times_validated DESC
+                    LIMIT ?
+                """, (*valid_domains, limit))
         else:
             # Just get golden rules and top heuristics
             cursor.execute("""
@@ -368,15 +422,23 @@ def get_recent_failures(domains: List[str], limit: int = 3) -> List[Dict]:
         cursor = conn.cursor()
 
         if domains:
-            placeholders = ",".join("?" * len(domains))
-            cursor.execute(f"""
-                SELECT id, title, summary, domain
-                FROM learnings
-                WHERE type = 'failure'
-                  AND domain IN ({placeholders})
-                ORDER BY created_at DESC
-                LIMIT ?
-            """, (*domains, limit))
+            # Security: Validate domains against whitelist before SQL query
+            valid_domains = validate_domains(domains, cursor)
+
+            if not valid_domains:
+                # No valid domains, return empty list
+                return []
+            else:
+                # Use validated domains in SQL query
+                placeholders = ",".join("?" * len(valid_domains))
+                cursor.execute(f"""
+                    SELECT id, title, summary, domain
+                    FROM learnings
+                    WHERE type = 'failure'
+                      AND domain IN ({placeholders})
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                """, (*valid_domains, limit))
         else:
             cursor.execute("""
                 SELECT id, title, summary, domain
@@ -394,26 +456,64 @@ def get_recent_failures(domains: List[str], limit: int = 3) -> List[Dict]:
         conn.close()
 
 
-def check_ceo_decisions() -> bool:
-    """Check for pending CEO decisions that might block this operation."""
+def check_ceo_decisions() -> dict:
+    """Check for pending CEO decisions that might block this operation.
+
+    Returns:
+        dict with keys:
+        - 'blocked': bool - whether operation is blocked
+        - 'pending_count': int - number of pending decisions
+        - 'pending_items': list - list of pending decision names
+    """
     ceo_inbox = EMERGENT_LEARNING_PATH / 'ceo-inbox'
 
     if not ceo_inbox.exists():
-        return False
+        return {"blocked": False, "pending_count": 0, "pending_items": []}
 
     pending = list(ceo_inbox.glob('*.md'))
     if pending:
-        # Log the pending decision
-        sys.stderr.write(f"[CEO_DECISION_BLOCKER] {len(pending)} pending CEO decisions detected:\n")
-        for decision in pending[:3]:  # Show first 3
-            sys.stderr.write(f"  - {decision.stem}\n")
-        if len(pending) > 3:
-            sys.stderr.write(f"  ... and {len(pending) - 3} more\n")
+        # Extract decision names
+        pending_names = [decision.stem for decision in pending]
 
-        # Block operation if there are pending CEO decisions
-        return True
+        # Create prominent, multi-channel warning
+        warning_lines = [
+            "",
+            "=" * 70,
+            "!!! CEO DECISION BLOCKER !!!",
+            "=" * 70,
+            f"Operation BLOCKED: {len(pending)} pending CEO decisions require attention:",
+            "",
+        ]
 
-    return False
+        # Add pending decision details
+        for decision_name in pending_names[:5]:  # Show first 5
+            warning_lines.append(f"  ► {decision_name}")
+
+        if len(pending_names) > 5:
+            warning_lines.append(f"  ... and {len(pending_names) - 5} more")
+
+        warning_lines.extend([
+            "",
+            "ACTION REQUIRED:",
+            "  1. Review pending decisions in: " + str(ceo_inbox),
+            "  2. Resolve or explicitly override decisions",
+            "  3. Retry operation",
+            "=" * 70,
+            "",
+        ])
+
+        # Write to stderr for terminal visibility
+        sys.stderr.write("\n".join(warning_lines) + "\n")
+        sys.stderr.flush()
+
+        # Return structured data for programmatic handling
+        return {
+            "blocked": True,
+            "pending_count": len(pending),
+            "pending_items": pending_names
+        }
+
+    return {"blocked": False, "pending_count": 0, "pending_items": []}
 
 
 def record_heuristics_consulted(heuristic_ids: List[int]):
@@ -504,10 +604,15 @@ def main():
         return
 
     # Enforce CEO decisions - block if there are pending decisions
-    if check_ceo_decisions():
+    ceo_status = check_ceo_decisions()
+    if ceo_status["blocked"]:
         output_result({
             "decision": "reject",
-            "reason": "Operation blocked by pending CEO decisions. Please resolve pending decisions before proceeding."
+            "reason": "Operation blocked by pending CEO decisions. Please resolve pending decisions before proceeding.",
+            "ceo_blocker": {
+                "pending_count": ceo_status["pending_count"],
+                "pending_items": ceo_status["pending_items"]
+            }
         })
         return
 
