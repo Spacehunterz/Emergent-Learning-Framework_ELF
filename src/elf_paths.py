@@ -141,6 +141,11 @@ def get_base_path(start: Optional[Path] = None) -> Path:
 
     Returns:
         Resolved base path.
+
+    Fallback chain (in order):
+        1. ELF_BASE_PATH environment variable
+        2. Git repo root (detected from start path or current directory)
+        3. Default: ~/.claude/emergent-learning
     """
     env_path = os.environ.get("ELF_BASE_PATH")
     if env_path:
@@ -153,10 +158,10 @@ def get_base_path(start: Optional[Path] = None) -> Path:
         _maybe_migrate_legacy(repo_root)
         return repo_root
 
-    raise RuntimeError(
-        "ELF_BASE_PATH was not provided and repo root could not be found. "
-        "Run from the repo root or set ELF_BASE_PATH explicitly."
-    )
+    # Fallback to default ELF installation directory
+    default_path = Path.home() / ".claude" / "emergent-learning"
+    _maybe_migrate_legacy(default_path)
+    return default_path
 
 
 def get_paths(base_path: Optional[Path] = None) -> dict:
