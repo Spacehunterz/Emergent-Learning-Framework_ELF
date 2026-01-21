@@ -179,10 +179,27 @@ class ComplexityScorer:
 
 
 DOMAIN_ALIASES = {
-    "frontend": ["react", "ui-architecture", "ui-interaction", "ui-layout", "react-performance"],
-    "javascript": ["react", "react-performance", "react-websocket", "d3-svg-events", "three-js"],
+    # Critical domains - map extraction keywords to actual DB domain names
+    "architecture": ["architecture", "software-architecture", "design-patterns", "system-design", "architectural"],
+    "debugging": ["debugging", "troubleshooting", "error-analysis", "debug"],
+    "typescript": ["typescript", "javascript", "type-safety", "ts"],
+    "api-design": ["api-design", "api-design-patterns", "endpoint-design"],
+    "api-integration": ["api-integration", "webhook", "api-consumption", "third-party-integration"],
+    "ui": ["ui", "frontend", "user-interface", "ui-architecture", "ui-interaction", "ui-layout", "react", "vue", "jsx", "tsx"],
+    "software-architecture": ["software-architecture", "system-architecture", "architectural-design"],
+    "code-quality": ["code-quality", "clean-code", "refactoring", "technical-debt"],
+    "communication": ["communication", "messaging", "notifications"],
+    "feature-planning": ["feature-planning", "feature-design", "requirements-analysis"],
+    "problem-solving": ["problem-solving", "troubleshooting", "solution-strategy"],
+    "requirements": ["requirements", "specifications", "acceptance-criteria"],
+    "llm-output-processing": ["llm-output-processing", "response-parsing", "output-extraction"],
+    "user-experience": ["user-experience", "ux", "usability", "user-flow"],
+    "ai-models": ["ai-models", "ml-models", "machine-learning", "model-inference"],
+    # Existing mappings - updated to match DB domains
+    "frontend": ["ui"],  # Maps to ui domain in DB
+    "javascript": ["ui", "typescript"],  # Maps to ui/typescript domains
     "database": ["database-operations", "database-optimization", "database-maintenance"],
-    "api": ["api-polling"],
+    "api": ["api-design", "api-integration", "api-polling"],  # Maps to api-design/api-integration
     "testing": ["integration-test", "visual-testing", "mcp-testing"],
     "git": ["git-workflow"],
     "python": ["pyqt"],
@@ -227,16 +244,32 @@ def extract_domain_from_context(tool_name: str, tool_input: dict) -> List[str]:
     text = text.lower()
 
     domain_keywords = {
+        # Critical domains missing from original mapping
+        "architecture": ["architecture", "design pattern", "system design", "pattern", "structural", "layer", "component architecture"],
+        "debugging": ["debug", "troubleshoot", "fix bug", "issue", "breakpoint", "inspect", "diagnose"],
+        "typescript": ["typescript", "ts", "type", "typing", "interface", "type annotation", ".ts", ".tsx"],
+        "api-design": ["api design", "endpoint design", "rest design", "api contract", "api specification"],
+        "api-integration": ["api integration", "api call", "fetch api", "consume api", "webhook", "third-party api"],
+        "ui": ["ui", "user interface", "react", "vue", "component", "jsx", "tsx", "dom", "css", "style", "frontend"],
+        "software-architecture": ["software architecture", "system architecture", "architectural", "design principle"],
+        "code-quality": ["code quality", "clean code", "refactor", "code smell", "technical debt", "lint"],
+        "communication": ["communicate", "message", "notify", "alert", "notification", "broadcast"],
+        "feature-planning": ["feature", "planning", "plan", "requirement", "user story", "feature request"],
+        "problem-solving": ["solve", "problem", "solution", "approach", "strategy"],
+        "requirements": ["requirement", "spec", "specification", "acceptance criteria"],
+        "llm-output-processing": ["llm output", "parse output", "process response", "extract from response"],
+        "user-experience": ["ux", "user experience", "usability", "user flow", "interaction"],
+        "ai-models": ["ai model", "ml model", "machine learning", "model", "inference", "training"],
+        # Original domains that map to DB domains
         "authentication": ["auth", "login", "session", "jwt", "token", "oauth", "password"],
         "database": ["sql", "query", "schema", "migration", "db", "database", "sqlite", "postgres"],
         "database-migration": ["migration", "migrate", "schema change", "alter table"],
         "api": ["api", "endpoint", "rest", "graphql", "route", "controller"],
         "security": ["security", "vulnerability", "injection", "xss", "csrf", "sanitiz"],
         "testing": ["test", "spec", "coverage", "mock", "fixture", "assert"],
-        "react": ["react", "component", "usestate", "useeffect", "jsx", "tsx"],
-        "frontend": ["vue", "css", "style", "ui", "dom", "frontend"],
-        "performance": ["performance", "cache", "optimize", "memory", "speed"],
-        "error-handling": ["error", "exception", "catch", "throw", "try"],
+        "react": ["react", "usestate", "useeffect", "react component"],
+        "performance": ["performance", "cache", "optimize", "memory", "speed", "optimization"],
+        "error-handling": ["error", "exception", "catch", "throw", "try", "error handling"],
         "configuration": ["config", "env", "setting", "option"],
         "production": ["production", "prod", "deploy", "release"],
         "git": ["git", "commit", "branch", "merge", "rebase"],
