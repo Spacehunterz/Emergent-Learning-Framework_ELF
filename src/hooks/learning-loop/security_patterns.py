@@ -49,7 +49,7 @@ RISKY_PATTERNS = {
     'network': [
         (r'verify\s*=\s*False', 'SSL/TLS verification disabled'),
         (r'ssl\._create_unverified_context', 'Unverified SSL context - insecure'),
-        (r'requests\.(get|post|put|delete|patch|head|options)\s*\([^)]*\)(?![^)]*timeout)', 'requests call without timeout - may hang indefinitely'),
+        (r'requests\.(get|post|put|delete|patch|head|options)\s*\((?![^)]*timeout)[^)]*\)', 'requests call without timeout - may hang indefinitely'),
     ],
     'xml_security': [
         (r'xml\.etree\.ElementTree\.parse\s*\(', 'XML parse without DTD protection - potential XXE vulnerability'),
