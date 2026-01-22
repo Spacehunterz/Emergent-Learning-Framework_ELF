@@ -12,6 +12,9 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Path was `query/query.py` but actual location is `src/query/query.py`
   - Fixed in: Migration.md, Architecture.md, Installation.md, IMPROVEMENT_ROADMAP.md, issue-43-analysis.md
   - Users following docs no longer get "file not found" errors
+- **Hook Path Errors** - Installers now prefer `src/hooks/` over symlinks
+  - Symlinks in `hooks/learning-loop/` may not work reliably with Claude Code
+  - Both install.sh and install.ps1 updated to use actual files first
 
 ## [0.4.4] - 2026-01-16
 
