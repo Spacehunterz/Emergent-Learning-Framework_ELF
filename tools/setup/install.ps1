@@ -744,10 +744,11 @@ Write-Host "  - Preserving your existing hooks (if any)"
 Write-Host "  - Creating backup at settings.json.backup"
 Write-Host ""
 
+# Prefer src/ (actual files) over hooks/ (symlinks may not work reliably)
 $hookLearningLoopCandidates = @(
-    (Join-Path $BaseInstallDir "hooks\learning-loop"),
     (Join-Path $BaseInstallDir "src\hooks\learning-loop"),
-    (Join-Path $EmergentLearningDir "hooks\learning-loop")
+    (Join-Path $BaseInstallDir "hooks\learning-loop"),
+    (Join-Path $EmergentLearningDir "src\hooks\learning-loop")
 )
 $hookLearningLoop = ($hookLearningLoopCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1)
 if (-not $hookLearningLoop) {
