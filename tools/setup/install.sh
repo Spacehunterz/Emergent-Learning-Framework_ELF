@@ -332,7 +332,7 @@ install_cli() {
 install_core_files() {
     echo "[ELF] Installing core files to $ELF_DIR..."
     mkdir -p "$ELF_DIR"
-    
+
     # Copy src contents (flattening)
     if [ -d "$SCRIPT_DIR/../../src" ]; then
         cp -r "$SCRIPT_DIR/../../src/"* "$ELF_DIR/"
@@ -341,12 +341,19 @@ install_core_files() {
     if [ -f "$SCRIPT_DIR/../../src/elf_paths.py" ]; then
         cp "$SCRIPT_DIR/../../src/elf_paths.py" "$ELF_DIR/"
     fi
-    
+
     # Copy scripts
     mkdir -p "$ELF_DIR/scripts"
     if [ -d "$SCRIPT_DIR/../../tools/scripts" ]; then
         cp "$SCRIPT_DIR/../../tools/scripts/"*.sh "$ELF_DIR/scripts/" 2>/dev/null || true
         cp "$SCRIPT_DIR/../../tools/scripts/"*.py "$ELF_DIR/scripts/" 2>/dev/null || true
+    fi
+
+    # Copy golden rules template to memory directory
+    mkdir -p "$ELF_DIR/memory"
+    if [ -f "$SCRIPT_DIR/../../templates/golden-rules.md" ] && [ ! -f "$ELF_DIR/memory/golden-rules.md" ]; then
+        cp "$SCRIPT_DIR/../../templates/golden-rules.md" "$ELF_DIR/memory/golden-rules.md"
+        echo "[ELF] Copied golden-rules.md template"
     fi
 
     # Copy dashboard
@@ -487,7 +494,7 @@ install_git_hooks() {
     # Install git pre-commit hook enforcement
     # Priority: REPO_ROOT (dev env) -> ELF_DIR (if it happens to be a git repo)
     local git_hooks_dir=""
-    
+
     if [ -d "$REPO_ROOT/.git/hooks" ]; then
         git_hooks_dir="$REPO_ROOT/.git/hooks"
     elif [ -d "$ELF_DIR/.git/hooks" ]; then
@@ -498,6 +505,36 @@ install_git_hooks() {
         cp "$SCRIPT_DIR/git-hooks/pre-commit" "$git_hooks_dir/pre-commit"
         chmod +x "$git_hooks_dir/pre-commit"
         echo "[ELF] Git pre-commit hook installed to $git_hooks_dir"
+    fi
+}
+
+seed_golden_rules() {
+    # Seed golden rules from markdown template into database
+    local seed_script="$ELF_DIR/scripts/seed_golden_rules.py"
+    local golden_rules_md="$ELF_DIR/memory/golden-rules.md"
+
+    if [ -z "$PYTHON_CMD" ]; then
+        echo "[ELF] Warning: Python not found, skipping golden rules seeding"
+        return
+    fi
+
+    if [ ! -f "$golden_rules_md" ]; then
+        echo "[ELF] Warning: golden-rules.md not found, skipping seeding"
+        return
+    fi
+
+    if [ ! -f "$seed_script" ]; then
+        # Try alternate location
+        seed_script="$SCRIPT_DIR/../../scripts/seed_golden_rules.py"
+    fi
+
+    if [ -f "$seed_script" ]; then
+        # Use venv python if available, otherwise system python
+        local python_to_use="${VENV_PYTHON:-$PYTHON_CMD}"
+        echo "[ELF] Seeding golden rules into database..."
+        "$python_to_use" "$seed_script" 2>&1 | grep -v "DeprecationWarning" || true
+    else
+        echo "[ELF] Warning: seed_golden_rules.py not found, skipping seeding"
     fi
 }
 
@@ -537,6 +574,7 @@ case "$MODE" in
         install_venv
         install_settings
         install_git_hooks
+        seed_golden_rules
         echo "[ELF] Fresh install complete"
         ;;
 
@@ -562,6 +600,7 @@ case "$MODE" in
         install_venv
         install_settings
         install_git_hooks
+        seed_golden_rules
         ;;
 
     replace)
@@ -575,6 +614,7 @@ case "$MODE" in
         install_venv
         install_settings
         install_git_hooks
+        seed_golden_rules
         echo "[ELF] Replaced config (backup: CLAUDE.md.backup)"
         ;;
 
@@ -587,6 +627,7 @@ case "$MODE" in
         install_venv
         install_settings
         install_git_hooks
+        seed_golden_rules
         ;;
 
     interactive|*)
@@ -626,6 +667,7 @@ case "$MODE" in
         install_venv
         install_settings
         install_git_hooks
+        seed_golden_rules
         echo ""
         echo "Setup complete!"
         ;;

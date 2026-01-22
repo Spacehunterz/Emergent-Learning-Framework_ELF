@@ -602,6 +602,34 @@ else {
     Write-Host "  Database already exists" -ForegroundColor Green
 }
 
+# Seed golden rules into database
+$seedScript = Join-Path $scriptsDst "seed_golden_rules.py"
+if (-not (Test-Path $seedScript)) {
+    $seedScript = Join-Path $ScriptDir "..\..\scripts\seed_golden_rules.py"
+}
+$goldenRulesMd = Join-Path $MemoryDir "golden-rules.md"
+
+if ((Test-Path $seedScript) -and (Test-Path $goldenRulesMd)) {
+    $pythonToUse = if ($venvPython) { $venvPython } else { $pythonCmd }
+    Write-Host "  Seeding golden rules into database..." -ForegroundColor Yellow
+    $seedOutput = & $pythonToUse $seedScript 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        # Extract the result line
+        $resultLine = $seedOutput | Where-Object { $_ -match "After:|Inserted:" } | Select-Object -Last 1
+        if ($resultLine) {
+            Write-Host "  $resultLine" -ForegroundColor Green
+        } else {
+            Write-Host "  Golden rules seeded" -ForegroundColor Green
+        }
+    }
+    else {
+        Write-Host "  Warning: Golden rules seeding had issues" -ForegroundColor Yellow
+    }
+}
+else {
+    Write-Host "  Warning: Could not seed golden rules (script or template not found)" -ForegroundColor Yellow
+}
+
 # === SWARM INSTALLATION ===
 if ($InstallSwarm) {
     Write-Host ""

@@ -15,6 +15,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Hook Path Errors** - Installers now prefer `src/hooks/` over symlinks
   - Symlinks in `hooks/learning-loop/` may not work reliably with Claude Code
   - Both install.sh and install.ps1 updated to use actual files first
+- **Golden Rules Not Seeded on Fresh Install** - New users now get golden rules automatically
+  - install.sh: Added copy of `templates/golden-rules.md` to `memory/` directory
+  - install.sh: Added `seed_golden_rules()` function called in all install modes
+  - install.ps1: Added seeding step after database initialization
+  - 12 foundational golden rules now populated on first install
 
 ## [0.4.4] - 2026-01-16
 
