@@ -168,9 +168,16 @@ class SchemaMigrator:
         if result["migrations_failed"]:
             logger.error(
                 f"Failed to apply {len(result['migrations_failed'])} migrations. "
-                "Some features may not work correctly."
+                "Attempting auto-repair..."
             )
-            result["status"] = "error"
+            # Try auto-repair
+            repair_result = self._auto_repair()
+            if repair_result.get("repaired"):
+                logger.info(f"Auto-repair successful: {len(repair_result.get('columns_added', []))} columns added")
+                result["auto_repaired"] = True
+                result["status"] = "repaired"
+            else:
+                result["status"] = "error"
         elif result["total_applied"] > 0:
             logger.info(f"Successfully applied {result['total_applied']} migrations")
 
@@ -178,9 +185,23 @@ class SchemaMigrator:
         result["schema_valid"] = validation["valid"]
         if not validation["valid"]:
             logger.error(f"Schema validation failed: {validation['issues']}")
-            result["validation_issues"] = validation["issues"]
-            if result["status"] == "success":
-                result["status"] = "validation_failed"
+            # Try auto-repair if validation fails
+            repair_result = self._auto_repair()
+            if repair_result.get("repaired"):
+                logger.info("Auto-repair successful after validation failure")
+                result["auto_repaired"] = True
+                # Re-validate
+                validation = self.validate_schema()
+                result["schema_valid"] = validation["valid"]
+                if validation["valid"]:
+                    result["status"] = "repaired"
+                else:
+                    result["validation_issues"] = validation["issues"]
+                    result["status"] = "validation_failed"
+            else:
+                result["validation_issues"] = validation["issues"]
+                if result["status"] == "success":
+                    result["status"] = "validation_failed"
 
         return result
 
@@ -272,3 +293,41 @@ class SchemaMigrator:
             "errors": errors,
             "revalidation": self.validate_schema() if repairs else validation
         }
+
+    def _auto_repair(self) -> Dict[str, any]:
+        """
+        Automatically repair database schema using the comprehensive repair script.
+
+        This is called when migrations fail or schema validation fails.
+        """
+        try:
+            # Import and run the repair script
+            repair_script = Path(__file__).parent / "repair_database.py"
+            if repair_script.exists():
+                import subprocess
+                result = subprocess.run(
+                    [sys.executable, str(repair_script), "--path", self.db_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=60
+                )
+                if result.returncode == 0:
+                    # Parse output to check if repairs were made
+                    output = result.stdout
+                    tables_created = "Tables created" in output
+                    columns_added = "Columns added" in output
+                    return {
+                        "repaired": tables_created or columns_added,
+                        "output": output,
+                        "columns_added": [line.strip() for line in output.split('\n')
+                                         if line.strip().startswith('+ ')]
+                    }
+                else:
+                    logger.warning(f"Repair script failed: {result.stderr}")
+                    return {"repaired": False, "error": result.stderr}
+            else:
+                # Fall back to inline repair
+                return self.repair_schema()
+        except Exception as e:
+            logger.warning(f"Auto-repair failed: {e}")
+            return {"repaired": False, "error": str(e)}
