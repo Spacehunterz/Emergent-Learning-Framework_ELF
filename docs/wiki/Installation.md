@@ -50,7 +50,7 @@ The installer has three components:
 ├── CLAUDE.md                    # Agent instructions
 ├── settings.json                # Hook configurations
 ├── emergent-learning/
-│   ├── query/query.py          # Query system
+│   ├── src/query/query.py       # Query system
 │   ├── memory/
 │   │   ├── index.db            # SQLite database
 │   │   ├── golden-rules.md     # Constitutional principles
@@ -85,7 +85,7 @@ cat ~/.claude/settings.json | grep learning-loop
 **Database errors:**
 ```bash
 # Validate database
-python ~/.claude/emergent-learning/query/query.py --validate
+python ~/.claude/emergent-learning/src/query/query.py --validate
 ```
 
 **Dashboard won't start:**

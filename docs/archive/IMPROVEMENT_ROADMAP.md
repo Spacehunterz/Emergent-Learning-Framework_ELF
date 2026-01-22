@@ -69,7 +69,7 @@ These are the **must-do improvements** - they're quick and have massive impact.
 activate venv
 cd apps/dashboard/backend && python -m uvicorn main:app --reload &
 cd ../frontend && npm run dev &
-python ~/.claude/emergent-learning/query/query.py
+python ~/.claude/emergent-learning/src/query/query.py
 
 # AFTER (one command)
 make dev
@@ -167,7 +167,7 @@ mypy src/  # Run type checker
 **The problem:** Two query systems doing similar things
 
 **Current duplication:**
-- `query/query.py` - Queries heuristics
+- `src/query/query.py` - Queries heuristics
 - `conductor/conductor.py` - Also queries heuristics
 - Both maintain separate state
 

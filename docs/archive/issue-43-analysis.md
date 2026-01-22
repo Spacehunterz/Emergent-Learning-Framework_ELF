@@ -185,7 +185,7 @@ documentation discoverability?
 
 ## Files Referenced
 
-- `~/.claude/emergent-learning/query/query.py`
+- `~/.claude/emergent-learning/src/query/query.py`
 - `~/.claude/emergent-learning/docs/architecture/per-project-architecture.md`
 - `~/.claude/emergent-learning/query/ARCHITECTURE.md`
 - `~/.claude/emergent-learning/memory/index.db`

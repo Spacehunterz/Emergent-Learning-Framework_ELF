@@ -73,7 +73,7 @@ Add your custom CLAUDE.md content AFTER the ELF section.
 ```bash
 claude
 # Say "check in" - should query building
-python ~/.claude/emergent-learning/query/query.py --stats
+python ~/.claude/emergent-learning/src/query/query.py --stats
 ```
 
 ## Upgrading Versions
@@ -89,7 +89,7 @@ cd /path/to/ELF-repo && git pull
 ./install.sh
 
 # 4. Validate
-python ~/.claude/emergent-learning/query/query.py --validate
+python ~/.claude/emergent-learning/src/query/query.py --validate
 ```
 
 ## Team Setup
