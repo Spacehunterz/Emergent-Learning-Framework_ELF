@@ -5,6 +5,14 @@ All notable changes to the Emergent Learning Framework will be documented in thi
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-01-22
+
+### Fixed
+- **Documentation Path Errors** - Corrected `query.py` path in all documentation
+  - Path was `query/query.py` but actual location is `src/query/query.py`
+  - Fixed in: Migration.md, Architecture.md, Installation.md, IMPROVEMENT_ROADMAP.md, issue-43-analysis.md
+  - Users following docs no longer get "file not found" errors
+
 ## [0.4.4] - 2026-01-16
 
 ### Changed
