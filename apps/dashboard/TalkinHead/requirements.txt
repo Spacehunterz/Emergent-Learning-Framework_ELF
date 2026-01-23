@@ -1,0 +1,7 @@
+# TalkinHead dependencies
+# Note: numpy<2 required due to OpenCV compatibility on older systems
+numpy<2
+opencv-python-headless
+pygame
+PyQt5
+pynput  # For global key state detection on Linux

@@ -16,23 +16,57 @@ Features:
 import sys
 import os
 import json
-import cv2
-import numpy as np
 
+# IMPORTANT: Import PyQt5 BEFORE cv2 to avoid Qt plugin conflicts on Linux
+# cv2 bundles its own Qt which can override the system Qt plugin path
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 from PyQt5.QtCore import Qt, QTimer, QPoint, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QCursor, QFont
+
+# Now safe to import cv2 (PyQt5 already claimed the Qt plugins)
+import cv2
+import numpy as np
 
 # Pygame for reliable audio playback
 import pygame
 pygame.mixer.init()
 
-# Win32 for global key state detection (Windows)
+# Platform-specific key state detection
 import ctypes
-user32 = ctypes.windll.user32
 VK_CONTROL = 0x11
 VK_MENU = 0x12  # Alt key
 VK_Q = 0x51  # Q key
+
+# Windows uses user32.dll, Linux/macOS use pynput for global key detection
+if sys.platform == "win32":
+    user32 = ctypes.windll.user32
+    pynput_keyboard = None
+else:
+    user32 = None
+    # Linux/macOS: use pynput for global key state detection
+    # (Qt modifiers only work when app has focus, but our window is click-through)
+    try:
+        from pynput import keyboard as pynput_keyboard
+
+        # Global key state tracking
+        _keys_pressed = set()
+
+        def _on_press(key):
+            _keys_pressed.add(key)
+
+        def _on_release(key):
+            _keys_pressed.discard(key)
+
+        # Start global keyboard listener in background thread
+        _keyboard_listener = pynput_keyboard.Listener(on_press=_on_press, on_release=_on_release)
+        _keyboard_listener.daemon = True
+        _keyboard_listener.start()
+        print("pynput keyboard listener started for global key detection")
+    except ImportError:
+        print("WARNING: pynput not installed. Ctrl+drag may not work on Linux.")
+        print("Install with: pip install pynput")
+        pynput_keyboard = None
+        _keys_pressed = set()
 
 # Script directory for relative paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -58,6 +92,7 @@ class IvyOverlay(QWidget):
 
         # State tracking
         self.running = True
+        self._q_pressed = False  # For Linux/macOS Q key detection
         self.idle_frame_idx = 0
         self.phrase_frame_idx = 0
         self.is_playing_phrase = False
@@ -569,9 +604,34 @@ class IvyOverlay(QWidget):
 
     def _check_modifier_keys(self):
         """Check for Ctrl (drag), Alt (resize), Ctrl+Q (quit), and mouse hover."""
-        ctrl_held = (user32.GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0
-        alt_held = (user32.GetAsyncKeyState(VK_MENU) & 0x8000) != 0
-        q_held = (user32.GetAsyncKeyState(VK_Q) & 0x8000) != 0
+        if user32:
+            # Windows: use GetAsyncKeyState for global key state
+            ctrl_held = (user32.GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0
+            alt_held = (user32.GetAsyncKeyState(VK_MENU) & 0x8000) != 0
+            q_held = (user32.GetAsyncKeyState(VK_Q) & 0x8000) != 0
+        elif pynput_keyboard:
+            # Linux/macOS: use pynput for global key state detection
+            # Check if Ctrl, Alt, or Q keys are in the pressed set
+            ctrl_held = any(
+                key in _keys_pressed
+                for key in [pynput_keyboard.Key.ctrl, pynput_keyboard.Key.ctrl_l, pynput_keyboard.Key.ctrl_r]
+            )
+            alt_held = any(
+                key in _keys_pressed
+                for key in [pynput_keyboard.Key.alt, pynput_keyboard.Key.alt_l, pynput_keyboard.Key.alt_r, pynput_keyboard.Key.alt_gr]
+            )
+            # Check for Q key (could be KeyCode or character)
+            q_held = any(
+                (hasattr(key, 'char') and key.char == 'q') or
+                (hasattr(key, 'vk') and key.vk == 81)  # 81 = Q
+                for key in _keys_pressed
+            )
+        else:
+            # Fallback: use Qt keyboard modifiers (only works when app has focus)
+            modifiers = QApplication.keyboardModifiers()
+            ctrl_held = bool(modifiers & Qt.ControlModifier)
+            alt_held = bool(modifiers & Qt.AltModifier)
+            q_held = getattr(self, '_q_pressed', False)
 
         # Check mouse hover for tooltip
         mouse_pos = QCursor.pos()
@@ -690,6 +750,18 @@ class IvyOverlay(QWidget):
         if self.drag_enabled:
             self.setCursor(Qt.OpenHandCursor)
             self.save_config()
+
+    def keyPressEvent(self, event):
+        """Track key presses for Linux/macOS (Q key detection)."""
+        if event.key() == Qt.Key_Q:
+            self._q_pressed = True
+        super().keyPressEvent(event)
+
+    def keyReleaseEvent(self, event):
+        """Track key releases for Linux/macOS."""
+        if event.key() == Qt.Key_Q:
+            self._q_pressed = False
+        super().keyReleaseEvent(event)
 
     def save_config(self):
         """Save position and size to config.json."""

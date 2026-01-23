@@ -14,6 +14,15 @@ written to ~/.claude/ivy_events.json by Claude Code hooks.
 
 import os
 import sys
+
+# Fix Qt plugin path conflict with opencv-python on Linux
+# Only needed for non-headless opencv which bundles Qt
+# When using venv with opencv-python-headless, skip this (no Qt conflict)
+if sys.platform != "win32" and sys.prefix == sys.base_prefix:
+    # Only override for system Python (not venv) - system cv2 may have Qt conflict
+    os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = "/usr/lib/x86_64-linux-gnu/qt5/plugins"
+    os.environ.pop("QT_PLUGIN_PATH", None)
+
 import signal
 import atexit
 from pathlib import Path
