@@ -34,10 +34,11 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Analyze this issue and implement a solution:
-            1. Understand what is being requested
-            2. Implement the necessary changes
-            3. Create a pull request with your changes
+            Focus ONLY on this issue. Do the minimum needed:
+            1. Read the issue carefully
+            2. Make ONLY the specific change requested - nothing else
+            3. Commit and create a PR
+            Do NOT explore, refactor, or modify unrelated code.
 
   # Auto-review new PRs
   claude-pr-review:
@@ -60,10 +61,11 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Review this pull request:
-            1. Check the code changes for correctness
-            2. Identify any issues or improvements
-            3. Provide a summary review
+            Review ONLY the changed files in this PR:
+            1. Check for bugs or errors in the diff
+            2. Note any issues briefly
+            3. Approve if looks good, request changes if not
+            Keep review concise. Do NOT suggest unrelated improvements.
 
   # Respond to @claude mentions in comments
   claude-mentions:
