@@ -7,6 +7,9 @@ import * as THREE from 'three'
 import { sunVertexShader, sunFragmentShader, planetVertexShader, planetFragmentShader } from './shaders'
 import { Floating3DParticles } from './Floating3DParticles'
 import { xrStore } from '../xr/xrStore'
+import { Heuristic } from '../../types'
+import HeuristicDetailModal from '../heuristics/HeuristicDetailModal'
+import { ChevronRight } from 'lucide-react'
 
 // Create custom shader materials
 const SunMaterial = shaderMaterial(
@@ -210,7 +213,7 @@ function Sun({ score }: { score: number }) {
     )
 }
 
-function Planet({ label, color, size, speed, orbitRadius, onClick, selected, paused, details, onPositionUpdate }: PlanetProps & { selected: boolean, paused: boolean, details: any, onPositionUpdate?: (pos: THREE.Vector3) => void }) {
+function Planet({ label, color, size, speed, orbitRadius, onClick, selected, paused, details, onPositionUpdate, onHeuristicClick }: PlanetProps & { selected: boolean, paused: boolean, details: any, onPositionUpdate?: (pos: THREE.Vector3) => void, onHeuristicClick?: (h: Heuristic) => void }) {
     const meshRef = useRef<THREE.Mesh>(null)
     const orbitGroupRef = useRef<THREE.Group>(null)
     const angleRef = useRef(Math.random() * Math.PI * 2)
@@ -416,7 +419,14 @@ function Planet({ label, color, size, speed, orbitRadius, onClick, selected, pau
                                         <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar">
                                             {details.topHeuristics && details.topHeuristics.length > 0 ? (
                                                 details.topHeuristics.map((h: any, i: number) => (
-                                                    <div key={i} className="p-2.5 rounded bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all group">
+                                                    <div
+                                                        key={i}
+                                                        className="p-2.5 rounded bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all group cursor-pointer"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            if (onHeuristicClick) onHeuristicClick(h as Heuristic)
+                                                        }}
+                                                    >
                                                         <div className="text-xs text-slate-300 line-clamp-2 mb-2 group-hover:text-white transition-colors">
                                                             "{h.rule}"
                                                         </div>
@@ -424,8 +434,11 @@ function Planet({ label, color, size, speed, orbitRadius, onClick, selected, pau
                                                             <div className="flex items-center gap-1.5">
                                                                 {h.is_golden && <span className="text-[8px] px-1 bg-amber-500/20 text-amber-400 rounded border border-amber-500/30">GOLDEN</span>}
                                                             </div>
-                                                            <div className="text-[10px] font-mono" style={{ color: h.confidence > 0.8 ? '#4ade80' : '#fbbf24' }}>
-                                                                {(h.confidence * 100).toFixed(0)}%
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="text-[10px] font-mono" style={{ color: h.confidence > 0.8 ? '#4ade80' : '#fbbf24' }}>
+                                                                    {(h.confidence * 100).toFixed(0)}%
+                                                                </div>
+                                                                <ChevronRight className="w-3 h-3 text-slate-500 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
                                                             </div>
                                                         </div>
                                                     </div>
@@ -485,7 +498,7 @@ function BackgroundClickCatcher({ onClick }: { onClick: () => void }) {
     )
 }
 
-function SolarSystemScene({ onDomainSelect, selectedDomainProp }: { onDomainSelect?: (domain: string) => void, selectedDomainProp?: string | null }) {
+function SolarSystemScene({ onDomainSelect, selectedDomainProp, onHeuristicSelect }: { onDomainSelect?: (domain: string) => void, selectedDomainProp?: string | null, onHeuristicSelect?: (h: Heuristic) => void }) {
     const { stats, heuristics } = useDataContext()
     const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
     const [selectedPlanetPosition, setSelectedPlanetPosition] = useState<THREE.Vector3 | null>(null)
@@ -554,6 +567,10 @@ function SolarSystemScene({ onDomainSelect, selectedDomainProp }: { onDomainSele
         setSelectedPlanetPosition(pos)
     }
 
+    const handleHeuristicClick = (h: Heuristic) => {
+        if (onHeuristicSelect) onHeuristicSelect(h)
+    }
+
     return (
         <>
             <ambientLight intensity={0.1} />
@@ -583,6 +600,7 @@ function SolarSystemScene({ onDomainSelect, selectedDomainProp }: { onDomainSele
                         topHeuristics: domain.topHeuristics
                     }}
                     onPositionUpdate={selectedDomain === domain.name ? handlePositionUpdate : undefined}
+                    onHeuristicClick={handleHeuristicClick}
                 />
             ))}
 
@@ -602,6 +620,8 @@ function SolarSystemScene({ onDomainSelect, selectedDomainProp }: { onDomainSele
 
 export default function SolarSystemView({ onDomainSelect, selectedDomain }: { onDomainSelect?: (domain: string) => void, selectedDomain?: string | null }) {
     const [vrSupported, setVrSupported] = useState(false)
+    const [selectedHeuristic, setSelectedHeuristic] = useState<Heuristic | null>(null)
+    const { promoteHeuristic, demoteHeuristic } = useDataContext()
 
     useEffect(() => {
         let active = true
@@ -623,11 +643,37 @@ export default function SolarSystemView({ onDomainSelect, selectedDomain }: { on
         }
     }, [])
 
+    const handleHeuristicSelect = (h: Heuristic) => {
+        setSelectedHeuristic(h)
+    }
+
+    const handleCloseModal = () => {
+        setSelectedHeuristic(null)
+    }
+
+    const handlePromote = async () => {
+        if (selectedHeuristic) {
+            await promoteHeuristic(selectedHeuristic.id)
+        }
+    }
+
+    const handleDemote = async () => {
+        if (selectedHeuristic) {
+            await demoteHeuristic(selectedHeuristic.id)
+        }
+    }
+
     return (
         <div className="w-full h-full min-h-[600px] relative">
-            {/* Overlay Title - pointer-events-none ensures we can click through to canvas */}
-            {/* MOVED DOWN to avoid header overlap */}
-            {/* Overlay Title Removed */}
+            {/* Heuristic Detail Modal */}
+            {selectedHeuristic && (
+                <HeuristicDetailModal
+                    heuristic={selectedHeuristic}
+                    onClose={handleCloseModal}
+                    onPromote={handlePromote}
+                    onDemote={handleDemote}
+                />
+            )}
 
             {/* Controls hint */}
             <div className="absolute bottom-6 left-6 z-10 pointer-events-none select-none">
@@ -664,7 +710,7 @@ export default function SolarSystemView({ onDomainSelect, selectedDomain }: { on
 
             <Canvas camera={{ position: [0, 30, 40], fov: 45 }} className="w-full h-full" gl={{ alpha: true }}>
                 <XR store={xrStore}>
-                    <SolarSystemScene onDomainSelect={onDomainSelect} selectedDomainProp={selectedDomain} />
+                    <SolarSystemScene onDomainSelect={onDomainSelect} selectedDomainProp={selectedDomain} onHeuristicSelect={handleHeuristicSelect} />
                     <Floating3DParticles count={300} />
                 </XR>
             </Canvas>

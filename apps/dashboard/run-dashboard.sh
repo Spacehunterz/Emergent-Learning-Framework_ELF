@@ -151,30 +151,54 @@ else
     sleep 2
 fi
 
-# Start TalkinHead overlay (Windows only)
+# Start TalkinHead overlay (cross-platform)
 TALKINHEAD_PATH="$SCRIPT_DIR/TalkinHead"
 TALKINHEAD_LOCK="$HOME/.elf-talkinhead.lock"
-if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ -n "$MSYSTEM" ]]; then
-    # Check if TalkinHead already running via lockfile
-    TALKINHEAD_RUNNING=false
-    if [ -f "$TALKINHEAD_LOCK" ]; then
-        TALKINHEAD_PID=$(cat "$TALKINHEAD_LOCK" 2>/dev/null)
-        if [ -n "$TALKINHEAD_PID" ] && tasklist //FI "PID eq $TALKINHEAD_PID" 2>/dev/null | grep -q "$TALKINHEAD_PID"; then
-            TALKINHEAD_RUNNING=true
-        fi
-    fi
 
-    if [ "$TALKINHEAD_RUNNING" = false ]; then
-        if [ -f "$TALKINHEAD_PATH/main.py" ]; then
-            echo "[Starting] TalkinHead overlay..."
-            # Write dashboard PID file for orphan detection
-            echo $$ > ~/.elf-dashboard.pid
-            cd "$TALKINHEAD_PATH" && pythonw main.py &
-            STARTED_SERVERS=true
+# Check if TalkinHead already running via lockfile
+TALKINHEAD_RUNNING=false
+if [ -f "$TALKINHEAD_LOCK" ]; then
+    TALKINHEAD_PID=$(cat "$TALKINHEAD_LOCK" 2>/dev/null)
+    if [ -n "$TALKINHEAD_PID" ]; then
+        if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ -n "$MSYSTEM" ]]; then
+            # Windows: use tasklist
+            if tasklist //FI "PID eq $TALKINHEAD_PID" 2>/dev/null | grep -q "$TALKINHEAD_PID"; then
+                TALKINHEAD_RUNNING=true
+            fi
+        else
+            # Linux/macOS: use kill -0
+            if kill -0 "$TALKINHEAD_PID" 2>/dev/null; then
+                TALKINHEAD_RUNNING=true
+            fi
         fi
-    else
-        echo "[OK] TalkinHead already running (PID $TALKINHEAD_PID)"
     fi
+fi
+
+if [ "$TALKINHEAD_RUNNING" = false ]; then
+    if [ -f "$TALKINHEAD_PATH/main.py" ]; then
+        echo "[Starting] TalkinHead overlay..."
+        # Write dashboard PID file for orphan detection
+        echo $$ > ~/.elf-dashboard.pid
+        if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ -n "$MSYSTEM" ]]; then
+            # Windows: use pythonw for no console (check for PyQt5 first)
+            if $PYTHON_CMD -c "import PyQt5" 2>/dev/null; then
+                cd "$TALKINHEAD_PATH" && pythonw main.py &
+            else
+                echo "[Skip] TalkinHead (PyQt5 not installed - run: pip install PyQt5)"
+            fi
+        else
+            # Linux/macOS: use venv launcher (handles numpy/Qt compatibility)
+            if [ -f "$TALKINHEAD_PATH/run-talkinhead.sh" ]; then
+                "$TALKINHEAD_PATH/run-talkinhead.sh" &
+            else
+                # Fallback to direct python if no launcher script
+                cd "$TALKINHEAD_PATH" && $PYTHON_CMD main.py &
+            fi
+        fi
+        STARTED_SERVERS=true
+    fi
+else
+    echo "[OK] TalkinHead already running (PID $TALKINHEAD_PID)"
 fi
 
 # Open browser

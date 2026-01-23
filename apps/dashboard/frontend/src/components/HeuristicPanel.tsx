@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Heuristic } from '../types'
 import { HeuristicCard, HeuristicFilters, SortField, SortDir, EditFormData } from './heuristics'
+import HeuristicDetailModal from './heuristics/HeuristicDetailModal'
 
 interface HeuristicPanelProps {
   heuristics: Heuristic[]
-  onPromote: (id: number) => void
-  onDemote: (id: number) => void
+  onPromote: (id: number) => Promise<void>
+  onDemote: (id: number) => Promise<void>
   onDelete: (id: number) => void
   onUpdate: (id: number, updates: { rule?: string; explanation?: string; domain?: string }) => void
   selectedDomain: string | null
@@ -28,6 +29,7 @@ export default function HeuristicPanel({
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editForm, setEditForm] = useState<EditFormData>({ rule: '', explanation: '', domain: '' })
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
+  const [modalHeuristic, setModalHeuristic] = useState<Heuristic | null>(null)
 
   const domains = Array.from(new Set(heuristics.map(h => h.domain)))
 
@@ -89,8 +91,29 @@ export default function HeuristicPanel({
     setDeleteConfirmId(null)
   }
 
+  const handleModalPromote = async () => {
+    if (modalHeuristic) {
+      await onPromote(modalHeuristic.id)
+    }
+  }
+
+  const handleModalDemote = async () => {
+    if (modalHeuristic) {
+      await onDemote(modalHeuristic.id)
+    }
+  }
+
   return (
     <div className="bg-slate-800 rounded-lg p-4">
+      {/* Heuristic Detail Modal */}
+      {modalHeuristic && (
+        <HeuristicDetailModal
+          heuristic={modalHeuristic}
+          onClose={() => setModalHeuristic(null)}
+          onPromote={handleModalPromote}
+          onDemote={handleModalDemote}
+        />
+      )}
       <HeuristicFilters
         totalCount={heuristics.length}
         filteredCount={sorted.length}
@@ -124,6 +147,7 @@ export default function HeuristicPanel({
             onStartDelete={() => setDeleteConfirmId(h.id)}
             onConfirmDelete={() => confirmDelete(h.id)}
             onCancelDelete={() => setDeleteConfirmId(null)}
+            onViewDetails={() => setModalHeuristic(h)}
           />
         ))}
       </div>

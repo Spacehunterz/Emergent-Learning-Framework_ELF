@@ -10,7 +10,7 @@ import { CosmicGraphView } from '../components/cosmic-view/CosmicGraphView'
 import { CosmicAnalyticsView } from '../components/cosmic-view/CosmicAnalyticsView'
 import { useNotificationContext } from '../context/NotificationContext'
 import { useCosmicSettings } from '../context/CosmicSettingsContext'
-
+import { NavigationTabs, TabType } from '../components/NavigationTabs'
 
 import { SetupWizard } from '../components/game/SetupWizard'
 import { GameMenu } from '../components/game/GameMenu'
@@ -23,7 +23,8 @@ interface DashboardLayoutProps {
     commandPaletteOpen: boolean
     setCommandPaletteOpen: (open: boolean) => void
     commands: any[]
-    onDomainSelect?: (domain: string) => void
+    onDomainSelectFromGrid?: (domain: string | null) => void
+    onDomainSelectFromSpace?: (domain: string | null) => void
     onTabChange?: (tab: string) => void
     selectedDomain?: string | null
 }
@@ -35,7 +36,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     commandPaletteOpen,
     setCommandPaletteOpen,
     commands,
-    onDomainSelect,
+    onDomainSelectFromGrid,
+    onDomainSelectFromSpace,
     selectedDomain,
     onTabChange
 }) => {
@@ -73,6 +75,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
                     />
 
+                    {/* Navigation Tabs - Always visible */}
+                    <div className="sticky top-20 z-[9997] bg-black/40 backdrop-blur-md">
+                        <div className="container mx-auto">
+                            <NavigationTabs
+                                activeTab={activeTab as TabType}
+                                onTabChange={(tab) => onTabChange?.(tab)}
+                                selectedDomain={selectedDomain}
+                                onClearDomain={() => onDomainSelectFromGrid?.(null)}
+                            />
+                        </div>
+                    </div>
+
                     <main className={viewMode === 'cosmic' && activeTab === 'overview' && !selectedDomain ? "w-full h-screen pt-0 overflow-hidden bg-transparent" : "w-full min-h-screen"}>
                         {/* Overview Tab Handling */}
                         {activeTab === 'overview' && (
@@ -82,20 +96,20 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                                         <>
                                             <div className="fixed inset-0 z-0">
                                                 <SolarSystemView
-                                                    onDomainSelect={onDomainSelect}
+                                                    onDomainSelect={onDomainSelectFromSpace}
                                                     selectedDomain={selectedDomain}
                                                 />
                                             </div>
                                         </>
                                     ) : (
-                                        <GridView onDomainSelect={onDomainSelect} />
+                                        <GridView onDomainSelect={onDomainSelectFromGrid} />
                                     )
                                 ) : (
                                     viewMode === 'cosmic' ? (
                                         <>
                                             <div className="fixed inset-0 z-0">
                                                 <SolarSystemView
-                                                    onDomainSelect={onDomainSelect}
+                                                    onDomainSelect={onDomainSelectFromSpace}
                                                     selectedDomain={selectedDomain}
                                                 />
                                             </div>
@@ -103,7 +117,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                                     ) : (
                                         <div
                                             className="relative z-10 container mx-auto px-4 py-8 pt-24 h-screen max-h-screen overflow-y-auto custom-scrollbar cursor-default pb-24"
-                                            onClick={() => onDomainSelect?.(null as any)}
+                                            onClick={() => onDomainSelectFromGrid?.(null)}
                                         >
                                             <div
                                                 className="glass-panel p-6 rounded-xl"
@@ -130,7 +144,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                             >
                                 <CosmicGraphView
                                     onNodeClick={(node) => {
-                                        if (onDomainSelect && node.domain) onDomainSelect(node.domain);
+                                        // Domain selection from graph navigates to heuristics tab
+                                        if (onDomainSelectFromGrid && node.domain) onDomainSelectFromGrid(node.domain);
                                     }}
                                 />
                             </div>
@@ -146,7 +161,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                                     }
                                 }}
                             >
-                                <CosmicAnalyticsView />
+                                <CosmicAnalyticsView
+                                    onNavigate={(tab, domain) => {
+                                        onTabChange?.(tab);
+                                        if (domain) {
+                                            onDomainSelectFromGrid?.(domain);
+                                        }
+                                    }}
+                                />
                             </div>
                         )}
 

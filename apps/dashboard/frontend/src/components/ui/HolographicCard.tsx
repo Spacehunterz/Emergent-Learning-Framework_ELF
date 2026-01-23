@@ -7,6 +7,7 @@ interface HolographicCardProps {
     title?: string;
     delay?: number;
     featured?: boolean;
+    onClick?: () => void;
 }
 
 export const HolographicCard: React.FC<HolographicCardProps> = ({
@@ -14,7 +15,8 @@ export const HolographicCard: React.FC<HolographicCardProps> = ({
     className = '',
     title,
     delay = 0,
-    featured = false
+    featured = false,
+    onClick
 }) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "0px 0px -50px 0px" });
@@ -44,11 +46,13 @@ export const HolographicCard: React.FC<HolographicCardProps> = ({
             }}
             initial="hidden"
             animate={controls}
+            onClick={onClick}
             className={`
         relative group
-        glass-panel 
-        rounded-xl 
+        glass-panel
+        rounded-xl
         ${featured ? 'border-cyan-500/30' : 'border-slate-700/50'}
+        ${onClick ? 'cursor-pointer' : ''}
         ${className}
       `}
         >

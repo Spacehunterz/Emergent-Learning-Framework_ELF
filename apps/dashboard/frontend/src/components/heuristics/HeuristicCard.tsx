@@ -21,6 +21,7 @@ interface HeuristicCardProps {
   onStartDelete: () => void
   onConfirmDelete: () => void
   onCancelDelete: () => void
+  onViewDetails?: () => void
 }
 
 function getConfidenceColor(conf: number): string {
@@ -53,6 +54,7 @@ export default function HeuristicCard({
   onStartDelete,
   onConfirmDelete,
   onCancelDelete,
+  onViewDetails,
 }: HeuristicCardProps) {
   const lifecycle = getLifecycleStage(h)
   const LifecycleIcon = lifecycle.icon
@@ -153,6 +155,7 @@ export default function HeuristicCard({
                 onStartDelete={onStartDelete}
                 onConfirmDelete={onConfirmDelete}
                 onCancelDelete={onCancelDelete}
+                onViewDetails={onViewDetails}
               />
             )}
           </div>

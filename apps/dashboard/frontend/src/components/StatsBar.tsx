@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { TrendingUp, CheckCircle, XCircle, Brain, Star, Target, BarChart3, MessageSquare } from 'lucide-react'
 import { useAPI } from '../hooks/useAPI'
-import { DrillDownModal, DrillDownView } from './drilldowns'
+import { StatsDrillDownView, DrillDownType } from './stats'
 
 export interface DashboardStats {
   total_runs: number
@@ -23,6 +23,7 @@ export interface DashboardStats {
 
 interface StatsBarProps {
   stats: DashboardStats | null
+  onNavigate?: (tab: string, domain?: string) => void
 }
 
 interface StatCardData {
@@ -31,35 +32,23 @@ interface StatCardData {
   icon: any
   color: string
   bgColor: string
-  description: string
-  drillDownType?: 'runs' | 'heuristics' | 'hotspots' | 'golden' | 'learnings' | 'queries'
-  details?: { label: string; value: string | number }[]
+  glowColor: string
+  drillDownType: DrillDownType
 }
 
-export default function StatsBar({ stats }: StatsBarProps) {
-  const [expandedCard, setExpandedCard] = useState<string | null>(null)
-  const [drillDownView, setDrillDownView] = useState<DrillDownView>('main')
+export default function StatsBar({ stats, onNavigate }: StatsBarProps) {
+  const [expandedType, setExpandedType] = useState<DrillDownType | null>(null)
   const [drillDownData, setDrillDownData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const api = useAPI()
 
-  useEffect(() => {
-    if (!expandedCard) {
-      setDrillDownView('main')
-      setDrillDownData(null)
-      setError(null)
-    }
-  }, [expandedCard])
-
-  const loadDrillDownData = async (type: DrillDownView) => {
+  const loadDrillDownData = async (type: DrillDownType) => {
     setLoading(true)
-    setError(null)
-    setDrillDownView(type)
     try {
       let data
       switch (type) {
         case 'runs':
+        case 'success_rate':
           data = await api.get('/api/runs?limit=100')
           break
         case 'heuristics':
@@ -71,35 +60,35 @@ export default function StatsBar({ stats }: StatsBarProps) {
         case 'hotspots':
           data = await api.get('/api/hotspots')
           break
-        case 'learnings':
-          data = await api.get('/api/learnings?limit=100')
-          break
         case 'queries':
           data = await api.get('/api/queries?limit=100')
           break
       }
       setDrillDownData(data)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to load drill-down data:', err)
-      setError(err?.message || 'Failed to load data. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  const goBack = () => {
-    setDrillDownView('main')
+  const handleCardClick = async (type: DrillDownType) => {
+    setExpandedType(type)
+    await loadDrillDownData(type)
+  }
+
+  const handleClose = () => {
+    setExpandedType(null)
     setDrillDownData(null)
-    setError(null)
   }
 
   if (!stats) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         {[...Array(8)].map((_, i) => (
-          <div key={i} className="glass-panel rounded-lg p-4 animate-pulse">
-            <div className="h-4 bg-slate-700 rounded w-1/2 mb-2" />
-            <div className="h-8 bg-slate-700 rounded w-3/4" />
+          <div key={i} className="glass-panel rounded-xl p-4 animate-pulse">
+            <div className="h-3 bg-slate-700 rounded w-1/2 mb-3" />
+            <div className="h-7 bg-slate-700 rounded w-3/4" />
           </div>
         ))}
       </div>
@@ -111,15 +100,10 @@ export default function StatsBar({ stats }: StatsBarProps) {
       label: 'Total Runs',
       value: stats.total_runs,
       icon: BarChart3,
-      color: 'text-sky-400',
-      bgColor: 'bg-sky-500/10',
-      description: 'Total number of agent workflow runs recorded in the system.',
+      color: 'text-cyan-400',
+      bgColor: 'bg-cyan-500/10',
+      glowColor: 'rgba(34, 211, 238, 0.4)',
       drillDownType: 'runs',
-      details: [
-        { label: 'Successful', value: stats.successful_runs },
-        { label: 'Failed', value: stats.failed_runs },
-        { label: 'Success Rate', value: (stats.success_rate * 100).toFixed(1) + '%' },
-      ],
     },
     {
       label: 'Success Rate',
@@ -127,13 +111,8 @@ export default function StatsBar({ stats }: StatsBarProps) {
       icon: TrendingUp,
       color: stats.success_rate >= 0.8 ? 'text-emerald-400' : stats.success_rate >= 0.5 ? 'text-amber-400' : 'text-red-400',
       bgColor: stats.success_rate >= 0.8 ? 'bg-emerald-500/10' : stats.success_rate >= 0.5 ? 'bg-amber-500/10' : 'bg-red-500/10',
-      description: 'Percentage of workflow runs that completed successfully.',
-      drillDownType: 'runs',
-      details: [
-        { label: 'Total Runs', value: stats.total_runs },
-        { label: 'Successful', value: stats.successful_runs },
-        { label: 'Failed', value: stats.failed_runs },
-      ],
+      glowColor: stats.success_rate >= 0.8 ? 'rgba(74, 222, 128, 0.4)' : stats.success_rate >= 0.5 ? 'rgba(251, 191, 36, 0.4)' : 'rgba(248, 113, 113, 0.4)',
+      drillDownType: 'success_rate',
     },
     {
       label: 'Successful',
@@ -141,7 +120,7 @@ export default function StatsBar({ stats }: StatsBarProps) {
       icon: CheckCircle,
       color: 'text-emerald-400',
       bgColor: 'bg-emerald-500/10',
-      description: 'Workflow runs that completed all tasks without failures.',
+      glowColor: 'rgba(74, 222, 128, 0.4)',
       drillDownType: 'runs',
     },
     {
@@ -150,7 +129,7 @@ export default function StatsBar({ stats }: StatsBarProps) {
       icon: XCircle,
       color: 'text-red-400',
       bgColor: 'bg-red-500/10',
-      description: 'Workflow runs that encountered errors or failed to complete.',
+      glowColor: 'rgba(248, 113, 113, 0.4)',
       drillDownType: 'runs',
     },
     {
@@ -159,13 +138,8 @@ export default function StatsBar({ stats }: StatsBarProps) {
       icon: Brain,
       color: 'text-violet-400',
       bgColor: 'bg-violet-500/10',
-      description: 'Learned patterns and rules extracted from agent experiences.',
+      glowColor: 'rgba(167, 139, 250, 0.4)',
       drillDownType: 'heuristics',
-      details: [
-        { label: 'Golden Rules', value: stats.golden_rules },
-        { label: 'Total Validations', value: stats.total_validations || 0 },
-        { label: 'Avg Confidence', value: ((stats.avg_confidence || 0) * 100).toFixed(0) + '%' },
-      ],
     },
     {
       label: 'Golden Rules',
@@ -173,7 +147,7 @@ export default function StatsBar({ stats }: StatsBarProps) {
       icon: Star,
       color: 'text-amber-400',
       bgColor: 'bg-amber-500/10',
-      description: 'High-confidence heuristics promoted to constitutional rules that guide all agents.',
+      glowColor: 'rgba(251, 191, 36, 0.4)',
       drillDownType: 'golden',
     },
     {
@@ -182,7 +156,7 @@ export default function StatsBar({ stats }: StatsBarProps) {
       icon: Target,
       color: 'text-orange-400',
       bgColor: 'bg-orange-500/10',
-      description: 'Active areas in the codebase with concentrated agent activity trails.',
+      glowColor: 'rgba(251, 146, 60, 0.4)',
       drillDownType: 'hotspots',
     },
     {
@@ -191,53 +165,76 @@ export default function StatsBar({ stats }: StatsBarProps) {
       icon: MessageSquare,
       color: 'text-indigo-400',
       bgColor: 'bg-indigo-500/10',
-      description: 'Building queries executed by agents to retrieve institutional knowledge.',
+      glowColor: 'rgba(129, 140, 248, 0.4)',
       drillDownType: 'queries',
-      details: [
-        { label: 'Total', value: stats.total_queries || 0 },
-        { label: 'Success Rate', value: '100%' },
-        { label: 'Avg Duration', value: (stats.avg_query_duration_ms || 0).toFixed(0) + 'ms' },
-      ],
     },
   ]
 
-  const selectedCard = statCards.find(c => c.label === expandedCard)
-
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-        {statCards.map(({ label, value, icon: Icon, color, bgColor }) => (
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+        {statCards.map(({ label, value, icon: Icon, color, bgColor, glowColor, drillDownType }) => (
           <div
             key={label}
-            onClick={() => setExpandedCard(expandedCard === label ? null : label)}
-            className="rounded-lg p-4 card-glow transition-all hover:scale-105 cursor-pointer"
+            onClick={() => handleCardClick(drillDownType)}
+            className="group relative rounded-xl p-4 cursor-pointer transition-all duration-300 hover:scale-105 overflow-hidden"
             style={{
-              background: `linear-gradient(135deg, rgba(var(--theme-accent-rgb), calc(var(--glass-opacity) * 0.3)), rgba(var(--theme-panel-rgb), var(--glass-opacity)))`,
-              border: '1px solid rgba(var(--theme-accent-rgb), calc(var(--glass-opacity) * 0.5))',
-              backdropFilter: 'blur(calc(var(--glass-opacity) * 20px))',
+              background: `linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)`,
+              border: '1px solid rgba(100, 116, 139, 0.2)',
             }}
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium" style={{ color: 'var(--theme-text-secondary)' }}>{label}</span>
-              <div className={`p-1.5 rounded-md ${bgColor}`}>
-                <Icon className={`w-3.5 h-3.5 ${color}`} />
+            {/* Hover glow effect */}
+            <div
+              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"
+              style={{
+                background: `radial-gradient(circle at center, ${glowColor} 0%, transparent 70%)`,
+              }}
+            />
+
+            {/* Top glow line on hover */}
+            <div
+              className="absolute top-0 left-0 right-0 h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              style={{
+                background: `linear-gradient(90deg, transparent, ${glowColor.replace('0.4', '0.8')}, transparent)`,
+              }}
+            />
+
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 group-hover:text-slate-400 transition-colors">
+                  {label}
+                </span>
+                <div className={`p-1.5 rounded-lg ${bgColor} group-hover:scale-110 transition-transform`}>
+                  <Icon className={`w-3.5 h-3.5 ${color}`} />
+                </div>
+              </div>
+              <div
+                className={`text-2xl font-bold ${color} transition-all duration-300 group-hover:scale-105`}
+                style={{
+                  textShadow: `0 0 20px ${glowColor}`,
+                }}
+              >
+                {value}
               </div>
             </div>
-            <div className={`text-2xl font-bold ${color}`}>{value}</div>
+
+            {/* Click indicator */}
+            <div className="absolute bottom-2 right-2 text-[8px] text-slate-600 group-hover:text-slate-400 transition-colors uppercase tracking-wider">
+              Click to explore
+            </div>
           </div>
         ))}
       </div>
 
-      {expandedCard && selectedCard && (
-        <DrillDownModal
-          card={selectedCard}
-          drillDownView={drillDownView}
-          drillDownData={drillDownData}
+      {/* Full-screen drill-down view */}
+      {expandedType && (
+        <StatsDrillDownView
+          type={expandedType}
+          stats={stats}
+          data={drillDownData}
           loading={loading}
-          error={error}
-          onClose={() => setExpandedCard(null)}
-          onBack={goBack}
-          onLoadDrillDown={loadDrillDownData}
+          onClose={handleClose}
+          onNavigate={onNavigate}
         />
       )}
     </>

@@ -5,6 +5,9 @@ export { default as HotspotVisualizationDefault } from './HotspotVisualization'
 // View components
 export { CosmicView } from './CosmicView'
 export { ViewToggle } from './ViewToggle'
+export { CosmicAnalyticsView } from './CosmicAnalyticsView'
+export { CosmicTimelineView } from './CosmicTimelineView'
+export { CosmicRunsView } from './CosmicRunsView'
 
 // Canvas and scene
 export { CosmicCanvas } from './CosmicCanvas'

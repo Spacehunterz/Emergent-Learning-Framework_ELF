@@ -1,4 +1,4 @@
-import { Star, TrendingDown, Edit2, Trash2, X } from 'lucide-react'
+import { Star, TrendingDown, Edit2, Trash2, X, Eye } from 'lucide-react'
 import { Heuristic } from '../../types'
 
 interface HeuristicActionsProps {
@@ -10,6 +10,7 @@ interface HeuristicActionsProps {
   onStartDelete: () => void
   onConfirmDelete: () => void
   onCancelDelete: () => void
+  onViewDetails?: () => void
 }
 
 export default function HeuristicActions({
@@ -21,6 +22,7 @@ export default function HeuristicActions({
   onStartDelete,
   onConfirmDelete,
   onCancelDelete,
+  onViewDetails,
 }: HeuristicActionsProps) {
   if (isDeleting) {
     return (
@@ -45,7 +47,16 @@ export default function HeuristicActions({
   }
 
   return (
-    <div className="flex items-center space-x-2 pt-2">
+    <div className="flex items-center flex-wrap gap-2 pt-2">
+      {onViewDetails && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onViewDetails() }}
+          className="flex items-center space-x-1 px-3 py-1.5 bg-purple-500/20 text-purple-400 rounded-lg text-sm hover:bg-purple-500/30 transition"
+        >
+          <Eye className="w-4 h-4" />
+          <span>View Details</span>
+        </button>
+      )}
       {!h.is_golden && h.confidence >= 0.8 && (
         <button
           onClick={(e) => { e.stopPropagation(); onPromote() }}
