@@ -2,6 +2,8 @@
 node_modules/
 __pycache__/
 *.pyc
+venv/
+.venv/
 
 # Build output
 frontend/dist/

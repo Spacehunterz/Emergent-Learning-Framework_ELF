@@ -16,6 +16,38 @@ else
     exit 1
 fi
 
+# Function to setup Python virtual environment for backend
+# Required on Linux (PEP 668) and recommended on macOS with Homebrew
+setup_backend_venv() {
+    local VENV_PATH="$BACKEND_PATH/venv"
+    local REQUIREMENTS="$BACKEND_PATH/requirements.txt"
+
+    # Check if venv exists
+    if [ ! -d "$VENV_PATH" ]; then
+        echo "[Setup] Creating Python virtual environment..."
+        $PYTHON_CMD -m venv "$VENV_PATH"
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to create virtual environment"
+            echo "Try: sudo apt install python3-venv (Ubuntu/Debian)"
+            return 1
+        fi
+    fi
+
+    # Check if dependencies are installed (look for uvicorn)
+    if ! "$VENV_PATH/bin/python" -c "import uvicorn" 2>/dev/null; then
+        echo "[Setup] Installing backend dependencies..."
+        "$VENV_PATH/bin/pip" install -q -r "$REQUIREMENTS"
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to install backend dependencies"
+            return 1
+        fi
+    fi
+
+    # Return the venv python path
+    echo "$VENV_PATH/bin/python"
+    return 0
+}
+
 # Issue #11: Detect Git Bash + npm platform mismatch on Windows
 if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ -n "$MSYSTEM" ]]; then
     FRONTEND_DIR="$SCRIPT_DIR/frontend"
@@ -64,8 +96,15 @@ STARTED_SERVERS=false
 if curl -s "http://localhost:$BACKEND_PORT/api/stats" >/dev/null 2>&1; then
     echo "[OK] Backend already running on port $BACKEND_PORT"
 else
+    # Setup venv and get python path (handles PEP 668 on Linux/macOS)
+    VENV_PYTHON=$(setup_backend_venv)
+    if [ $? -ne 0 ]; then
+        echo "Error: Backend setup failed"
+        exit 1
+    fi
+
     echo "[Starting] Backend API server..."
-    cd "$BACKEND_PATH" && $PYTHON_CMD -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT &
+    cd "$BACKEND_PATH" && "$VENV_PYTHON" -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT &
     STARTED_SERVERS=true
 
     # Wait for backend to be ready (polls until healthy, max 60s)
