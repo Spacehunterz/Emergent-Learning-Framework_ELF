@@ -366,4 +366,4 @@ A special thanks to the incredible humans shaping ELF:
 
 ELF is under heavy active development. Rapid commits reflect live experimentation, architectural refinement, and real-world usage. The main branch represents active research and may change frequently. Stable checkpoints will be published as versioned GitHub releases; users who prefer stability should rely on tagged releases rather than the latest commit.
 
-**Not accepting pull requests. Feature requests, bug reports, and questions welcome via [Discussions](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/discussions).**
+**Not accepting pull requests. Questions welcome via [Discussions](https://github.com/Spacehunterz/Emergent-Learning-Framework_ELF/discussions).**
