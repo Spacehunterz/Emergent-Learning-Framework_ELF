@@ -94,8 +94,8 @@ class TalkinHeadApp:
         self.overlay = IvyOverlay()
         self.watcher = EventWatcher()
 
-        # Connect signals
-        self.watcher.event_triggered.connect(self.overlay.play_phrase)
+        # Connect signals - event_triggered emits (event_type, message), play_phrase takes phrase_name
+        self.watcher.event_triggered.connect(lambda event_type, message: self.overlay.play_phrase(event_type))
         self.overlay.quit_requested.connect(self._quit)
 
         # Parent process monitor disabled - causes false positives on Windows

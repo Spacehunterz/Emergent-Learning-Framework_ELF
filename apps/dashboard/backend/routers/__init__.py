@@ -27,6 +27,7 @@ from .context import router as context_router
 from .auth import router as auth_router
 from .game import router as game_router
 from .setup import router as setup_router
+from .live import router as live_router
 
 __all__ = [
     'analytics_router',
@@ -42,4 +43,5 @@ __all__ = [
     'auth_router',
     'game_router',
     'setup_router',
+    'live_router',
 ]

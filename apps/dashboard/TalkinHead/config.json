@@ -1,5 +1,8 @@
 {
   "x": 4528,
-  "y": 964,
-  "display_scale": 0.355
+  "y": 973,
+  "display_scale": 0.355,
+  "pool_indices": {
+    "completed": 2
+  }
 }

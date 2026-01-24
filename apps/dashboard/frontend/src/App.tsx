@@ -18,6 +18,7 @@ import {
   InvariantsPanel,
   FraudReviewPanel
 } from './components'
+import { LivePanel } from './components/live'
 import { CosmicTimelineView, CosmicRunsView } from './components/cosmic-view'
 import {
   TimelineEvent,
@@ -65,7 +66,7 @@ class ErrorBoundary extends React.Component<
 }
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'heuristics' | 'runs' | 'timeline' | 'query' | 'analytics' | 'graph' | 'sessions' | 'assumptions' | 'spikes' | 'invariants' | 'fraud'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'heuristics' | 'runs' | 'timeline' | 'query' | 'analytics' | 'graph' | 'sessions' | 'assumptions' | 'spikes' | 'invariants' | 'fraud' | 'live'>('overview')
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
@@ -307,6 +308,7 @@ function AppContent() {
     { id: 'spikes', label: 'View Spike Reports', category: 'Navigation', action: () => setActiveTab('spikes') },
     { id: 'invariants', label: 'View Invariants', category: 'Navigation', action: () => setActiveTab('invariants') },
     { id: 'fraud', label: 'Review Fraud Reports', category: 'Navigation', action: () => setActiveTab('fraud') },
+    { id: 'live', label: 'View Live Agents', category: 'Navigation', action: () => setActiveTab('live') },
     { id: 'query', label: 'Query the Building', shortcut: '⌘Q', category: 'Actions', action: () => setActiveTab('query') },
     { id: 'refresh', label: 'Refresh Data', shortcut: '⌘R', category: 'Actions', action: () => { loadStats(); reloadHeuristics() } },
     { id: 'clearDomain', label: 'Clear Domain Filter', category: 'Actions', action: () => setSelectedDomain(null) },
@@ -416,6 +418,7 @@ function AppContent() {
           )}
 
           {activeTab === 'sessions' && <SessionHistoryPanel />}
+          {activeTab === 'live' && <LivePanel />}
           {activeTab === 'assumptions' && <AssumptionsPanel />}
           {activeTab === 'spikes' && <SpikeReportsPanel />}
           {activeTab === 'invariants' && <InvariantsPanel />}

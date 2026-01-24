@@ -1,6 +1,6 @@
-import { Globe, Brain, BarChart3, Clock, LineChart, Sparkles } from 'lucide-react'
+import { Globe, Brain, BarChart3, Clock, LineChart, Sparkles, Activity } from 'lucide-react'
 
-export type TabType = 'overview' | 'heuristics' | 'runs' | 'timeline' | 'analytics' | 'graph'
+export type TabType = 'overview' | 'heuristics' | 'runs' | 'timeline' | 'analytics' | 'graph' | 'live'
 
 interface Tab {
   id: TabType
@@ -16,6 +16,7 @@ const tabs: Tab[] = [
   { id: 'runs', label: 'RUNS', icon: BarChart3, color: '#22d3ee', glowColor: 'rgba(34, 211, 238, 0.5)' },
   { id: 'timeline', label: 'TIMELINE', icon: Clock, color: '#4ade80', glowColor: 'rgba(74, 222, 128, 0.5)' },
   { id: 'analytics', label: 'ANALYTICS', icon: LineChart, color: '#fb923c', glowColor: 'rgba(251, 146, 60, 0.5)' },
+  { id: 'live', label: 'LIVE', icon: Activity, color: '#8b5cf6', glowColor: 'rgba(139, 92, 246, 0.5)' },
 ]
 
 interface NavigationTabsProps {
