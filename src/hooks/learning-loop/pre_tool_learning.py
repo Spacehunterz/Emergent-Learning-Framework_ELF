@@ -257,6 +257,7 @@ DOMAIN_ALIASES = {
     "coordination": ["service-coordination", "multi-agent-coordination"],
     "cli": ["cli-architecture", "cli-design"],
     "file": ["file-io", "file-operations", "file-organization", "file-write-safety"],
+    "task-management": ["task-management", "workflow", "project-management", "todo"],
 }
 
 
@@ -283,6 +284,21 @@ def extract_domain_from_context(tool_name: str, tool_input: dict) -> List[str]:
     elif tool_name in ("Edit", "Write"):
         # Include file path and content for Edit/Write operations
         text = tool_input.get("file_path", "") + " " + tool_input.get("old_string", "") + " " + tool_input.get("new_string", "") + " " + tool_input.get("content", "")
+    elif tool_name in ("TaskCreate", "TaskUpdate"):
+        # Include subject, description, and metadata for task management
+        text = tool_input.get("subject", "") + " " + tool_input.get("description", "") + " " + tool_input.get("activeForm", "")
+    elif tool_name in ("TaskList", "TaskGet"):
+        # Task listing/getting - minimal context, mainly for workflow domain
+        text = "task management workflow"
+    elif tool_name == "WebFetch":
+        # Web fetching - include URL and prompt for domain extraction
+        text = tool_input.get("url", "") + " " + tool_input.get("prompt", "")
+    elif tool_name == "WebSearch":
+        # Web search - include query for domain extraction
+        text = tool_input.get("query", "")
+    elif tool_name.startswith("mcp__"):
+        # MCP tools - extract from tool name and any text parameters
+        text = tool_name + " " + " ".join(str(v) for v in tool_input.values() if isinstance(v, str))
 
     text = text.lower()
 
@@ -325,6 +341,11 @@ def extract_domain_from_context(tool_name: str, tool_input: dict) -> List[str]:
         "cli": ["cli", "command", "terminal", "shell"],
         "coordination": ["coordination", "handoff", "blackboard"],
         "documentation": ["document", "readme", "claude.md"],
+        "task-management": ["task", "todo", "tracking", "progress", "checklist", "milestone", "backlog", "sprint"],
+        "web": ["web", "http", "url", "fetch", "scrape", "crawl", "html", "website"],
+        "api-integration": ["api", "endpoint", "rest", "graphql", "webhook", "integration"],
+        "mcp": ["mcp", "model context protocol", "tool server", "context7"],
+        "documentation": ["docs", "documentation", "readme", "guide", "tutorial", "reference"],
         "general": ["general", "misc"],
     }
 
@@ -616,10 +637,16 @@ def main():
         })
         return
 
-    # Learning loop processes ALL investigation and modification tools
+    # Learning loop processes investigation, modification, task management, and web/MCP tools
     # This enables learning from Grep, Read, Glob, Edit, Write, Bash operations
-    INVESTIGATION_TOOLS = {"Task", "Bash", "Grep", "Read", "Glob", "Edit", "Write"}
-    if tool_name not in INVESTIGATION_TOOLS:
+    # Also includes task management tools (TaskCreate, TaskUpdate, TaskList, TaskGet)
+    # And web/MCP tools (WebFetch, WebSearch, mcp__* tools)
+    INVESTIGATION_TOOLS = {"Task", "Bash", "Grep", "Read", "Glob", "Edit", "Write",
+                           "TaskCreate", "TaskUpdate", "TaskList", "TaskGet",
+                           "WebFetch", "WebSearch"}
+    # Check if tool is in set OR is an MCP tool (mcp__* prefix)
+    is_mcp_tool = tool_name.startswith("mcp__")
+    if tool_name not in INVESTIGATION_TOOLS and not is_mcp_tool:
         output_result({"decision": "approve"})
         return
 
