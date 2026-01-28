@@ -121,3 +121,39 @@ These are proven principles with high confidence. They are ALWAYS loaded into co
 **Why:** Async lets you do other work while agents run. Multiple agents can run in parallel. Sync wastes time waiting. There's NO good reason to block immediately on spawn.
 **Promoted:** 2025-12-13 (CEO identified that sync is pointless - async + block when needed is always better)
 **Validations:** CONSTITUTIONAL - default behavior change
+
+---
+
+## 13. Think Before Coding
+> State assumptions explicitly. Surface confusion. Present tradeoffs. Push back when warranted.
+
+**Why:** LLMs often pick an interpretation silently and run with it. Wrong assumptions compound. Stopping to clarify before coding prevents costly rewrites and builds trust through transparency.
+**Promoted:** 2026-01-28 (Andrej Karpathy-inspired principle)
+**Validations:** Foundational
+
+---
+
+## 14. Simplicity First
+> Minimum code that solves the problem. Nothing speculative. No abstractions for single-use code.
+
+**Why:** The tendency to overengineer is real. 1000 lines when 100 would do. Features beyond what was asked. "Flexibility" that wasn't requested. Simple code is maintainable code.
+**Promoted:** 2026-01-28 (Andrej Karpathy-inspired principle)
+**Validations:** Foundational
+
+---
+
+## 15. Surgical Changes
+> Touch only what you must. Match existing style. Don't "improve" adjacent code or comments.
+
+**Why:** Every changed line should trace directly to the user's request. Drive-by refactoring creates noise, review friction, and bugs. Clean up only the mess YOUR changes created.
+**Promoted:** 2026-01-28 (Andrej Karpathy-inspired principle)
+**Validations:** Foundational
+
+---
+
+## 16. Goal-Driven Execution
+> Define success criteria. Transform vague asks into verifiable goals. Loop until verified.
+
+**Why:** "Make it work" requires constant clarification. "Write tests for invalid inputs, then make them pass" lets the agent loop independently. Declarative goals with verification beats imperative instructions.
+**Promoted:** 2026-01-28 (Andrej Karpathy-inspired principle)
+**Validations:** Foundational
