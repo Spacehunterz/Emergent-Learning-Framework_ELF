@@ -702,12 +702,8 @@ class TestPerformance:
             assert len(state["task_queue"]) == 250
             assert len(state["messages"]) == 250
 
-    @pytest.mark.skipif(
-        os.environ.get('CI') == 'true',
-        reason="Performance test too flaky on CI runners"
-    )
-    def test_cache_performance_benefit(self):
-        """Test that caching provides performance benefit."""
+    def test_cache_actually_caches(self):
+        """Test that cache stores and returns cached state, not just correctness."""
         with tempfile.TemporaryDirectory() as tmpdir:
             el = EventLog(tmpdir)
 
@@ -719,29 +715,37 @@ class TestPerformance:
                     "content": f"Finding {i}"
                 })
 
-            # Time without cache
+            # First call without cache - should compute and store
             el._state_cache = None
-            start = time.time()
-            state1 = el.get_current_state(use_cache=False)
-            time_no_cache = time.time() - start
-
-            # Time with cache (warm)
-            start = time.time()
-            state2 = el.get_current_state(use_cache=True)
-            time_with_cache = time.time() - start
-
-            print(f"\nNo cache: {time_no_cache:.4f}s, With cache: {time_with_cache:.4f}s")
+            state1 = el.get_current_state(use_cache=True)
             
-            # Avoid division by zero on very fast systems
-            if time_with_cache > 0.001:  # Need meaningful measurement
-                speedup = time_no_cache / time_with_cache
-                print(f"Speedup: {speedup:.1f}x")
-                # Cache should be significantly faster
-                assert speedup >= 2.0, f"Cache should provide at least 2x speedup, got {speedup:.1f}x"
-            else:
-                # If cache time is too small, just verify both return same state
-                assert state1 == state2, "Cached and non-cached states should match"
-                print("Cache time too small to measure, skipping speedup check")
+            # Verify cache was populated
+            assert el._state_cache is not None, "Cache should be populated after call"
+            assert el._state_cache == state1, "Cache should match returned state"
+            
+            # Second call with cache - should return cached copy
+            state2 = el.get_current_state(use_cache=True)
+            assert state1 == state2, "Cached and non-cached states should be equal"
+            
+            # Verify cache is actually being used (same object identity)
+            assert el._state_cache is state2, "Cache should return same object"
+            
+            # Now invalidate cache by adding another event
+            el.append_event("finding.added", {
+                "agent_id": "test-agent",
+                "finding_type": "fact",
+                "content": "New finding"
+            })
+            
+            # Cache should be invalidated
+            assert el._state_cache is None, "Cache should be invalidated after append"
+            
+            # Get state again - should recompute
+            state3 = el.get_current_state(use_cache=True)
+            assert len(state3["findings"]) == 101, "State should include new finding"
+            assert el._state_cache is not None, "Cache should be repopulated"
+            
+            print("✓ Cache correctly stores, returns, and invalidates")
 
 
 class TestRegressions:
