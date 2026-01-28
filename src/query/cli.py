@@ -307,6 +307,16 @@ async def _async_main(args: argparse.Namespace) -> int:
                 timeout=args.timeout
             )
 
+        elif args.semantic:
+            # Semantic search for heuristics (Option B)
+            result = await query_system.query_semantic(
+                task=args.semantic,
+                threshold=args.threshold,
+                limit=args.limit,
+                domain=args.domain,  # Optional domain filter
+                timeout=args.timeout
+            )
+
         elif args.domain:
             result = await query_system.query_by_domain(args.domain, args.limit, args.timeout)
 
@@ -396,6 +406,11 @@ Examples:
   python query.py --ceo-reviews
   python query.py --stats
 
+  # Semantic search (Option B) - find relevant heuristics by task description
+  python query.py --semantic "Refactor authentication module" --limit 5
+  python query.py --semantic "Create PowerShell script for XPI packaging" --threshold 0.8
+  python query.py --semantic "Debug memory leak in async code" --domain debugging --format json
+
   # Advanced usage
   python query.py --domain testing --format json --debug
   python query.py --recent 20 --timeout 60 --format csv
@@ -454,6 +469,12 @@ Error Codes:
                        help='Run system health check and display alerts (meta-observer)')
     parser.add_argument('--verify-hooks', action='store_true',
                        help='Verify hook configuration and accessibility')
+
+    # Semantic search arguments (Option B)
+    parser.add_argument('--semantic', type=str, metavar='TASK',
+                       help='Semantic search: find heuristics relevant to task description')
+    parser.add_argument('--threshold', type=float, default=0.75,
+                       help='Minimum similarity threshold for semantic search (0.0-1.0, default: 0.75)')
 
     # Project-related arguments
     parser.add_argument('--project-status', action='store_true',

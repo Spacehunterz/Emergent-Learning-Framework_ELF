@@ -1,5 +1,7 @@
 """
 Heuristic query mixin - golden rules, domain queries, tag queries (async).
+
+Now includes semantic search (Option B) for relevance-based heuristic retrieval.
 """
 
 import aiofiles
@@ -314,4 +316,111 @@ class HeuristicQueryMixin(BaseQueryMixin):
                 error_code=error_code,
                 learnings_count=learnings_count,
                 query_summary=f"Tag query for {len(tags)} tags"
+            )
+
+    async def query_semantic(
+        self,
+        task: str,
+        threshold: float = 0.75,
+        limit: int = 5,
+        domain: Optional[str] = None,
+        timeout: int = None
+    ) -> Dict[str, Any]:
+        """
+        Find heuristics semantically relevant to a task description (Option B).
+
+        Uses embedding-based semantic similarity to match task descriptions against
+        heuristics, returning only those with high relevance scores.
+
+        Args:
+            task: Task description to match against heuristics
+            threshold: Minimum similarity score (0.0-1.0), default 0.75
+            limit: Maximum number of results to return, default 5
+            domain: Optional domain to filter by before semantic matching
+            timeout: Query timeout in seconds (default: 30)
+
+        Returns:
+            Dictionary containing:
+            - 'task': The original task description
+            - 'heuristics': List of heuristics with similarity scores
+            - 'count': Number of heuristics returned
+            - 'threshold': The threshold used for filtering
+        """
+        start_time = self._get_current_time_ms()
+        error_msg = None
+        error_code = None
+        status = 'success'
+        result = None
+
+        try:
+            # Validate inputs
+            task = self._validate_query(task)
+            limit = self._validate_limit(limit)
+            timeout = timeout or self.DEFAULT_TIMEOUT * 2  # Semantic search may take longer
+            
+            if not 0.0 <= threshold <= 1.0:
+                raise ValidationError("Threshold must be between 0.0 and 1.0")
+
+            self._log_debug(f"Semantic query for task: {task[:50]}... threshold={threshold}")
+            
+            # Import semantic search (with fallback if not available)
+            try:
+                from query.semantic_search import SemanticSearcher
+            except ImportError:
+                from semantic_search import SemanticSearcher
+            
+            async with AsyncTimeoutHandler(timeout):
+                # Initialize semantic searcher
+                searcher = await SemanticSearcher.create(base_path=self.base_path)
+                
+                # Find relevant heuristics
+                heuristics = await searcher.find_relevant_heuristics(
+                    task=task,
+                    threshold=threshold,
+                    limit=limit,
+                    domain=domain
+                )
+                
+                # Clean up searcher
+                await searcher.cleanup()
+
+            result = {
+                'task': task,
+                'heuristics': heuristics,
+                'count': len(heuristics),
+                'threshold': threshold
+            }
+
+            self._log_debug(f"Found {len(heuristics)} semantically relevant heuristics")
+            return result
+
+        except TimeoutError as e:
+            status = 'timeout'
+            error_msg = str(e)
+            error_code = 'QS003'
+            raise
+        except (ValidationError, DatabaseError, QuerySystemError) as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = getattr(e, 'error_code', 'QS000')
+            raise
+        except Exception as e:
+            status = 'error'
+            error_msg = str(e)
+            error_code = 'QS000'
+            raise
+        finally:
+            duration_ms = self._get_current_time_ms() - start_time
+            heuristics_count = len(result['heuristics']) if result else 0
+
+            await self._log_query(
+                query_type='query_semantic',
+                query_summary=f"Semantic query: {task[:50]}...",
+                limit_requested=limit,
+                results_returned=heuristics_count,
+                duration_ms=duration_ms,
+                status=status,
+                error_message=error_msg,
+                error_code=error_code,
+                heuristics_count=heuristics_count
             )
