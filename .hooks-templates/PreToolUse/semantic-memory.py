@@ -2,7 +2,7 @@
 """
 Pre-Tool Semantic Memory Hook: Mid-stream context injection based on thinking blocks.
 
-This hook implements the game-changing pattern from @josh_ladner:
+This hook implements mid-stream semantic memory injection:
 1. Extract the last ~1500 chars from the most recent thinking block
 2. Embed this current intent/context  
 3. Pull relevant heuristics from vector DB

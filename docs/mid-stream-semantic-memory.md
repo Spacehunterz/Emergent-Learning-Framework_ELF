@@ -555,6 +555,4 @@ PLAN_BOOST_PATTERNS = [
 
 ## Credits
 
-Inspired by [@josh_ladner](https://x.com/josh_ladner/status/2016442693140775254)'s insight:
-
-> "If you have semantic memory tied to your UserPromptSubmit hooks, you MUST ALSO include it in your PreToolUse hook. It will put your efficiency levels over 9,000."
+Inspired by community insights on the importance of mid-stream context injection for maintaining relevance as workflows evolve.
